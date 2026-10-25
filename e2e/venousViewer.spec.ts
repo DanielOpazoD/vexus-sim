@@ -16,7 +16,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await expect(dialog).toBeVisible();
   await dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' }).selectOption('reference');
   await expect(dialog).toContainText('no espectro PW adquirido');
-  await expect(dialog.locator('.venous-wave')).toHaveCount(5);
+  await expect(dialog.locator('.venous-wave')).toHaveCount(6);
   await withinFrames(page, 20, 'curvas con datos', async () => {
     const paths = await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
     return paths.every((p) => p && p.includes('L')) || 'sin trazas completas';
@@ -45,10 +45,32 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
     expect(Number(xy[1])).toBe(800);
     expect(Math.abs(Number(xy[2]) - (45 - (expected[i] / 60) * 40))).toBeLessThanOrEqual(0.051);
   }
+  const pressure = dialog.locator('.venous-pressure-row');
+  const pressureSource = await pressure.locator('svg').evaluate((el) => {
+    const start = Number((el as SVGElement).dataset.timeStart),
+      end = Number((el as SVGElement).dataset.timeEnd);
+    const samples = window.__vexusTest!.sim().physiology.samples.filter((s) => s.t >= start && s.t <= end);
+    return { start, end, values: samples.map((s) => ({ t: s.t, p: s.pRa })) };
+  });
+  const pressurePoints = [...pausedPaths[4]!.matchAll(/[ML]([\d.-]+),([\d.-]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  expect(pressurePoints.length).toBe(pressureSource.values.length);
+  expect(pressurePoints.length).toBeGreaterThan(100);
+  let shiftedError = 0;
+  for (const [i, sample] of pressureSource.values.entries()) {
+    // Full waveform, original engine samples, fixed mmHg axis. A delay, normalized
+    // pressure, baseline-only trace or replayed template must fail this comparison.
+    expect(Math.abs(pressurePoints[i][0] - (800 * (sample.t - pressureSource.start)) / 6)).toBeLessThanOrEqual(0.051);
+    expect(Math.abs(pressurePoints[i][1] - (85 - ((sample.p + 10) / 60) * 80))).toBeLessThanOrEqual(0.051);
+    if (i >= 50) shiftedError += Math.abs(sample.p - pressureSource.values[i - 50].p);
+  }
+  expect(shiftedError / (pressurePoints.length - 50)).toBeGreaterThan(0.1); // 200 ms negative control is distinguishable.
+  await expect(pressure.locator('figcaption span')).toHaveText(`${pressureSource.values.at(-1)!.p.toFixed(2)} mmHg`);
+  await expect(pressure.locator('.venous-limits')).toContainText('+50 / +20 / −10 mmHg');
   const previous = await cursor.inputValue();
   await cursor.focus();
   await page.keyboard.press('ArrowLeft');
   expect(Number(await cursor.inputValue())).toBe(Number(previous) - 1);
+  await expect(pressure.locator('figcaption span')).toHaveText(`${pressureSource.values.at(-2)!.p.toFixed(2)} mmHg`);
   const markers = await dialog.locator('.venous-cursor').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
   expect(new Set(markers).size).toBe(1);
   // Atajos del ecógrafo de fondo no deben cambiar modo ni congelación desde el modal.
@@ -66,6 +88,8 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
     el.scrollTop = 0;
   });
   await page.screenshot({ path: info.outputPath('venous-desktop.png') });
+  await pressure.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('venous-pressure-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   const bounds = await dialog.boundingBox();
@@ -91,6 +115,28 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await open.click({ force: true });
   await expect(dialog.locator('.venous-status')).toContainText('Paciente congelado');
   await expect(dialog).toBeVisible();
+  const originalPatient = await page.evaluate(() => JSON.stringify(window.__vexusTest!.sim().patient));
+  const lab = dialog.locator('.venous-experiment');
+  await lab.locator('summary').click();
+  await lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' }).check();
+  const rhythm = lab.getByRole('combobox', { name: 'Ritmo cardíaco experimental' });
+  await rhythm.focus();
+  // Native typeahead works without a platform popup in headless macOS and Linux.
+  await page.keyboard.press('f');
+  await page.keyboard.press('Tab');
+  await expect(rhythm).toHaveValue('atrial-fibrillation');
+  await withinFrames(
+    page,
+    80,
+    'FA independiente con señales del motor',
+    async () => (await dialog.locator('.venous-case').textContent())?.includes('FA · FC nominal 70 lpm') || 'calculando FA',
+  );
+  await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('5');
+  await expect(lab.getByRole('slider', { name: 'Regurgitación tricuspídea (modelo)', exact: true })).toHaveValue('0.05');
+  expect(await pressure.locator('.venous-wave').getAttribute('d')).toContain('L');
+  await pressure.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('venous-pressure-af-mobile.png') });
+  expect(await page.evaluate(() => JSON.stringify(window.__vexusTest!.sim().patient))).toBe(originalPatient);
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await open.click({ force: true });
@@ -219,7 +265,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
       .evaluateAll((els) =>
         els.map((el) => ({ start: Number((el as SVGElement).dataset.timeStart), end: Number((el as SVGElement).dataset.timeEnd) })),
       ),
-  ).toEqual([timing[0], timing[0]]);
+  ).toEqual([timing[0], timing[0], timing[0]]);
   expect(Number(await dialog.getByRole('slider', { name: 'Cursor sincronizado' }).getAttribute('min'))).toBeGreaterThan(0);
   expect(await alignedAxes()).toBe(true);
   await page.screenshot({ path: info.outputPath('venous-pw-3s.png') });
@@ -448,7 +494,7 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await page.keyboard.press('Home');
   await expect(compliance).toHaveValue('0.5');
   await expect(lab).toContainText('solo reservorios esplácnico/periférico');
-  const heartRate = lab.getByRole('slider', { name: 'Frecuencia cardíaca sinusal', exact: true });
+  const heartRate = lab.getByRole('slider', { name: 'Frecuencia cardíaca nominal', exact: true });
   await heartRate.focus();
   await page.keyboard.press('Home');
   await expect(heartRate).toHaveValue('50');
@@ -508,13 +554,15 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   const saved = JSON.parse(await readFile(await file.path(), 'utf8')) as {
     kind: string;
     version: number;
-    parameters: Record<string, number>;
+    parameters: Record<string, number | string>;
   };
   expect(saved.kind).toBe('vexus-venous-parameters');
-  expect(saved.version).toBe(1);
+  expect(saved.version).toBe(2);
+  expect(saved.parameters.rhythm).toBe('sinus');
   expect(saved.parameters.heartRateBpm).toBe(50);
   expect(saved.parameters.venousReservoirCompliance).toBe(0.5);
   saved.parameters.heartRateBpm = 80;
+  saved.parameters.rhythm = 'atrial-fibrillation';
   await lab.getByLabel('Importar parámetros venosos', { exact: true }).setInputFiles({
     name: 'parametros.json',
     mimeType: 'application/json',
@@ -522,7 +570,8 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   });
   await expect(heartRate).toHaveValue('80');
   await expect(compliance).toHaveValue('0.5');
-  await expect(dialog.locator('.venous-case')).toContainText('sinusal 80 lpm');
+  await expect(lab.getByRole('combobox', { name: 'Ritmo cardíaco experimental' })).toHaveValue('atrial-fibrillation');
+  await expect(dialog.locator('.venous-case')).toContainText('FA · FC nominal 80 lpm');
   await expect(lab).toContainText('Importado');
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   expect(

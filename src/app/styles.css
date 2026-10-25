@@ -1182,6 +1182,9 @@ button.mode.active {
 .venous-marker-row svg {
   height: 48px;
 }
+.venous-pressure-row svg {
+  height: 90px;
+}
 .venous-row path {
   fill: none;
   vector-effect: non-scaling-stroke;

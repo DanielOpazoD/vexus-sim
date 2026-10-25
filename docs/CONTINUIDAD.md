@@ -75,10 +75,12 @@ El segundo fallo comparaba transmisión GPU antigua con la pose CPU actual: el g
 ahora espera una adquisición completa, con0,1dB y plazos intactos. Tres regresiones CPU y el
 negativo Metal conservan la causa. Consultar el head y su aceptación en el estado vivo; no
 fusionar el candidato rechazado.
-El head reparado `44cd08f` aprobó check, Metal17 y CI `40153790816`:165 E2E únicas/12 grupos/
+El head reparado `44cd08f` aprobó check, Metal18 y CI `40153790816`:165 E2E únicas/12 grupos/
 cero reintentos; recibo y originales verificados, junto con tres complementos (23 ejecuciones).
-Se reconcilia con main tras PR285 conservando el código físico; la combinación necesita su
-propio check, Metal/Swift y CI final. Los pases anteriores no acreditan esa combinación.
+La combinación posterior a PR285 se aceptó mediante PR284 y se fusionó en `fc54208`.
+Su CI independiente postmerge `40163432838` aprobó 165 E2E/12 grupos/cero reintentos;
+recibo y 53 originales verificados en `postmerge-pr284-receipt-01/`. El estado vivo
+conserva el check y las pruebas Metal/Swift del head combinado.
 No es un calendario medido de un equipo ni adquisición geométrica por disparo; B11 sigue abierto.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
@@ -104,8 +106,23 @@ arterial para medición venosa. Evidencia y aceptación del head en
 `../fidelity-next15-evidence/renal-user-review-01/` y el estado vivo. [PR285](https://github.com/DanielOpazoD/vexus-sim/pull/285)
 se fusionó en `67e65bf`: check/hook, Metal9/Swift2, CI `40155344673` (165 E2E únicas/12 grupos/
 cero reintentos) y complemento venoso (14 pruebas), con originales verificados. Su CI independiente
-postmerge `40159158094` sigue pendiente; no hereda el pase del PR. No equivale a reparar
+postmerge `40159158094` también se verificó: 165 E2E/12 grupos/cero reintentos,
+recibo y 53 originales conservados. No equivale a reparar
 transporte ni validar clínicamente un preset pareado; ese objetivo permanece abierto.
+
+La adopción docente autorizada comienza con presión auricular, ECG y flujo sincronizados
+(decisión 271), y control sinusal/FA independiente de PAD, VD y regurgitación. La presión
+observa `pRa`; no añade una curva ni una segunda fuente de tiempos. Importación v1 conserva
+el escenario sinusal y v2 guarda el ritmo. Aceptación de este candidato y capturas en
+`../fidelity-next15-evidence/teaching-signals-01/`; no inferir merge de esta descripción.
+Siguen pendientes los demás componentes de `reference-pulmonarypocus-01/ADOPTION.md`,
+el cotejo físico independiente de esas magnitudes y participantes para B15.
+
+B5 posterior: la tabla material pasó controles homogéneos, pero su integración anatómica
+completa de 65 muestras se retiró por coste (06d): mediana del incremento 88,6 ms frente
+al máximo A/A 2,2 ms, a resolución nativa. `speckle/anatomy-table-06d/` conserva originales,
+criterio previo y decisión siguiente. No ejecutar de nuevo ese candidato como si fuera
+productivo; investigar reutilización exacta o un operador nuevo con negativos propios.
 
 ## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)
 

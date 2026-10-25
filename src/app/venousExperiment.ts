@@ -1,11 +1,11 @@
-import { NORMAL_ADULT } from '../cases';
+import { AF_MODERATE_CONGESTION, NORMAL_ADULT } from '../cases';
 import { clonePatient, validatePatient, type PatientState } from '../physiology/patientState';
 
 /** Parameters already represented by the current pressure-driven model.
  * These are independent scenario boundaries, not validated causal interventions.
  */
 export const VENOUS_EXPERIMENT_FIELDS = [
-  { key: 'heartRateBpm', label: 'Frecuencia cardíaca sinusal', unit: 'lpm', min: 50, max: 120, step: 1 },
+  { key: 'heartRateBpm', label: 'Frecuencia cardíaca nominal', unit: 'lpm', min: 50, max: 120, step: 1 },
   { key: 'rapMeanMmHg', label: 'PAD basal', unit: 'mmHg', min: 2, max: 25, step: 0.5 },
   { key: 'intraAbdominalPressureMmHg', label: 'Presión intraabdominal', unit: 'mmHg', min: 0, max: 25, step: 0.5 },
   { key: 'rvFunction', label: 'Función sistólica VD (modelo)', unit: 'relativa', min: 0.2, max: 1, step: 0.05 },
@@ -14,11 +14,16 @@ export const VENOUS_EXPERIMENT_FIELDS = [
   { key: 'venousReservoirCompliance', label: 'Compliance reservorios venosos', unit: 'relativa', min: 0.5, max: 2, step: 0.05 },
 ] as const;
 export type VenousExperimentKey = (typeof VENOUS_EXPERIMENT_FIELDS)[number]['key'];
-export type VenousExperimentParameters = Required<Pick<PatientState, VenousExperimentKey>>;
+export type VenousExperimentParameters = Required<Pick<PatientState, VenousExperimentKey | 'rhythm'>>;
 
 /** A bounded, explicit adult scenario. Never mutate a case singleton or the observed patient. */
 export function venousExperimentPatient(parameters: VenousExperimentParameters): PatientState {
   const p = clonePatient(NORMAL_ADULT);
+  if (parameters.rhythm !== 'sinus' && parameters.rhythm !== 'atrial-fibrillation')
+    throw new RangeError('Ritmo experimental no compatible');
+  p.rhythm = parameters.rhythm;
+  // Reuse only the existing rhythm dispersion, not the congested AF case's hemodynamics.
+  p.rrVariability = p.rhythm === 'sinus' ? NORMAL_ADULT.rrVariability : AF_MODERATE_CONGESTION.rrVariability;
   for (const field of VENOUS_EXPERIMENT_FIELDS) {
     const value = parameters[field.key];
     if (!Number.isFinite(value) || value < field.min || value > field.max)
@@ -26,7 +31,7 @@ export function venousExperimentPatient(parameters: VenousExperimentParameters):
     p[field.key] = value;
   }
   p.id = 'venous-experiment';
-  p.label = `Experimento hemodinámico · sinusal ${p.heartRateBpm} lpm`;
+  p.label = `Experimento hemodinámico · ${p.rhythm === 'sinus' ? 'sinusal' : 'FA · FC nominal'} ${p.heartRateBpm} lpm`;
   p.respiratoryPattern = 'apnea-expiratory';
   validatePatient(p);
   return p;
@@ -38,6 +43,7 @@ export function venousExperimentPatient(parameters: VenousExperimentParameters):
 export function congestionParameters(fraction: number): VenousExperimentParameters {
   if (!Number.isFinite(fraction) || fraction < 0 || fraction > 1) throw new RangeError('Progresión fuera de [0,1]');
   return {
+    rhythm: 'sinus',
     heartRateBpm: NORMAL_ADULT.heartRateBpm,
     rapMeanMmHg: 5 + 13 * fraction,
     intraAbdominalPressureMmHg: 5 + 2 * fraction,

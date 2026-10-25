@@ -36,6 +36,38 @@ describe('parámetros de escenario hemodinámico', () => {
 import { VenousExperiment } from '../app/venousExperiment';
 import { measurePhysiologyTruth } from '../vexus/measurements';
 import { classifyVexusC } from '../vexus/classification';
+describe('ritmo independiente de la congestión', () => {
+  it.each([5, 18].flatMap((rapMeanMmHg) => [0.05, 0.7].map((tricuspidRegurgitation) => ({ rapMeanMmHg, tricuspidRegurgitation }))))(
+    'sinusal/FA con PAD $rapMeanMmHg e IT $tricuspidRegurgitation conserva el resto del escenario',
+    (settings) => {
+      const parameters = { ...congestionParameters(0), ...settings };
+      const sinus = new VenousExperiment(parameters);
+      const af = new VenousExperiment({ ...parameters, rhythm: 'atrial-fibrillation' });
+      const { rhythm: _r, rrVariability: _v, label: _l, ...afOther } = af.patient;
+      const { rhythm: _s, rrVariability: _w, label: _n, ...sinusOther } = sinus.patient;
+      expect(afOther).toEqual(sinusOther);
+      expect(af.patient.rrVariability).toBe(0.22);
+      const series = [sinus, af].map((x) => {
+        for (let i = 0; i < 30; i++) x.advance(0);
+        const samples = x.engine.samples.filter((s) => s.t >= 24);
+        for (const s of samples) {
+          expect(s.ecgMv).toBe(x.engine.rhythm.ecg(s.t));
+          expect([s.pRa, s.qHepaticVein, s.qPortal, s.qRenalVein].every(Number.isFinite)).toBe(true);
+        }
+        return { samples, beats: x.engine.rhythm.beatsBetween(24, 30) };
+      });
+      expect(series[0].beats.every((b) => Number.isFinite(b.tP) && b.atrialAmplitude > 0)).toBe(true);
+      expect(series[1].beats.every((b) => !Number.isFinite(b.tP) && b.atrialAmplitude === 0)).toBe(true);
+      expect(new Set(series[1].beats.map((b) => b.rr.toFixed(3))).size).toBeGreaterThan(3);
+      // An ECG-only label change cannot pass: pressure and hepatic flow must also come from the AF engine.
+      expect(series[1].samples.map((s) => s.pRa)).not.toEqual(series[0].samples.map((s) => s.pRa));
+      expect(series[1].samples.map((s) => s.qHepaticVein)).not.toEqual(series[0].samples.map((s) => s.qHepaticVein));
+    },
+  );
+  it('rechaza ritmos desconocidos en lugar de interpretarlos como sinusal', () => {
+    expect(() => venousExperimentPatient({ ...congestionParameters(0), rhythm: 'other' as 'sinus' })).toThrow('Ritmo');
+  });
+});
 describe('escenarios estables derivados de la red', () => {
   it.each([
     [0, 0],

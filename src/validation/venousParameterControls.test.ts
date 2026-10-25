@@ -46,12 +46,13 @@ describe('importación de parámetros aislada y sin carreras', () => {
   });
   it('activa el experimento validado y muestra los controles importados', async () => {
     const s = setup();
-    const p = { ...congestionParameters(0.4), heartRateBpm: 50, venousReservoirCompliance: 0.5 };
+    const p = { ...congestionParameters(0.4), rhythm: 'atrial-fibrillation' as const, heartRateBpm: 50, venousReservoirCompliance: 0.5 };
     s.select(() => Promise.resolve(encodeVenousParameters(p)));
     await settle();
     expect(s.changed).toHaveBeenLastCalledWith(p);
     expect(findAll(s.root, (e) => e.type === 'checkbox')[0].checked).toBe(true);
-    expect(findAll(s.root, (e) => e.getAttribute('aria-label') === 'Frecuencia cardíaca sinusal')[0].value).toBe('50');
+    expect(findAll(s.root, (e) => e.getAttribute('aria-label') === 'Frecuencia cardíaca nominal')[0].value).toBe('50');
+    expect(findAll(s.root, (e) => e.getAttribute('aria-label') === 'Ritmo cardíaco experimental')[0].value).toBe('atrial-fibrillation');
     expect(s.root.textContent).toContain('no guarda señales');
     expect(s.controls.status.getAttribute('role')).toBe('status');
     expect(s.input.getAttribute('aria-describedby')).toBe(s.controls.status.id);
@@ -111,7 +112,7 @@ describe('importación de parámetros aislada y sin carreras', () => {
           resolve = r;
         }),
     );
-    const input = findAll(s.root, (e) => e.getAttribute('aria-label') === 'Frecuencia cardíaca sinusal')[0];
+    const input = findAll(s.root, (e) => e.getAttribute('aria-label') === 'Frecuencia cardíaca nominal')[0];
     input.value = '50';
     input.dispatch('input');
     resolve(encodeVenousParameters(congestionParameters(1)));

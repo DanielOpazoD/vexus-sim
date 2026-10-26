@@ -9104,3 +9104,64 @@ La prueba de transición de profundidad `hepaticContact` también conservaba 180
 El mismo espectro nativo conservado, después de la corrección, produce S/D 32,85/19,08 cm/s y calidad válida, con cuatro latidos. El feedback relacionado aprobó 290 pruebas en 32 archivos, incluidos contratos de inversión patológica, calidad y ventanas venosas; formato, lint y tipos aprobaron. La comparación sintética exige reconocer ambos signos y conservar el rechazo de ruido aislado. La aceptación completa permanece separada.
 
 La validación Metal del detector corregido aprobó las cinco E2E afectadas tres veces cada una (15/15, cero reintentos), incluida la captura hepática original en vivo y su negativo sin contacto. Repetir las siete adquisiciones hepáticas CPU con el mismo protocolo conserva los siete patrones y calidad válida; las inversiones graves siguen presentes. El contraejemplo analítico falla con la función previa en ambos signos y aprueba con la nueva. Estos diagnósticos no reemplazan check ni CI protegida.
+
+## 281. Tributarias suprahepáticas y preajustes independientes por ventana
+
+**Petición:** aumento excesivo del PW al pasar a una tributaria, PW renal insuficiente,
+línea de base como control habitual y configuración basal por ventana/modo.
+
+**Diagnóstico reproducido:** atlas, adulto normal en apnea espiratoria, mismo foco 90 mm,
+filtro 20 Hz, escala ±60 cm/s y 8 s de IQ después de 31 s de estabilización. La velocidad
+media pico Q/A de `hvRightAnterior` era 45,53 cm/s frente a 25,61 en `hvRight`;
+la captura de la tributaria aliasaba. Los repartos fijos 0,20/0,15/0,10 no correspondían
+al área de sus territorios. No era una aceleración por el afilamiento longitudinal:
+`AnatomyQuery` ya usa velocidad media uniforme dentro de cada vaso.
+
+**Cambio:** las colectoras conservan 45/35/20 % del caudal hepático y el tronco común 55 %.
+Las cuatro tributarias reciben una fracción proporcional a su área de referencia y
+0,85 de la velocidad de su colectora. El resto pertenece al territorio no representado.
+Se conservan caudal total, signo, dilatación, modulación y presión-volumen. El factor es
+una aproximación explícita **NEEDS_CALIBRATION**, no una medición clínica. CPU y GPU
+consumen las mismas velocidades del motor; no se retocan espectros ni curvas.
+El estudio de Teichgräber et al., 25 sujetos sanos, encontró menores velocidades hacia
+la periferia (https://pubmed.ncbi.nlm.nih.gov/9491494/); no determina este factor ni
+un límite universal en cm/s. La proyección angular y el perfil radial siguen variando
+con la adquisición y pueden producir diferencias entre puertas.
+
+**Resultado focal:** en la misma tributaria, media pico 21,77 cm/s y PW S/D 35,63/21,09,
+normal y sin aliasing. Colectora 36,56/21,56. En la tributaria media desde subcostal,
+PW S/D pasa de 54,38/30,94 a 30,00/17,81; colectora 48,75/28,59. Son ensayos sintéticos
+con una semilla y puertas asistidas, no validación clínica.
+
+**Equipo:** `windowPreset` define las diez tarjetas por territorio. Restablece ganancia,
+filtros, escalas, inversión, corrección angular, TGC, foco, ROI y barrido; no consulta
+el caso ni coloca la puerta sobre un vaso. Se aplica al elegir una tarjeta, no al mover
+la sonda ni al alternar B/Color/PW. Conserva la preferencia de armónica. La línea de base
+se muestra junto a escala PW; su ruta sigue siendo solo presentación.
+
+| Ventana (atlas)                       | B: profundidad/foco | Color: escala/filtro | PW: escala/filtro/base   |
+| ------------------------------------- | ------------------- | -------------------- | ------------------------ |
+| VCI subcostal, epigástrica, flanco    | 18/9 cm             | ±30 cm/s / 50 Hz     | ±40 cm/s / 20 Hz / 0 %   |
+| Suprahepática intercostal y subcostal | 18/9 cm             | ±30 cm/s / 50 Hz     | ±60 cm/s / 20 Hz / −20 % |
+| Porta intrahepática                   | 13/10 cm            | ±35 cm/s / 60 Hz     | ±40 cm/s / 20 Hz / +20 % |
+| Porta tronco                          | 16/13 cm            | ±35 cm/s / 60 Hz     | ±40 cm/s / 20 Hz / +20 % |
+| Porta subcostal                       | 15/10 cm            | ±35 cm/s / 60 Hz     | ±40 cm/s / 20 Hz / +20 % |
+| Renal y hepatorrenal                  | 16/9 cm             | ±15 cm/s / 20 Hz     | ±40 cm/s / 20 Hz / 0 %   |
+
+Las escalas son solicitudes: los límites físicos y el calendario de tríplex determinan
+la PRF adquirida y la escala rotulada. Son puntos de partida modificables, comunes a
+los pacientes, no una optimización automática que revele el diagnóstico. B conserva
+0 dB / RD 70 en las vistas generales y −2 dB / RD 65 en porta/renal; Color 6 dB,
+PW 0 dB, puerta inicial 4 mm y barrido 50 mm/s. La puerta inicial es central/neutra.
+
+**Contrato sustituido:** la decisión 274 pedía ±15 cm/s tanto en Color como PW renal;
+la nueva petición mantiene Color ±15 y amplía PW a ±40. Su prueba conserva filtro,
+independencia, ajuste manual y reemplazo de valores heredados. La E2E de regla PW
+exige ahora que la línea de base sea visible con Avanzado cerrado y conserva los
+contrastes de inversión, rango, ECG y adquisición. Pruebas nuevas protegen caudal,
+inversión real, transición entre ventanas y adquisición renal normal/patológica.
+
+**Verificación focal:** seis pruebas unitarias de presupuesto/presets y seis E2E
+nativas de controles, regla y adquisición renal; una segunda ejecución acredita
+además el caso grave en tríplex. Los negativos iniciales y las capturas se conservan
+en la evidencia de la ronda. El cierre exige check completo y CI del candidato final.

@@ -305,3 +305,10 @@ Calendario (269): la inversión de pulso THI reserva dos disparos por línea, si
 geometrías distintas. El calendario limita B+PW/Color/tríplex; la presentación B pura conserva su
 cadencia anterior. Las referencias y controles de intervalos no acreditan un secuenciador de
 hardware ni adquisición progresiva por línea. Véase la decisión 269.
+
+Tributarias suprahepáticas (281): su caudal de referencia escala con el área de la rama
+y 0,85 de la velocidad media de la colectora. El territorio no representado completa
+el caudal de cada colectora. Este factor evita que una fracción fija sobredimensione
+la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una
+medición humana ni una estenosis. Los cambios de dirección, proyección angular,
+perfil radial y dilatación siguen actuando sobre Color y PW.

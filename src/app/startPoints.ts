@@ -291,7 +291,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
           : sp.id === 'portalTrunk'
             ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
             : sp.id === 'renal'
-              ? 'Riñón derecho desde flanco posterior. Afina el eje largo y distingue vena y arteria interlobares. Escala inicial ±15 cm/s; amplíala si hay aliasing.'
+              ? 'Riñón derecho desde flanco posterior. Afina el eje largo y distingue vena y arteria interlobares. Color inicial ±15 cm/s y PW ±40 cm/s; ajusta cada escala a la señal.'
               : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */

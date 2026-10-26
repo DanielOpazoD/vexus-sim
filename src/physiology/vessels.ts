@@ -163,17 +163,25 @@ export type HepaticVeinId = Extract<VesselId, `hv${string}`>;
 export type PortalVeinId = Extract<VesselId, `pv${string}`>;
 export type RenalVesselId = Extract<VesselId, `renal${string}` | `interlobar${string}`>;
 
-/** Fracción del caudal suprahepático total que lleva cada tramo (conservación: B/D). */
-export const HV_FLOW_SHARE: Record<HepaticVeinId, number> = {
-  hvRight: 0.45,
-  hvRightAnterior: 0.2,
-  hvRightPosterior: 0.2,
-  hvMiddle: 0.35,
-  hvMiddleTributary: 0.15,
-  hvLeft: 0.2,
-  hvLeftTributary: 0.1,
-  hvCommonTrunk: 0.55,
-};
+/** Collecting territories; tributaries represent only part of each territory.
+ * Their reference-area budget gives 0.85 × parent mean speed, consistent with the
+ * existing unresolved peripheral tree. The remainder drains through unrepresented
+ * branches. This allocation is provisional (NEEDS_CALIBRATION), not measured anatomy.
+ * Preserve the total hepatic outflow, its sign and cardiac/respiratory modulation.
+ */
+export function hepaticFlowShares(areas: VesselAreas): Record<HepaticVeinId, number> {
+  const branch = (share: number, child: HepaticVeinId, parent: HepaticVeinId) => (share * 0.85 * areas[child]) / areas[parent];
+  return {
+    hvRight: 0.45,
+    hvRightAnterior: branch(0.45, 'hvRightAnterior', 'hvRight'),
+    hvRightPosterior: branch(0.45, 'hvRightPosterior', 'hvRight'),
+    hvMiddle: 0.35,
+    hvMiddleTributary: branch(0.35, 'hvMiddleTributary', 'hvMiddle'),
+    hvLeft: 0.2,
+    hvLeftTributary: branch(0.2, 'hvLeftTributary', 'hvLeft'),
+    hvCommonTrunk: 0.55,
+  };
+}
 
 /** Fracción del caudal portal que lleva cada tramo. */
 export const PV_FLOW_SHARE: Record<PortalVeinId, number> = {

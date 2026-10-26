@@ -122,7 +122,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const pw = document.createElement('div');
   p.appendChild(pw);
   const w = ctx.section(pw, 'Doppler pulsado', {
-    info: 'Arrastra en la imagen para mover la puerta. El filtro de pared elimina frecuencias bajas.',
+    info: 'Arrastra en la imagen para mover la puerta. La línea de base desplaza la presentación sin cambiar la señal. El filtro de pared elimina frecuencias bajas.',
   });
   ctx.track(
     slider(w, {
@@ -133,6 +133,17 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
       set: (v) => ctx.dispatch(dopplerScaleCommand(s().equipment, s().profile, 'pw', v)),
       format: (v) => `±${v} cm/s`,
+    }),
+  );
+  ctx.track(
+    slider(w, {
+      label: 'Línea de base',
+      min: -0.45,
+      max: 0.45,
+      step: 0.05,
+      get: () => s().pw.baselineShift,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
+      format: (v) => `${(v * 100).toFixed(0)} %`,
     }),
   );
   ctx.track(
@@ -178,19 +189,8 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
 
   const adv = ctx.section(pw, 'Avanzado', {
     collapsed: true,
-    info: 'La corrección angular solo cambia la velocidad rotulada y la línea de base solo la presentación; ninguna de las dos toca la señal.',
+    info: 'La corrección angular solo cambia la velocidad rotulada; no modifica la señal adquirida.',
   });
-  ctx.track(
-    slider(adv, {
-      label: 'Línea de base',
-      min: -0.45,
-      max: 0.45,
-      step: 0.05,
-      get: () => s().pw.baselineShift,
-      set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
-      format: (v) => `${(v * 100).toFixed(0)} %`,
-    }),
-  );
   ctx.track(
     slider(adv, {
       label: 'Corrección angular',

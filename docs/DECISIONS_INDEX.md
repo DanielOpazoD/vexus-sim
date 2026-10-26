@@ -284,3 +284,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [278](DECISIONS.md#L9076) | Negativo M congelado antes de los calibres | vigente |
 | [279](DECISIONS.md#L9084) | Captura E2E con el formato decimal de PF | vigente |
 | [280](DECISIONS.md#L9092) | La banda PW no termina en el primer resto basal | vigente |
+| [281](DECISIONS.md#L9108) | Tributarias suprahepáticas y preajustes independientes por ventana | vigente |
+| [282](DECISIONS.md#L9169) | Continuidad parietal al terminar el hígado (26 de octubre de 2026) | vigente |

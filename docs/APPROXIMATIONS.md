@@ -244,6 +244,17 @@ ni calibración externa del contorno. Las 128 direcciones del perfil ajustado ev
 guarda entre las 64 direcciones anteriores; la rejilla de coeficientes y resolución acústica no cambian.
 Las cotas geométricas de las pruebas no equivalen a precisión clínica.
 
+### Soporte visceral al terminar el hígado (282)
+
+Dentro del territorio ya ajustado, el perfil continúa sobre las vísceras vecinas
+también fuera del flanco. Evita retomar artificialmente el radio heredado en el
+borde hepático, que plegaba la fascia superficial durante el deslizamiento.
+Conserva pesos, límites, espesores y protección ósea. Es **[EXTRAPOLACIÓN PROPIA] /
+NEEDS_CALIBRATION**: no añade una segmentación cutánea ni valida biomecánica o
+fidelidad clínica. La prueba caudal y las ocho secuencias visuales son un muestreo
+acotado; las tangencias profundas y curvaturas de otras poses requieren evaluación
+propia y no deben confundirse con una rotura superficial.
+
 ### Lectura de interfaces óseas y encuadre hepatorrenal (223)
 
 La interpolación precisa mantiene los ocho nodos originales de RG16F dentro de una celda de
@@ -305,3 +316,10 @@ Calendario (269): la inversión de pulso THI reserva dos disparos por línea, si
 geometrías distintas. El calendario limita B+PW/Color/tríplex; la presentación B pura conserva su
 cadencia anterior. Las referencias y controles de intervalos no acreditan un secuenciador de
 hardware ni adquisición progresiva por línea. Véase la decisión 269.
+
+Tributarias suprahepáticas (281): su caudal de referencia escala con el área de la rama
+y 0,85 de la velocidad media de la colectora. El territorio no representado completa
+el caudal de cada colectora. Este factor evita que una fracción fija sobredimensione
+la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una
+medición humana ni una estenosis. Los cambios de dirección, proyección angular,
+perfil radial y dilatación siguen actuando sobre Color y PW.

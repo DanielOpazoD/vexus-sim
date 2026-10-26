@@ -68,7 +68,10 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
           if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => abdominalAtlasSdf(p, f) < 0)) other = r;
           if (thoracicValue(p).d < 0) bone = r;
         }
-        if (hepatic >= 0 || (flankWeight > 0 && other >= 0)) {
+        // Continúa el compartimento parietal sobre las vísceras vecinas al
+        // terminar el hígado. Retomar aquí el contorno heredado crea un
+        // escalón cutáneo y pliega la pared superficial durante el deslizamiento.
+        if (hepatic >= 0 || other >= 0) {
           let lo = hepatic,
             hi = hepatic + 1;
           for (let n = 0; hepatic >= 0 && n < 16; n++) {

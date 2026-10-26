@@ -12,7 +12,7 @@ it.each([true, false])('el preset renal reemplaza la escala heredada y permite s
   equipment.pw.angleCorrection = 0.7;
   for (const command of renalPreset(CONVEX_C35.f0Doppler, atlas)) equipment = reduceEquipment(equipment, command, ctx);
   for (const mode of ['color', 'pw'] as const) {
-    expect(nyquistVelocityCms(equipment[mode].prfHz, CONVEX_C35.f0Doppler)).toBeCloseTo(15, 1);
+    expect(nyquistVelocityCms(equipment[mode].prfHz, CONVEX_C35.f0Doppler)).toBeCloseTo(mode === 'color' ? 15 : 40, 1);
     expect(equipment[mode].wallFilterHz).toBe(20);
   }
   expect(equipment.color.r1).toBeLessThan(equipment.bmode.depthMm);

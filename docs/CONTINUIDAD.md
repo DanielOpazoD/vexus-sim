@@ -1,5 +1,31 @@
 # Continuidad de VExUS LAB
 
+## Pared durante el movimiento (26 de octubre, decisión 282)
+
+Se reproduce y corrige un pliegue superficial subcostal: al terminar el hígado,
+el contorno estimado retomaba el perfil heredado pese a encontrar otra víscera.
+La misma superficie continúa ahora el soporte visceral en el territorio ya ajustado.
+Revisión temporal de las ocho tarjetas, deslizamiento subcostal y regresión negativa
+en normal/grave; geometría, textura y seis E2E Metal aprobadas. El primer ensayo
+SwiftShader quedó fallido/incompleto en el arranque; no acredita paridad por software.
+La aceptación final sigue pendiente del check y la CI del PR. La pared conserva
+aproximaciones y sombras costales; esta corrección no certifica todas las poses.
+
+PR289: la primera CI (`40283196253`, head `469e1e2`) aprobó 165/166 E2E; falló una
+pose pancreática fijada respecto de la piel antigua. Se recalibra ese dato de
+prueba conservando su plano mundo, mínimo de tejido y paridad CPU/GPU; se añade
+comprobación del plano y del acoplamiento. Los negativos se conservan. Consultar
+el head y la CI actuales del PR para el cierre; esa primera ejecución no es verde.
+
+## Corrección de Doppler y equipo por ventana (25 de octubre, decisión 281)
+
+Seguimiento solicitado tras PR288: reparto de caudal de las tributarias suprahepáticas,
+Color renal ±15 / PW ±40 cm/s, línea de base habitual y preajustes explícitos de las
+diez vistas. Conserva la adquisición manual y no consulta el diagnóstico para ajustar
+el equipo. Comparación IQ antes/después y pruebas nativas de controles, renal normal
+y grave (también tríplex); aceptación final en el check y la CI del PR correspondiente.
+El coeficiente periférico continúa siendo una aproximación pendiente de calibración.
+
 ## Ronda vigente: quince bloques, prioridad 1, 2 y 5
 
 El usuario autoriza el 24 de octubre de 2026 la [ronda siguiente](fidelity/NEXT15.md): referencias

@@ -137,7 +137,7 @@ export interface TestHooks {
    * (`AnatomyScene.faceGradient`) en los puntos del
    * plano a 0,02–0,4 mm de la cara que dibujan según la CPU. Ver `WallNormalStats`.
    */
-  wallNormals: (opts: { startPoint: StartPoint['id']; pose?: { rockDeg?: number; tiltDeg?: number } }) => WallNormalStats;
+  wallNormals: (opts: { startPoint: StartPoint['id']; pose?: { rockDeg?: number; tiltDeg?: number; zMm?: number } }) => WallNormalStats;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
@@ -1477,11 +1477,11 @@ function slidingAt(sim: Simulator, shiftMm: number): { subPleural: number; wall:
   return { ...slidingCorrelation(a, b, ca, cb, sim.bmode.depthMm), shiftMm: Math.abs(caudal() - c0) };
 }
 
-/** Bascula (`rockDeg`) o inclina (`tiltDeg`) la sonda desde su pose actual y deja que el marco la siga. */
-function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number }): void {
+/** Desplaza o angula la pose del banco y deja que el marco la siga. */
+function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number; zMm?: number }): void {
   const rad = Math.PI / 180;
-  const { rockDeg = 0, tiltDeg = 0 } = pose;
-  sim.setPose({ ...sim.pose, rock: sim.pose.rock + rockDeg * rad, tilt: sim.pose.tilt + tiltDeg * rad });
+  const { rockDeg = 0, tiltDeg = 0, zMm = 0 } = pose;
+  sim.setPose({ ...sim.pose, z: sim.pose.z + zMm, rock: sim.pose.rock + rockDeg * rad, tilt: sim.pose.tilt + tiltDeg * rad });
   sim.advance(0.05);
 }
 

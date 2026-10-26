@@ -286,3 +286,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [280](DECISIONS.md#L9092) | La banda PW no termina en el primer resto basal | vigente |
 | [281](DECISIONS.md#L9108) | Tributarias suprahepáticas y preajustes independientes por ventana | vigente |
 | [282](DECISIONS.md#L9169) | Continuidad parietal al terminar el hígado (26 de octubre de 2026) | vigente |
+| [283](DECISIONS.md#L9238) | Movimiento Doppler cinemático y borde espectral periódico | vigente |

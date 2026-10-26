@@ -9234,3 +9234,15 @@ anclaje del plano mundo (0,01 mm) y apertura mayoritariamente acoplada (>50 %).
 Esto cambia un dato de adquisición del banco, no la orientación del usuario ni
 la física de producción. La CI negativa se conserva junto con su traza y los
 doce informes originales; el candidato posterior necesita aceptación completa.
+
+## 283. Movimiento Doppler cinemático y borde espectral periódico
+
+**Contexto.** La revisión de fidelidad con `be-ambitious` encuentra dos defectos reproducibles. El simulador dividía el desplazamiento de la cara de la sonda por la suma del lote anterior y el actual, y atenuaba después por 0,6. Un recorrido de 10 mm/s daba 2,667 o 1,714 mm/s al variar los intervalos de prueba. En el PW principal, redondear al bin N y sujetarlo a N−1 rompía la periodicidad de Nyquist. El test de un único bin en −PRF/2 pierde una fila que debería ser luminosa al desplazar la base.
+
+**Opciones.** No ajustar potencia, ganancia, filtro ni velocidades del paciente para compensar estos errores. No añadir suavizado dependiente de la cadencia ni un segundo reloj. No eliminar el aliasing legítimo.
+
+**Decisión.** `Simulator.advance` deriva la velocidad media de la cara de la sonda del desplazamiento y de los pasos efectivamente integrados en ese lote. PW y Color reciben ese mismo vector sin factor reductor. `SpectrogramView` usa `spectralBinAt`: centros de píxel y redondeo circular del índice FFT. Conserva la convención de inversión de la línea de base de la consola, el rango, la potencia y las mediciones.
+
+**Consecuencias.** Los artefactos de movimiento pueden ser más visibles, coherentemente con la traslación representada; no se convierten en flujo patológico. La estimación sigue siendo media por lote, no una trayectoria de sonda medida por disparo ni un modelo de giro/deformación completa. La literatura experimental de Tierney et al., [Adaptive Clutter Demodulation](https://pmc.ncbi.nlm.nih.gov/articles/PMC5605932/), motiva preservar el efecto del movimiento sobre clutter; no calibra los parámetros de este simulador. El oráculo numérico aquí es desplazamiento/tiempo y periodicidad de la DFT, no una referencia clínica. Sin nueva dependencia ni cambio de resolución.
+
+**Verificación.** `frameContactCoherence.test.ts` integra la velocidad para recuperar desplazamientos en ambos sentidos con cadencias constantes y variables, comprueba reposo y la entrega del mismo vector a PW y Color. Sus dos negativos originales se conservan fuera del checkout en `work/vexus-ambitious-motion/negative-kinematics.log` de la sesión del 25 de octubre. `spectrogramScaleHistory.test.ts` prueba el bitmap real con un bin aislado, dos signos y tres bases (512 filas por combinación), sin modificar las columnas; negativo en `negative-nyquist.log`. Las regresiones focalizadas pasan tras cada corrección. La aceptación completa y la revisión temporal se registran en el PR y en el informe de esta ronda; esta entrada no declara CI ni validación clínica aprobadas.

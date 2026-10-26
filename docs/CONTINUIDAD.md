@@ -11,6 +11,12 @@ SwiftShader quedó fallido/incompleto en el arranque; no acredita paridad por so
 La aceptación final sigue pendiente del check y la CI del PR. La pared conserva
 aproximaciones y sombras costales; esta corrección no certifica todas las poses.
 
+PR289: la primera CI (`40283196253`, head `469e1e2`) aprobó 165/166 E2E; falló una
+pose pancreática fijada respecto de la piel antigua. Se recalibra ese dato de
+prueba conservando su plano mundo, mínimo de tejido y paridad CPU/GPU; se añade
+comprobación del plano y del acoplamiento. Los negativos se conservan. Consultar
+el head y la CI actuales del PR para el cierre; esa primera ejecución no es verde.
+
 ## Corrección de Doppler y equipo por ventana (25 de octubre, decisión 281)
 
 Seguimiento solicitado tras PR288: reparto de caudal de las tributarias suprahepáticas,

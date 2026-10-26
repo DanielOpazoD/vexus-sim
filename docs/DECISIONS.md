@@ -9215,3 +9215,22 @@ ensayo local SwiftShader agotó el arranque GPU del primer caso; el segundo qued
 interrumpido y el lanzador no cerró su recibo. Se conserva como negativo/incompleto,
 no como paridad aprobada. Check completo y CI corresponden al candidato final del
 PR; los resultados focales no los sustituyen.
+
+**Seguimiento de CI:** [40283196253](https://github.com/DanielOpazoD/vexus-sim/actions/runs/40283196253)
+sobre `469e1e2` aprobó core/build y matrices, pero terminó con 165 E2E aprobadas y
+una fallida, sin reintentos: el corte pancreático fijo intersectó 14 muestras
+frente al mínimo de más de 80. Las 4610 clasificaciones CPU/GPU comparadas coincidían.
+El apoyo y sus ángulos relativos a la piel antigua ya no representaban el mismo plano:
+desplazamiento normal de 9,17 mm y giro de 17,85°. No se cambia el órgano ni el umbral.
+
+Se recalcula fuera de línea la pose de prueba mediante la intersección de la nueva
+piel con el plano mundo anterior y el cambio de base de sus ejes rígidos. Entre
+apoyos anteriores de phi=1,15..1,85, se elige por acoplamiento, sin consultar el
+conteo de tejido. La pose conserva ese plano y alcanza 79 % de acoplamiento medio;
+el banco CPU de seis fases obtiene 198–236 muestras pancreáticas, 118–176 sobre
+líneas acopladas. El primer ajuste conservaba el plano pero solo 47 % de apoyo;
+su evidencia también se retiene. La E2E mantiene el mínimo original y añade
+anclaje del plano mundo (0,01 mm) y apertura mayoritariamente acoplada (>50 %).
+Esto cambia un dato de adquisición del banco, no la orientación del usuario ni
+la física de producción. La CI negativa se conserva junto con su traza y los
+doce informes originales; el candidato posterior necesita aceptación completa.

@@ -119,10 +119,14 @@ test('subcostal portal window restores its own depth after the intrahepatic wind
   expect(Math.max(...result.hits.map((p) => p.r)) - Math.min(...result.hits.map((p) => p.r))).toBeGreaterThan(8);
   expect(result.errors).toEqual([]);
   expect(errors).toEqual([]);
-  // Portal acquisition settings must not crop the following renal/caval examination.
-  for (const id of ['renal', 'hepatorenal', 'subxiphoid']) {
+  // Each examination restores its own preset (renal atlas 160 mm, decision 274).
+  for (const [id, depth] of [
+    ['renal', '160'],
+    ['hepatorenal', '160'],
+    ['subxiphoid', '180'],
+  ]) {
     await page.locator(`[data-window="${id}"]`).click();
-    await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('180');
+    await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue(depth);
     await expect(page.getByLabel('Foco', { exact: true })).toHaveValue('90');
   }
 });

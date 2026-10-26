@@ -176,9 +176,10 @@ export function peakFrequency(col: SpectralColumn, fftSize: number): number {
 /**
  * Envolvente de frecuencia máxima (decisión 44), como la traza un equipo: (1) solo
  * cuentan los bins significativos (> suelo + 6 dB; el periodograma del ruido supera 4×
- * su media con probabilidad e⁻⁴ ≈ 2 %); (2) en cada semiplano la banda espectral es la
- * región CONTIGUA a la línea de base (se corta tras 3 bins seguidos no significativos),
- * así los bins de ruido aislados lejos de la banda no cuentan; (3) se elige el semiplano
+ * su media con probabilidad e⁻⁴ ≈ 2 %); (2) en cada semiplano se busca la banda de mayor
+ * energía, separada por 3 bins no significativos y con al menos dos bins consecutivos.
+ * Un resto junto a la base no puede ocultar el flujo separado por una ventana espectral,
+ * y los picos aislados no cuentan (decisión 280); (3) se elige el semiplano
  * con más energía en su banda; (4) la envolvente es la frecuencia donde la potencia
  * acumulada desde la continua alcanza la fracción `pct` de la banda (método del
  * percentil). Devuelve 0 si ningún bin supera el suelo en `detectDb`.
@@ -211,35 +212,54 @@ export function columnBandEnvelopes(col: SpectralColumn, fftSize: number, floorD
     const lin = Math.pow(10, col.powerDb[k] / 10);
     return lin > sigLin ? lin - floorLin : 0;
   };
-  let peak = -200;
-  for (let k = 0; k < N; k++) if (Math.abs(k - half) > 1) peak = Math.max(peak, col.powerDb[k]);
-  if (peak < floorDb + detectDb) return { posHz: 0, negHz: 0, ePos: 0, eNeg: 0, detected: false };
-  // Banda contigua a la línea de base en un semiplano (j = distancia en bins a la continua)
   const band = (sign: 1 | -1): { hz: number; total: number } => {
-    const power: number[] = [];
-    let total = 0;
-    let gap = 0;
+    const power = new Float64Array(half);
+    let total = 0,
+      gap = 0,
+      run = 0,
+      pair = false,
+      peak = -Infinity,
+      lo = 2;
+    let bestTotal = 0,
+      bestLo = 2,
+      bestHi = 2;
+    const finish = (hi: number): void => {
+      if (pair && peak >= floorDb + detectDb && total > bestTotal) {
+        bestTotal = total;
+        bestLo = lo;
+        bestHi = hi;
+      }
+      total = 0;
+      pair = false;
+      peak = -Infinity;
+      lo = hi + 1;
+    };
     for (let j = 2; j < half; j++) {
       const k = half + sign * j;
-      if (k < 0 || k >= N) break;
       const p = binPower(k);
-      power.push(p);
+      power[j] = p;
       if (p > 0) {
         gap = 0;
         total += p;
-      } else if (++gap >= BAND_GAP_BINS && total > 0) break;
+        peak = Math.max(peak, col.powerDb[k]);
+        if (++run >= 2) pair = true;
+      } else {
+        run = 0;
+        if (++gap >= BAND_GAP_BINS) finish(j);
+      }
     }
-    if (total <= 0) return { hz: 0, total: 0 };
+    finish(half - 1);
+    if (bestTotal <= 0) return { hz: 0, total: 0 };
     let acc = 0;
-    for (let i = 0; i < power.length; i++) {
-      acc += power[i];
-      if (acc >= pct * total) return { hz: (i + 2) * df, total };
+    for (let j = bestLo; j <= bestHi; j++) {
+      acc += power[j];
+      if (acc >= pct * bestTotal) return { hz: j * df, total: bestTotal };
     }
-    return { hz: (power.length + 1) * df, total };
+    return { hz: bestHi * df, total: bestTotal };
   };
   const pos = band(1);
   const neg = band(-1);
-  return { posHz: pos.hz, negHz: neg.hz, ePos: pos.total, eNeg: neg.total, detected: true };
+  return { posHz: pos.hz, negHz: neg.hz, ePos: pos.total, eNeg: neg.total, detected: pos.total > 0 || neg.total > 0 };
 }
 
 /**
@@ -257,7 +277,7 @@ export const MIRROR_MARGIN_DB = 6;
  *    (> suelo + 6 dB) y unilaterales (≥ MIRROR_MARGIN_DB sobre su espejo): el clutter y los
  *    transitorios junto a la línea de base no son flujo;
  *  - la banda crece desde el bin de más potencia hacia los dos lados, tolerando BAND_GAP_BINS − 1 bins
- *    vacíos. Con la banda «contigua a la línea de base» de `columnBandEnvelopes`, un bin de ruido o de
+ *    vacíos. Con la antigua banda «contigua a la línea de base» de `columnBandEnvelopes`, un bin de ruido o de
  *    clutter junto a la base abría la banda y el hueco que lo separa del flujo la cerraba: con una señal
  *    débil (la porta a 10–14 cm de profundidad, −30 dB), la envolvente caía a 2–6 cm/s en columnas
  *    sueltas y la PF salía 80–110 % con una verdad de 13 %;

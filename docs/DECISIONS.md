@@ -9080,3 +9080,27 @@ El contraste final a **igual escala ±50, filtro 20 Hz, foco 90 mm y ganancia 0*
 **Decisión.** En la prueba, dibujar antes y después de los cinco segundos avanzados, congelar mediante el botón real en el mismo turno y acreditar el hueco >4,9 s. Medir esa franja sellada, exigir el rechazo por ciclo incompleto y demostrar que el reloj no cambia entre calibres. Luego descongelar y verificar la desactivación respiratoria como antes. Se conservan todas las aserciones funcionales, el plazo de 180 s, los dos cuerpos y cero reintentos; no cambia código del simulador.
 
 **Verificación.** Las cuatro E2E respiratorias aprobaron en Metal (36,8 s en esta ejecución), con el hueco y estado congelado adjuntos. El negativo original y la traza se conservan. Lint y tipos aprobados. La CI vuelve a ejecutar el inventario completo sobre el nuevo head; esto corrige el experimento temporal, no acredita una medición clínica de VCI.
+
+## 279. Captura E2E con el formato decimal de PF
+
+**Contexto.** El complemento PW 40245430581 sobre 5e97b2f falló en sus tres repeticiones: la captura adquirida mostraba PF 15,9 %, pero `smoke.spec.ts` aún exigía una PF entera. El cambio de presentación de 272 preserva el valor cerca de los cortes; volver a redondearlo para satisfacer esa expresión sería restaurar el defecto. El ZIP original (SHA-256 9d29bf4f61863ecd51575941df452085b98715321b1a510e067a79c6284b86a0) y el log se conservan.
+
+**Decisión.** La expresión de la captura normal exige ahora un decimal con coma, además de los dos extremos y las unidades que ya comprobaba. No admite cualquier texto ni omite la medición. Conserva el rechazo al vaso equivocado, la traza ámbar de más de 30 píxeles en vivo y congelada, errores vacíos y plazo de 120 s. No cambia código productivo ni valores de PF.
+
+**Verificación.** Los casos frontera y negativos del formato permanecen en `contextUi.test.ts`. La suite nativa smoke y la CI completa verifican el nuevo contrato antes de aceptar el candidato; el fallo previo no se oculta mediante un reintento del mismo head.
+
+## 280. La banda PW no termina en el primer resto basal
+
+**Diagnóstico.** La suite Metal ampliada obtuvo 25 pases y tres fallos. Dos exigían textos retirados por 272: «Grado 0 falso» y «bolo … hace N s». Se actualizan presencia docente, ausencia en alumno/JS y segundos de simulación, conservando comprobaciones de volumen, PAD, PEEP, teclado y reinicio.
+
+El tercero capturó a 8,832 s tres S anterógradas y una falsa S retrógrada. La reproducción del espectro guardado confirma `inconsistent`. En las columnas 8,105–8,148 s, la FFT conserva flujo negativo fuerte (potencia integrada ≈0,049 frente a ≈0,00086 positiva en la primera). El detector detenía su búsqueda tras un resto junto a la línea de base y descartaba la banda verdadera, separada por una ventana espectral. No era pérdida de señal ni cambio de vaso (>98 % suprahepática). Se conserva el rechazo de calidad; se corrige la envolvente que lo causaba.
+
+**Cambio.** En cada semiplano, seleccionar la banda significativa con mayor energía integrada, separada por los tres bins vacíos ya usados. Exigir dos bins consecutivos y un pico que supere el margen de detección existente. El percentil y la selección por energía conservan sus valores. No se modifica IQ, FFT, imagen, fisiología, filtro, ganancia, calidad ni umbrales clínicos. Los picos aislados quedan excluidos aunque sean más potentes.
+
+**Experimentos y contrato.** Una preparación alternativa a t=30 s, congelada antes de medir, aprobó 12 E2E repetidas, pero no reparaba la causa. Se descarta ese cambio de fixture y se restaura la captura hepática original en vivo. Las regresiones cubren ambos signos, banda separada de la base, ruido opuesto y picos aislados; se conserva el negativo sin contacto y los casos con inversión real. La reproducción del espectro original, las matrices, el check y la CI verifican el candidato. Los logs negativos y el experimento descartado se conservan fuera del checkout.
+
+La prueba de transición de profundidad `hepaticContact` también conservaba 180 mm para todos los accesos. La CI acreditó el preset renal nuevo de 160 mm. Se actualiza la expectativa solo en renal/hepatorrenal atlas, manteniendo 180 en subxifoidea, foco 90, la transición portal 130→150, señal portal y equivalencia CPU/GPU. No se elimina ninguna aserción ni cambia el tiempo permitido.
+
+El mismo espectro nativo conservado, después de la corrección, produce S/D 32,85/19,08 cm/s y calidad válida, con cuatro latidos. El feedback relacionado aprobó 290 pruebas en 32 archivos, incluidos contratos de inversión patológica, calidad y ventanas venosas; formato, lint y tipos aprobaron. La comparación sintética exige reconocer ambos signos y conservar el rechazo de ruido aislado. La aceptación completa permanece separada.
+
+La validación Metal del detector corregido aprobó las cinco E2E afectadas tres veces cada una (15/15, cero reintentos), incluida la captura hepática original en vivo y su negativo sin contacto. Repetir las siete adquisiciones hepáticas CPU con el mismo protocolo conserva los siete patrones y calidad válida; las inversiones graves siguen presentes. El contraejemplo analítico falla con la función previa en ambos signos y aprueba con la nueva. Estos diagnósticos no reemplazan check ni CI protegida.

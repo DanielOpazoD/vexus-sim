@@ -262,7 +262,8 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   await expect(page.locator('.result')).toContainText('VSH: no medible: vaso equivocado, la puerta está en la porta');
   // la fila de la porta sobre el mismo vaso sí mide, y su traza queda dibujada sobre el espectro
   await capture('Porta PF');
-  await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+ %/);
+  // La PF visible conserva un decimal con coma (272); no vuelve al entero que podía cruzar un umbral.
+  await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+,\d %/);
   // El listener ya comprobó los píxeles de la captura en vivo. Releerlos aquí era
   // redundante y costó48s en SwiftShader. Se mantiene la comprobación independiente al congelar.
   // congelado sigue a la vista
@@ -1098,9 +1099,11 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   // ningún JS que haya descargado (viajan con la pestaña Docente, que no se carga). El nombre de los casos sí va en el JS
   // principal, como el de siempre (`blind-mode-screen-only`)
   const student = await page.locator('body').innerText();
-  for (const leak of ['Trampa', 'Grado 0 falso', 'Contexto real']) expect(student, leak).not.toContain(leak);
+  for (const leak of ['Trampa', 'VCI comprimida: el cálculo literal de grado 0 no cierra la interpretación', 'Contexto real'])
+    expect(student, leak).not.toContain(leak);
   const html = await page.content();
-  for (const leak of ['Trampa ·', 'Grado 0 falso', 'Contexto real']) expect(html, leak).not.toContain(leak);
+  for (const leak of ['Trampa ·', 'VCI comprimida: el cálculo literal de grado 0 no cierra la interpretación', 'Contexto real'])
+    expect(html, leak).not.toContain(leak);
   const scripts = await page.evaluate(() => [
     ...new Set([
       ...[...document.querySelectorAll<HTMLScriptElement>('script[src]')].map((sc) => sc.src),
@@ -1120,7 +1123,12 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   ).toBe(false);
   for (const src of scripts) {
     const js = await (await page.request.get(src)).text();
-    for (const leak of ['Grado 0 falso', 'La porta subestima', 'Sobreestima: VExUS 2']) expect(js, `${src}: ${leak}`).not.toContain(leak);
+    for (const leak of [
+      'VCI comprimida: el cálculo literal de grado 0 no cierra la interpretación',
+      'La porta subestima',
+      'VExUS 2 con discordancia entre territorios',
+    ])
+      expect(js, `${src}: ${leak}`).not.toContain(leak);
   }
   await iap.check({ force: true });
   await expect(page.locator('.result')).toContainText('presión intraabdominal alta: la VCI puede ser pequeña con la PAD alta');
@@ -1142,7 +1150,7 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   // cuadro de SwiftShader que tenga ocupado el hilo principal
   await expect(notes).toContainText('Trampa · PIA alta con fallo derecho', { timeout: 30_000 });
   await expect(notes).toContainText('Contexto real: Presión intraabdominal alta');
-  await expect(notes).toContainText('Grado 0 falso');
+  await expect(notes).toContainText('VCI comprimida: el cálculo literal de grado 0 no cierra la interpretación');
   // el panel docente se escribe con la cadencia de 250 ms; la verdad fisiológica pide más de 8 s de simulación
   // (`advance`: tiempo de simulación sin dibujar, no de reloj)
   await withinFrames(page, 20, 'estado del lazo del caso', contains(page, '.loop-state', 'caso 14.0'));
@@ -1153,7 +1161,8 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   await expect(notes).toHaveText('');
   await expect(page.locator('.loop-state')).not.toContainText('caso');
   const after = await page.content();
-  for (const leak of ['Grado 0 falso', 'VERDAD FISIOLÓGICA']) expect(after, leak).not.toContain(leak);
+  for (const leak of ['VCI comprimida: el cálculo literal de grado 0 no cierra la interpretación', 'VERDAD FISIOLÓGICA'])
+    expect(after, leak).not.toContain(leak);
   expect(errors2).toEqual([]);
 });
 
@@ -1173,7 +1182,12 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   // 30 s de simulación sin renderizar (tiempo docente acelerado: el bolo llega en ~30 s): la PAD sube ~3 mmHg
   await page.evaluate(() => window.__vexusTest!.advance(30));
   expect((await loop()).rapMeanMmHg).toBeGreaterThan(7);
-  await withinFrames(page, 20, 'el bolo en el estado del lazo', contains(page, '.loop-state', /bolo de 500 mL, hace \d+ s/));
+  await withinFrames(
+    page,
+    20,
+    'el bolo en el estado del lazo',
+    contains(page, '.loop-state', /adición de 500 mL al modelo, hace \d+ s de simulación/),
+  );
   const peep = page.getByRole('group', { name: 'PEEP' });
   await peep.getByRole('button', { name: '10', exact: true }).click({ force: true });
   expect(await loop()).toMatchObject({ peepTargetCmH2O: 10, interventions: 2 });
@@ -1191,7 +1205,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
     const v = await page.locator('.loop-state dd').last().textContent();
     return v === 'ninguna' || `última intervención «${v}»`;
   });
-  // con el teclado: el sano admite −563 mL; el segundo diurético se recorta y el botón queda no disponible sin perder el foco
+  // con el teclado: el sano admite −563 mL; la segunda retirada se recorta sin perder el foco
   const diuretic = page.getByRole('button', { name: 'Retirar 500 mL', exact: true });
   await diuretic.focus();
   await page.keyboard.press('Enter');

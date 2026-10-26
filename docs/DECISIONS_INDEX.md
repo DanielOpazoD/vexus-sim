@@ -282,3 +282,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [276](DECISIONS.md#L9056) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
 | [277](DECISIONS.md#L9068) | Sentido portal dominante no equivale a hepatopetalia | vigente |
 | [278](DECISIONS.md#L9076) | Negativo M congelado antes de los calibres | vigente |
+| [279](DECISIONS.md#L9084) | Captura E2E con el formato decimal de PF | vigente |
+| [280](DECISIONS.md#L9092) | La banda PW no termina en el primer resto basal | vigente |

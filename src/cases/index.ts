@@ -60,7 +60,7 @@ export const SEVERE_CONGESTION: PatientState = {
  */
 export const AF_MODERATE_CONGESTION: PatientState = {
   id: 'af-moderate-congestion',
-  label: 'FA · congestión moderada',
+  label: 'FA · variabilidad con patrones no graves',
   seed: 20260923,
   heartRateBpm: 96,
   rhythm: 'atrial-fibrillation',
@@ -113,8 +113,8 @@ export const ABDOMINAL_HYPERTENSION = trapCase(
 
 /**
  * Insuficiencia tricuspídea grave con la PAD casi normal: la S se invierte por el chorro regurgitante y la VCI de
- * 24 mm abre la puerta del VExUS con la PAD en 8 mmHg (media del ciclo 7): grado 2 sin congestión (los estudios que
- * comparan el VExUS con la PAD toman > 12 mmHg como congestión). IT 0,9 y PAD 8 en vez de 0,8 y 7: con 0,8 la S invertida
+ * 24 mm abre la puerta del VExUS con la PAD en 8 mmHg (media del ciclo 7): grado 2 con discordancia portal/renal.
+ * Esa PAD media no excluye carga venosa pulsátil. IT 0,9 y PAD 8 en vez de 0,8 y 7: con 0,8 la S invertida
  * era de −4 cm/s, a un paso del umbral, y la VCI de 22,2 mm quedaba en la zona de ±2 mm del corte. Que la VCI de esa PAD
  * ya pase de 20 mm es de la ley de la VCI del modelo (`ivc-law-steep`).
  */
@@ -131,7 +131,7 @@ export const TRICUSPID_REGURGITATION = trapCase(
 );
 
 /**
- * Ventilación con presión positiva sin congestión: con PEEP 10 la pleural de fin de espiración sube 2,9 mmHg, así que
+ * Ventilación con presión positiva sin patrones orgánicos graves de referencia: con PEEP 10 la pleural de fin de espiración sube 2,9 mmHg, así que
  * la PAD de 7 mmHg del caso deja una transmural de 7,7 (el sano, 8,7): la VCI ve la PAD absoluta y está dilatada y varía
  * poco (grado 1 por la VCI sola), cuando el mismo llenado respirando solo (PAD 4,1) la deja en 16 mm. PAD 7 y no 5: en
  * la pausa espiratoria, que es donde se miden las venas con el ventilador, la VCI con
@@ -141,7 +141,7 @@ export const TRICUSPID_REGURGITATION = trapCase(
 export const MECHANICAL_VENTILATION = trapCase(
   NORMAL_ADULT,
   'mechanical-ventilation',
-  'Trampa · ventilación mecánica sin congestión',
+  'Trampa · VCI dilatada con ventilación mecánica',
   20260926,
   { ventilation: 'positive-pressure', peepCmH2O: 10, respiratoryRateMin: 16, rapMeanMmHg: 7 },
 );

@@ -2,6 +2,7 @@ import { dirname, join, relative } from 'node:path';
 import type { Plugin } from 'vite';
 import { GLSL_WORDS, GLSL_PHRASES, glslMarker } from '../../src/core/glslPacking';
 import { findGlslTemplates, scanModule } from './glslMinify';
+import { packBackrefs } from './glslBackrefs';
 
 /** Encode static pieces only: dynamic interpolations retain their original evaluation/coercion. */
 export function packGlslTemplates(code: string, id: string, root: string): string {
@@ -20,6 +21,7 @@ export function packGlslTemplates(code: string, id: string, root: string): strin
       const cooked = raw.replace(/\r\n?/g, '\n');
       let packed = encodeWords(cooked);
       for (const [phrase, marker] of phrases) packed = packed.split(phrase).join(marker);
+      packed = packBackrefs(packed);
       const expression = '${' + alias + '(' + JSON.stringify(packed) + ')}';
       if (expression.length + 16 >= raw.length) return raw;
       used = true;

@@ -8986,3 +8986,121 @@ propiedades, eventos o controles. El presupuesto original se conserva.
 El check, capturas Metal/Swift y CI del head final se registran en
 `../fidelity-next15-evidence/teaching-signals-01/`. No es validación clínica humana ni
 cierre de B9/B15; medición portal por el alumno y adquisición renal pareada siguen abiertas.
+
+## 272. No inferir patrones venosos a partir de fases ausentes o entradas imposibles
+
+**Contexto.** La auditoría del 25-10-2026 reprodujo S hepática nula etiquetada como inversión,
+renal solo S como S+D y diámetro/PF negativos como normalidad. Tres regresiones nuevas fallaron
+contra la base ce28b0c. Además, el texto mostraba PF 49,96 % redondeada a 50 % con categoría leve.
+
+**Opciones.** Cambiar únicamente `S <= 0` por `< 0` seguiría clasificando una fase ausente.
+Recortar PF a 0–100 % destruiría la reversión portal real. Recalibrar pacientes para hacer
+coincidir un nombre docente con un grado alteraría la causalidad sin evidencia.
+
+**Decisión.** Añadir estados hepático indeterminado y renal solo S/no resoluble; las fases
+no clasificables cuentan como información faltante. Mantener el suelo instrumental renal
+existente, sin elevarlo a criterio clínico. Rechazar VCI no positiva/infinita y PF negativa/infinita
+con motivo visible; extremos portal incoherentes producen NaN, conservando la API numérica.
+NaN sigue siendo el valor histórico de PF no aplicable; no acredita por sí solo hepatofugalia.
+La inversión hepática requiere S negativa con D positiva; una señal cercana a cero sigue
+necesitando calidad instrumental, no se introduce un nuevo umbral clínico.
+El formato PF nunca cruza de categoría por redondeo.
+
+**Consecuencias.** Sustituir la expectativa histórica que exigía `hepaticPatternFromPeaks(0,20)`
+grave por indeterminado; conservar la inversión verdadera y el resto de fronteras.
+Actualizar textos de IT/ventilación, sin declarar ausencia de congestión a partir de una PAD
+media o de su etiología (Rola et al., doi:10.1186/s13089-024-00395-0). Renombrar FA según su
+objetivo. Las adiciones/retiradas de volumen y su tiempo se presentan como perturbaciones
+sintéticas, sin sugerir farmacología. No cambia ninguna presión, velocidad, onda o imagen.
+
+**Verificación.** Feedback local: formato, lint, tipos y 225 archivos/1627 pruebas rápidas
+aprobados. Matriz independiente de 600 combinaciones válidas/faltantes sin discrepancias;
+14 integraciones CPU (7 casos × respiración tranquila/pausa espiratoria) conservan sus grados.
+Los seis contraejemplos dejan de afirmar patrones o normalidad inexistentes. Las pruebas UI
+comprueban los nuevos estados y PF 29,999/49,999 %. La ocultación de notas docentes se conserva
+con el texto actualizado. La aceptación completa del candidato requiere check y CI; estos
+controles locales no son validación clínica ni una matriz WebGL.
+
+## 273. Separar series al cambiar respiración o intervenir
+
+**Problema.** El cambio manual de régimen respiratorio conservaba mediciones y los siete segundos de espectro anteriores. Una intervención borraba resultados, pero no la señal adquirida. Una captura podía mezclar condiciones.
+
+**Decisión.** Abrir una serie al cambiar realmente de régimen o aplicar una intervención: limpiar PW, identidad de puerta y franja M sin reiniciar fisiología ni reloj. El ciclo respiratorio natural no abre series. Archivar las mediciones previas como copias con tiempo, respiración, pose y equipo; mostrarlas separadas del grado actual. El historial dura la sesión y se borra al cambiar/reiniciar paciente. No representa almacenamiento persistente ni exportación del IQ. Una imagen de cine anterior al límite de adquisición no puede alimentar un calibre nuevo. Conservar el cálculo contextual, rotulado adaptación local, junto al cálculo literal independiente.
+
+**Verificación.** Dos negativos previos fallaron por ausencia de notificación y de reinicio de adquisición; pasan con el cambio. Tres archivos/16 pruebas comprueban evento real de controles, no-op al repetir régimen, reloj conservado, archivo separado y rechazo de cine antiguo. Typecheck aprobado. La validación de navegador y el check completo corresponden al candidato final. La procedencia de PW describe el equipo en la captura; los cambios instrumentales durante la ventana siguen sometidos a los controles de calidad existentes, no se afirma reconstrucción completa de cada pulso.
+
+La ampliación de feedback pasó formato/lint/tipos, pero fue interrumpida tras tres vencimientos de tiempo con cargas concurrentes del host. Los tres archivos afectados y las regresiones del bloque se repitieron con un trabajador, sin cambiar plazos: 54 pruebas aprobadas. Se conservan los registros negativos; no se atribuye rendimiento de referencia a esta sesión.
+
+## 274. Escala renal inicial y lectura del filtro color
+
+**Diagnóstico.** En el atlas normal, porta intrahepática a ángulo fijo: proyección central máxima 23,6 cm/s; bajar la escala de ±35 a ±22/19/16 introduce frecuencias plegadas. Con ±35 desaparecieron las muestras portales azules del diagnóstico. El filtro 60→400 Hz redujo potencia y relleno, aunque por encima del umbral de presentación la paleta sigue codificando velocidad. No se elimina el azul ni se inventa una modificación de color al mover el filtro.
+
+**Cambio.** Elegir ventana renal o hepatorrenal aplica ±15 cm/s en Color y PW, filtro 20 Hz y caja enfocada en el parénquima; no hereda los ajustes de la porta. Mandos libres después. Se muestra la velocidad axial equivalente al filtro con atenuación gradual, sin confundirla con velocidad absoluta.
+
+**Contraste PW.** Cadena IQ productiva CPU, atlas, 30 s de estabilización y 8 s de adquisición, sin corrección angular: normal VSH S/D 35,6/21,6 cm/s, porta intrahepática 26,9/22,9, renal S/D 9,6/8,0 a ±15. Grave VSH S/D −10,3/31,4, porta intrahepática 33,3/9,1; renal D≈25 a ±50. La renal grave a ±15 se rechaza por aliasing: se conserva el aviso y debe ampliarse la escala. Estos valores son observaciones del simulador, no límites clínicos ni validación de amplitudes en pacientes reales. No cambian presiones, áreas, reparto de caudal ni ondas para acomodarlas a una escala.
+
+**Fuentes y límites.** [Rola 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC11576717/) recomienda escala intrarrenal <20 y advierte sobre aliasing a escala insuficiente; [Polish Ultrasound Society](https://pmc.ncbi.nlm.nih.gov/articles/PMC4579749/) distingue velocidad máxima portal de velocidad media. El orden de magnitud es compatible, pero la velocidad proyectada, el perfil radial y la ganancia impiden usar una única cifra como calibración externa. Color conserva su respuesta estacionaria analítica, no un ensemble IQ temporal. La simultaneidad arterial/venosa sigue dependiendo del plano y del volumen muestreado.
+
+**Verificación.** 22 pruebas de preset, equipo y filtro aprobadas, más tipos. Evidencia diagnóstica externa al checkout: diez adquisiciones IQ y siete verdades fisiológicas. Validación de interfaz, poses y check/CI corresponden al candidato final.
+
+## 275. Repeticiones GLSL sin cambiar los programas
+
+**Problema.** La corrección de series y los ajustes Doppler dejaron el candidato 274 en 1037,0 KiB de JavaScript, sobre el presupuesto conservado de 1033 KiB.
+
+**Decisión.** Codificar referencias hacia texto previo dentro de cada fragmento GLSL estático, después del diccionario existente. Expandirlas antes de expandir las palabras. No atraviesan interpolaciones, no usan solapamientos ni cambian programas, resolución, precisión o uniformes. El marcador reservado ya excluía los fragmentos inseguros de la ruta de empaquetado. El decodificador rechaza referencias fuera de lo reconstruido. No se amplía ningún presupuesto.
+
+**Verificación.** Siete pruebas de transporte, incluyendo igualdad byte por byte de todos los programas propios y de Three frente al build sin empaquetar; conserva coerción y orden de interpolaciones, escapes y diccionario. La estimación previa del corpus completo ahorraba 8408 bytes antes de tree-shaking; el ahorro real y la compilación WebGL se miden sobre el build siguiente, no se deducen de esa estimación.
+
+El build productivo resultante aprobó tipos y presupuesto: **1029,5 KiB**, frente a 1037,0 KiB del candidato anterior, con límite 1033 KiB intacto. Las siete pruebas de identidad y el lint también aprobaron. Compilación WebGL y check completos se registran sobre el candidato final.
+
+## 276. Ventana renal posterolateral con pareja vascular adquirible
+
+**Problema.** En la entrada del atlas anterior, la sonda muy oblicua producía curvas parietales pronunciadas y una costilla atravesaba el campo renal. La arteria acompañante quedaba fuera del plano que favorecía a la vena. El árbol ya contiene ambos vasos; añadir color artificial o eliminar el hueso ocultaría el defecto de adquisición.
+
+**Decisión.** Cambiar únicamente el punto de partida renal del atlas a un acceso posterior y caudal: φ 3,55, z −180 mm, giro −0,132188, basculación 0,378021 e inclinación 0,047207 rad. Es una posición estimada, no una ventana clínicamente validada. Conserva riñón, vasos, pared, hueso y física. La caja inicial abarca 45–110 mm, ±0,35 rad, con escala ±15 cm/s. La entrada hepatorrenal y las anatomías anteriores conservan su posición. En el laboratorio del atlas, el contraste arterial selecciona otra puerta en este mismo plano; las anatomías anteriores conservan su barrido.
+
+**Alternativas y límites.** Se conservaron y descartaron las rotaciones amplias y otros cortes longitudinales que mejoraban un indicador geométrico pero tapaban el riñón con una costilla o perdían la puerta venosa. La nueva entrada reduce las curvas de la pared visible; no demuestra que toda la pared estimada sea anatómicamente fiel en cualquier orientación. Queda sombra costal lateral y hay que afinar con respiración/movimiento. El color arterial puede ser tenue durante parte del ciclo o plegarse a escala baja: no se impone rojo ni se agrandan vasos.
+
+**Verificación.** Atlas abdominal y torácico exactos, dos pacientes: el mismo plano permite puerta venosa con margen ≥1,2 mm y arterial con el criterio ya existente de ≥0,2 mm. A los 2 s conserva la adquisición del laboratorio; tras 30 s, 8 s de IQ conservan normal continuo y grave monofásico, sin rechazo de calidad a ±15 y ±50 respectivamente. 21 pruebas en cuatro archivos aprobadas. El candidato previo a 0,057207 rad dio picos espectrales medianos −19,83/−19,70 dB y separación pico–suelo 27,59/28,47 dB, con ganancia 0; es diagnóstico instrumental, no calibración externa. Se eligió 0,047207 por mayor margen venoso mínimo entre ambos pacientes, y se repitió el contrato IQ completo. La revisión nativa y la aceptación completa se registran sobre el head final.
+
+El contraste final a **igual escala ±50, filtro 20 Hz, foco 90 mm y ganancia 0** dio, normal/grave: pico espectral mediano −19,83/−22,13 dB y margen pico–suelo 28,37/26,08 dB. Velocidades adquiridas S/D 12,50/10,55 y 5,86/24,61 cm/s; ambas capturas sin rechazo, con continuidad y monofasia respectivamente. No justifica igualar amplitudes ni reducir velocidades por apariencia. El check local completo aprobó 1811 pruebas core, 54 de matrices y un negativo esperado; inventario 251+4 archivos reconciliado. Bundle 1029,8 KiB bajo 1033. El primer intento quedó rechazado por formato del HTML externo original; se conserva intacto y se excluye únicamente ese documento del formateador. GPU y CI protegida se registran por separado.
+
+## 277. Sentido portal dominante no equivale a hepatopetalia
+
+**Problema.** La envolvente portal elige el semiplano de mayor energía; la documentación lo llamaba anterógrado/hepatópeto sin una referencia anatómica adquirida.
+
+**Decisión.** Corregir esa descripción y mostrar junto a la PF que se usa el sentido dominante y que debe confirmarse la dirección anatómica. Conservar el identificador interno por compatibilidad; no reinterpretar el signo de pantalla como una prueba anatómica, ni alterar PF o velocidades.
+
+**Verificación y límite.** Los contratos espectrales y de interfaz existentes se conservan. Es una aclaración de la medición asistida, no un nuevo detector de hepatopetalia ni el cierre de la validación independiente.
+
+## 278. Negativo M congelado antes de los calibres
+
+**Contexto.** En la validación Metal del 299c1b4, 19/20 E2E aprobaron. La prueba respiratoria legacy esperaba una franja M incompleta tras avanzar el motor sin dibujar. Durante los controles y clics posteriores, seguía adquiriendo: la traza deja aproximadamente seis segundos entre el avance y el resultado. Un ciclo real podía convertir el negativo en una adquisición válida. La variante reference pasó; no se convierte ese reintento implícito en aprobación del lote.
+
+**Decisión.** En la prueba, dibujar antes y después de los cinco segundos avanzados, congelar mediante el botón real en el mismo turno y acreditar el hueco >4,9 s. Medir esa franja sellada, exigir el rechazo por ciclo incompleto y demostrar que el reloj no cambia entre calibres. Luego descongelar y verificar la desactivación respiratoria como antes. Se conservan todas las aserciones funcionales, el plazo de 180 s, los dos cuerpos y cero reintentos; no cambia código del simulador.
+
+**Verificación.** Las cuatro E2E respiratorias aprobaron en Metal (36,8 s en esta ejecución), con el hueco y estado congelado adjuntos. El negativo original y la traza se conservan. Lint y tipos aprobados. La CI vuelve a ejecutar el inventario completo sobre el nuevo head; esto corrige el experimento temporal, no acredita una medición clínica de VCI.
+
+## 279. Captura E2E con el formato decimal de PF
+
+**Contexto.** El complemento PW 40245430581 sobre 5e97b2f falló en sus tres repeticiones: la captura adquirida mostraba PF 15,9 %, pero `smoke.spec.ts` aún exigía una PF entera. El cambio de presentación de 272 preserva el valor cerca de los cortes; volver a redondearlo para satisfacer esa expresión sería restaurar el defecto. El ZIP original (SHA-256 9d29bf4f61863ecd51575941df452085b98715321b1a510e067a79c6284b86a0) y el log se conservan.
+
+**Decisión.** La expresión de la captura normal exige ahora un decimal con coma, además de los dos extremos y las unidades que ya comprobaba. No admite cualquier texto ni omite la medición. Conserva el rechazo al vaso equivocado, la traza ámbar de más de 30 píxeles en vivo y congelada, errores vacíos y plazo de 120 s. No cambia código productivo ni valores de PF.
+
+**Verificación.** Los casos frontera y negativos del formato permanecen en `contextUi.test.ts`. La suite nativa smoke y la CI completa verifican el nuevo contrato antes de aceptar el candidato; el fallo previo no se oculta mediante un reintento del mismo head.
+
+## 280. La banda PW no termina en el primer resto basal
+
+**Diagnóstico.** La suite Metal ampliada obtuvo 25 pases y tres fallos. Dos exigían textos retirados por 272: «Grado 0 falso» y «bolo … hace N s». Se actualizan presencia docente, ausencia en alumno/JS y segundos de simulación, conservando comprobaciones de volumen, PAD, PEEP, teclado y reinicio.
+
+El tercero capturó a 8,832 s tres S anterógradas y una falsa S retrógrada. La reproducción del espectro guardado confirma `inconsistent`. En las columnas 8,105–8,148 s, la FFT conserva flujo negativo fuerte (potencia integrada ≈0,049 frente a ≈0,00086 positiva en la primera). El detector detenía su búsqueda tras un resto junto a la línea de base y descartaba la banda verdadera, separada por una ventana espectral. No era pérdida de señal ni cambio de vaso (>98 % suprahepática). Se conserva el rechazo de calidad; se corrige la envolvente que lo causaba.
+
+**Cambio.** En cada semiplano, seleccionar la banda significativa con mayor energía integrada, separada por los tres bins vacíos ya usados. Exigir dos bins consecutivos y un pico que supere el margen de detección existente. El percentil y la selección por energía conservan sus valores. No se modifica IQ, FFT, imagen, fisiología, filtro, ganancia, calidad ni umbrales clínicos. Los picos aislados quedan excluidos aunque sean más potentes.
+
+**Experimentos y contrato.** Una preparación alternativa a t=30 s, congelada antes de medir, aprobó 12 E2E repetidas, pero no reparaba la causa. Se descarta ese cambio de fixture y se restaura la captura hepática original en vivo. Las regresiones cubren ambos signos, banda separada de la base, ruido opuesto y picos aislados; se conserva el negativo sin contacto y los casos con inversión real. La reproducción del espectro original, las matrices, el check y la CI verifican el candidato. Los logs negativos y el experimento descartado se conservan fuera del checkout.
+
+La prueba de transición de profundidad `hepaticContact` también conservaba 180 mm para todos los accesos. La CI acreditó el preset renal nuevo de 160 mm. Se actualiza la expectativa solo en renal/hepatorrenal atlas, manteniendo 180 en subxifoidea, foco 90, la transición portal 130→150, señal portal y equivalencia CPU/GPU. No se elimina ninguna aserción ni cambia el tiempo permitido.
+
+El mismo espectro nativo conservado, después de la corrección, produce S/D 32,85/19,08 cm/s y calidad válida, con cuatro latidos. El feedback relacionado aprobó 290 pruebas en 32 archivos, incluidos contratos de inversión patológica, calidad y ventanas venosas; formato, lint y tipos aprobaron. La comparación sintética exige reconocer ambos signos y conservar el rechazo de ruido aislado. La aceptación completa permanece separada.
+
+La validación Metal del detector corregido aprobó las cinco E2E afectadas tres veces cada una (15/15, cero reintentos), incluida la captura hepática original en vivo y su negativo sin contacto. Repetir las siete adquisiciones hepáticas CPU con el mismo protocolo conserva los siete patrones y calidad válida; las inversiones graves siguen presentes. El contraejemplo analítico falla con la función previa en ambos signos y aprueba con la nueva. Estos diagnósticos no reemplazan check ni CI protegida.

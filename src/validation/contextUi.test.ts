@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { caseTeacherNotes } from '../app/teacherNotes';
-import type { Simulator } from '../app/simulator';
+import { defaultEquipment, type Simulator } from '../app/simulator';
+import { defaultPose } from '../probe/probe';
 import { Store } from '../app/store';
 import { CASE_TEACHING } from '../cases/teaching';
 import { CASE_VIGNETTES } from '../cases/vignettes';
@@ -58,7 +59,16 @@ function fakePanel(sim: object, debug = false) {
 }
 
 function mountMeasure(caseId: string) {
-  const sim = { patient: { id: caseId }, pw: { enabled: false } };
+  const sim = {
+    patient: { id: caseId, respiratoryPattern: 'quiet' },
+    pw: { enabled: false },
+    acquisitionEpoch: 0,
+    acquisitionFrameAfter: null as number | null,
+    physiology: { clock: { t: 5 } },
+    pose: defaultPose(),
+    equipment: defaultEquipment(),
+    renderer: { displayedFrame: null as { n: number } | null },
+  };
   const { ctx, sections } = fakePanel(sim);
   const host = new FakeElement('div');
   const tab = new MeasureTab(ctx, host as unknown as HTMLElement, new FakeElement('span') as unknown as HTMLElement);
@@ -67,6 +77,8 @@ function mountMeasure(caseId: string) {
   const box = (label: string) => boxes().find((b) => b.parentElement!.textContent === label)!;
   return {
     tab,
+    sim,
+    history: () => byClass('measurement-history')[0],
     sections,
     boxes,
     box,
@@ -81,7 +93,7 @@ function mountMeasure(caseId: string) {
     vignette: () => byClass('vignette')[0].textContent,
     /** Otro caso (la sesión reconstruye el simulador y el panel avisa a la pestaña) o el mismo reiniciado. */
     load: (id: string) => {
-      sim.patient = { id };
+      sim.patient = { id, respiratoryPattern: 'quiet' };
       tab.onSimulatorChanged();
     },
     button: (text: string) => findAll(host, (e) => e.tagName === 'BUTTON' && e.textContent === text)[0],
@@ -99,6 +111,7 @@ function mountMeasure(caseId: string) {
     measureM: () => {
       Object.assign(sim, {
         physiology: {
+          clock: { t: 5 },
           samples: Array.from({ length: 9 }, (_, i) => ({
             t: i / 8,
             resp: { cycling: true, phase: (i / 8) % 1, volume: (1 - Math.cos((i * Math.PI) / 4)) / 2 },
@@ -128,6 +141,58 @@ const CONTINUOUS_RV = { ...OK, pattern: 'continuous', sPeak: 13, dPeak: 22, vMin
 const MONOPHASIC_RV = { ...CONTINUOUS_RV, pattern: 'monophasic', sPeak: 8, dPeak: 36, vMin: -6 };
 
 describe('Pestaña Medir: contexto clínico (decisión 82)', () => {
+  it('archiva una copia y excluye la serie previa; una imagen antigua no puede convertirse en un calibre nuevo', () => {
+    const m = mountMeasure('normal-adult');
+    m.measured({ hepatic: NORMAL_HV, portal: NORMAL_PV, renal: CONTINUOUS_RV });
+    m.tab.setIvcCaliper(25);
+    expect(m.tab.archiveMeasurements('respiration')).toBe(true);
+    expect(m.result()).toContain('Nueva serie');
+    expect(m.result()).toContain('VCI: —');
+    expect(m.history().children).toHaveLength(1);
+    const saved = m.history().children[0].children[2].innerHTML;
+    expect(saved).toContain('25.0 mm');
+    expect(m.history().textContent).toContain('excluida del resultado actual');
+    m.sim.acquisitionFrameAfter = 42;
+    m.sim.renderer.displayedFrame = { n: 12 };
+    m.tab.setIvcCaliper(30);
+    expect(m.result()).toContain('Imagen de la serie anterior');
+    expect(m.result()).toContain('VCI: —');
+    expect(m.history().children[0].children[2].innerHTML).toBe(saved);
+    m.load('severe-congestion');
+    expect(m.history().children).toHaveLength(0);
+  });
+
+  it('no presenta entradas inválidas ni fases indeterminadas como un estudio normal', () => {
+    const m = mountMeasure('normal-adult');
+    m.tab.setIvcCaliper(-1);
+    expect(m.result()).toContain('entrada inválida');
+    expect(m.result()).not.toContain('VExUS 0 ');
+    m.measured({
+      hepatic: { ...NORMAL_HV, sPeak: 0, pattern: 'indeterminate' },
+      portal: NORMAL_PV,
+      renal: { ...CONTINUOUS_RV, dPeak: 0, pattern: 'systolic-only' },
+    });
+    m.tab.setIvcCaliper(25);
+    expect(m.result()).toContain('indeterminado: fase no identificable');
+    expect(m.result()).toContain('solo S: fuera del esquema');
+    expect(m.result()).toContain('incompleto');
+    expect(m.result()).not.toContain('S invertida');
+    expect(m.result()).not.toContain('bifásico (S+D)');
+  });
+
+  it('una PF inmediatamente inferior al umbral no se presenta redondeada en la siguiente categoría', () => {
+    const m = mountMeasure('normal-adult');
+    for (const [pf, threshold, label] of [
+      [29.999, 30, 'normal'],
+      [49.999, 50, 'leve'],
+    ] as const) {
+      m.measured({ hepatic: NORMAL_HV, portal: { ...NORMAL_PV, pulsatilityFraction: pf }, renal: CONTINUOUS_RV });
+      m.tab.setIvcCaliper(25);
+      expect(m.result()).toContain(`PF <b>menos de ${threshold} %</b>`);
+      expect(m.result()).toContain(`(${label}, próximo al umbral)`);
+    }
+  });
+
   it('«Contexto clínico» va antes del protocolo, con la viñeta del caso y una casilla sin marcar por confusor', () => {
     const m = mountMeasure('abdominal-hypertension');
     expect(m.sections).toEqual(['Contexto clínico', 'Protocolo VExUS', 'Resultado']);
@@ -336,7 +401,7 @@ describe('Pestaña Docente: lo que solo ve el docente (decisión 82)', () => {
     ctx.sync();
     const notes = () => findAll(host, (e) => e.classList.contains('case-notes'))[0].textContent;
     const loop = () => findAll(host, (e) => e.classList.contains('loop-state'))[0].textContent;
-    expect(notes()).toContain('Grado 0 falso');
+    expect(notes()).toContain('VCI comprimida: el cálculo literal de grado 0');
     expect(loop()).toContain('14.0 mmHg · caso 14.0');
     // la verdad que pintó el bucle (`renderDebug`, que aquí no corre: necesita el simulador entero)
     const truth = findAll(host, (e) => e.classList.contains('debug'))[0];

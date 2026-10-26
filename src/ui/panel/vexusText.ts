@@ -1,6 +1,8 @@
 import {
   IVC_NEAR_THRESHOLD_MM,
   IVC_THRESHOLD_MM,
+  PF_MILD,
+  PF_SEVERE,
   type HepaticPattern,
   type PortalClass,
   type RenalPattern,
@@ -11,10 +13,13 @@ import {
 
 /** Textos en español de los patrones y estados del clasificador (única fuente para consola y docente). */
 export function statusText(s: VexusResult['status']): string {
+  if (s === 'invalid-input') return 'entrada inválida: repetir medición';
   return s === 'complete' ? 'completo' : s === 'incomplete' ? 'incompleto' : 'VCI no medida';
 }
 
 export function renalText(p: RenalPattern): string {
+  if (p === 'systolic-only') return 'solo S: fuera del esquema';
+  if (p === 'indeterminate') return 'fases no resolubles';
   return p === 'continuous'
     ? 'continuo'
     : p === 'biphasic'
@@ -27,10 +32,12 @@ export function renalText(p: RenalPattern): string {
 }
 
 export function patternText(p: HepaticPattern): string {
+  if (p === 'indeterminate') return 'indeterminado: fase no identificable';
   return p === 'normal' ? 'normal (S>D)' : p === 'mild' ? 'leve (S<D)' : p === 'severe' ? 'grave (S invertida)' : 'no evaluado';
 }
 
 export function portalText(c: PortalClass): string {
+  if (c === 'invalid-input') return 'entrada inválida';
   return c === 'normal'
     ? 'normal'
     : c === 'mild'
@@ -42,6 +49,14 @@ export function portalText(c: PortalClass): string {
           : 'no evaluada';
 }
 
+/** El redondeo de presentación nunca debe cruzar un umbral de categoría. */
+export function portalPulsatilityText(pf: number): string {
+  if (!Number.isFinite(pf) || pf < 0) return 'n/a';
+  const rounded = Number(pf.toFixed(1));
+  for (const threshold of [PF_MILD, PF_SEVERE]) if (pf < threshold && rounded >= threshold) return `menos de ${threshold} %`;
+  return `${pf.toFixed(1).replace('.', ',')} %`;
+}
+
 /**
  * Estado del resultado para el alumno (decisión 82): como `statusText`, salvo que con todo medido sea el contexto el que
  * deja fuera un hallazgo: «intervalo por el contexto» si el grado queda en intervalo y «con el contexto» si aun así sale
@@ -51,9 +66,10 @@ export function resultStatusText(r: VexusResult, withRenal = true): string {
   if (r.status !== 'incomplete') return statusText(r.status);
   const unmeasured =
     r.hepaticClass === 'not-assessed' ||
+    r.hepaticClass === 'indeterminate' ||
     r.portalClass === 'not-assessed' ||
     r.portalClass === 'not-applicable' ||
-    (withRenal && (r.renalClass === 'not-assessed' || r.renalClass === 'reversal-out-of-scheme'));
+    (withRenal && !['continuous', 'biphasic', 'monophasic'].includes(r.renalClass));
   if (unmeasured) return 'incompleto';
   return r.grade !== null ? 'con el contexto' : 'intervalo por el contexto';
 }
@@ -111,5 +127,7 @@ export function contextResultLines(res: VexusResult, modified: VexusResult): str
     );
   for (const w of res.warnings)
     lines.push(`<div class="ctx-warn"><b>${territoryText(w.territory)} · ${w.excluded ? 'no fiable' : 'aviso'}</b> — ${w.reason}</div>`);
+  for (const issue of res.inputIssues)
+    lines.push(`<div class="ctx-warn"><b>${territoryText(issue.territory)} · entrada inválida</b> — ${issue.reason}</div>`);
   return lines;
 }

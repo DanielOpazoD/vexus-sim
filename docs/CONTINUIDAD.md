@@ -1,5 +1,16 @@
 # Continuidad de VExUS LAB
 
+## Pared durante el movimiento (26 de octubre, decisión 282)
+
+Se reproduce y corrige un pliegue superficial subcostal: al terminar el hígado,
+el contorno estimado retomaba el perfil heredado pese a encontrar otra víscera.
+La misma superficie continúa ahora el soporte visceral en el territorio ya ajustado.
+Revisión temporal de las ocho tarjetas, deslizamiento subcostal y regresión negativa
+en normal/grave; geometría, textura y seis E2E Metal aprobadas. El primer ensayo
+SwiftShader quedó fallido/incompleto en el arranque; no acredita paridad por software.
+La aceptación final sigue pendiente del check y la CI del PR. La pared conserva
+aproximaciones y sombras costales; esta corrección no certifica todas las poses.
+
 ## Corrección de Doppler y equipo por ventana (25 de octubre, decisión 281)
 
 Seguimiento solicitado tras PR288: reparto de caudal de las tributarias suprahepáticas,

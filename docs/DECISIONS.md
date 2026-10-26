@@ -9165,3 +9165,53 @@ inversión real, transición entre ventanas y adquisición renal normal/patológ
 nativas de controles, regla y adquisición renal; una segunda ejecución acredita
 además el caso grave en tríplex. Los negativos iniciales y las capturas se conservan
 en la evidencia de la ronda. El cierre exige check completo y CI del candidato final.
+
+## 282. Continuidad parietal al terminar el hígado (26 de octubre de 2026)
+
+**Problema y reproducción:** el usuario señala muescas de grasa y fascias interrumpidas
+que aparecen tanto en el plano anatómico como en modo B. Se revisaron secuencias de
+las ocho tarjetas visibles durante inclinación, además del deslizamiento subcostal
+y respiración en vistas hepática/hepatorrenal. El barrido escalar incluyó las diez
+posiciones de inicio y sus vecindades, con una posición renal manual redondeada.
+Las sombras costales y las tangencias profundas se distinguen de los pliegues
+superficiales; no se consideran agujeros por el mero cambio de color de un píxel.
+
+En la subcostal, phi=2, z=-95 mm, yaw=0,628003, rock=0,325920 y tilt=-0,038861,
+la línea de -14,17° entraba tres veces en músculo entre 12,5 y 28 mm. Al terminar
+el hígado, el ajuste parietal retomaba el contorno heredado aunque otra víscera
+estuviera debajo. El radio cambiaba ~15 mm en 9 mm de recorrido longitudinal,
+con una pendiente local próxima a -3 mm/mm. El deslizamiento manual también
+reprodujo una muesca en el corte y un pliegue en B. No es una discontinuidad de
+la interpolación C1: es una forma artificial de sus muestras de soporte.
+
+**Opciones:** suavizar el modo B ocultaría el defecto del plano anatómico y del contacto.
+Suavizar globalmente el torso movería apoyos no implicados. Se conserva el dominio
+del ajuste y se corrige únicamente su condición de soporte visceral.
+
+**Corrección:** dentro del mismo territorio y peso espacial ya existentes,
+`hepaticCostalBody` continúa la apposición sobre las otras vísceras registradas,
+como ya hacía en el flanco. Conserva los límites heredados, los márgenes viscerales,
+la protección cortical y las posiciones de órganos. CPU, GPU, contacto y navegador
+consumen el mismo perfil. No se pintan líneas ni se ocultan sombras en el render.
+La superficie sigue siendo estimada, **NEEDS_CALIBRATION**, no una piel segmentada
+ni una solución biomecánica validada. No se afirma que toda pose oblicua tenga
+capas horizontales o que la pared histórica esté completamente reparada.
+
+**Regresión:** barrido caudal de cinco posiciones, rayos cada 0,5° y muestras
+cada 0,125 mm, en adulto normal y congestión grave. Detecta una retirada espuria
+a través de la fascia tras entrar en músculo, antes de la transversalis.
+Ambos casos fallan con la condición anterior y pasan con la corrección; los
+negativos originales se conservan. La prueba GPU de normales incorpora la
+posición subcostal desplazada, con las mismas tolerancias TS/GLSL.
+
+**Verificación focal:** 14 comprobaciones de geometría/apposición/continuidad
+3D y 54 de pared, textura y contraste aprobadas. Calibración sintética de siete
+casos: grados 0/3/1/0/2/1/3; adulto normal S/D hepático 1,45, PF portal 20 %, VCI
+máxima 17,9 mm y patrón renal continuo; grave S/D -0,29, PF 70 %, VCI 31,0 mm y
+patrón renal monofásico. Son observables del motor, no mediciones clínicas.
+Metal: seis E2E aprobadas sin reintentos, incluidas normales TS/GLSL en ambos
+pacientes, seguimiento renal, ventana hepatorrenal y controles por vista. El primer
+ensayo local SwiftShader agotó el arranque GPU del primer caso; el segundo quedó
+interrumpido y el lanzador no cerró su recibo. Se conserva como negativo/incompleto,
+no como paridad aprobada. Check completo y CI corresponden al candidato final del
+PR; los resultados focales no los sustituyen.

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { setAbdominalBody, setReferenceBody } from '../anatomy/referenceBody';
 import { Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
@@ -115,6 +115,43 @@ describe('pose, contacto y adquisición pertenecen al mismo cuadro', () => {
     sim.advance(sim.physiology.clock.dt);
     expect(sim.contact).toBe(contact);
     expect(sim.frame).toBe(contact.frame);
+  });
+
+  it.each([
+    [0.016, 0.016, 0.016],
+    [0.008, 0.032, 0.012],
+  ])('la integral de velocidad recupera el desplazamiento con intervalos %j', (...intervals) => {
+    const { sim, frames } = rig();
+    sim.advance(0.02);
+    sim.equipment = { ...sim.equipment, pw: { ...sim.equipment.pw, enabled: true } };
+    const pwStep = vi.spyOn(sim.pwChain, 'step');
+    const origin = [...sim.frame.face];
+    const integrated = [0, 0, 0];
+    for (const [index, dt] of intervals.entries()) {
+      const before = [...sim.frame.face];
+      const t = sim.sample.t;
+      pwStep.mockClear();
+      sim.setPose({ ...sim.pose, z: sim.pose.z + (index % 2 ? -1 : 1) * 10 * dt });
+      sim.advance(dt);
+      sim.render();
+      const elapsed = sim.sample.t - t;
+      for (let axis = 0; axis < 3; axis++) {
+        // Oráculo cinemático: desplazamiento medido / tiempo integrado, sin
+        // reutilizar probeVelocity ni la estimación temporal del simulador.
+        expect(sim.probeVelocity[axis]).toBeCloseTo((sim.frame.face[axis] - before[axis]) / elapsed, 9);
+        integrated[axis] += sim.probeVelocity[axis] * elapsed;
+      }
+      // La cadencia Color puede omitir este cuadro. Forzar únicamente su
+      // adquisición permite observar la entrada al renderer, no alterar IQ.
+      sim.equipment = { ...sim.equipment, color: { ...sim.equipment.color, enabled: true } };
+      sim.render({ forceColor: true });
+      expect(frames.at(-1)!.probeVelocity).toEqual(sim.probeVelocity);
+      expect(pwStep).toHaveBeenCalled();
+      for (const call of pwStep.mock.calls) expect(call[1]).toEqual(sim.probeVelocity);
+    }
+    for (let axis = 0; axis < 3; axis++) expect(integrated[axis]).toBeCloseTo(sim.frame.face[axis] - origin[axis], 10);
+    sim.advance(0.02);
+    expect(sim.probeVelocity).toEqual([0, 0, 0]);
   });
 
   it('mover la sonda congelada conserva la imagen adquirida y el tiempo', () => {

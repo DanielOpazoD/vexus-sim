@@ -323,3 +323,7 @@ el caudal de cada colectora. Este factor evita que una fracción fija sobredimen
 la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una
 medición humana ni una estenosis. Los cambios de dirección, proyección angular,
 perfil radial y dilatación siguen actuando sobre Color y PW.
+
+### Movimiento de la sonda (283)
+
+Color y PW reciben la traslación media de la cara de la sonda en el tiempo de simulación integrado de cada lote. Se elimina el factor histórico 0,6 y el doble intervalo temporal. No se mide una trayectoria por disparo: la pose del lote es única, el tiempo pendiente se cuantiza a pasos de 4 ms y no se modela un campo completo de velocidad angular o deformación tisular por deslizamiento. La corrección garantiza coherencia cinemática interna; no acredita amplitudes de clutter calibradas con un ecógrafo.

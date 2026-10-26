@@ -1,5 +1,14 @@
 # Continuidad de VExUS LAB
 
+## Fidelidad del movimiento Doppler (26 de octubre, decisión 283)
+
+Nueva ronda solicitada con `be-ambitious`: corrige dos defectos demostrados,
+la subestimación de velocidad de traslación de la sonda y el muestreo no periódico
+del borde de Nyquist en el bitmap PW. Conserva fisiología, adquisición manual,
+potencia, resolución y aliasing. Las regresiones fallan con el código previo.
+La aceptación requiere check, CI del candidato y revisión temporal; consultar
+el PR y la evidencia de la sesión, no inferir aceptación de esta entrada.
+
 ## Pared durante el movimiento (26 de octubre, decisión 282)
 
 Se reproduce y corrige un pliegue superficial subcostal: al terminar el hígado,

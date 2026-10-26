@@ -140,7 +140,6 @@ export class Simulator {
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
   private lastContact: ProbeContact;
   private contactPose: ProbePose;
-  private lastFrameT = 0;
   private probeVel: Vec3 = [0, 0, 0];
   private lastColorUpdate = -Infinity;
   private readonly acquisition = new AcquisitionEquipment();
@@ -266,11 +265,10 @@ export class Simulator {
     this.syncProbeContact();
     // Sonda: velocidad estimada entre cuadros (clutter y destello por movimiento)
     const newFrame = this.lastContact.frame;
-    const dtFrame = Math.max(1e-3, clock.t - this.lastFrameT + steps * clock.dt);
-    const v = probeVelocity(this.lastFrame, newFrame, dtFrame);
-    this.probeVel = [v[0] * 0.6, v[1] * 0.6, v[2] * 0.6];
+    // Las dos poses delimitan este lote, no el lote previo más el actual.
+    // Color y PW reciben la velocidad cinemática sin atenuación arbitraria.
+    this.probeVel = probeVelocity(this.lastFrame, newFrame, steps * clock.dt);
     this.lastFrame = newFrame;
-    this.lastFrameT = clock.t;
 
     const pw = this.pw;
     if (pw.enabled) this.pwChain.begin(pw.prfHz, this.transducer.f0Doppler, pw.gainDb, pw.wallFilterHz, t0 + clock.dt);

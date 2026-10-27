@@ -98,10 +98,10 @@ const organSlices = [
     tissue: 33,
     minimum: 80,
     // Mismo plano anatómico anterior, recalculado fuera de línea al corregir la
-    // piel (282): intersección piel/plano y cambio de base de sus ejes rígidos;
+    // piel (282, regularización 284): intersección piel/plano y cambio de base de sus ejes rígidos;
     // el apoyo lateral se elige por acoplamiento, sin consultar el órgano.
     // No se optimiza por conteo de píxeles ni se cambia el mínimo exigido.
-    pose: { phi: 1.23, z: -115.29518776811368, yaw: -1.4659397331893307, rock: 0.5235438082111741, tilt: -0.25462132781412 },
+    pose: { phi: 1.23, z: -115.23270449616815, yaw: -1.533530287019072, rock: 0.3998467301780999, tilt: -0.14086549651054023 },
   },
   {
     name: 'bladder',

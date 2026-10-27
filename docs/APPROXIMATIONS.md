@@ -327,3 +327,7 @@ perfil radial y dilatación siguen actuando sobre Color y PW.
 ### Movimiento de la sonda (283)
 
 Color y PW reciben la traslación media de la cara de la sonda en el tiempo de simulación integrado de cada lote. Se elimina el factor histórico 0,6 y el doble intervalo temporal. No se mide una trayectoria por disparo: la pose del lote es única, el tiempo pendiente se cuantiza a pasos de 4 ms y no se modela un campo completo de velocidad angular o deformación tisular por deslizamiento. La corrección garantiza coherencia cinemática interna; no acredita amplitudes de clutter calibradas con un ecógrafo.
+
+### Pared lateral y Color con filtro bajo (284)
+
+El cierre parabólico no erosivo del perfil estimado usa el espesor parietal y un radio nominal de 120 mm. Puede aumentar la separación residual pared/víscera. No aporta segmentación ni biomecánica nueva; las comprobaciones de contención y continuidad son de poses muestreadas. Color renal inicia ±15 cm/s / 50 Hz / 6 dB; PW ±40 cm/s / 20 Hz independiente. Son ajustes estimados. La prioridad B ya no se anula por potencia elevada; permanecen flash hipoecoico, pérdida de flujo lento con filtro alto y aliasing con escala baja. La prueba empareja ruido sólo en el experimento, sin cambiar el producto.

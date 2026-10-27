@@ -13,10 +13,12 @@ it.each([true, false])('el preset renal reemplaza la escala heredada y permite s
   for (const command of renalPreset(CONVEX_C35.f0Doppler, atlas)) equipment = reduceEquipment(equipment, command, ctx);
   for (const mode of ['color', 'pw'] as const) {
     expect(nyquistVelocityCms(equipment[mode].prfHz, CONVEX_C35.f0Doppler)).toBeCloseTo(mode === 'color' ? 15 : 40, 1);
-    expect(equipment[mode].wallFilterHz).toBe(20);
+    expect(equipment[mode].wallFilterHz).toBe(mode === 'color' ? 50 : 20);
   }
   expect(equipment.color.r1).toBeLessThan(equipment.bmode.depthMm);
   expect(equipment.pw.angleCorrection).toBe(0);
-  equipment = reduceEquipment(equipment, { type: 'color', patch: { prfHz: 2000 } }, ctx);
+  equipment = reduceEquipment(equipment, { type: 'color', patch: { prfHz: 2000, wallFilterHz: 20 } }, ctx);
   expect(equipment.color.prfHz).toBe(2000);
+  expect(equipment.color.wallFilterHz).toBe(20);
+  expect(equipment.pw.wallFilterHz).toBe(20);
 });

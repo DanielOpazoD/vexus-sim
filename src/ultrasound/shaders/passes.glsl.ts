@@ -1629,7 +1629,7 @@ void main() {
     float f = atan(c.y, c.x) * uPrf / 6.2831853;
     if (uColorInvert == 1) f = -f;
     float mag = clamp(abs(f) / (0.5 * uPrf), 0.0, 1.0);
-    if (power > uColorThreshold && (g < uColorPriority || power > 3.0 * uColorThreshold)) {
+    if (power > uColorThreshold && g < uColorPriority) {
       col = colorVelocityMap(f, mag);
     }
   }

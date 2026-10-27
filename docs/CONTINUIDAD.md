@@ -1,5 +1,9 @@
 # Continuidad de VExUS LAB
 
+## Pared lateral y filtro Color bajo (26 de octubre, decisión 284)
+
+Base c9e2096 (PR291). Corrige concavidades de pared y bypass de prioridad Color. Color renal inicia 50 Hz y PW conserva 20 Hz independiente. Regresiones negativas conservadas y bloques focales/Metal aprobados. Calibración, check y CI del head deben verificarse en la evidencia del PR; esta entrada no declara merge. El usuario añade un bloque posterior de pulsatilidad aórtica y contracción subcostal con referencia EchoTwin, aún no implementado en esta decisión.
+
 ## Fidelidad del movimiento Doppler (26 de octubre, decisión 283)
 
 Nueva ronda solicitada con `be-ambitious`: corrige dos defectos demostrados,

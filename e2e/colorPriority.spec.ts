@@ -22,7 +22,7 @@ test('la prioridad B protege tejido brillante aun con clutter potente y conserva
         '#version 300 es\nout vec2 vUv;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);vUv=p;gl_Position=vec4(p*2.-1.,0.,1.);}',
       );
       const fragment = compile(gl.FRAGMENT_SHADER, shader);
-      const program = gl.createProgram()!;
+      const program = gl.createProgram();
       gl.attachShader(program, vertex);
       gl.attachShader(program, fragment);
       gl.linkProgram(program);
@@ -54,7 +54,7 @@ test('la prioridad B protege tejido brillante aun con clutter potente y conserva
       gl.uniform1i(u('uColorOn'), 1);
       gl.uniform1i(u('uColorInvert'), 0);
       const textures = [0, 1].map((unit) => {
-        const t = gl.createTexture()!;
+        const t = gl.createTexture();
         gl.activeTexture(gl.TEXTURE0 + unit);
         gl.bindTexture(gl.TEXTURE_2D, t);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);

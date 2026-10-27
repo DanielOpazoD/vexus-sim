@@ -270,7 +270,9 @@ const ABDOMINAL_POSES = {
   portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
   // [EXTRAPOLACIÓN PROPIA] Acceso posterolateral: menor oblicuidad parietal y pareja interlobar
   // adquirible en el mismo plano. Conserva órganos y sombra costal (276).
-  renal: { phi: 3.55, z: -180, yaw: -0.13218823454545353, rock: 0.3780207766067785, tilt: 0.04720718521646405 },
+  // Al suavizar el contorno cambia el marco cutáneo local. Reexpresar el
+  // mismo plano mundo de 276 en ese marco, sin buscar vasos ni diagnósticos (285).
+  renal: { phi: 3.55, z: -180, yaw: -0.1343310829596154, rock: 0.41613433729447186, tilt: 0.052747181408742835 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.

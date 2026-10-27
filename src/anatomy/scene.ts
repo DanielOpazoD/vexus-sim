@@ -999,6 +999,9 @@ export class AnatomyScene {
       } else {
         const def = this.ducts[i - this.vessels.length];
         const hit = tubeQuery(m, def.tube, 1);
+        // Unión de luces en el cuello: el cístico no dibuja pared/eco
+        // dentro de la cavidad vesicular que contiene ese tramo.
+        if (hit.d < def.wallMm && gallbladderSdf(m, this.gallbladder) < hit.d) continue;
         if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit, tube: def.tube, scale: 1 };
       }
     }

@@ -331,3 +331,7 @@ Color y PW reciben la traslación media de la cara de la sonda en el tiempo de s
 ### Pared lateral y Color con filtro bajo (284)
 
 El cierre parabólico no erosivo del perfil estimado usa el espesor parietal y un radio nominal de 120 mm. Puede aumentar la separación residual pared/víscera. No aporta segmentación ni biomecánica nueva; las comprobaciones de contención y continuidad son de poses muestreadas. Color renal inicia ±15 cm/s / 50 Hz / 6 dB; PW ±40 cm/s / 20 Hz independiente. Son ajustes estimados. La prioridad B ya no se anula por potencia elevada; permanecen flash hipoecoico, pérdida de flujo lento con filtro alto y aliasing con escala baja. La prueba empareja ruido sólo en el experimento, sin cambiar el producto.
+
+### Continuidad parietal y pedículo hepatobiliar (285)
+
+La compresión interpola sus controles con B-spline cúbica; conserva las restricciones radiales del modelo, pero no añade biomecánica ni movimiento por disparo. La transición axial estimada de apposición abarca −175…−115 mm. El pedículo usa conectores estimados anclados a porta y vesícula fuente, con unión de luces cístico-vesiculares y separación de paredes arteriales, portales y biliares. No representa todas las variantes ni un árbol biliar completo. La vesícula conserva la segmentación de este adulto y una pared estimada de 1,8 mm; sin ayuno ni distensión adaptados al caso. **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**.

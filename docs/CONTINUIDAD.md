@@ -11,6 +11,10 @@ se reexpresa la tarjeta en el nuevo marco cutáneo para conservar su plano mundo
 con el mismo ajuste para ambos pacientes. Se conservan el negativo y los
 timeouts investigados por separado. Las regresiones fallan con la base. Esta entrada
 no declara aceptación, merge ni despliegue: consultar check y CI del PR final.
+La primera CI de PR293 detectó también una pose de prueba pancreática referida a
+la piel anterior. Se conserva su plano mundo y sus ejes al reexpresarla; CPU y
+E2E comparten ahora ese dato para detectar el desajuste en el feedback rápido,
+con las referencias, mínimo de tejido y tolerancias originales intactos.
 
 ## Pared lateral y filtro Color bajo (26 de octubre, decisión 284)
 

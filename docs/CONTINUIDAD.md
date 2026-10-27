@@ -1,5 +1,21 @@
 # Continuidad de VExUS LAB
 
+## Punta de pared renal y registro hepatobiliar (27 de octubre, decisión 285)
+
+Trabajo sobre la captura y pose aportadas en `2e4b06b`. Corrige discontinuidad de
+la interpolación de compresión, amplía la transición axial del contorno estimado
+y reconstruye los conectores del pedículo y cístico sobre porta/vesícula fuente.
+Une sus luces sin pared intravesicular artificial; conserva el tamaño del atlas
+y declara las aproximaciones. El primer check detectó una regresión renal grave:
+se reexpresa la tarjeta en el nuevo marco cutáneo para conservar su plano mundo,
+con el mismo ajuste para ambos pacientes. Se conservan el negativo y los
+timeouts investigados por separado. Las regresiones fallan con la base. Esta entrada
+no declara aceptación, merge ni despliegue: consultar check y CI del PR final.
+La primera CI de PR293 detectó también una pose de prueba pancreática referida a
+la piel anterior. Se conserva su plano mundo y sus ejes al reexpresarla; CPU y
+E2E comparten ahora ese dato para detectar el desajuste en el feedback rápido,
+con las referencias, mínimo de tejido y tolerancias originales intactos.
+
 ## Pared lateral y filtro Color bajo (26 de octubre, decisión 284)
 
 Base c9e2096 (PR291). Corrige concavidades de pared y bypass de prioridad Color. Color renal inicia 50 Hz y PW conserva 20 Hz independiente. Regresiones negativas conservadas y bloques focales/Metal aprobados. Calibración, check y CI del head deben verificarse en la evidencia del PR; esta entrada no declara merge. El usuario añade un bloque posterior de pulsatilidad aórtica y contracción subcostal con referencia EchoTwin, aún no implementado en esta decisión.

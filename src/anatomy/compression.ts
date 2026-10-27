@@ -49,8 +49,8 @@ import type { Torso } from './primitives';
 export const PROBE_COMPRESSION = {
   /**
    * Nodos de la tabla a lo largo de la cara, de −halfAngle a +halfAngle (un téxel cada uno; 3 líneas de 192 por
-   * nodo). Entre nodos la tabla es lineal: la pendiente de las capas en el mundo oscila con el periodo de un nodo
-   * (con 32, hasta 9° en la media pared de la intercostal: el eco especular de las fascias se «abalorio»).
+   * nodo). La B-spline cúbica usa cuatro controles con pesos convexos y
+   * derivada continua: la tabla lineal anterior formaba esquinas entre nodos.
    */
   nodes: 64,
   /**
@@ -112,8 +112,9 @@ export function compressionSpanMm(sD: number): number {
 }
 
 /**
- * Alcance del campo (mm bajo la cara): max_k (D_k + S_k). Entre dos nodos D y s_D se interpolan linealmente y
- * D + max(2L, −κ·s_D) es convexa en la interpolación: su máximo está en los nodos.
+ * Alcance del campo (mm bajo la cara): max_k (D_k + S_k). La B-spline es
+ * combinación convexa de controles reales, también en sus dos extremos;
+ * D + max(2L, −κ·s_D) es convexa: el máximo sigue acotado por los nodos.
  */
 export function compressionReachMm(nodes: readonly CompressionNode[]): number {
   let r = 0;
@@ -182,7 +183,8 @@ function profile(depth: number, s0: number, sD: number, D: number): Profile {
   return { g: sD * f, gd: (sD * fu) / span, g0: 0, gD: f + sD * fu * uS, gDepth: (-sD * fu) / span };
 }
 
-/** (s₀, s_D, D) en σ con interpolación lineal, su derivada en σ (0 fuera de la cara) y la cola lateral T_l. */
+/** B-spline cúbica convexa: mantiene s₀ ≤ s_D ≤ 0, D > 0 y el alcance
+ * acotado por los nodos, sin esquinas en la deformación entre elementos. */
 function tableAt(sigma: number, k: ProbeCompression): { v: CompressionNode; dv: CompressionNode; tl: number; dtl: number } {
   const C = PROBE_COMPRESSION;
   const h = Math.sin(k.halfAngle);
@@ -191,13 +193,30 @@ function tableAt(sigma: number, k: ProbeCompression): { v: CompressionNode; dv: 
   const x = clamp(xr, 0, n - 1);
   const i = Math.min(Math.floor(x), n - 2);
   const t = x - i;
-  const a = k.nodes[i];
-  const b = k.nodes[i + 1];
+  const b = k.nodes[i],
+    c = k.nodes[i + 1];
+  // Extrapolar el control fantasma conserva valor y pendiente del borde.
+  // Al agrupar sus pesos, los de los controles reales siguen siendo ≥ 0.
+  const a: CompressionNode = i === 0 ? [2 * b[0] - c[0], 2 * b[1] - c[1], 2 * b[2] - c[2]] : k.nodes[i - 1];
+  const d: CompressionNode = i === n - 2 ? [2 * c[0] - b[0], 2 * c[1] - b[1], 2 * c[2] - b[2]] : k.nodes[i + 2];
+  const u = 1 - t,
+    t2 = t * t,
+    t3 = t2 * t;
+  const w0 = (u * u * u) / 6,
+    w1 = (3 * t3 - 6 * t2 + 4) / 6,
+    w2 = (-3 * t3 + 3 * t2 + 3 * t + 1) / 6,
+    w3 = t3 / 6;
+  const v: Vec3 = [0, 0, 0],
+    dv: Vec3 = [0, 0, 0];
   // en el borde exacto de la cara (las líneas extremas) la pendiente de dentro: la de las líneas vecinas
   const inside = xr >= -1e-4 && xr <= n - 1 + 1e-4 ? (n - 1) / (2 * h) : 0;
+  for (let j = 0; j < 3; j++) {
+    v[j] = a[j] * w0 + b[j] * w1 + c[j] * w2 + d[j] * w3;
+    dv[j] = (-0.5 * u * u * a[j] + (1.5 * t2 - 2 * t) * b[j] + (-1.5 * t2 + t + 0.5) * c[j] + 0.5 * t2 * d[j]) * inside;
+  }
   return {
-    v: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t],
-    dv: [(b[0] - a[0]) * inside, (b[1] - a[1]) * inside, (b[2] - a[2]) * inside],
+    v,
+    dv,
     tl: 1 - smoothstep(h, h + C.lateralTaperSin, Math.abs(sigma)),
     dtl: -smoothstepSlope(h, h + C.lateralTaperSin, Math.abs(sigma)) * Math.sign(sigma),
   };
@@ -325,6 +344,17 @@ export const COMPRESSION_GLSL = /* glsl */ `
 #define COMP_ELEV_TAPER ${f4(PROBE_COMPRESSION.elevationTaperMm)}
 // la tabla por nodo en la textura de escena (COMP_BASE, de ANATOMY_GLSL): (s₀, s_D, D, R)
 vec4 compressionTable(int i) { return sceneTexel(COMP_BASE + i); }
+vec4 compressionSpline(int i, float t, out vec3 derivative) {
+  vec4 a = compressionTable(max(0, i - 1)), b = compressionTable(i);
+  vec4 c = compressionTable(i + 1), d = compressionTable(min(COMP_NODES - 1, i + 2));
+  if (i == 0) a = 2.0 * b - c;
+  if (i == COMP_NODES - 2) d = 2.0 * c - b;
+  float u = 1.0 - t, t2 = t * t, t3 = t2 * t;
+  derivative = -0.5 * u * u * a.xyz + (1.5 * t2 - 2.0 * t) * b.xyz
+    + (-1.5 * t2 + t + 0.5) * c.xyz + 0.5 * t2 * d.xyz;
+  return (u * u * u * a + (3.0 * t3 - 6.0 * t2 + 4.0) * b
+    + (-3.0 * t3 + 3.0 * t2 + 3.0 * t + 1.0) * c + t3 * d) / 6.0;
+}
 vec3 compressionElevation() { return cross(uCompAx.xyz, uCompLat.xyz); }
 // perfil g(d) de un nodo (s₀, s_D, D) interpolado; gd = ∂g/∂d y gp = (∂g/∂s₀, ∂g/∂s_D, ∂g/∂D)
 float compressionProfile(float depth, vec3 v, out float gd, out vec3 gp) {
@@ -358,7 +388,8 @@ float compressionSample(vec3 p, out vec3 rhat, out float rho) {
   float h = uCompAx.w;
   float x = clamp((sg + h) / (2.0 * h) * float(COMP_NODES - 1), 0.0, float(COMP_NODES - 1));
   int i = min(int(floor(x)), COMP_NODES - 2);
-  vec4 v = mix(compressionTable(i), compressionTable(i + 1), x - float(i));
+  vec3 dv;
+  vec4 v = compressionSpline(i, x - float(i), dv);
   float gd;
   vec3 gp;
   float g = compressionProfile(rho - v.w, v.xyz, gd, gp);
@@ -396,11 +427,10 @@ Warp warpAt(vec3 p) {
   float xr = (sg + h) / (2.0 * h) * float(COMP_NODES - 1);
   float x = clamp(xr, 0.0, float(COMP_NODES - 1));
   int i = min(int(floor(x)), COMP_NODES - 2);
-  vec4 a = compressionTable(i);
-  vec4 b = compressionTable(i + 1);
   float inside = xr >= -1e-4 && xr <= float(COMP_NODES - 1) + 1e-4 ? float(COMP_NODES - 1) / (2.0 * h) : 0.0;
-  vec4 v = mix(a, b, x - float(i));
-  vec3 dv = (b.xyz - a.xyz) * inside;
+  vec3 dv;
+  vec4 v = compressionSpline(i, x - float(i), dv);
+  dv *= inside;
   float tl = 1.0 - smoothstep(h, h + COMP_LAT_TAPER, abs(sg));
   float dtl = -smoothstepSlope(h, h + COMP_LAT_TAPER, abs(sg)) * sign(sg);
   float gd;

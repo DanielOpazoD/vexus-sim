@@ -135,11 +135,13 @@ const AXES: Partial<Record<VesselId, readonly Vec3[]>> = {
     [93, -37, -70],
   ],
   hepaticArtery: [
-    [-20, 18, -83],
-    [-17, 22, -65],
-    [-25, 16, -53],
-    [-45, 20, -43],
-    [-65, 20, -36],
+    // Pedículo estimado en el mismo registro LAS: arteria anterior e
+    // izquierda de la porta fuente, sin invadir su luz (285).
+    [-5, 23, -83],
+    [-6, 29, -65],
+    [-17, 34, -49],
+    [-45, 28, -39],
+    [-65, 24, -36],
   ],
   sma: [
     [9.3, -10, -102],
@@ -159,8 +161,8 @@ const EXTRA: Record<keyof typeof ABDOMINAL_VESSEL_RADII, readonly Vec3[]> = {
   ],
   commonHepaticArtery: [
     [4, 5, -82],
-    [-8, 18, -92],
-    [-20, 18, -83],
+    [-4, 19, -92],
+    [-5, 23, -83],
   ],
   ima: [
     [7.1, 4.5, -170],
@@ -328,22 +330,26 @@ export function registerAbdominalVessels(vessels: VesselDef[], ducts: DuctDef[])
     cbd: [
       [-35, 5, -146],
       [-28, 9, -115],
-      [-23, 12, -78],
-      [-24, 24, -56],
+      [-21.9, 17, -90],
+      [-22.5, 23, -78],
+      [-31, 29, -56],
     ],
     cysticDuct: [
-      [-29, 18, -81],
-      [-26, 14, -78],
-      [-23, 12, -78],
+      // Cuello dentro de la luz del campo vesicular fuente, no del órgano
+      // analítico legado. Trayecto [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION.
+      [-37.5, 18, -80],
+      [-32, 20, -87],
+      [-21.9, 17, -90],
     ],
     rightHepaticDuct: [
-      [-24, 24, -56],
-      [-44, 23, -49],
+      [-31, 29, -56],
+      [-49, 27, -47],
       [-70, 18, -42],
     ],
     leftHepaticDuct: [
-      [-24, 24, -56],
-      [-7, 33, -46],
+      [-31, 29, -56],
+      [-31, 41, -51],
+      [-7, 43, -45],
       [13, 44, -40],
     ],
   };

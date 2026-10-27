@@ -8,6 +8,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'abdominal-atlas-reference-adult',
   'abdominal-viscera-internals-estimated',
   'abdominal-vascular-branches-estimated',
+  'hepatobiliary-connectors-estimated',
   'abdominal-liver-size-fixed',
   'abdominal-3d-texture-minimum',
   'reference-thorax-incomplete',

@@ -89,6 +89,12 @@ cuando corresponda; `--base <ref>` permite elegir otra base. Las rutas se interp
 El resultado guarda archivos elegidos, etapas, logs, tiempos, SHA y huella de contenido; rechaza
 cambios durante la ejecución y no sobrescribe carpetas de evidencia.
 
+CI y `workspace:e2e` escriben además `[e2e:begin]` al comenzar cada intento,
+con su id, ruta, título, trabajador y SHA declarado. Si falta el JSON final,
+el log permite localizar el último intento que comenzó. El marcador no acredita
+que termine ni pase: el veredicto sigue dependiendo de los informes y sus
+verificadores. El registro de etapas de arranque conserva su función separada.
+
 - Documentación: formato; índice cuando cambia el registro de decisiones.
 - Tests explícitos: esos archivos; una prueba lenta explícita conserva su plazo original.
 - Módulos fuente: pruebas rápidas relacionadas por imports estáticos de Vitest.

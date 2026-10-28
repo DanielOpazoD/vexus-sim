@@ -290,3 +290,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [284](DECISIONS.md#L9250) | Envolvente parietal continua y prioridad Color con filtro bajo | vigente |
 | [285](DECISIONS.md#L9266) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
 | [286](DECISIONS.md#L9286) | Reutilización exacta de la geometría de apoyo | vigente |
+| [287](DECISIONS.md#L9333) | Identificar la prueba E2E antes de su resultado | vigente |

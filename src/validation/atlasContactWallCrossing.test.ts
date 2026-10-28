@@ -25,32 +25,37 @@ afterAll(() => {
 // Exact acquired pose of the thin renal line, plus neighboring manual slides.
 // Compare the reported wall with a separate fine scan of the SAME body depth,
 // not a saved image or a prescribed coupling value. Real lifted probes still lose contact.
-it('finds the real first wall crossing throughout a hepatorenal slide, including a short final bracket', () => {
+it('finds the real first wall crossing while sliding, pressing and lifting the probe', () => {
   const scene = new AnatomyScene(NORMAL_ADULT),
     tr = CONVEX_C35;
-  for (const dz of [-1, -0.2, 0, 0.2, 1]) {
-    const contact = probeContact(
-      { phi: 2.99, z: -113 + dz, lift: 0, yaw: -0.24452521426888296, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
-      tr,
-      scene.torso,
-    );
-    const f = contact.frame,
-      W = contact.plateMm;
-    for (let k = 24; k <= 30; k++) {
-      const s = nodeSin(k, tr.halfSector),
-        c = Math.sqrt(1 - s * s);
-      const dir = f.axial.map((v, i) => v * c + f.lateral[i] * s) as Vec3;
-      const E = f.curvatureCenter.map((v, i) => v + tr.curvatureRadius * dir[i]);
-      const depthAt = (r: number) => -torsoDepth(E.map((v, i) => v + dir[i] * r) as Vec3, scene.torso);
-      const rs = contact.summary.skinAlongMm[k];
-      let first = rs;
-      while (depthAt(first) < W && first < rs + 3 * W) first += 0.025;
-      expect(depthAt(first), `dz${dz}, node${k}: scan reaches the wall`).toBeGreaterThanOrEqual(W);
-      const reported = contact.summary.wallAlongMm[k];
-      expect(Math.abs(reported - first), `dz${dz}, node${k}: first crossing`).toBeLessThan(0.026);
-      expect(Math.abs(depthAt(reported) - W)).toBeLessThan(0.001);
+  for (const lift of [-4, 0, 1.5, 3, 8])
+    for (const dz of [-1, -0.2, 0, 0.2, 1]) {
+      const contact = probeContact(
+        { phi: 2.99, z: -113 + dz, lift, yaw: -0.24452521426888296, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
+        tr,
+        scene.torso,
+      );
+      const f = contact.frame,
+        W = contact.plateMm;
+      for (let k = 24; k <= 30; k++) {
+        const s = nodeSin(k, tr.halfSector),
+          c = Math.sqrt(1 - s * s);
+        const dir = f.axial.map((v, i) => v * c + f.lateral[i] * s) as Vec3;
+        const E = f.curvatureCenter.map((v, i) => v + tr.curvatureRadius * dir[i]);
+        const depthAt = (r: number) => -torsoDepth(E.map((v, i) => v + dir[i] * r) as Vec3, scene.torso);
+        const rs = contact.summary.skinAlongMm[k];
+        // Presión extra y retirada parcial cambian el marco que debe medirse.
+        // Este cruce independiente detecta reutilizar la cara del solver después
+        // de ese cambio, aunque el resumen y la tabla sean coherentes entre sí.
+        expect(Math.abs(depthAt(rs)), `lift${lift}, dz${dz}, node${k}: skin crossing`).toBeLessThan(0.001);
+        let first = rs;
+        while (depthAt(first) < W && first < rs + 3 * W) first += 0.025;
+        expect(depthAt(first), `dz${dz}, node${k}: scan reaches the wall`).toBeGreaterThanOrEqual(W);
+        const reported = contact.summary.wallAlongMm[k];
+        expect(Math.abs(reported - first), `dz${dz}, node${k}: first crossing`).toBeLessThan(0.026);
+        expect(Math.abs(depthAt(reported) - W)).toBeLessThan(0.001);
+      }
     }
-  }
   const lifted = probeContact(
     { phi: 2.99, z: -113, lift: 30, yaw: -0.24452521426888296, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
     tr,

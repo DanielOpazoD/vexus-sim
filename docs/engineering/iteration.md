@@ -152,6 +152,14 @@ La regla lateral también debe contrastarse con la PRF adquirida cuando el lími
 alcanzar la petición; no sustituirla por un número elegido de una captura. Sus ocho segundos,
 contraste de inversión, tamaños y plazos permanecen intactos.
 
+Para transporte, renovación o rampas PW, incluir `portalAcquisition.test.ts`
+junto a los tests analíticos del volumen de muestra. Es un testigo rápido por
+la cadena real: respiración del caso ventilado, semilla original y escalas
+±20 → ±40. Detectó en 2,39 s una PF falsa aceptada del experimento `f6ce803`,
+que había pasado once E2E Metal y las pruebas analíticas. La matriz exhaustiva
+`examChainScale.test.ts` conserva todos sus casos y límites en la aceptación;
+el testigo solo adelanta este negativo concreto al feedback y al hook rápido.
+
 Coordinar las ediciones con quien ejecuta un control: cambiar un módulo importado o su configuración
 durante una prueba puede invalidar el resultado antes de comprobar el defecto. Las revisiones de lectura
 y la preparación externa pueden continuar en paralelo. Para arneses ESM fuera del paquete, usar

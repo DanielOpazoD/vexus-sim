@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pruebas: testigo rápido de adquisición portal con respiración y cambio de escala; detecta una regresión real de renovación PW sin sustituir la matriz exhaustiva (289).
+
 - Referencia PSF: declara el campo 2D realmente utilizado por PyMUST con Y=0, rechaza atribuciones de foco elevacional y conserva los originales y sus anchuras (288).
 
 - Adquisición renal: entrada posterolateral con pared menos oblicua y puertas venosa/arterial en el mismo plano; caja ajustada, sin mover órganos ni ocultar sombras (276).

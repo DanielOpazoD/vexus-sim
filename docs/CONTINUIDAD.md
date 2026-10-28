@@ -1,5 +1,20 @@
 # Continuidad de VExUS LAB
 
+## Retorno del moteado: brecha reproducida (28 de octubre, decisión 290)
+
+Sobre PR296 integrado (`f60e21c`), el campo de moteado cambia tras algunos
+recorridos cerrados amplios; el ancla final también depende de la cadencia.
+Los controles pequeños regresan exactamente. El diagnóstico GPU Metal a
+192 × 1024 confirma la pérdida de correlación al volver, sin cambiar física
+ni resolución. Se incorpora un contrato CPU rápido con tres fallos esperados,
+se corrige un comentario que atribuía reanclaje a una prueba con tiempo fijo
+y se declara `speckle-path-dependent`. No es una corrección de producto.
+
+La corrección material y su referencia/coste siguen pendientes. Protocolo,
+controles y límites en [retorno del moteado](fidelity/speckle-return.md);
+originales en `vexus-speckle-return-evidence-20261028`. Revisión, check y CI
+del candidato final se acreditan por separado.
+
 ## Testigo temprano de adquisición portal (28 de octubre, decisión 289)
 
 El experimento local `f6ce803` aportaba el eco de renovación PW en el pulso

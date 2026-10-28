@@ -293,3 +293,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [287](DECISIONS.md#L9333) | Identificar la prueba E2E antes de su resultado | vigente |
 | [288](DECISIONS.md#L9368) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |
 | [289](DECISIONS.md#L9380) | Detectar pronto una PF portal falsa causada por renovación PW | vigente |
+| [290](DECISIONS.md#L9392) | Conservar el contrato incumplido de retorno del moteado | vigente |

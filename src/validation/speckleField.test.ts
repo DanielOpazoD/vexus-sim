@@ -95,7 +95,7 @@ describe('medio de dispersores anclado (decisión 55)', () => {
     expect(image(BASE, anchor)).toEqual(ref);
     // a 4° el plano está a 3–7 mm del original en el parche, más que el grosor de corte
     expect(after(4)).toBeLessThan(0.3);
-    // a 8° además se renueva el ancla (REANCHOR_DEG): sigue decorrelado
+    // Con tiempo fijo el ancla no se renueva: el plano a 8° atraviesa otro tejido.
     expect(after(8)).toBeLessThan(0.3);
   });
 

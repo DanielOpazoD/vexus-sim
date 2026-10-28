@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../src/anatomy/abdominalAtlasData';
 import { bootWithoutErrors, budget } from './support';
+import { PANCREAS_SLICE_POSE } from '../src/validation/fixtures/pancreasSlice';
 
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const half = new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2);
@@ -97,7 +98,11 @@ const organSlices = [
     name: 'pancreas',
     tissue: 33,
     minimum: 80,
-    pose: { phi: 1.57, z: -115, yaw: -1.5623784237291105, rock: 0.11865969197238625, tilt: -0.10030899383127126 },
+    // Mismo plano anatómico anterior, recalculado fuera de línea al corregir la
+    // piel (282, regularización 284 y ensanche 285): intersección piel/plano y cambio de base de sus ejes rígidos;
+    // el apoyo lateral se elige por acoplamiento, sin consultar el órgano.
+    // No se optimiza por conteo de píxeles ni se cambia el mínimo exigido.
+    pose: PANCREAS_SLICE_POSE,
   },
   {
     name: 'bladder',
@@ -148,12 +153,32 @@ for (const slice of organSlices)
         }
         if ([13, 14, 35, 36, 37, 38].includes(c.tissue)) hollowFlow += Number(c.bloodVelocity !== null);
       }
-      return { pose: s.pose, face: s.frame.face, target: tissues[target] ?? 0, tissues, tested, matches, hollowFlow };
+      return {
+        pose: s.pose,
+        face: s.frame.face,
+        elevation: s.frame.elevation,
+        contact: s.contact.contact.reduce((sum, v) => sum + v, 0) / s.contact.contact.length,
+        target: tissues[target] ?? 0,
+        tissues,
+        tested,
+        matches,
+        hollowFlow,
+      };
     }, slice.tissue);
     expect(result.target, JSON.stringify(result)).toBeGreaterThan(slice.minimum);
     expect(result.tested).toBeGreaterThan(1000);
     expect(result.matches).toBe(result.tested);
     expect(result.hollowFlow).toBe(0);
+    if (slice.name === 'pancreas') {
+      // Referencia del plano mundo anterior a 282; el contacto puede desplazar
+      // el origen dentro del plano, pero no rotarlo hacia otro corte más fácil.
+      const normal = [0.003375168013160991, 0.0516098992427323, -0.9986616176368434];
+      const origin = [-2.6362464160982, 88.56854928339096, -116.21269058511825];
+      expect(result.elevation.reduce((sum, v, i) => sum + v * normal[i], 0)).toBeCloseTo(1, 5);
+      expect(Math.abs(result.face.reduce((sum, v, i) => sum + (v - origin[i]) * normal[i], 0))).toBeLessThan(0.01);
+      // Mayoría de la apertura acoplada: un plano correcto sin apoyo no basta.
+      expect(result.contact).toBeGreaterThan(0.5);
+    }
     if (slice.name === 'bladder') expect(result.tissues[14]).toBeGreaterThan(200);
     await page.screenshot({ path: info.outputPath(`${slice.name}.png`) });
     expect(errors).toEqual([]);

@@ -15,7 +15,7 @@ tiene y=0. **PyMUST 0.1.9 selecciona entonces su campo 2D**, aunque se suministr
 altura de 13 mm y foco elevacional de 80 mm: esos dos parámetros no se aplican.
 Esta referencia no mide foco en elevación ni espesor del corte. La descripción
 anterior que atribuía desenfoque elevacional a otras profundidades era incorrecta
-(decisión 272); las adquisiciones originales se conservan sin recalcularlas.
+(decisión 288); las adquisiciones originales se conservan sin recalcularlas.
 
 La referencia lateral v2 desplaza un blanco a través de un haz fijo y recibe
 siempre en el punto nominal. Conserva RF por desplazamiento y los perfiles

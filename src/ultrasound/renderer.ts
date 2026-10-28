@@ -1208,6 +1208,10 @@ export class UltrasoundRenderer {
     return this.cine.count;
   }
 
+  get acquisitionSerial(): number {
+    return this.frameCount;
+  }
+
   /** Cuadro i del cine (0 = el más viejo): su instante y sus ajustes. */
   cineFrame(i: number): CineFrame {
     return this.cine.at(i);

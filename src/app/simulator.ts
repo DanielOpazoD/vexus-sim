@@ -133,12 +133,13 @@ export class Simulator {
   /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
+  acquisitionEpoch = 0;
+  acquisitionFrameAfter: number | null = null;
   /** Marco del último avance físico, conservado para estimar la velocidad aunque se dibuje entre pasos. */
   private lastFrame: ProbeFrame;
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
   private lastContact: ProbeContact;
   private contactPose: ProbePose;
-  private lastFrameT = 0;
   private probeVel: Vec3 = [0, 0, 0];
   private lastColorUpdate = -Infinity;
   private readonly acquisition = new AcquisitionEquipment();
@@ -218,6 +219,15 @@ export class Simulator {
     this.syncProbeContact();
   }
 
+  /** Cambia el régimen de adquisición, conservando paciente, dinámica y reloj. */
+  beginAcquisitionEpoch(): void {
+    this.acquisitionEpoch++;
+    this.acquisitionFrameAfter = this.renderer.acquisitionSerial;
+    this.pwChain.reset();
+    this.gateTrack.length = 0;
+    this.renderer.mStrip.clear();
+  }
+
   /** El contacto depende de la pose, no de que el reloj haya integrado otro paso (decisión 179). */
   private syncProbeContact(): void {
     if (samePose(this.pose, this.contactPose)) return;
@@ -231,6 +241,7 @@ export class Simulator {
     // The browser already released the lost context's resources. Deleting those
     // invalid handles after restoration sets INVALID_OPERATION in the new context.
     this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
+    this.beginAcquisitionEpoch();
   }
 
   /**
@@ -254,11 +265,10 @@ export class Simulator {
     this.syncProbeContact();
     // Sonda: velocidad estimada entre cuadros (clutter y destello por movimiento)
     const newFrame = this.lastContact.frame;
-    const dtFrame = Math.max(1e-3, clock.t - this.lastFrameT + steps * clock.dt);
-    const v = probeVelocity(this.lastFrame, newFrame, dtFrame);
-    this.probeVel = [v[0] * 0.6, v[1] * 0.6, v[2] * 0.6];
+    // Las dos poses delimitan este lote, no el lote previo más el actual.
+    // Color y PW reciben la velocidad cinemática sin atenuación arbitraria.
+    this.probeVel = probeVelocity(this.lastFrame, newFrame, steps * clock.dt);
     this.lastFrame = newFrame;
-    this.lastFrameT = clock.t;
 
     const pw = this.pw;
     if (pw.enabled) this.pwChain.begin(pw.prfHz, this.transducer.f0Doppler, pw.gainDb, pw.wallFilterHz, t0 + clock.dt);

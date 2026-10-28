@@ -5,7 +5,18 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
-- Referencia PSF: declara el campo 2D realmente utilizado por PyMUST con Y=0, rechaza atribuciones de foco elevacional y conserva los originales y sus anchuras (272).
+- Referencia PSF: declara el campo 2D realmente utilizado por PyMUST con Y=0, rechaza atribuciones de foco elevacional y conserva los originales y sus anchuras (288).
+
+- Adquisición renal: entrada posterolateral con pared menos oblicua y puertas venosa/arterial en el mismo plano; caja ajustada, sin mover órganos ni ocultar sombras (276).
+- Medición portal: distingue sentido dominante de dirección anatómica y solicita confirmarla (277).
+
+- Build: referencias estáticas GLSL sin pérdida recuperan 7,5 KiB sin cambiar programas ni ampliar presupuestos (275).
+
+- Renal: escala inicial ±15 cm/s en Color/PW, filtro bajo y caja propia; explicación del filtro color y del aliasing sin modificar las velocidades (274).
+
+- Adquisición: cambios respiratorios e intervenciones abren una serie sin mezclar señales; historial de mediciones separado y cálculo literal/contextual identificado (273).
+
+- Patrones venosos: fases ausentes/solo S e entradas inválidas dejan de parecer inversión, S+D o normalidad; PF sin contradicción por redondeo y textos docentes que distinguen modelo, contexto y hallazgos (272).
 
 - Laboratorio venoso: presión auricular sincronizada con ECG/PW y cursor común; selector sinusal/FA que conserva el escenario y exportación v2 de parámetros con importación compatible v1 (271).
 

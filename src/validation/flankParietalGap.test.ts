@@ -3,7 +3,7 @@ import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { abdominalAtlasSdf, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setThoracicAtlas, thoracicValue } from '../anatomy/thoracicAtlas';
-import { bodySection, setAbdominalBody } from '../anatomy/referenceBody';
+import { abdominalBody, bodySection, setAbdominalBody } from '../anatomy/referenceBody';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
@@ -26,7 +26,7 @@ afterAll(() => {
 });
 
 for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
-  it(`${patient.id}: el contacto parietal continúa bajo el borde hepático sin una cuña de relleno (222)`, () => {
+  it(`${patient.id}: la envolvente parietal conserva vísceras y hueso dentro del perfil fuente (284)`, () => {
     const s = new AnatomyScene(patient);
     const gaps: number[] = [];
     for (const phi of [2.91, 3.04, 3.16])
@@ -53,11 +53,18 @@ for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
         if (bone >= 0) expect(skinRadius - bone).toBeGreaterThan(s.torso.skinMm);
         const gap = skinRadius - s.wallThickness() - outer;
         gaps.push(gap);
-        // 2 mm de protección fuente + 1,5 mm de celda + 0,5 mm del ajuste radial.
-        // Es una cota geométrica del modelo, no un espesor normal humano.
-        expect(gap, `phi=${phi}, z=${z}`).toBeLessThan(4);
+        // La cota anterior de 4 mm forzaba copiar concavidades viscerales en la piel.
+        // Ahora se comprueba contención y la envolvente fuente; el espesor
+        // residual se informa, no se presenta como medida clínica calibrada.
         expect(gap, 'sin recortar el interior visceral a más de una celda').toBeGreaterThan(-1.5);
       }
     console.log({ caseId: patient.id, minGap: Math.min(...gaps), maxGap: Math.max(...gaps) });
     expect(gaps).toHaveLength(12);
+    const source = abdominalBody!;
+    for (let row = 0; row < 14; row++)
+      for (let k = 0; k < 64; k++) {
+        const radius = bodySection((k * 2 * Math.PI) / 64, -400 + 40 * row, s.torso.profile!)[0];
+        // En nodos fuente: el ajuste no puede expandir la segmentación heredada.
+        expect(radius).toBeLessThanOrEqual(source[row * 65 + k + 1] + Math.max(0, s.wallThickness() - 10) + 1e-5);
+      }
   });

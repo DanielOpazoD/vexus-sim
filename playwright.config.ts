@@ -24,7 +24,9 @@ export default defineConfig({
   failOnFlakyTests: !!process.env.CI,
   // en CI: anotaciones de GitHub + lista con la duración de cada prueba (para ver qué encarece la e2e)
   // y el JSON con las anotaciones de cada prueba (arranque y ritmo del bucle, e2e/support.ts), que ci.yml guarda siempre
-  reporter: process.env.CI ? [['github'], ['list'], ['json', { outputFile: 'e2e-results.json' }]] : 'list',
+  reporter: process.env.CI
+    ? [['./tools/ci/e2eStartReporter.ts'], ['github'], ['list'], ['json', { outputFile: 'e2e-results.json' }]]
+    : 'list',
   use: {
     baseURL: 'http://localhost:6609',
     trace: 'retain-on-failure',

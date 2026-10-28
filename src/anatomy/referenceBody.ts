@@ -7,8 +7,9 @@ import type { Vec3 } from '../core/vec3';
 export const BODY_ROWS = 8;
 export const ABDOMINAL_BODY_ROWS = 14;
 export const COSTAL_BODY_ROWS = 53;
-/** Transición caudal del ajuste parietal estimado (183, 217). */
-export const COSTAL_BODY_BLEND_Z = [-145, -115] as const;
+/** Transición caudal estimada de 60 mm: el tramo previo de 30 mm copiaba
+ * una cresta en la pared posterolateral. No cambia el atlas visceral (285). */
+export const COSTAL_BODY_BLEND_Z = [-175, -115] as const;
 export const BODY_MAX_ROWS = COSTAL_BODY_ROWS;
 export const BODY_STRIDE = 65;
 /** El ajuste costal usa las mismas 128 direcciones que sus coeficientes, sin

@@ -1,5 +1,5 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
-import { nyquistVelocityCms } from '../../core/units';
+import { nyquistVelocityCms, velocityFromShiftMmS } from '../../core/units';
 import { dopplerScaleCommand } from '../../app/dopplerScale';
 import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
@@ -56,7 +56,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const color = document.createElement('div');
   p.appendChild(color);
   const c = ctx.section(color, 'Doppler color', {
-    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. La escala avanza por los valores alcanzables y puede limitarse en tríplex o a mayor profundidad. El color depende del ángulo del haz.',
+    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Una escala baja puede plegar rojo a azul sin inversión real del flujo: aumenta la escala para comprobarlo. El filtro atenúa señales lentas; si el flujo supera su banda, el cambio puede ser poco visible. La escala avanza por los valores alcanzables y puede limitarse en tríplex o a mayor profundidad. El color depende del ángulo del haz.',
   });
   ctx.track(
     slider(c, {
@@ -89,6 +89,14 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       format: (v) => `${v} dB`,
     }),
   );
+  const cutoff = note(c);
+  ctx.track({
+    sync: () => {
+      const hz = s().color.wallFilterHz;
+      const velocity = velocityFromShiftMmS(hz, s().transducer.f0Doppler, 0) / 10;
+      cutoff.textContent = `Filtro ${Math.round(hz)} Hz ≈ ${velocity.toFixed(1)} cm/s axiales. Atenuación gradual; no es un límite de velocidad absoluta.`;
+    },
+  });
   const cr = document.createElement('div');
   cr.className = 'field-row';
   c.appendChild(cr);
@@ -114,7 +122,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const pw = document.createElement('div');
   p.appendChild(pw);
   const w = ctx.section(pw, 'Doppler pulsado', {
-    info: 'Arrastra en la imagen para mover la puerta. El filtro de pared elimina frecuencias bajas.',
+    info: 'Arrastra en la imagen para mover la puerta. La línea de base desplaza la presentación sin cambiar la señal. El filtro de pared elimina frecuencias bajas.',
   });
   ctx.track(
     slider(w, {
@@ -125,6 +133,17 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
       set: (v) => ctx.dispatch(dopplerScaleCommand(s().equipment, s().profile, 'pw', v)),
       format: (v) => `±${v} cm/s`,
+    }),
+  );
+  ctx.track(
+    slider(w, {
+      label: 'Línea de base',
+      min: -0.45,
+      max: 0.45,
+      step: 0.05,
+      get: () => s().pw.baselineShift,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
+      format: (v) => `${(v * 100).toFixed(0)} %`,
     }),
   );
   ctx.track(
@@ -170,19 +189,8 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
 
   const adv = ctx.section(pw, 'Avanzado', {
     collapsed: true,
-    info: 'La corrección angular solo cambia la velocidad rotulada y la línea de base solo la presentación; ninguna de las dos toca la señal.',
+    info: 'La corrección angular solo cambia la velocidad rotulada; no modifica la señal adquirida.',
   });
-  ctx.track(
-    slider(adv, {
-      label: 'Línea de base',
-      min: -0.45,
-      max: 0.45,
-      step: 0.05,
-      get: () => s().pw.baselineShift,
-      set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
-      format: (v) => `${(v * 100).toFixed(0)} %`,
-    }),
-  );
   ctx.track(
     slider(adv, {
       label: 'Corrección angular',

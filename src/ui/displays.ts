@@ -1,6 +1,7 @@
 import { ecgX, SweepTimeline } from './sweep';
 import { drawCursor } from './mModeView';
-import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
+import { nyquistVelocityCms } from '../core/units';
+import { spectralBinAt } from './spectralAxis';
 import { colorMapRgb } from '../ultrasound/colorMap';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
@@ -265,15 +266,9 @@ export class SpectrogramView {
       if (colPx <= 0) continue;
       const strip = this.#offCtx.createImageData(colPx, H);
       for (let y = 0; y < H; y++) {
-        // y=0 arriba ↔ frecuencia máxima de la banda mostrada
-        let fracBand = 1 - y / H; // 0..1 de abajo a arriba
-        if (pw.invert) fracBand = 1 - fracBand;
-        // banda mostrada: [−PRF/2 + shift·PRF, PRF/2 + shift·PRF]
-        const f = (fracBand - 0.5 + pw.baselineShift) * col.prfHz;
-        // plegar a la banda medida (la línea de base no crea muestras)
-        const fw = wrapToNyquist(f, col.prfHz);
-        const k = Math.round((fw / col.prfHz) * fft + fft / 2);
-        const kk = Math.min(fft - 1, Math.max(0, k));
+        // Muestreo en el centro del píxel y vecindad circular de la FFT.
+        // En esta consola invertir también refleja la posición de la base.
+        const kk = spectralBinAt((y + 0.5) / H, fft, pw.invert ? -pw.baselineShift : pw.baselineShift, pw.invert);
         const db = col.powerDb[kk];
         // Mapeo de brillo: 45 dB de rango sobre el suelo de ruido a ganancia 0 (la
         // ganancia ya multiplica la IQ, así que el ruido sube con ella).

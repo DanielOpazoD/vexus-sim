@@ -153,7 +153,7 @@ export class ControlPanel implements PanelContext {
       .then(({ TeacherTab }) => {
         const t = new TeacherTab(this, this.#panels.get('docente')!);
         // una intervención cambia al paciente: las mediciones de antes no entran en el grado de después
-        t.onIntervention = () => this.#measure.clearMeasurements();
+        t.onIntervention = () => this.onAcquisitionConditionsChanged('intervention');
         if (this.#exportDiagnostics) t.onExportDiagnostics = this.#exportDiagnostics;
         if (this.#resetPatient) t.onResetPatient = this.#resetPatient;
         t.equivalence = this.#equivalence;
@@ -174,6 +174,14 @@ export class ControlPanel implements PanelContext {
   onSimulatorChanged(): void {
     this.#measure.onSimulatorChanged();
     this.#teacher?.onSimulatorChanged();
+  }
+
+  onAcquisitionConditionsChanged(reason: 'respiration' | 'intervention'): boolean {
+    this.sim().beginAcquisitionEpoch();
+    this.store.set({ tool: 'none' });
+    const had = this.#measure.archiveMeasurements(reason);
+    this.onCapture?.();
+    return had;
   }
 
   setIvcCaliper(mm: number | null): void {

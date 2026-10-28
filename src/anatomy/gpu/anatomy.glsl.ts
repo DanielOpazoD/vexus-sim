@@ -655,6 +655,12 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     float dCurtain = lungCurtainDistance(m, -depth - wall);
     if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); return; }
   }
+  // Una consulta vesicular compartida por la unión ductal y el órgano;
+  // no repetir el campo ni expandir su cálculo dentro del bucle de tubos.
+  vec3 gn;
+  float dGb;
+  if (uAbdominalAtlasEnabled != 0) dGb = abdominalAtlasSdf(m, 7) + ${GALLBLADDER_WALL_MM.toFixed(3)};
+  else dGb = gallbladderSdf(m, gn);
   // Vasos y conductos (descarte por esfera envolvente)
   int bestT = -1; float bestD = 1e9; float bRho; float bR; int bSeg = 0; float bSegS = 0.0; float bSegArc = 0.0;
   ivec2 candidates=tubeCandidates(m);
@@ -668,6 +674,7 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     vec4 hw = sceneTexel(t * TUBE_HDR + 1);
     // pared periportal proporcional al calibre local (misma fórmula que wallThicknessMm)
     float wallMm = int(hw.y + 0.5) == T_WALL_PORTAL ? clamp(0.24 * rl, 0.5, 1.4) : hw.x;
+    if (sd < wallMm && int(hw.w + 0.5) == IF_DUCT && dGb < sd) continue;
     if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bR = rl; bSeg = sg; bSegS = ss; bSegArc = sa; }
   }
   // la cara del tubo que gana (eje, gradiente y curvatura), una vez y fuera del bucle (decisión 90)
@@ -718,12 +725,9 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     if (dDome > 0.5 * DIAPHRAGM_MM) { c.iface = IF_DIAPHRAGM_LIVER; c.ifd = DIAPHRAGM_MM - dDome; }
     return;
   }
-  vec3 gn;
-  float dGb;
   if (uAbdominalAtlasEnabled != 0) {
-    dGb = abdominalAtlasSdf(m, 7) + ${GALLBLADDER_WALL_MM.toFixed(3)};
     if (dGb < 0.0 || dGb < uGbExtra.y) gn = abdominalAtlasGradient(m, 7);
-  } else dGb = gallbladderSdf(m, gn);
+  }
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = -dGb; return; }
   if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = dGb; return; }
   // Riñones; dPeri = distancia a la cara externa de la grasa perirrenal y periThin, si esa grasa es fina (la cápsula

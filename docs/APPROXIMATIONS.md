@@ -98,6 +98,8 @@ Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar f
 
 Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 130 mm atlas (150 mm legacy/reference)/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +6 dB de potencia, filtro 60 Hz. La ganancia conserva exactamente la potencia lineal del preset histórico rotulado +12 con conversión /20 (247); no es un nuevo ajuste empírico. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
 
+Renal (274, 276): escala inicial Color/PW ±15 cm/s, filtro 20 Hz y foco 90 mm; profundidad 160 mm en atlas y 180 mm en anatomías anteriores. En atlas, caja 45–110 mm y acceso posterolateral estimado para favorecer pared y pareja interlobar; no son ajustes universales ni una calibración clínica. El operador puede cambiar todo. El paciente grave puede exigir aumentar escala. No se corrige la amplitud ni se impone el color por el tipo de vaso. La pared conserva su aproximación anatómica previa; mejorar esta entrada no acredita todos los cortes posibles.
+
 Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
 
 - Decisiones 173 y 234: Color aplica la respuesta estacionaria de potencia de los dos biquads digitales PW, con frecuencia plegada y corte limitado al 45 % de la PRF. Conserva −6,02 dB en el corte y ganancia unidad en Nyquist. El corte cero es identidad. Esta coincidencia interna no equivale a filtrar un ensemble IQ temporal real ni a calibrar un filtro comercial; su orden/corte siguen siendo estimados.
@@ -242,6 +244,17 @@ ni calibración externa del contorno. Las 128 direcciones del perfil ajustado ev
 guarda entre las 64 direcciones anteriores; la rejilla de coeficientes y resolución acústica no cambian.
 Las cotas geométricas de las pruebas no equivalen a precisión clínica.
 
+### Soporte visceral al terminar el hígado (282)
+
+Dentro del territorio ya ajustado, el perfil continúa sobre las vísceras vecinas
+también fuera del flanco. Evita retomar artificialmente el radio heredado en el
+borde hepático, que plegaba la fascia superficial durante el deslizamiento.
+Conserva pesos, límites, espesores y protección ósea. Es **[EXTRAPOLACIÓN PROPIA] /
+NEEDS_CALIBRATION**: no añade una segmentación cutánea ni valida biomecánica o
+fidelidad clínica. La prueba caudal y las ocho secuencias visuales son un muestreo
+acotado; las tangencias profundas y curvaturas de otras poses requieren evaluación
+propia y no deben confundirse con una rotura superficial.
+
 ### Lectura de interfaces óseas y encuadre hepatorrenal (223)
 
 La interpolación precisa mantiene los ocho nodos originales de RG16F dentro de una celda de
@@ -303,3 +316,22 @@ Calendario (269): la inversión de pulso THI reserva dos disparos por línea, si
 geometrías distintas. El calendario limita B+PW/Color/tríplex; la presentación B pura conserva su
 cadencia anterior. Las referencias y controles de intervalos no acreditan un secuenciador de
 hardware ni adquisición progresiva por línea. Véase la decisión 269.
+
+Tributarias suprahepáticas (281): su caudal de referencia escala con el área de la rama
+y 0,85 de la velocidad media de la colectora. El territorio no representado completa
+el caudal de cada colectora. Este factor evita que una fracción fija sobredimensione
+la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una
+medición humana ni una estenosis. Los cambios de dirección, proyección angular,
+perfil radial y dilatación siguen actuando sobre Color y PW.
+
+### Movimiento de la sonda (283)
+
+Color y PW reciben la traslación media de la cara de la sonda en el tiempo de simulación integrado de cada lote. Se elimina el factor histórico 0,6 y el doble intervalo temporal. No se mide una trayectoria por disparo: la pose del lote es única, el tiempo pendiente se cuantiza a pasos de 4 ms y no se modela un campo completo de velocidad angular o deformación tisular por deslizamiento. La corrección garantiza coherencia cinemática interna; no acredita amplitudes de clutter calibradas con un ecógrafo.
+
+### Pared lateral y Color con filtro bajo (284)
+
+El cierre parabólico no erosivo del perfil estimado usa el espesor parietal y un radio nominal de 120 mm. Puede aumentar la separación residual pared/víscera. No aporta segmentación ni biomecánica nueva; las comprobaciones de contención y continuidad son de poses muestreadas. Color renal inicia ±15 cm/s / 50 Hz / 6 dB; PW ±40 cm/s / 20 Hz independiente. Son ajustes estimados. La prioridad B ya no se anula por potencia elevada; permanecen flash hipoecoico, pérdida de flujo lento con filtro alto y aliasing con escala baja. La prueba empareja ruido sólo en el experimento, sin cambiar el producto.
+
+### Continuidad parietal y pedículo hepatobiliar (285)
+
+La compresión interpola sus controles con B-spline cúbica; conserva las restricciones radiales del modelo, pero no añade biomecánica ni movimiento por disparo. La transición axial estimada de apposición abarca −175…−115 mm. El pedículo usa conectores estimados anclados a porta y vesícula fuente, con unión de luces cístico-vesiculares y separación de paredes arteriales, portales y biliares. No representa todas las variantes ni un árbol biliar completo. La vesícula conserva la segmentación de este adulto y una pared estimada de 1,8 mm; sin ayuno ni distensión adaptados al caso. **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**.

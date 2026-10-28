@@ -8,7 +8,10 @@ import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { openSession } from './support/studentChain';
+import { acquire, openSession, placeGate, probeAt, TR } from './support/studentChain';
+import { bestGateOnVessel } from '../app/gatePlacement';
+import { acousticWindowWeight } from '../app/gateTransmission';
+import { prfFromNyquistCms } from '../core/units';
 
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const profile = readFileSync('src/anatomy/abdominal-body.bin');
@@ -25,6 +28,38 @@ afterEach(() => {
 });
 
 describe('VExUS through the actual abdominal atlas', () => {
+  for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
+    it(`${patient.id}: el mismo plano renal permite puerta venosa medible y arteria acompañante`, () => {
+      const s = openSession(patient, 'apnea-expiratory');
+      while (s.engine.clock.t < 30) s.engine.step();
+      const contact = probeAt(s, 'renal');
+      const vein = placeGate(s, contact, ['interlobarVein1', 'interlobarVein2', 'interlobarVein3']);
+      const weight = acousticWindowWeight(s.anatomy, contact.frame, TR, contact, s.engine.sample, 160, 2.5);
+      const artery = bestGateOnVessel(
+        s.anatomy,
+        contact.frame,
+        TR,
+        s.engine.sample,
+        ['interlobarArtery1', 'interlobarArtery2', 'interlobarArtery3'],
+        145,
+        0.2,
+        weight,
+      );
+      expect(vein).not.toBeNull();
+      expect(artery).not.toBeNull();
+      const severe = patient.id === 'severe-congestion';
+      const result = acquire(s, contact, vein!, 'renal', {
+        prfHz: prfFromNyquistCms(severe ? 50 : 15, TR.f0Doppler),
+        wallFilterHz: 20,
+        focusMm: 90,
+        seconds: 8,
+      }).captures.at(-1)!.m;
+      expect(result).not.toBeNull();
+      expect(result!.quality.issue).toBeNull();
+      expect(result!.pattern).toBe(severe ? 'monophasic' : 'continuous');
+      // La puerta arterial es distinta; no convertir su energía en continuidad venosa.
+      expect(Math.hypot(vein!.r - artery!.r, (vein!.theta - artery!.theta) * 130)).toBeGreaterThan(4);
+    });
   for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
     it(`${patient.id}: real hepatic, main portal and interlobar venous acoustic gates`, () => {
       const s = openSession(patient, 'apnea-expiratory');

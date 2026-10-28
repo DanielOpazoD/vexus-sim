@@ -24,6 +24,7 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
     return cached.profile;
   const profile = new Float32Array(COSTAL_BODY_ROWS * COSTAL_BODY_STRIDE);
   const padding = Math.max(0, wallMm - 10);
+  const inheritedProfile = new Float32Array(profile.length);
   for (let row = 0; row < COSTAL_BODY_ROWS; row++) {
     const z = -400 + (row * 520) / (COSTAL_BODY_ROWS - 1);
     // Conserva el ajuste calibrado a partir de las muestras fuente (183).
@@ -68,7 +69,10 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
           if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => abdominalAtlasSdf(p, f) < 0)) other = r;
           if (thoracicValue(p).d < 0) bone = r;
         }
-        if (hepatic >= 0 || (flankWeight > 0 && other >= 0)) {
+        // Continúa el compartimento parietal sobre las vísceras vecinas al
+        // terminar el hígado. Retomar aquí el contorno heredado crea un
+        // escalón cutáneo y pliega la pared superficial durante el deslizamiento.
+        if (hepatic >= 0 || other >= 0) {
           let lo = hepatic,
             hi = hepatic + 1;
           for (let n = 0; hepatic >= 0 && n < 16; n++) {
@@ -88,6 +92,7 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
         }
       }
       profile[row * COSTAL_BODY_STRIDE + 1 + k] = radius;
+      inheritedProfile[row * COSTAL_BODY_STRIDE + 1 + k] = inherited;
     }
   }
   // Las medias direcciones solo aportan nueva geometría donde continúa el
@@ -100,6 +105,33 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
       const weight = flankApposition((k * 2 * Math.PI) / (COSTAL_BODY_STRIDE - 1), -400 + row * 10);
       profile[i] = inherited + weight * (profile[i] - inherited);
     }
+  // Regularización de concavidades menores que el espesor parietal:
+  // cierre morfológico parabólico, no erosivo, sobre el perfil estimado.
+  // Mantiene los órganos protegidos y el perfil fuente como envolvente máxima.
+  const sectors = COSTAL_BODY_STRIDE - 1;
+  const at = (r: number, k: number) => Math.max(0, Math.min(COSTAL_BODY_ROWS - 1, r)) * COSTAL_BODY_STRIDE + 1 + ((k + sectors) % sectors);
+  for (const angular of [true, false]) {
+    const before = new Float32Array(profile),
+      upper = new Float32Array(profile);
+    // Radio nominal de 120 mm [ESTIMADO] para convertir ángulo a longitud.
+    const step = angular ? (2 * Math.PI * 120) / sectors : 520 / (COSTAL_BODY_ROWS - 1);
+    const reach = Math.ceil(wallMm / step);
+    for (let row = 0; row < COSTAL_BODY_ROWS; row++)
+      for (let k = 0; k < sectors; k++) {
+        let v = -Infinity;
+        for (let n = -reach; n <= reach; n++)
+          v = Math.max(v, before[at(row + (angular ? 0 : n), k + (angular ? n : 0))] - (n * step) ** 2 / (2 * wallMm));
+        upper[at(row, k)] = v;
+      }
+    for (let row = 0; row < COSTAL_BODY_ROWS; row++)
+      for (let k = 0; k < sectors; k++) {
+        let v = Infinity;
+        for (let n = -reach; n <= reach; n++)
+          v = Math.min(v, upper[at(row + (angular ? 0 : n), k + (angular ? n : 0))] + (n * step) ** 2 / (2 * wallMm));
+        const i = at(row, k);
+        profile[i] = Math.max(before[i], Math.min(inheritedProfile[i], v));
+      }
+  }
   cached = { atlas: abdominalAtlas, bone: thoracicAtlas, source, wall: wallMm, skin: skinMm, profile };
   return profile;
 }

@@ -84,4 +84,30 @@ describe('una escala PW solo rotula su propia adquisición', () => {
     s.view.draw(s.sim, s.columns, 1, 3);
     expect(s.offscreen.context.putImageData).toHaveBeenCalledTimes(2);
   });
+
+  it('el borde de Nyquist es periódico y cada píxel muestrea su centro al mover la base o invertir', () => {
+    for (const invert of [false, true])
+      for (const baselineShift of [-0.2, 0, 0.25]) {
+        const s = setup();
+        s.visible.element.height = 512;
+        Object.assign(s.pw, { invert, baselineShift });
+        // Un único bin adquirido en -PRF/2: su vecindad circular debe
+        // continuar en +PRF/2, nunca convertirse en el bin N-1.
+        for (const c of s.columns) {
+          c.powerDb.fill(-200);
+          c.powerDb[0] = 0;
+        }
+        const original = structuredClone(s.columns);
+        s.view.draw(s.sim, s.columns, 1, 3);
+        const [strip] = s.offscreen.context.putImageData.mock.calls[0] as [{ data: Uint8ClampedArray }];
+        const width = strip.data.length / (512 * 4);
+        for (let y = 0; y < 512; y++) {
+          const row = (y + 0.5) / 512;
+          const frequency = ((invert ? row : 1 - row) - 0.5 + baselineShift) * s.pw.prfHz;
+          const bin = ((Math.round((frequency * 128) / s.pw.prfHz + 64) % 128) + 128) % 128;
+          expect(strip.data[y * width * 4], `fila ${y}, base ${baselineShift}, invert ${invert}`).toBe(bin === 0 ? 255 : 0);
+        }
+        expect(s.columns).toEqual(original);
+      }
+  });
 });

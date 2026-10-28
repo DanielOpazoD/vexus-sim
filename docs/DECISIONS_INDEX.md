@@ -275,4 +275,20 @@ Generado por `npm run docs:index` — no editar a mano.
 | [269](DECISIONS.md#L8836) | Calendario Doppler con intervalos completos y escalas efectivas | vigente |
 | [270](DECISIONS.md#L8908) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |
 | [271](DECISIONS.md#L8946) | Presión auricular y ritmo independientes en el laboratorio docente | vigente |
-| [272](DECISIONS.md#L8990) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |
+| [272](DECISIONS.md#L8990) | No inferir patrones venosos a partir de fases ausentes o entradas imposibles | vigente |
+| [273](DECISIONS.md#L9024) | Separar series al cambiar respiración o intervenir | vigente |
+| [274](DECISIONS.md#L9034) | Escala renal inicial y lectura del filtro color | vigente |
+| [275](DECISIONS.md#L9046) | Repeticiones GLSL sin cambiar los programas | vigente |
+| [276](DECISIONS.md#L9056) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
+| [277](DECISIONS.md#L9068) | Sentido portal dominante no equivale a hepatopetalia | vigente |
+| [278](DECISIONS.md#L9076) | Negativo M congelado antes de los calibres | vigente |
+| [279](DECISIONS.md#L9084) | Captura E2E con el formato decimal de PF | vigente |
+| [280](DECISIONS.md#L9092) | La banda PW no termina en el primer resto basal | vigente |
+| [281](DECISIONS.md#L9108) | Tributarias suprahepáticas y preajustes independientes por ventana | vigente |
+| [282](DECISIONS.md#L9169) | Continuidad parietal al terminar el hígado (26 de octubre de 2026) | vigente |
+| [283](DECISIONS.md#L9238) | Movimiento Doppler cinemático y borde espectral periódico | vigente |
+| [284](DECISIONS.md#L9250) | Envolvente parietal continua y prioridad Color con filtro bajo | vigente |
+| [285](DECISIONS.md#L9266) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
+| [286](DECISIONS.md#L9286) | Reutilización exacta de la geometría de apoyo | vigente |
+| [287](DECISIONS.md#L9333) | Identificar la prueba E2E antes de su resultado | vigente |
+| [288](DECISIONS.md#L9368) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |

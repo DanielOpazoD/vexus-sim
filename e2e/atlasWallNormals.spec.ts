@@ -18,6 +18,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       { startPoint: 'hepatorenal', pose: { rockDeg: 6 } },
       { startPoint: 'renal' },
       { startPoint: 'portalSubcostal' },
+      // Deslizamiento caudal junto al borde hepático que reveló el escalón cutáneo.
+      { startPoint: 'subcostal', pose: { zMm: -15 } },
     ] as const) {
       const startPoint = options.startPoint;
       const n = await page.evaluate((opts) => window.__vexusTest!.wallNormals(opts), options);

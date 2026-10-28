@@ -14,7 +14,7 @@ export default defineConfig({
   retries: 0,
   failOnFlakyTests: true,
   outputDir: join(out, 'test-results'),
-  reporter: [['list'], ['json', { outputFile: join(out, 'report.json') }]],
+  reporter: [[join(root, 'tools/ci/e2eStartReporter.ts')], ['list'], ['json', { outputFile: join(out, 'report.json') }]],
   use: {
     ...base.use,
     baseURL: process.env.VEXUS_PREVIEW_URL,

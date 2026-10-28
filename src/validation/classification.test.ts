@@ -10,6 +10,59 @@ import {
 } from '../vexus/classification';
 
 describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
+  it('no deduce inversión hepática ni normalidad cuando una fase no es identificable', () => {
+    for (const [s, d] of [
+      [0, 20],
+      [0, 0],
+      [20, 0],
+      [0, -10],
+    ]) {
+      expect(hepaticPatternFromPeaks(s, d)).toBe('indeterminate');
+    }
+    expect(hepaticPatternFromPeaks(-10, 20)).toBe('severe');
+    const r = classifyVexusC({
+      ivcMaxDiameterMm: 25,
+      hepatic: hepaticPatternFromPeaks(0, 20),
+      portalPulsatilityFraction: 10,
+      renal: 'continuous',
+    });
+    expect(r.grade).toBeNull();
+    expect(r.gradeRange).toEqual([1, 2]);
+  });
+
+  it('no llama S+D a flujo renal solo sistólico ni clasifica fases bajo el suelo de detección', () => {
+    expect(renalPatternFromPeaks(12, 0, 0)).toBe('systolic-only');
+    expect(renalPatternFromPeaks(12, 1, 0, 2)).toBe('systolic-only');
+    expect(renalPatternFromPeaks(1, 1, 0, 2)).toBe('indeterminate');
+    expect(renalPatternFromPeaks(12, 14, 0)).toBe('biphasic');
+    expect(renalPatternFromPeaks(0, 14, 0)).toBe('monophasic');
+    const r = classifyVexusC({
+      ivcMaxDiameterMm: 25,
+      hepatic: 'normal',
+      portalPulsatilityFraction: 10,
+      renal: renalPatternFromPeaks(12, 0, 0),
+    });
+    expect(r.gradeRange).toEqual([1, 2]);
+    expect(r.missingCount).toBe(1);
+  });
+
+  it('rechaza entradas imposibles antes de que una VCI pequeña cierre en grado 0', () => {
+    const normal = { hepatic: 'normal' as const, portalPulsatilityFraction: 10, renal: 'continuous' as const };
+    for (const ivc of [-1, 0, Infinity, -Infinity]) {
+      const r = classifyVexusC({ ivcMaxDiameterMm: ivc, ...normal });
+      expect(r.status).toBe('invalid-input');
+      expect(r.grade).toBeNull();
+      expect(r.gradeRange).toBeNull();
+    }
+    for (const pf of [-10, Infinity, -Infinity]) {
+      expect(classifyPortal(pf)).toBe('invalid-input');
+      expect(classifyVexusC({ ivcMaxDiameterMm: 18, ...normal, portalPulsatilityFraction: pf }).status).toBe('invalid-input');
+    }
+    expect(portalPulsatilityFraction(10, 20)).toBeNaN();
+    expect(portalPulsatilityFraction(20, -5)).toBe(125);
+    expect(classifyPortal(125)).toBe('severe');
+  });
+
   it('PF portal admite > 100 % cuando Vmín < 0 y no se recorta', () => {
     expect(portalPulsatilityFraction(30, 15)).toBeCloseTo(50, 6);
     expect(portalPulsatilityFraction(30, -15)).toBeCloseTo(150, 6);
@@ -48,7 +101,7 @@ describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
     expect(classifyPortal(50)).toBe('severe');
   });
 
-  it('patrón suprahepático: S>D normal, S<D leve, S=D frontera→leve, S≤0 grave', () => {
+  it('patrón suprahepático: S>D normal, S<D leve, S=D frontera→leve, S<0 grave', () => {
     expect(hepaticPatternFromPeaks(28, 18)).toBe('normal');
     expect(hepaticPatternFromPeaks(15, 24)).toBe('mild');
     expect(hepaticPatternFromPeaks(20, 20)).toBe('mild');
@@ -177,7 +230,7 @@ describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
     expect(renalPatternFromPeaks(15, 18, -3.6)).toBe('biphasic');
     expect(renalPatternFromPeaks(15, 18, -3.61)).toBe('reversal-out-of-scheme');
     expect(renalPatternFromPeaks(-5, -2, -8)).toBe('not-assessed');
-    expect(hepaticPatternFromPeaks(0, 20)).toBe('severe');
+    expect(hepaticPatternFromPeaks(0, 20)).toBe('indeterminate');
     expect(portalPulsatilityFraction(20, 20)).toBe(0);
     for (const [pf, near] of [
       [29, true],

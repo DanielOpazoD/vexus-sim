@@ -6,7 +6,7 @@ import { modeHasColor, modeHasPw, toggleM, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
-import { portalPreset } from './app/portalPreset';
+import { windowPreset } from './app/windowPreset';
 import { startPointsFor } from './app/startPoints';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
@@ -166,16 +166,8 @@ export async function start(): Promise<void> {
         // Los gestos libres no pasan por esta ruta y conservan el modo.
         store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab), frozen: false, tool: 'none' });
         imageClick.cancelCaliper();
-        if (sp.id === 'portal' || sp.id === 'portalSubcostal' || (sp.id === 'portalTrunk' && sim().scene.hasAbdominalAtlas))
-          for (const cmd of portalPreset(
-            !!sim().scene.torso.profile,
-            sim().transducer.f0Doppler,
-            sim().scene.hasAbdominalAtlas,
-            sp.id === 'portalTrunk',
-            sp.id === 'portalSubcostal',
-          ))
-            dispatch(cmd);
-        else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
+        for (const cmd of windowPreset(sp.id, sim().transducer.f0Doppler, !!sim().scene.torso.profile, sim().scene.hasAbdominalAtlas))
+          dispatch(cmd);
         probeAnimator.goTo(sp);
       },
       getPose: () => sim().pose,

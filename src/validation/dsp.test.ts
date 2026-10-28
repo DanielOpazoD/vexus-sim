@@ -235,6 +235,30 @@ describe('STFT y envolvente', () => {
     expect(columnPercentileEnvelope(col({ [64 + 5]: -95 }), N, -100)).toBe(0);
   });
 
+  it.each([1, -1] as const)('la ventana espectral no invierte el flujo de signo %i por un resto junto a la base (280)', (sign) => {
+    const powerDb = new Float32Array(128).fill(-55);
+    // Flujo ancho separado de un resto basal; al otro lado solo hay una banda débil.
+    // La captura nativa que motivó la regresión conservaba 0,049 de potencia negativa,
+    // pero la búsqueda desde la base descartaba el flujo y elegía 0,00014 del otro lado.
+    for (let j = 2; j <= 4; j++) powerDb[64 + sign * j] = -45;
+    for (let j = 24; j <= 40; j++) powerDb[64 + sign * j] = -20;
+    for (let j = 50; j <= 54; j++) powerDb[64 - sign * j] = -42;
+    const col = { t: 0, prfHz: 2600, powerDb };
+    expect(columnPercentileEnvelope(col, 128, -55)).toBeCloseTo((sign * 39 * 2600) / 128, 9);
+    // Un pico aislado incluso más potente no es una banda de flujo.
+    powerDb[64 - sign * 60] = -5;
+    expect(columnPercentileEnvelope(col, 128, -55)).toBeCloseTo((sign * 39 * 2600) / 128, 9);
+  });
+
+  it('no convierte picos aislados ni una banda subumbral en flujo detectable (280)', () => {
+    const powerDb = new Float32Array(128).fill(-55);
+    powerDb[64 + 30] = -5;
+    powerDb[64 - 30] = -5;
+    for (let j = 3; j <= 8; j++) powerDb[64 + j] = -46;
+    const result = columnBandEnvelopes({ t: 0, prfHz: 2600, powerDb }, 128, -55);
+    expect(result).toEqual({ posHz: 0, negHz: 0, ePos: 0, eNeg: 0, detected: false });
+  });
+
   it('el extremo robusto ignora el 3 % más extremo de la ventana', () => {
     const xs = Array.from({ length: 100 }, (_, i) => ({ t: i, v: i === 50 ? 999 : Math.sin(i / 10) }));
     const plain = robustExtremeInWindow(

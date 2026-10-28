@@ -14,6 +14,9 @@ import { portalBeatSummary } from '../portalBeatSummary';
 import { classifyModifiedVexus, classifyVexusC, type Territory, type VexusContext, type VexusResult } from '../../vexus/classification';
 import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
+import type { Simulator, EquipmentSettings } from '../../app/simulator';
+import type { ProbePose } from '../../probe/probe';
+import type { RespiratoryPattern } from '../../physiology/patientState';
 import {
   CONTEXT_FLAGS,
   CONTEXT_LABELS,
@@ -22,10 +25,31 @@ import {
   gradeValueText,
   patternText,
   portalText,
+  portalPulsatilityText,
   renalText,
   resultStatusText,
   type ContextFlag,
 } from './vexusText';
+
+interface AcquisitionStamp {
+  epoch: number;
+  time: number;
+  respiration: RespiratoryPattern;
+  pose: ProbePose;
+  equipment: EquipmentSettings;
+}
+type Stamps = Partial<Record<'ivc' | 'mmode' | 'hepatic' | 'portal' | 'renal', AcquisitionStamp>>;
+
+function acquisitionStamp(sim: Simulator, image = false): AcquisitionStamp {
+  const frame = image ? sim.renderer.displayedFrame : null;
+  return structuredClone({
+    epoch: sim.acquisitionEpoch,
+    time: frame?.t ?? sim.physiology.clock.t,
+    respiration: sim.patient.respiratoryPattern,
+    pose: frame?.anatomy.pose ?? sim.pose,
+    equipment: { ...sim.equipment, ...(frame ? { bmode: frame.bmode, color: frame.color } : { pw: sim.pw }) },
+  });
+}
 
 /**
  * Pestaña Medir: contexto clínico del caso (viñeta y confusores que marca el alumno, decisión 82), protocolo VExUS
@@ -60,6 +84,18 @@ export class MeasureTab {
   /** Caso de la viñeta y del contexto marcado. */
   #caseId = '';
   #vignetteEl!: HTMLElement;
+  #stamps: Stamps = {};
+  #historyEl!: HTMLElement;
+  #history: Array<{
+    stamps: Stamps;
+    hepatic: ObservedHepatic | null;
+    portal: ObservedPortal | null;
+    renal: ObservedRenal | null;
+    ivcMm: number | null;
+    ivcM: IvcCollapse | null;
+    context: VexusContext;
+  }> = [];
+  #seriesNote = '';
 
   readonly #ctx: PanelContext;
   readonly #badge: HTMLElement;
@@ -98,7 +134,41 @@ export class MeasureTab {
     this.#ivcCaliperMm = null;
     this.#ivcM = null;
     this.#mPoints = [];
+    this.#stamps = {};
     this.#ctx.sync();
+    this.renderResult();
+    return had;
+  }
+
+  /** Historial de sesión: instantánea independiente, excluida del grado actual. */
+  archiveMeasurements(reason: 'respiration' | 'intervention'): boolean {
+    const result = this.#resultEl.innerHTML;
+    const record = structuredClone({
+      stamps: this.#stamps,
+      hepatic: this.lastHepatic,
+      portal: this.lastPortal,
+      renal: this.lastRenal,
+      ivcMm: this.#ivcCaliperMm,
+      ivcM: this.#ivcM,
+      context: this.#context,
+    });
+    const had = this.clearMeasurements();
+    this.#seriesNote = 'Nueva serie: adquiere señal y repite las mediciones.';
+    if (had) {
+      this.#history.push(record);
+      const entry = document.createElement('details');
+      const title = document.createElement('summary');
+      title.textContent = `Serie ${this.#history.length} · anterior a ${reason === 'respiration' ? 'cambio respiratorio' : 'intervención'} · excluida del resultado actual`;
+      const body = document.createElement('div');
+      body.innerHTML = result;
+      const provenance = document.createElement('p');
+      provenance.className = 'small';
+      provenance.textContent = Object.entries(record.stamps)
+        .map(([kind, s]) => `${kind}: ${s.time.toFixed(1)} s · ${s.respiration}`)
+        .join(' / ');
+      entry.append(title, provenance, body);
+      this.#historyEl.appendChild(entry);
+    }
     this.renderResult();
     return had;
   }
@@ -109,6 +179,9 @@ export class MeasureTab {
    * marcado sigue.
    */
   onSimulatorChanged(): void {
+    this.#history = [];
+    this.#historyEl.innerHTML = '';
+    this.#seriesNote = '';
     const id = this.#ctx.sim().patient.id;
     if (id !== this.#caseId) {
       this.#caseId = id;
@@ -119,7 +192,17 @@ export class MeasureTab {
   }
 
   setIvcCaliper(mm: number | null): void {
+    const sim = this.#ctx.sim();
+    if (mm !== null && sim.acquisitionFrameAfter !== null && (sim.renderer.displayedFrame?.n ?? 0) <= sim.acquisitionFrameAfter) {
+      this.#seriesNote = 'Imagen de la serie anterior: descongela y adquiere una imagen nueva antes de medir.';
+      this.renderResult();
+      return;
+    }
     this.#ivcCaliperMm = mm;
+    if (mm !== null) {
+      this.#stamps.ivc = acquisitionStamp(sim, true);
+      this.#seriesNote = '';
+    }
     this.renderResult();
   }
 
@@ -167,6 +250,8 @@ export class MeasureTab {
         respiratoryCycle,
         pixels: ivcPixelInterval(measured.maxMm, measured.minMm, Math.max(...pts.map((p) => p.pixelMm ?? 0))),
       };
+      this.#stamps.mmode = acquisitionStamp(sim);
+      this.#seriesNote = '';
       this.#ctx.store.set({ tool: 'none' });
       this.renderResult();
     } else this.#renderCapture();
@@ -214,7 +299,7 @@ export class MeasureTab {
       const p = this.lastPortal;
       if (!p) return '—';
       if (p.quality.issue) return NOT_MEASURABLE;
-      return Number.isFinite(p.pulsatilityFraction) ? `${p.pulsatilityFraction.toFixed(0)} %` : 'no aplicable';
+      return portalPulsatilityText(p.pulsatilityFraction);
     });
     protoRow('Renal', 'renal', () => {
       const k = this.lastRenal;
@@ -230,6 +315,9 @@ export class MeasureTab {
       this.#ctx.store.set({ tool: 'none' });
       this.clearMeasurements();
     });
+    this.#historyEl = document.createElement('div');
+    this.#historyEl.className = 'measurement-history';
+    res.appendChild(this.#historyEl);
     this.renderResult();
   }
 
@@ -379,6 +467,10 @@ export class MeasureTab {
           ? (this.lastPortal = cap('portal'))
           : (this.lastRenal = cap('renal'));
     const cols = sim.spectral.columns;
+    if (m) {
+      this.#stamps[kind] = acquisitionStamp(sim);
+      this.#seriesNote = '';
+    }
     this.#lastOverlay = m && cols.length ? captureOverlay(m, opts, cols[cols.length - 1].prfHz) : null;
     this.#ctx.store.set({ tool: 'none' });
     this.renderResult();
@@ -401,6 +493,7 @@ export class MeasureTab {
       portalPulsatilityFraction: p ? p.pulsatilityFraction : null,
     } as const;
     const res: VexusResult = classifyVexusC({ ...veins, renal: k ? k.pattern : 'not-assessed' }, this.#context);
+    const literal = classifyVexusC({ ...veins, renal: k ? k.pattern : 'not-assessed' });
     const modified = classifyModifiedVexus(veins, this.#context);
     const excluded = excludedTerritories(res);
     // una línea por territorio, marcada si el contexto la vuelve poco fiable
@@ -419,7 +512,10 @@ export class MeasureTab {
     this.#badge.textContent = String(n);
     this.#badge.hidden = n === 0;
     const lines = [
+      `<div class="small">Cálculo literal: VExUS ${gradeValueText(literal)} · ${resultStatusText(literal)}</div>`,
+      '<div class="small">Interpretación contextual · adaptación local</div>',
       `<div class="grade">VExUS ${gradeValueText(res)} <span class="small">${resultStatusText(res)}</span></div>`,
+      this.#seriesNote ? `<div class="small">${this.#seriesNote}</div>` : '',
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
       mM
         ? !mM.respiratoryCycle
@@ -437,7 +533,7 @@ export class MeasureTab {
         'portal',
         rejected(this.lastPortal, 'Porta') ??
           (p
-            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}</span>`
+            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${portalPulsatilityText(p.pulsatilityFraction)}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}. Sentido dominante; confirma la dirección anatómica.</span>`
             : 'Porta: —'),
       ),
       line(

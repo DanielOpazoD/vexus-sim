@@ -37,7 +37,8 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
       el.value = '40';
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
-  await page.getByRole('button', { name: 'Avanzado', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Avanzado', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('slider', { name: 'Línea de base', exact: true })).toBeVisible();
   await page.getByRole('slider', { name: 'Línea de base', exact: true }).evaluate((el: HTMLInputElement) => {
     el.value = '0.25';
     el.dispatchEvent(new Event('input', { bubbles: true }));

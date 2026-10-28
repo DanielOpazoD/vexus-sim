@@ -1,5 +1,113 @@
 # Continuidad de VExUS LAB
 
+## Alcance real de la referencia acústica (28 de octubre, decisión 288)
+
+Se retoma [PR287](https://github.com/DanielOpazoD/vexus-sim/pull/287) sobre el
+cierre de PR295. Conserva originales y anchuras del protocolo puntual v2, y
+declara que la entrada Y=0 seleccionó el campo 2D de PyMUST: los parámetros de
+foco en elevación suministrados eran inactivos. Una referencia 3D necesita
+otro protocolo y evidencia propia. La corrección funcional anterior se conserva;
+se reconcilia el historial con las decisiones ya aceptadas.
+
+El wheel oficial y la fuente del campo coinciden con las huellas registradas.
+El guardián rechaza una alteración de la selección 2D. Estas comprobaciones no
+son una nueva adquisición RF; los resultados anteriores quedan atribuidos a su
+registro histórico. Check, revisión y CI del candidato se acreditan antes de
+integrar. Evidencia actual: `vexus-psf-scope-evidence-20261028`.
+
+## Inicio visible de cada prueba E2E (28 de octubre, decisión 287)
+
+Segundo bloque de la ronda: un marcador por intento en el log del ejecutor,
+antes del cuerpo de la prueba, para identificar qué estaba ejecutándose si no
+se alcanza el informe final. Se conecta a CI y al perfil local `workspace:e2e`;
+conserva los informes y verificadores existentes. Las pruebas usan Playwright
+real sin navegador: un fallo mantiene su código y una interrupción conserva
+la identidad del intento. Emitir el marcador al finalizar hace fallar ambas
+regresiones. Integrado en [PR295](https://github.com/DanielOpazoD/vexus-sim/pull/295),
+`main` `e4bbb8c`: check completo y revisión independiente aprobados. La
+[CI 40647248895](https://github.com/DanielOpazoD/vexus-sim/actions/runs/40647248895)
+aprueba los 16 trabajos; recibo protegido verificado, 171 E2E únicas en 12 grupos
+sin reintentos y árbol integrado idéntico al probado. No es un cambio del render
+ni se atribuye una CI independiente posterior a la integración.
+
+## Ronda de exploración y eficiencia (27 de octubre, decisión 286)
+
+El usuario autoriza seis bloques: continuidad anatómica, moteado durante el
+movimiento, referencias independientes, Doppler bajo maniobras, recursos y
+diagnóstico temprano. Se desarrollan sobre el cierre de PR293, `9d7da2a`.
+Los objetivos de fidelidad enlazan con los bloques aún abiertos de `fidelity/NEXT15.md`;
+PR287 ya aborda la dimensionalidad de la referencia PSF y debe consultarse antes
+de ampliar esa referencia. La evaluación humana requiere originales autorizados
+y participantes reales.
+
+Primer bloque integrado en [PR294](https://github.com/DanielOpazoD/vexus-sim/pull/294),
+`main` `0870324`: el solver de apoyo conserva la cara que ya evaluó para la
+indentación elegida y evita repetirla; presión extra y retirada parcial siguen
+evaluando su marco efectivo. Las comparaciones de contacto son idénticas y un
+mutante que reutiliza la cara incorrecta falla en la prueba ampliada de piel/pared.
+El recuento de evaluaciones disminuye; el porcentaje de aceleración no está
+acreditado por la comparación temporal, afectada por carga variable del equipo.
+La [CI 40639995386](https://github.com/DanielOpazoD/vexus-sim/actions/runs/40639995386)
+aprobó los 16 trabajos; recibo verificado, 171 E2E únicas en 12 grupos sin
+reintentos. El árbol integrado coincide con el probado. No se atribuye una
+CI independiente postmerge ni validación clínica. Los otros cinco objetivos
+siguen abiertos. Evidencia en `vexus-exploration-evidence-20261027`.
+
+## Punta de pared renal y registro hepatobiliar (27 de octubre, decisión 285)
+
+Trabajo sobre la captura y pose aportadas en `2e4b06b`. Corrige discontinuidad de
+la interpolación de compresión, amplía la transición axial del contorno estimado
+y reconstruye los conectores del pedículo y cístico sobre porta/vesícula fuente.
+Une sus luces sin pared intravesicular artificial; conserva el tamaño del atlas
+y declara las aproximaciones. El primer check detectó una regresión renal grave:
+se reexpresa la tarjeta en el nuevo marco cutáneo para conservar su plano mundo,
+con el mismo ajuste para ambos pacientes. Se conservan el negativo y los
+timeouts investigados por separado. Las regresiones fallan con la base. Esta entrada
+no declara aceptación, merge ni despliegue: consultar check y CI del PR final.
+La primera CI de PR293 detectó también una pose de prueba pancreática referida a
+la piel anterior. Se conserva su plano mundo y sus ejes al reexpresarla; CPU y
+E2E comparten ahora ese dato para detectar el desajuste en el feedback rápido,
+con las referencias, mínimo de tejido y tolerancias originales intactos.
+
+## Pared lateral y filtro Color bajo (26 de octubre, decisión 284)
+
+Base c9e2096 (PR291). Corrige concavidades de pared y bypass de prioridad Color. Color renal inicia 50 Hz y PW conserva 20 Hz independiente. Regresiones negativas conservadas y bloques focales/Metal aprobados. Calibración, check y CI del head deben verificarse en la evidencia del PR; esta entrada no declara merge. El usuario añade un bloque posterior de pulsatilidad aórtica y contracción subcostal con referencia EchoTwin, aún no implementado en esta decisión.
+
+## Fidelidad del movimiento Doppler (26 de octubre, decisión 283)
+
+Nueva ronda solicitada con `be-ambitious`: corrige dos defectos demostrados,
+la subestimación de velocidad de traslación de la sonda y el muestreo no periódico
+del borde de Nyquist en el bitmap PW. Conserva fisiología, adquisición manual,
+potencia, resolución y aliasing. Las regresiones fallan con el código previo.
+La aceptación requiere check, CI del candidato y revisión temporal; consultar
+el PR y la evidencia de la sesión, no inferir aceptación de esta entrada.
+
+## Pared durante el movimiento (26 de octubre, decisión 282)
+
+Se reproduce y corrige un pliegue superficial subcostal: al terminar el hígado,
+el contorno estimado retomaba el perfil heredado pese a encontrar otra víscera.
+La misma superficie continúa ahora el soporte visceral en el territorio ya ajustado.
+Revisión temporal de las ocho tarjetas, deslizamiento subcostal y regresión negativa
+en normal/grave; geometría, textura y seis E2E Metal aprobadas. El primer ensayo
+SwiftShader quedó fallido/incompleto en el arranque; no acredita paridad por software.
+La aceptación final sigue pendiente del check y la CI del PR. La pared conserva
+aproximaciones y sombras costales; esta corrección no certifica todas las poses.
+
+PR289: la primera CI (`40283196253`, head `469e1e2`) aprobó 165/166 E2E; falló una
+pose pancreática fijada respecto de la piel antigua. Se recalibra ese dato de
+prueba conservando su plano mundo, mínimo de tejido y paridad CPU/GPU; se añade
+comprobación del plano y del acoplamiento. Los negativos se conservan. Consultar
+el head y la CI actuales del PR para el cierre; esa primera ejecución no es verde.
+
+## Corrección de Doppler y equipo por ventana (25 de octubre, decisión 281)
+
+Seguimiento solicitado tras PR288: reparto de caudal de las tributarias suprahepáticas,
+Color renal ±15 / PW ±40 cm/s, línea de base habitual y preajustes explícitos de las
+diez vistas. Conserva la adquisición manual y no consulta el diagnóstico para ajustar
+el equipo. Comparación IQ antes/después y pruebas nativas de controles, renal normal
+y grave (también tríplex); aceptación final en el check y la CI del PR correspondiente.
+El coeficiente periférico continúa siendo una aproximación pendiente de calibración.
+
 ## Ronda vigente: quince bloques, prioridad 1, 2 y 5
 
 El usuario autoriza el 24 de octubre de 2026 la [ronda siguiente](fidelity/NEXT15.md): referencias
@@ -13,7 +121,7 @@ seguimiento automático eliminado. Las cifras y pendientes de las secciones hist
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
 
-Corrección de alcance de B1 (272): el protocolo puntual v2 ejecuta el campo **2D**
+Corrección de alcance de B1 (288): el protocolo puntual v2 ejecuta el campo **2D**
 de PyMUST cuando Y=0; altura/foco en elevación son parámetros suministrados pero
 inactivos. No acredita espesor ni foco elevacional. Se conservan los originales.
 El diagnóstico trazado y la referencia 3D adaptada se distinguen en

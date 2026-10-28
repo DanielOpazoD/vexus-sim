@@ -30,6 +30,7 @@ export interface PanelContext {
   sync(): void;
   /** Publica el espectro anotado en el mismo evento que el resultado, sin esperar otra pasada GPU. */
   onCapture?: () => void;
+  onAcquisitionConditionsChanged?: (reason: 'respiration' | 'intervention') => boolean;
   /** Sección plegable con título dentro de una pestaña; devuelve el cuerpo donde van sus controles. */
   section(parent: HTMLElement, title: string, opts?: SectionOptions): HTMLElement;
   /** Botonera segmentada (una opción activa); devuelve su contenedor. */

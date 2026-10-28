@@ -10,9 +10,12 @@ La teoría y alcance de SIMUS se describen en [el artículo original](https://do
 
 Medio homogéneo, convexo genérico de 3,5 MHz, cuerda activa de 26 mm, 65 elementos,
 radio 60 mm, emisión Hann, recepción uniforme, banda pulso-eco 45 % y atenuación
-0,601 dB/cm/MHz. Discretización de elementos y pulso son estimados. El plano es
-central (y=0), con foco elevacional de 80 mm; las otras profundidades tienen
-desenfoque elevacional.
+0,601 dB/cm/MHz. Discretización de elementos y pulso son estimados. La fuente
+tiene y=0. **PyMUST 0.1.9 selecciona entonces su campo 2D**, aunque se suministren
+altura de 13 mm y foco elevacional de 80 mm: esos dos parámetros no se aplican.
+Esta referencia no mide foco en elevación ni espesor del corte. La descripción
+anterior que atribuía desenfoque elevacional a otras profundidades era incorrecta
+(decisión 288); las adquisiciones originales se conservan sin recalcularlas.
 
 La referencia lateral v2 desplaza un blanco a través de un haz fijo y recibe
 siempre en el punto nominal. Conserva RF por desplazamiento y los perfiles
@@ -52,6 +55,15 @@ Las diferencias incluyen política de apertura, pulso y procesamiento. No hay
 un umbral de fidelidad ajustado a estas salidas. Estos datos orientan el bloque 4;
 no acreditan todavía capas heterogéneas, quistes, flujo, moteado o imagen clínica.
 Todos los casos observados son desarrollo; ninguno se reclasifica como reservado.
+
+El cambio de rama se comprobó durante B5: con Y=0 el motor registró
+`ElevationFocusing=false` y reprodujo RF/IQ originales exactamente. Una adaptación
+aislada que conserva 3D para Y=0 coincidió exactamente con el límite Y=1e-8 m
+del motor intacto. Esa adaptación es una referencia distinta; no convierte esta
+adquisición v2 en 3D. El generador v2 comprueba la huella de `pfield.py` y declara
+el modelo 2D; el comparador lo infiere para originales antiguos y rechaza una
+declaración 3D bajo el mismo protocolo. Datos en
+`../fidelity-next15-evidence/speckle/material-rf-17-zero-elevation-b/VERIFIED.json`.
 
 ## Ejecución y evidencia
 

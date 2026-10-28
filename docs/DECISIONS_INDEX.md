@@ -291,3 +291,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [285](DECISIONS.md#L9266) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
 | [286](DECISIONS.md#L9286) | Reutilización exacta de la geometría de apoyo | vigente |
 | [287](DECISIONS.md#L9333) | Identificar la prueba E2E antes de su resultado | vigente |
+| [288](DECISIONS.md#L9368) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |

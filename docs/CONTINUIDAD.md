@@ -1,5 +1,20 @@
 # Continuidad de VExUS LAB
 
+## Alcance real de la referencia acústica (28 de octubre, decisión 288)
+
+Se retoma [PR287](https://github.com/DanielOpazoD/vexus-sim/pull/287) sobre el
+cierre de PR295. Conserva originales y anchuras del protocolo puntual v2, y
+declara que la entrada Y=0 seleccionó el campo 2D de PyMUST: los parámetros de
+foco en elevación suministrados eran inactivos. Una referencia 3D necesita
+otro protocolo y evidencia propia. La corrección funcional anterior se conserva;
+se reconcilia el historial con las decisiones ya aceptadas.
+
+El wheel oficial y la fuente del campo coinciden con las huellas registradas.
+El guardián rechaza una alteración de la selección 2D. Estas comprobaciones no
+son una nueva adquisición RF; los resultados anteriores quedan atribuidos a su
+registro histórico. Check, revisión y CI del candidato se acreditan antes de
+integrar. Evidencia actual: `vexus-psf-scope-evidence-20261028`.
+
 ## Inicio visible de cada prueba E2E (28 de octubre, decisión 287)
 
 Segundo bloque de la ronda: un marcador por intento en el log del ejecutor,
@@ -8,8 +23,12 @@ se alcanza el informe final. Se conecta a CI y al perfil local `workspace:e2e`;
 conserva los informes y verificadores existentes. Las pruebas usan Playwright
 real sin navegador: un fallo mantiene su código y una interrupción conserva
 la identidad del intento. Emitir el marcador al finalizar hace fallar ambas
-regresiones. Feedback focalizado: ocho pruebas aprobadas. Check completo,
-revisión y CI se acreditan en el PR antes de integrar; no es un cambio del render.
+regresiones. Integrado en [PR295](https://github.com/DanielOpazoD/vexus-sim/pull/295),
+`main` `e4bbb8c`: check completo y revisión independiente aprobados. La
+[CI 40647248895](https://github.com/DanielOpazoD/vexus-sim/actions/runs/40647248895)
+aprueba los 16 trabajos; recibo protegido verificado, 171 E2E únicas en 12 grupos
+sin reintentos y árbol integrado idéntico al probado. No es un cambio del render
+ni se atribuye una CI independiente posterior a la integración.
 
 ## Ronda de exploración y eficiencia (27 de octubre, decisión 286)
 
@@ -101,6 +120,14 @@ anterior quedó cerrada con CI postmerge40087942261 aprobada (162 E2E únicas, s
 seguimiento automático eliminado. Las cifras y pendientes de las secciones históricas siguientes
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
+
+Corrección de alcance de B1 (288): el protocolo puntual v2 ejecuta el campo **2D**
+de PyMUST cuando Y=0; altura/foco en elevación son parámetros suministrados pero
+inactivos. No acredita espesor ni foco elevacional. Se conservan los originales.
+El diagnóstico trazado y la referencia 3D adaptada se distinguen en
+`../fidelity-next15-evidence/speckle/material-rf-17-zero-elevation-b/VERIFIED.json`.
+La generación RF/IQ material de B5 sólo está validada en el piloto de 32 dispersores;
+su portado GPU, imagen nativa y coste completo siguen pendientes.
 
 El componente 1a se fusionó mediante [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277)
 en `77a9f9c`, con 162 E2E sin reintentos y originales verificados. Su CI independiente postmerge

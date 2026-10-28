@@ -289,3 +289,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [283](DECISIONS.md#L9238) | Movimiento Doppler cinemático y borde espectral periódico | vigente |
 | [284](DECISIONS.md#L9250) | Envolvente parietal continua y prioridad Color con filtro bajo | vigente |
 | [285](DECISIONS.md#L9266) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
+| [286](DECISIONS.md#L9286) | Reutilización exacta de la geometría de apoyo | vigente |

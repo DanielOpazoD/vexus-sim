@@ -1,5 +1,24 @@
 # Continuidad de VExUS LAB
 
+## Ronda de exploración y eficiencia (27 de octubre, decisión 286)
+
+El usuario autoriza seis bloques: continuidad anatómica, moteado durante el
+movimiento, referencias independientes, Doppler bajo maniobras, recursos y
+diagnóstico temprano. Se desarrollan sobre el cierre de PR293, `9d7da2a`.
+Los objetivos de fidelidad enlazan con los bloques aún abiertos de `fidelity/NEXT15.md`;
+PR287 ya aborda la dimensionalidad de la referencia PSF y debe consultarse antes
+de ampliar esa referencia. La evaluación humana requiere originales autorizados
+y participantes reales.
+
+Primer candidato: el solver de apoyo conserva la cara que ya evaluó para la
+indentación elegida y evita repetirla; presión extra y retirada parcial siguen
+evaluando su marco efectivo. Las comparaciones de contacto son idénticas y un
+mutante que reutiliza la cara incorrecta falla en la prueba ampliada de piel/pared.
+El recuento de evaluaciones disminuye; el porcentaje de aceleración no está
+acreditado por la comparación temporal, afectada por carga variable del equipo.
+Los otros cinco objetivos siguen abiertos. Evidencia en la carpeta externa
+`vexus-exploration-evidence-20261027`; aceptación del candidato en su PR y CI.
+
 ## Punta de pared renal y registro hepatobiliar (27 de octubre, decisión 285)
 
 Trabajo sobre la captura y pose aportadas en `2e4b06b`. Corrige discontinuidad de

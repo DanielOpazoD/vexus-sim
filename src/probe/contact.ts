@@ -257,9 +257,11 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   let q0 = shortfall(rigid);
   let indent = 0;
   let needed = 0;
+  let supportingFace = rigid;
   if (q0 > 0) {
     let hi = maxIndent;
-    let q1 = hi > 0 ? shortfall(measureFace(frameAt(hi), tr, t, W)) : q0;
+    supportingFace = hi > 0 ? measureFace(frameAt(hi), tr, t, W) : rigid;
+    let q1 = hi > 0 ? shortfall(supportingFace) : q0;
     if (q1 > 0 || !Number.isFinite(q0)) {
       indent = hi;
       needed = q1 > 0 ? Infinity : hi;
@@ -269,7 +271,8 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
       let side = 0;
       for (let i = 0; i < PRESS_ITERATIONS && hi - lo > 0.05; i++) {
         const x = Math.min(hi - 0.01, Math.max(lo + 0.01, (lo * q1 - hi * q0) / (q1 - q0)));
-        const qx = shortfall(measureFace(frameAt(x), tr, t, W));
+        const candidateFace = measureFace(frameAt(x), tr, t, W);
+        const qx = shortfall(candidateFace);
         if (qx > 0) {
           lo = x;
           q0 = qx;
@@ -277,6 +280,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
           side = -1;
         } else {
           hi = x;
+          supportingFace = candidateFace;
           q1 = qx;
           if (side === 1) q0 /= 2;
           side = 1;
@@ -287,9 +291,13 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
     }
   }
   // al levantar la sonda el operador deja de apretar; lo que apriete el usuario, encima
+  const supportedIndent = indent;
   indent = indent * (1 - smoothstep(0, CONTACT.releaseMm, pose.lift)) + press;
   const frame = frameAt(indent);
-  const face = measureFace(frame, tr, t, W);
+  // El solver ya midió su extremo aceptado y el marco rígido. Reutilizar solo
+  // dentro de esta llamada y con la misma indentación; la presión extra y la
+  // retirada parcial requieren evaluar su nuevo marco.
+  const face = indent === 0 ? rigid : indent === supportedIndent ? supportingFace : measureFace(frame, tr, t, W);
   const nodes: CompressionNode[] = [];
   const hover: number[] = [];
   const parallel: number[] = [];

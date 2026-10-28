@@ -9282,3 +9282,50 @@ doce informes originales; el candidato posterior necesita aceptación completa.
 **Negativo de aceptación y registro de la tarjeta.** El primer check completo detecta dos fallos reales de adquisición renal en congestión grave y cuatro timeouts (pared y matrices espectrales). La comparación base/candidato/spline aislada mantiene las puertas con el spline solo: ampliar la transición cambia la normal cutánea del apoyo y rota el plano de la tarjeta renal. Se reexpresan sus ángulos en el nuevo marco para conservar el plano mundo anterior; un único ajuste, obtenido geométricamente en el adulto de referencia, sirve en ambos casos. No consulta vasos ni diagnóstico en ejecución. Dos controles del plano y las adquisiciones originales normal/grave conservan la orientación, apoyo y puerta medible; también se controla la suavidad de pared en la tarjeta corregida. Los timeouts se investigan aparte sin elevar plazos; las pruebas aisladas de pared se comparan con la base y la aceptación final usa el modo secuencial documentado cuando corresponda. El primer check rojo permanece conservado.
 
 **Negativo de la primera CI.** El fragmento 11/12 de `40460409432` detecta que la pose de adquisición pancreática conserva el marco cutáneo anterior: producto escalar 0,9999760481472395 frente a 1 y separación del plano de 0,1583 mm. No falla por tiempo ni por visibilidad: ya había superado mínimo de tejido y paridad CPU/GPU. Se conserva el ZIP original con SHA256 contrastado con GitHub. La misma discrepancia se reproduce en CPU, mientras la base `2e4b06b` conserva el plano. Se mantiene φ=1,23 y se intersecta el mismo plano con la piel actual; después se reexpresan los ejes rígidos medidos en la base. El dato corregido comparte fixture entre CPU y E2E, sin dirección automática ni cambios productivos. Permanecen las referencias de plano, tolerancias, apoyo mínimo, conteo de páncreas y todos los controles originales. La regresión rápida falla con la pose anterior y el mismo valor observado en CI; no sustituye la E2E ni su aceptación completa.
+
+## 286. Reutilización exacta de la geometría de apoyo
+
+**Contexto.** Cada movimiento que invalida el contacto ejecuta el solver de
+`probeContact`. Después de hallar la indentación, este volvía a medir el marco
+aceptado aunque lo hubiera evaluado durante la búsqueda. También repetía el
+marco rígido cuando la retirada de la sonda anulaba la presión del examen.
+
+**Opciones.** Se conserva una reutilización local a la llamada: no requiere una
+caché compartida, claves nuevas ni invalidación entre poses o pacientes. Cambiar
+la precisión de búsqueda no es necesario para eliminar esa repetición.
+
+**Decisión.** Retener la geometría del extremo superior aceptado del solver.
+Si la indentación final es cero, usar la evaluación rígida inicial; si coincide
+exactamente con la del solver, usar el extremo aceptado; en otro caso, medir el
+nuevo marco. Una prueba fallida del extremo inferior no sustituye la geometría
+del extremo superior. La presión adicional y la retirada parcial pueden cambiar
+la indentación y conservan su evaluación propia.
+
+**Consecuencias.** Menos evaluaciones del mismo campo de piel, sin estado entre
+llamadas ni cambio de fórmulas, muestras o resultados. En 100 poses de las diez
+ventanas, dos pacientes y cinco presiones/retiradas, dos copias diagnósticas
+instrumentadas contabilizan 396 → 336 evaluaciones de cara. El recuento mide
+trabajo eliminado, no latencia de la interfaz. Seis tandas alternadas por versión
+en Node 24/M4 dieron rangos de 686–2432 ms y 633–911 ms por 100 contactos, con
+carga variable: no acreditan un porcentaje de aceleración.
+
+**Verificación.** Comparación exacta de todos los campos del contacto en 180
+poses y otra comparación directa de 100 poses, incluidos valores no finitos del
+resumen. Barrido vecino de 200 pares en dos escalas de desplazamiento; sin salto
+nuevo observado, no certifica todas las maniobras. La prueba de cruce parietal
+incluye presión y retirada, y contrasta el resumen contra el campo de piel/pared
+en su marco efectivo. Reutilizar siempre la cara del solver produce un error
+de 3,826 mm y falla frente a 0,001 mm; se conserva ese negativo. Feedback estable:
+25 pruebas aprobadas. La primera corrida con 25 pruebas aprobadas fue invalidada
+por un formateador que terminó después de iniciar la huella; no se acepta ese
+agregado. En navegador Metal pasan nueve pruebas originales de navegación libre,
+ventanas hepatorrenales y seguimiento renal con dos vistas, sin reintentos.
+La revisión independiente no encuentra defectos. Evidencia externa:
+`vexus-exploration-evidence-20261027`; check completo y CI del head final se
+acreditan por separado antes de integrar.
+
+**Negativo de la base.** El seguimiento renal sin modificar registró «corte sin
+avance durante 3 s», con otras validaciones pesadas ejecutándose en el equipo.
+Una segunda ejecución sin esas cargas pasó. Se conservan ambos resultados:
+la concurrencia es una hipótesis, no una causa demostrada, y esta reutilización
+no acredita corregir ese fallo intermitente.

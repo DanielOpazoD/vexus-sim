@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Referencia acústica: añade adquisición 3D reproducible del espesor de corte, controles de foco/altura y verificación de perfiles desde RF; conserva la referencia 2D y no reajusta el render (291).
+
 - Fidelidad: hace reproducible la dependencia del moteado respecto al recorrido y la cadencia, con controles de retorno y tres contratos pendientes explícitos; no modifica el render (290).
 
 - Pruebas: testigo rápido de adquisición portal con respiración y cambio de escala; detecta una regresión real de renovación PW sin sustituir la matriz exhaustiva (289).

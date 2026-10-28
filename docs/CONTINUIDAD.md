@@ -1,5 +1,22 @@
 # Continuidad de VExUS LAB
 
+## Referencia elevacional 3D (28 de octubre, decisión 291)
+
+Nuevo protocolo sintético separado de la referencia puntual 2D. PyMUST 0.1.9
+intacto mantiene su campo 3D en Y=0 mediante un blanco adicional de reflectividad
+cero; controles de RF/espectro, rama ejecutada, foco y altura comprueban ese
+adaptador. El perfil pulso-eco mide 2,0764/2,7374/5,0489 mm a 60/80/150 mm.
+El focal converge al duplicar muestreo espacial y refinar el frecuencial.
+
+Herramienta, originales y límites en [referencia elevacional](fidelity/independent-elevation.md).
+El verificador reconstruye perfiles desde RF y rechaza alteraciones del JSON,
+de RF o espectro con hash actualizado y la eliminación del término que activa 3D.
+La discrepancia del modelo a 60 mm se conserva, sin reajustar parámetros.
+No corrige el retorno del moteado ni acredita validación clínica.
+Los prototipos materiales de esta ronda se descartaron por coste o estadística;
+su evidencia queda en `vexus-material-field-evidence-20261028`.
+Revisión de código, check y CI del candidato final se acreditan por separado.
+
 ## Retorno del moteado: brecha reproducida (28 de octubre, decisión 290)
 
 Sobre PR296 integrado (`f60e21c`), el campo de moteado cambia tras algunos

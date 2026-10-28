@@ -9329,3 +9329,38 @@ avance durante 3 s», con otras validaciones pesadas ejecutándose en el equipo.
 Una segunda ejecución sin esas cargas pasó. Se conservan ambos resultados:
 la concurrencia es una hipótesis, no una causa demostrada, y esta reutilización
 no acredita corregir ese fallo intermitente.
+
+## 287. Identificar la prueba E2E antes de su resultado
+
+**Contexto.** Un fragmento de la primera CI de PR293 terminó al alcanzar el
+límite del trabajo sin informe final. El registro incremental de arranque ya
+conserva etapas de la aplicación; el reporter de lista muestra cada prueba al
+finalizar y el JSON se escribe al cerrar la ejecución. Falta una identificación
+explícita del intento en curso, aunque no llegue a completar el arranque.
+
+**Opciones.** Un journal nuevo requeriría rutas, artefactos y otro lector.
+Un marcador en stdout aprovecha el log que ya recoge el ejecutor y cubre la
+identificación necesaria. No sustituye los informes de aceptación.
+
+**Decisión.** Añadir un reporter pequeño con `onTestBegin`: una línea JSON con
+prefijo `[e2e:begin]`, SHA declarado (null si no se proporcionó), id, ruta,
+línea, título, intento y trabajador. Se activa junto a los reporters existentes
+en CI y `workspace:e2e`. No emite veredictos, cambia selección, modifica plazos
+ni programa reintentos. Tampoco observa cuadros, assertions o pasos individuales.
+
+**Consecuencias.** El último inicio puede localizarse en el log incluso sin
+el JSON de cierre. No recupera logs que el host no haya conservado ni demuestra
+la causa de una interrupción. Una línea por intento acota el volumen al número
+de pruebas, sin telemetría dentro del navegador ni cambios del producto.
+
+**Verificación.** Dos pruebas ejecutan el CLI real de Playwright con fixtures
+Node, sin GPU. Comprueban el inicio antes del cuerpo, un fallo con salida 1 e
+informe con una prueba fallida, y una interrupción real mediante SIGINT que
+conserva la identidad y no termina con éxito. Cambiar `onTestBegin` por
+`onTestEnd` hace fallar ambas comprobaciones de orden; el archivo correcto se
+restaura byte a byte. Junto al registro de arranque y al runner local, ocho
+pruebas focalizadas aprueban. Se conservan un negativo inicial de lint y otro
+del fixture temporal de macOS (`/var` frente a `/private/var`): se canoniza su
+directorio al crearlo, manteniendo la expectativa de ruta relativa.
+Evidencia externa en `vexus-exploration-evidence-20261027`; revisión independiente,
+check completo y CI del head final permanecen necesarios para aceptar el bloque.

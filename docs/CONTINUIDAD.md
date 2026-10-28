@@ -1,5 +1,16 @@
 # Continuidad de VExUS LAB
 
+## Inicio visible de cada prueba E2E (28 de octubre, decisión 287)
+
+Segundo bloque de la ronda: un marcador por intento en el log del ejecutor,
+antes del cuerpo de la prueba, para identificar qué estaba ejecutándose si no
+se alcanza el informe final. Se conecta a CI y al perfil local `workspace:e2e`;
+conserva los informes y verificadores existentes. Las pruebas usan Playwright
+real sin navegador: un fallo mantiene su código y una interrupción conserva
+la identidad del intento. Emitir el marcador al finalizar hace fallar ambas
+regresiones. Feedback focalizado: ocho pruebas aprobadas. Check completo,
+revisión y CI se acreditan en el PR antes de integrar; no es un cambio del render.
+
 ## Ronda de exploración y eficiencia (27 de octubre, decisión 286)
 
 El usuario autoriza seis bloques: continuidad anatómica, moteado durante el
@@ -10,14 +21,18 @@ PR287 ya aborda la dimensionalidad de la referencia PSF y debe consultarse antes
 de ampliar esa referencia. La evaluación humana requiere originales autorizados
 y participantes reales.
 
-Primer candidato: el solver de apoyo conserva la cara que ya evaluó para la
+Primer bloque integrado en [PR294](https://github.com/DanielOpazoD/vexus-sim/pull/294),
+`main` `0870324`: el solver de apoyo conserva la cara que ya evaluó para la
 indentación elegida y evita repetirla; presión extra y retirada parcial siguen
 evaluando su marco efectivo. Las comparaciones de contacto son idénticas y un
 mutante que reutiliza la cara incorrecta falla en la prueba ampliada de piel/pared.
 El recuento de evaluaciones disminuye; el porcentaje de aceleración no está
 acreditado por la comparación temporal, afectada por carga variable del equipo.
-Los otros cinco objetivos siguen abiertos. Evidencia en la carpeta externa
-`vexus-exploration-evidence-20261027`; aceptación del candidato en su PR y CI.
+La [CI 40639995386](https://github.com/DanielOpazoD/vexus-sim/actions/runs/40639995386)
+aprobó los 16 trabajos; recibo verificado, 171 E2E únicas en 12 grupos sin
+reintentos. El árbol integrado coincide con el probado. No se atribuye una
+CI independiente postmerge ni validación clínica. Los otros cinco objetivos
+siguen abiertos. Evidencia en `vexus-exploration-evidence-20261027`.
 
 ## Punta de pared renal y registro hepatobiliar (27 de octubre, decisión 285)
 

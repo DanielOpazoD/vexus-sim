@@ -1,0 +1,3170 @@
+{
+  "schemaVersion": 1,
+  "protocolId": "convex-c35-pymust-elevation-v1",
+  "origin": "synthetic",
+  "role": "development",
+  "method": "source-elevation-offset-fixed-transmit-and-receive-at-nominal-depth",
+  "fieldModel": {
+    "dimensionality": 3,
+    "elevationFocusing": true,
+    "selection": "zero-reflectivity-offplane-sentinel"
+  },
+  "engine": {
+    "name": "PyMUST",
+    "version": "0.1.9",
+    "sources": {
+      "pfield.py": "a999ae8ffa4934968ea01e8ab57136aadad6beafc4ceaddf48edd031e2c33576",
+      "simus.py": "17f30a1d1677f8289c814d10afe4f57cc75964a80db692cb603c6260c8fe5fe0",
+      "dasmtx.py": "7da9ffcabcc0efd488870bb4bf70e6a5f25268ec77fefde7ef235bb7b7f2748a"
+    }
+  },
+  "parameters": {
+    "frequencyMHz": 3.5,
+    "samplingFrequencyMHz": 28,
+    "soundSpeedMS": 1540,
+    "attenuationDbCmMHz": 0.601,
+    "pulseEchoBandwidthPercent": 45,
+    "curvatureRadiusMm": 60,
+    "activeChordMm": 26,
+    "elements": 65,
+    "elementFillFraction": 0.9,
+    "elevationHeightMm": 13,
+    "elevationFocusMm": 80,
+    "lateralTxFocusMm": 90,
+    "rxFNumber": 2.5,
+    "txCycles": 1,
+    "txApodization": "Hann",
+    "rxApodization": "uniform",
+    "sentinelYMm": 0.001,
+    "sentinelReflectivity": 0,
+    "parallel": false
+  },
+  "generatorSha256": "97649552933d0db2393dc8f2f3818191539a98da8f779296a0a8776191209ad3",
+  "runtimeManifestSha256": "68926f1613a0bb41b19d9353696df70c6a53cb9c68a8d3bc9f7b2bf447d8eb86",
+  "createdAt": "2026-10-28T18:10:10.305092+00:00",
+  "controls": {
+    "zero-2d": {
+      "parameters": {
+        "y_mm": 0,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": false,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "zero-2d.npz",
+        "sha256": "3e035e25e6c49905f804edb25cfea7b09619d191e8371d6b1ffeff77594e2e41"
+      }
+    },
+    "zero-3d": {
+      "parameters": {
+        "y_mm": 0
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 2,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "zero-3d.npz",
+        "sha256": "6ad6ce0c2695c56181ee6fb33537978377302fc4620534cac7a814e5a9eab8cc"
+      }
+    },
+    "offplane-alone": {
+      "parameters": {
+        "y_mm": 0.5,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "offplane-alone.npz",
+        "sha256": "d3dfc86d267fac45b3e1b0052cc6db3f37a8fd6d0eebdb15e0445afb5678f589"
+      }
+    },
+    "offplane-sentinel": {
+      "parameters": {
+        "y_mm": 0.5
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 2,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "offplane-sentinel.npz",
+        "sha256": "d3dfc86d267fac45b3e1b0052cc6db3f37a8fd6d0eebdb15e0445afb5678f589"
+      }
+    },
+    "sentinel-far": {
+      "parameters": {
+        "y_mm": 0,
+        "sentinel": 0.001
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 2,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "sentinel-far.npz",
+        "sha256": "6ad6ce0c2695c56181ee6fb33537978377302fc4620534cac7a814e5a9eab8cc"
+      }
+    },
+    "limit-plus1": {
+      "parameters": {
+        "y_mm": 0.001,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "limit-plus1.npz",
+        "sha256": "b3ca8d89ab7c7f88ee59caf86b6ed09c73368ae20fa83c25fd5f8a2902a18e48"
+      }
+    },
+    "limit-minus1": {
+      "parameters": {
+        "y_mm": -0.001,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "limit-minus1.npz",
+        "sha256": "b3ca8d89ab7c7f88ee59caf86b6ed09c73368ae20fa83c25fd5f8a2902a18e48"
+      }
+    },
+    "limit-plus2": {
+      "parameters": {
+        "y_mm": 0.002,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "limit-plus2.npz",
+        "sha256": "3794bcce96813c4aacb94dc1229907c4a2cb707a2dc279a7a33d8d2366053e2e"
+      }
+    },
+    "limit-minus2": {
+      "parameters": {
+        "y_mm": -0.002,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "limit-minus2.npz",
+        "sha256": "3794bcce96813c4aacb94dc1229907c4a2cb707a2dc279a7a33d8d2366053e2e"
+      }
+    },
+    "focus50-2d": {
+      "parameters": {
+        "y_mm": 0,
+        "focus": 50,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": false,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "focus50-2d.npz",
+        "sha256": "3e035e25e6c49905f804edb25cfea7b09619d191e8371d6b1ffeff77594e2e41"
+      }
+    },
+    "focus50-3d": {
+      "parameters": {
+        "y_mm": 0,
+        "focus": 50
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 2,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "focus50-3d.npz",
+        "sha256": "cc984c8eb5987a2d8fdb1a5ac3257b47cc5084a1fc8d93104d043a953b95bdaa"
+      }
+    },
+    "height6-2d": {
+      "parameters": {
+        "y_mm": 0,
+        "height": 6.5,
+        "sentinel": null
+      },
+      "trace": {
+        "elevationFocusing": false,
+        "isSIMUS": true,
+        "points": 1,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "height6-2d.npz",
+        "sha256": "3e035e25e6c49905f804edb25cfea7b09619d191e8371d6b1ffeff77594e2e41"
+      }
+    },
+    "height6-3d": {
+      "parameters": {
+        "y_mm": 0,
+        "height": 6.5
+      },
+      "trace": {
+        "elevationFocusing": true,
+        "isSIMUS": true,
+        "points": 2,
+        "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+        "frequencyCount": 1043,
+        "frequencyFirstHz": 1210199.0049751243,
+        "frequencyLastHz": 5746268.6567164175
+      },
+      "raw": {
+        "path": "height6-3d.npz",
+        "sha256": "67b55b6e59e6a67a19d5c657e356a2d982d369b136cfd34656eed09051a10528"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "near",
+      "depthMm": 60,
+      "spacingMm": 0.5,
+      "frequencyStep": 1,
+      "profile": {
+        "positionMm": [
+          -12.0, -11.5, -11.0, -10.5, -10.0, -9.5, -9.0, -8.5, -8.0, -7.5, -7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0,
+          -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5,
+          11.0, 11.5, 12.0
+        ],
+        "envelope": [
+          0.014689622710186074, 0.013827746147065603, 0.017622614772715612, 0.056754045555631225, 0.14997327453062478, 0.3135278177916892,
+          0.5335855907711724, 0.9350148302555968, 1.6663292338010998, 2.766969130080141, 4.366028806318988, 6.249058235314272,
+          7.952243292683405, 9.251392431331011, 11.014500961470306, 16.1460349009978, 29.62737731385782, 48.77757053975184,
+          61.73252345202823, 57.46702236296964, 76.220659594315, 229.00132580620183, 521.8517517754558, 850.0580427748998,
+          998.9490618634246, 850.0580427748998, 521.8517517754558, 229.00132580620183, 76.220659594315, 57.46702236296964,
+          61.73252345202823, 48.77757053975184, 29.62737731385782, 16.1460349009978, 11.014500961470306, 9.251392431331011,
+          7.952243292683405, 6.249058235314272, 4.366028806318988, 2.766969130080141, 1.6663292338010998, 0.9350148302555968,
+          0.5335855907711724, 0.3135278177916892, 0.14997327453062478, 0.056754045555631225, 0.017622614772715612, 0.013827746147065603,
+          0.014689622710186074
+        ]
+      },
+      "measurement": {
+        "widthMm": 2.0764117749519437,
+        "peakPositionMm": 0.0,
+        "symmetryRelativeRms": 0.0,
+        "edgeFraction": 1.4705076836234545e-5
+      },
+      "trace": [
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "de3ac33e89e6203d45a044e72f51ff407331034cbb0faea32068b33c0ed45ea5",
+          "frequencyCount": 811,
+          "frequencyFirstHz": 1209600.0,
+          "frequencyLastHz": 5745600.0
+        }
+      ],
+      "raw": {
+        "path": "near.npz",
+        "sha256": "bbc3e2a7cb4f35a2c06e1dcfed67651cc5fdb8b9c804c2ad1061fe7651d54382"
+      }
+    },
+    {
+      "id": "focal",
+      "depthMm": 80,
+      "spacingMm": 0.5,
+      "frequencyStep": 1,
+      "profile": {
+        "positionMm": [
+          -12.0, -11.5, -11.0, -10.5, -10.0, -9.5, -9.0, -8.5, -8.0, -7.5, -7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0,
+          -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5,
+          11.0, 11.5, 12.0
+        ],
+        "envelope": [
+          0.016863405676754217, 0.030718870727044264, 0.05400755258491926, 0.09514405387100622, 0.15751111403592197, 0.2587449220109965,
+          0.4208987882112641, 0.6436965634651315, 0.8648452299511872, 0.9714722997855808, 0.9566943077442599, 1.1314066224393948,
+          2.053723819655009, 3.972519981940978, 6.443598310743325, 8.173094684731323, 7.907873075000496, 5.410648667137502,
+          6.052214134167829, 21.881095527695923, 62.377520490090475, 130.5677094121895, 211.6734847767032, 278.08316668323795,
+          303.73658422330243, 278.08316668323795, 211.6734847767032, 130.5677094121895, 62.377520490090475, 21.881095527695923,
+          6.052214134167829, 5.410648667137502, 7.907873075000496, 8.173094684731323, 6.443598310743325, 3.972519981940978,
+          2.053723819655009, 1.1314066224393948, 0.9566943077442599, 0.9714722997855808, 0.8648452299511872, 0.6436965634651315,
+          0.4208987882112641, 0.2587449220109965, 0.15751111403592197, 0.09514405387100622, 0.05400755258491926, 0.030718870727044264,
+          0.016863405676754217
+        ]
+      },
+      "measurement": {
+        "widthMm": 2.737372799856354,
+        "peakPositionMm": 0.0,
+        "symmetryRelativeRms": 0.0,
+        "edgeFraction": 5.5519837097912785e-5
+      },
+      "trace": [
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        }
+      ],
+      "raw": {
+        "path": "focal.npz",
+        "sha256": "2269fdb9420de70df8766af287fc66f13545e8726b7ed126dec513e65a0c7b36"
+      }
+    },
+    {
+      "id": "deep",
+      "depthMm": 150,
+      "spacingMm": 0.5,
+      "frequencyStep": 1,
+      "profile": {
+        "positionMm": [
+          -12.0, -11.5, -11.0, -10.5, -10.0, -9.5, -9.0, -8.5, -8.0, -7.5, -7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0,
+          -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5,
+          11.0, 11.5, 12.0
+        ],
+        "envelope": [
+          0.0026484673918840324, 0.004256051849782712, 0.006785733957214247, 0.0103252210941612, 0.0148986643367713, 0.020259176420097422,
+          0.025818664507954583, 0.030805864149272326, 0.03375437949515842, 0.03338554686139051, 0.028812840725619095, 0.019093884159926505,
+          0.002332908594708649, 0.028902462182505313, 0.08252795774927359, 0.17158327328263293, 0.3079472760419251, 0.49751975103247753,
+          0.7369201888849869, 1.0127340671147922, 1.3020373273755343, 1.57493137634582, 1.7993743287181092, 1.947038108244232,
+          1.9985206431307472, 1.947038108244232, 1.7993743287181092, 1.57493137634582, 1.3020373273755343, 1.0127340671147922,
+          0.7369201888849869, 0.49751975103247753, 0.3079472760419251, 0.17158327328263293, 0.08252795774927359, 0.028902462182505313,
+          0.002332908594708649, 0.019093884159926505, 0.028812840725619095, 0.03338554686139051, 0.03375437949515842, 0.030805864149272326,
+          0.025818664507954583, 0.020259176420097422, 0.0148986643367713, 0.0103252210941612, 0.006785733957214247, 0.004256051849782712,
+          0.0026484673918840324
+        ]
+      },
+      "measurement": {
+        "widthMm": 5.048850861442848,
+        "peakPositionMm": 0.0,
+        "symmetryRelativeRms": 0.0,
+        "edgeFraction": 0.0013252139281059027
+      },
+      "trace": [
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "5d454a01e8d3a68ba88bd7f4584f9de87364f61ad05214f8b893bcbc61f970a0",
+          "frequencyCount": 1862,
+          "frequencyFirstHz": 1211350.974930362,
+          "frequencyLastHz": 5747214.484679665
+        }
+      ],
+      "raw": {
+        "path": "deep.npz",
+        "sha256": "a68f9588a31adc6c0d16bac6b7c3961afabb80638b1014cbfd07031519273daf"
+      }
+    },
+    {
+      "id": "focal-spacing",
+      "depthMm": 80,
+      "spacingMm": 0.25,
+      "frequencyStep": 1,
+      "profile": {
+        "positionMm": [
+          -12.0, -11.75, -11.5, -11.25, -11.0, -10.75, -10.5, -10.25, -10.0, -9.75, -9.5, -9.25, -9.0, -8.75, -8.5, -8.25, -8.0, -7.75,
+          -7.5, -7.25, -7.0, -6.75, -6.5, -6.25, -6.0, -5.75, -5.5, -5.25, -5.0, -4.75, -4.5, -4.25, -4.0, -3.75, -3.5, -3.25, -3.0, -2.75,
+          -2.5, -2.25, -2.0, -1.75, -1.5, -1.25, -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75,
+          3.0, 3.25, 3.5, 3.75, 4.0, 4.25, 4.5, 4.75, 5.0, 5.25, 5.5, 5.75, 6.0, 6.25, 6.5, 6.75, 7.0, 7.25, 7.5, 7.75, 8.0, 8.25, 8.5,
+          8.75, 9.0, 9.25, 9.5, 9.75, 10.0, 10.25, 10.5, 10.75, 11.0, 11.25, 11.5, 11.75, 12.0
+        ],
+        "envelope": [
+          0.016863405676754217, 0.02349882804691531, 0.030718870727044264, 0.04054226580347907, 0.05400755258491926, 0.07187898876283075,
+          0.09514405387100622, 0.12347909692979775, 0.15751111403592197, 0.20123017485879635, 0.2587449220109965, 0.3316599566432533,
+          0.4208987882112641, 0.5265049862896128, 0.6436965634651315, 0.7614803262398349, 0.8648452299511872, 0.9381583776248776,
+          0.9714722997855808, 0.9692475541987475, 0.9566943077442599, 0.9849858458504988, 1.1314066224393948, 1.4723828102967218,
+          2.053723819655009, 2.893441822504134, 3.972519981940978, 5.207073321121806, 6.443598310743325, 7.492511065987741,
+          8.173094684731323, 8.342653280051437, 7.907873075000496, 6.860790214005508, 5.410648667137502, 4.434642108623447,
+          6.052214134167829, 11.564540998094357, 21.881095527695923, 38.483027319653, 62.377520490090475, 93.507872098416,
+          130.5677094121895, 171.07591338177548, 211.6734847767032, 248.5694792775278, 278.08316668323795, 297.14693824822876,
+          303.73658422330243, 297.14693824822876, 278.08316668323795, 248.5694792775278, 211.6734847767032, 171.07591338177548,
+          130.5677094121895, 93.507872098416, 62.377520490090475, 38.483027319653, 21.881095527695923, 11.564540998094357,
+          6.052214134167829, 4.434642108623447, 5.410648667137502, 6.860790214005508, 7.907873075000496, 8.342653280051437,
+          8.173094684731323, 7.492511065987741, 6.443598310743325, 5.207073321121806, 3.972519981940978, 2.893441822504134,
+          2.053723819655009, 1.4723828102967218, 1.1314066224393948, 0.9849858458504988, 0.9566943077442599, 0.9692475541987475,
+          0.9714722997855808, 0.9381583776248776, 0.8648452299511872, 0.7614803262398349, 0.6436965634651315, 0.5265049862896128,
+          0.4208987882112641, 0.3316599566432533, 0.2587449220109965, 0.20123017485879635, 0.15751111403592197, 0.12347909692979775,
+          0.09514405387100622, 0.07187898876283075, 0.05400755258491926, 0.04054226580347907, 0.030718870727044264, 0.02349882804691531,
+          0.016863405676754217
+        ]
+      },
+      "measurement": {
+        "widthMm": 2.7370831015434005,
+        "peakPositionMm": 0.0,
+        "symmetryRelativeRms": 0.0,
+        "edgeFraction": 5.5519837097912785e-5
+      },
+      "trace": [
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "1225da8f8073ec0011e80a5440a014858ab2658f1bf133d49744c15ba5a715fa",
+          "frequencyCount": 1043,
+          "frequencyFirstHz": 1210199.0049751243,
+          "frequencyLastHz": 5746268.6567164175
+        }
+      ],
+      "raw": {
+        "path": "focal-spacing.npz",
+        "sha256": "91888bc2f5db8e0cc4cf2b15171e623565c092eff6e07b0b518169e98e0c1bef"
+      }
+    },
+    {
+      "id": "focal-frequency",
+      "depthMm": 80,
+      "spacingMm": 0.5,
+      "frequencyStep": 0.5,
+      "profile": {
+        "positionMm": [
+          -12.0, -11.5, -11.0, -10.5, -10.0, -9.5, -9.0, -8.5, -8.0, -7.5, -7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0,
+          -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5,
+          11.0, 11.5, 12.0
+        ],
+        "envelope": [
+          0.007215904273862753, 0.015306060243668027, 0.02747224050439986, 0.04611693368246009, 0.07624515293746109, 0.12646393165960607,
+          0.20637470319141515, 0.3190287436898354, 0.43272666290438466, 0.4894741431087085, 0.4763254798885927, 0.531596752499347,
+          0.9541297933353694, 1.902639424064443, 3.1675588844433085, 4.096291266231646, 4.027649024723492, 2.78947566289963,
+          2.8630008970438943, 10.447367151006931, 30.42596245317041, 64.52102376974655, 105.37409815910992, 138.96269805840237,
+          151.96475564984118, 138.96269805840237, 105.37409815910992, 64.52102376974655, 30.42596245317041, 10.447367151006931,
+          2.8630008970438943, 2.78947566289963, 4.027649024723492, 4.096291266231646, 3.1675588844433085, 1.902639424064443,
+          0.9541297933353694, 0.531596752499347, 0.4763254798885927, 0.4894741431087085, 0.43272666290438466, 0.3190287436898354,
+          0.20637470319141515, 0.12646393165960607, 0.07624515293746109, 0.04611693368246009, 0.02747224050439986, 0.015306060243668027,
+          0.007215904273862753
+        ]
+      },
+      "measurement": {
+        "widthMm": 2.7194494116663552,
+        "peakPositionMm": 0.0,
+        "symmetryRelativeRms": 0.0,
+        "edgeFraction": 4.748406459777896e-5
+      },
+      "trace": [
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        },
+        {
+          "elevationFocusing": true,
+          "isSIMUS": true,
+          "points": 2,
+          "frequencyHash": "0d5bff41150bb94d4bb3dc01f2c923c3c3d7fc4fd0800360fb92297f85704994",
+          "frequencyCount": 2084,
+          "frequencyFirstHz": 1210952.084629745,
+          "frequencyLastHz": 5747666.459240821
+        }
+      ],
+      "raw": {
+        "path": "focal-frequency.npz",
+        "sha256": "3b0d78168f32ef0f7f1cea1b84fdcdb83aa489efdbbe83a7cce2f24c7c159176"
+      }
+    }
+  ],
+  "controlErrors": {
+    "sentinelOffplane": {
+      "rf": 0.0,
+      "spectrum": 0.0
+    },
+    "sentinelLocation": {
+      "rf": 0.0,
+      "spectrum": 0.0
+    },
+    "focus2d": {
+      "rf": 0.0,
+      "spectrum": 0.0
+    },
+    "focus3d": {
+      "rf": 1.0427372455596924,
+      "spectrum": 1.0427545309066772
+    },
+    "height2d": {
+      "rf": 0.0,
+      "spectrum": 0.0
+    },
+    "height3d": {
+      "rf": 0.7501987218856812,
+      "spectrum": 0.7501971125602722
+    },
+    "limit-plus1": {
+      "rf": 3.8209947206269135e-7,
+      "spectrum": 3.7429583699122304e-7
+    },
+    "limit-minus1": {
+      "rf": 3.8209947206269135e-7,
+      "spectrum": 3.7429583699122304e-7
+    },
+    "limit-plus2": {
+      "rf": 8.656276804686058e-6,
+      "spectrum": 8.656006684759632e-6
+    },
+    "limit-minus2": {
+      "rf": 8.656276804686058e-6,
+      "spectrum": 8.656006684759632e-6
+    }
+  },
+  "convergence": {
+    "spacing": 0.00010583078525835795,
+    "frequency": 0.006547660658767228
+  },
+  "elapsedSeconds": 53.59897774999263
+}

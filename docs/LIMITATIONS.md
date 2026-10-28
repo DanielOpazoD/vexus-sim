@@ -397,6 +397,14 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   craneocaudal) y un 12 % en la de la decisión 62 (a lo largo del 8.º espacio, yaw −1,15; una realización
   alineada en esa pose, un 5 %), cerca de la cota de 1,12 con la que la 55 eligió `REANCHOR_DEG`: sus pruebas se
   quedan en la pose de antes. Si se nota en la GPU, se baja `REANCHOR_DEG` o se gira la red con el ancla.
+- **El moteado puede cambiar al regresar a la misma pose** (`speckle-path-dependent`, decisión 290):
+  al superar el ángulo de reanclaje se reemplaza el campo de dispersores. Tras recorridos cerrados
+  amplios, el ancla y la paridad finales dependen del recorrido y de la cadencia de actualización.
+  `speckleReturn.test.ts` conserva tres contratos pendientes como fallos esperados y controles
+  pequeños que sí recuperan exactamente el campo. Una comprobación GPU Metal a 192 × 1024 confirma
+  el cambio de envolvente al volver (una mirada, fundamental, apnea espiratoria); no acredita
+  evaluación perceptual humana ni mide aquí composición/armónica. Reiniciar la semilla al regresar
+  ocultaría el síntoma sin construir un medio material coherente. La corrección sigue pendiente.
 - **La serie bajo la pleura remuestrea la pared en la misma línea** (`pleura-series-same-line`, decisión
   61): las copias espejo y directa de la pared y las líneas A se forman con la pared del propio camino, no
   con la de la dirección reflejada por una pleura oblicua; no cambian con la incidencia salvo por la

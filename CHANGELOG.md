@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Fidelidad: hace reproducible la dependencia del moteado respecto al recorrido y la cadencia, con controles de retorno y tres contratos pendientes explícitos; no modifica el render (290).
+
 - Pruebas: testigo rápido de adquisición portal con respiración y cambio de escala; detecta una regresión real de renovación PW sin sustituir la matriz exhaustiva (289).
 
 - Referencia PSF: declara el campo 2D realmente utilizado por PyMUST con Y=0, rechaza atribuciones de foco elevacional y conserva los originales y sus anchuras (288).

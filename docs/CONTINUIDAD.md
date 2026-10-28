@@ -1,5 +1,22 @@
 # Continuidad de VExUS LAB
 
+## Testigo temprano de adquisición portal (28 de octubre, decisión 289)
+
+El experimento local `f6ce803` aportaba el eco de renovación PW en el pulso
+actual. Pasó pruebas analíticas, revisión y once E2E Metal, pero el check
+completo detectó una PF portal aceptada de aproximadamente 59 % frente a
+39 % en el caso ventilado con respiración. La base integrada pasa y el
+experimento falla también por separado. Se conserva fuera de `main`, sin PR.
+
+Se extrae el recorrido mínimo ±20 → ±40 cm/s como `portalAcquisition.test.ts`
+en el conjunto rápido, con la misma semilla, adquisición, latidos y tolerancia
+de la matriz. Detecta el negativo en una ejecución local de 2,39 s; la base
+aprueba en 2,41 s. Son duraciones diagnósticas, no un benchmark del producto.
+La matriz original continúa íntegra y la seguridad del recambio sigue pendiente.
+Evidencia: `vexus-pw-renewal-evidence-20261028` y
+`vexus-pw-portal-guard-evidence-20261028`. Consultar check y CI del candidato
+final antes de atribuir aceptación al testigo.
+
 ## Alcance real de la referencia acústica (28 de octubre, decisión 288)
 
 Se retoma [PR287](https://github.com/DanielOpazoD/vexus-sim/pull/287) sobre el

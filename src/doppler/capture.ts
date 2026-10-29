@@ -1,12 +1,13 @@
 export { qualityText } from './qualityMessages';
 import type { Beat } from '../physiology/rhythm';
 import { CAPTURE_BEATS } from './measureQuality';
-import { SPECTRAL_CAPTURE_SECONDS, contiguousSpectralColumns, type SpectralColumn } from './spectral';
+import { SPECTRAL_CAPTURE_SECONDS, WALL_SETTLE_S, contiguousSpectralColumns, type SpectralColumn } from './spectral';
+export { WALL_SETTLE_S } from './spectral';
+import type { PwCaptureSource, PwPresentation } from './pwChain';
 import {
   measureObservedHepatic,
   measureObservedPortal,
   measureObservedRenal,
-  type MeasureOptions,
   type ObservedHepatic,
   type ObservedPortal,
   type ObservedRenal,
@@ -15,13 +16,6 @@ import { dominantGateSystem, hepaticGateDropout, wrongGateVessel, type GateVesse
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
 const CAPTURE_SECONDS = SPECTRAL_CAPTURE_SECONDS;
-/**
- * Tras un cambio de escala (PRF) el filtro de pared cambia de coeficientes con el clutter del tejido 40–60 dB sobre la
- * sangre dentro: su transitorio es una línea vertical de banda ancha. La captura descarta esta cola (≈ 5 constantes de
- * tiempo del filtro a 25 Hz), como el equipo que borra el espectro al cambiar la escala.
- */
-export const WALL_SETTLE_S = 0.1;
-
 /**
  * Columnas de la captura: el último tramo continuo con la PRF y resolución actuales, sin el transitorio del filtro de pared
  * tras el cambio (decisiones 94 y 125). No reúne latidos separados por huecos o reinicios del reloj.
@@ -48,15 +42,17 @@ export interface CaptureResult {
  */
 export function captureProtocolVessel<K extends ProtocolVessel>(
   kind: K,
-  spectrum: readonly SpectralColumn[],
+  source: PwCaptureSource,
   rhythm: { beatsBetween(t0: number, t1: number): Beat[] },
   tNow: number,
-  opts: MeasureOptions,
+  display: PwPresentation,
   gateTrack: readonly GateVesselSample[],
 ): CaptureResult[K] | null {
+  if (source.kind === 'waiting') return null;
+  const opts = { ...source.acquiredEquipment, ...display };
   const t0 = tNow - CAPTURE_SECONDS;
   const beats = rhythm.beatsBetween(t0, tNow).slice(-CAPTURE_BEATS);
-  const columns = captureColumns(spectrum, t0);
+  const columns = captureColumns(source.columns, t0);
   const measure = kind === 'hepatic' ? measureObservedHepatic : kind === 'portal' ? measureObservedPortal : measureObservedRenal;
   const m = measure(columns, beats, opts) as CaptureResult[K] | null;
   if (!m || !m.measuredBeats.length) return m;

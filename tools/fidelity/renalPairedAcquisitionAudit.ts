@@ -101,10 +101,10 @@ for (const useReference of [false, true]) {
       }
       const m = captureProtocolVessel(
         'renal',
-        chain.spectral.columns,
+        chain.readCapture(),
         engine.rhythm,
         samples.at(-1)!.t,
-        { f0Hz: tr.f0Doppler, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: 25, gainDb: 0 },
+        { angleCorrectionRad: 0, invert: false },
         track,
       );
       const db = chain.spectral.columns

@@ -10,6 +10,7 @@ import type { CaptureMark, MeasureOptions, ObservedHepatic, ObservedPortal, Obse
  * incluso congelado. La corrección angular no mueve la señal; en el cine ambos comparten el eje temporal. Deja de dibujarse cuando su espectro ya no está (el PW se apagó o se vació).
  */
 export interface CaptureOverlay {
+  revision: number;
   /** La captura pasó la calidad (y la identidad del vaso): solo entonces se dibujan las marcas. */
   accepted: boolean;
   /** PRF de la captura: la de sus columnas en el espectrograma. */
@@ -31,9 +32,11 @@ export function captureOverlay(
   m: ObservedHepatic | ObservedPortal | ObservedRenal,
   opts: Pick<MeasureOptions, 'f0Hz' | 'angleCorrectionRad' | 'invert'>,
   prfHz: number,
+  revision: number,
 ): CaptureOverlay {
   const k = hzPerScreenCms(opts);
   return {
+    revision,
     accepted: m.quality.issue === null,
     prfHz,
     trace: m.trace.map((p) => ({ t: p.t, fHz: p.vScreen * k })),

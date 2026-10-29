@@ -2,6 +2,8 @@ import { FFT, hannWindow } from '../core/fft';
 
 /** Ventana temporal que debe poder consultar una captura PW. */
 export const SPECTRAL_CAPTURE_SECONDS = 7;
+/** Margen existente de captura tras una frontera del receptor; no calibra todos los filtros. */
+export const WALL_SETTLE_S = 0.1;
 
 /**
  * Espectrograma Doppler pulsado: P(m,k) = |STFT{z}(m,k)|² (base D.8). Cada
@@ -27,30 +29,30 @@ export function contiguousSpectralColumns(a: SpectralColumn, b: SpectralColumn):
 export class SpectralProcessor {
   readonly fftSize: number;
   readonly hop: number;
-  private fft: FFT;
-  private window: Float32Array;
-  private bufRe: Float32Array;
-  private bufIm: Float32Array;
-  private filled = 0;
-  private sampleIndex = 0;
-  private workRe: Float32Array;
-  private workIm: Float32Array;
+  #fft: FFT;
+  #window: Float32Array;
+  #bufRe: Float32Array;
+  #bufIm: Float32Array;
+  #filled = 0;
+  #sampleIndex = 0;
+  #workRe: Float32Array;
+  #workIm: Float32Array;
   readonly columns: SpectralColumn[] = [];
-  private maxColumns: number | undefined;
-  private t0 = 0;
-  private prfHz = 2500;
-  private synced = false;
+  #maxColumns: number | undefined;
+  #t0 = 0;
+  #prfHz = 2500;
+  #synced = false;
 
   constructor(opts: { fftSize?: number; hop?: number; maxColumns?: number } = {}) {
     this.fftSize = opts.fftSize ?? 128;
     this.hop = opts.hop ?? 16;
-    this.maxColumns = opts.maxColumns;
-    this.fft = new FFT(this.fftSize);
-    this.window = hannWindow(this.fftSize);
-    this.bufRe = new Float32Array(this.fftSize);
-    this.bufIm = new Float32Array(this.fftSize);
-    this.workRe = new Float32Array(this.fftSize);
-    this.workIm = new Float32Array(this.fftSize);
+    this.#maxColumns = opts.maxColumns;
+    this.#fft = new FFT(this.fftSize);
+    this.#window = hannWindow(this.fftSize);
+    this.#bufRe = new Float32Array(this.fftSize);
+    this.#bufIm = new Float32Array(this.fftSize);
+    this.#workRe = new Float32Array(this.fftSize);
+    this.#workIm = new Float32Array(this.fftSize);
   }
 
   /** Fija el tiempo de simulación del próximo índice de muestra y la PRF. */
@@ -58,61 +60,68 @@ export class SpectralProcessor {
     // Physiology batches round to whole IQ samples. Anything beyond one sample
     // is a real acquisition gap, not a window that the FFT may bridge.
     const interrupted =
-      this.synced && (prfHz !== this.prfHz || Math.abs(tNextSample - this.t0 - this.sampleIndex / this.prfHz) > 1 / this.prfHz + 1e-9);
-    if (interrupted || prfHz !== this.prfHz) this.filled = 0;
-    this.prfHz = prfHz;
-    this.t0 = tNextSample - this.sampleIndex / prfHz;
-    this.synced = true;
+      this.#synced &&
+      (prfHz !== this.#prfHz || Math.abs(tNextSample - this.#t0 - this.#sampleIndex / this.#prfHz) > 1 / this.#prfHz + 1e-9);
+    if (interrupted || prfHz !== this.#prfHz) this.#filled = 0;
+    this.#prfHz = prfHz;
+    this.#t0 = tNextSample - this.#sampleIndex / prfHz;
+    this.#synced = true;
     return interrupted;
   }
 
-  push(re: Float32Array, im: Float32Array, n: number): void {
+  push(re: Float32Array, im: Float32Array, n: number): number | null {
+    let firstCenter: number | null = null;
     const N = this.fftSize;
     for (let i = 0; i < n; i++) {
       // Buffer circular deslizante: desplazamos de hop en hop.
-      if (this.filled === N) {
-        this.bufRe.copyWithin(0, this.hop);
-        this.bufIm.copyWithin(0, this.hop);
-        this.filled = N - this.hop;
+      if (this.#filled === N) {
+        this.#bufRe.copyWithin(0, this.hop);
+        this.#bufIm.copyWithin(0, this.hop);
+        this.#filled = N - this.hop;
       }
-      this.bufRe[this.filled] = re[i];
-      this.bufIm[this.filled] = im[i];
-      this.filled++;
-      this.sampleIndex++;
-      if (this.filled === N) this.emit();
+      this.#bufRe[this.#filled] = re[i];
+      this.#bufIm[this.#filled] = im[i];
+      this.#filled++;
+      this.#sampleIndex++;
+      if (this.#filled === N) {
+        const center = this.#emit();
+        firstCenter ??= center;
+      }
     }
+    return firstCenter;
   }
 
-  private emit(): void {
+  #emit(): number {
     const N = this.fftSize;
     for (let i = 0; i < N; i++) {
-      this.workRe[i] = this.bufRe[i] * this.window[i];
-      this.workIm[i] = this.bufIm[i] * this.window[i];
+      this.#workRe[i] = this.#bufRe[i] * this.#window[i];
+      this.#workIm[i] = this.#bufIm[i] * this.#window[i];
     }
-    this.fft.forward(this.workRe, this.workIm);
+    this.#fft.forward(this.#workRe, this.#workIm);
     const power = new Float32Array(N);
     const half = N >> 1;
     for (let k = 0; k < N; k++) {
       const src = (k + half) % N; // fftshift
-      const p = this.workRe[src] * this.workRe[src] + this.workIm[src] * this.workIm[src];
+      const p = this.#workRe[src] * this.#workRe[src] + this.#workIm[src] * this.#workIm[src];
       power[k] = 10 * Math.log10(p + 1e-20);
     }
     // Centro de la ventana: la muestra sampleIndex − N/2
-    const tCenter = this.t0 + (this.sampleIndex - half) / this.prfHz;
-    this.columns.push({ t: tCenter, powerDb: power, prfHz: this.prfHz });
-    const limit = this.maxColumns ?? Math.min(8192, Math.max(2048, Math.ceil((SPECTRAL_CAPTURE_SECONDS * this.prfHz) / this.hop) + 1));
+    const tCenter = this.#t0 + (this.#sampleIndex - half) / this.#prfHz;
+    this.columns.push({ t: tCenter, powerDb: power, prfHz: this.#prfHz });
+    const limit = this.#maxColumns ?? Math.min(8192, Math.max(2048, Math.ceil((SPECTRAL_CAPTURE_SECONDS * this.#prfHz) / this.hop) + 1));
     if (this.columns.length > limit) this.columns.splice(0, this.columns.length - limit);
+    return tCenter;
   }
 
   /** Frecuencia (Hz) del bin k con fftshift. */
-  binFrequency(k: number, prfHz = this.prfHz): number {
+  binFrequency(k: number, prfHz = this.#prfHz): number {
     return ((k - (this.fftSize >> 1)) * prfHz) / this.fftSize;
   }
 
   reset(): void {
-    this.filled = 0;
+    this.#filled = 0;
     this.columns.length = 0;
-    this.synced = false;
+    this.#synced = false;
   }
 }
 

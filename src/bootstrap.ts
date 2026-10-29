@@ -481,6 +481,7 @@ export async function start(): Promise<void> {
         s,
         s.renderer.displayedFrame,
         s.equipment,
+        s.pwChain.revision,
         store.get(),
         s.physiology.clock.t,
         panel.captureOverlay,

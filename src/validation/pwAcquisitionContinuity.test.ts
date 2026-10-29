@@ -5,6 +5,8 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { PwDopplerChain } from '../doppler/pwChain';
 import { SpectralProcessor } from '../doppler/spectral';
+import { pwGate } from '../app/pwGate';
+import { openSession, placeGate, probeAt, PROFILE } from './support/studentChain';
 
 const PRF = 2000;
 const N = 128;
@@ -97,7 +99,7 @@ describe('continuidad de la adquisición IQ antes de la FFT', () => {
     expect(p.columns[1].powerDb).toEqual(previous.powerDb);
   });
 
-  it('la cadena descarta memoria del filtro y audio únicamente al interrumpirse la adquisición', () => {
+  it('la cadena descarta historia, filtro y audio al interrumpirse la adquisición', () => {
     const audio = { pushIQ: vi.fn(), reset: vi.fn() };
     const chain = new PwDopplerChain(new AnatomyQuery(new AnatomyScene(NORMAL_ADULT)), 17, audio);
     const reset = vi.spyOn(chain.wallFilter, 'reset');
@@ -109,12 +111,54 @@ describe('continuidad de la adquisición IQ antes de la FFT', () => {
     chain.begin(PRF, 2.5e6, 0, 25, 1);
     expect(reset).toHaveBeenCalledTimes(1);
     expect(audio.reset).toHaveBeenCalledTimes(1);
-    expect(chain.spectral.columns).toHaveLength(1);
+    expect(chain.spectral.columns).toHaveLength(0);
     chain.reset();
     reset.mockClear();
     audio.reset.mockClear();
     chain.begin(PRF, 2.5e6, 0, 25, 0);
     expect(reset).not.toHaveBeenCalled();
     expect(audio.reset).not.toHaveBeenCalled();
+  });
+});
+
+describe('fronteras efectivas del procesamiento PW', () => {
+  it.each([
+    { name: 'filtro', f0Hz: 2.5e6, gainDb: 0, wallFilterHz: 100 },
+    { name: 'ganancia', f0Hz: 2.5e6, gainDb: 12, wallFilterHz: 25 },
+    { name: 'frecuencia', f0Hz: 3.5e6, gainDb: 0, wallFilterHz: 25 },
+  ])('no completa una FFT mezclada tras cambiar $name con PRF constante', (next) => {
+    const session = openSession(NORMAL_ADULT, 'apnea-expiratory');
+    const contact = probeAt(session, 'portalTrunk');
+    const placement = placeGate(session, contact, ['pvTrunk']);
+    expect(placement).not.toBeNull();
+    if (!placement) throw new Error('La ventana debe contener la porta');
+    const { gate } = pwGate(
+      session.anatomy,
+      contact.frame,
+      contact,
+      PROFILE,
+      90,
+      { theta: placement.theta, depthMm: placement.r, gateMm: 4 },
+      session.engine.sample,
+    );
+    const chain = session.chain;
+    chain.begin(PRF, 2.5e6, 0, 25, 0);
+    chain.setGate(gate, session.engine.sample);
+    chain.step(session.engine.sample, [0, 0, 0], (N - 1) / PRF);
+    chain.flush();
+    expect(chain.spectral.columns).toHaveLength(0);
+    const particles = chain.sampleVolume.particleCount;
+    expect(particles).toBeGreaterThan(0);
+    chain.begin(PRF, next.f0Hz, next.gainDb, next.wallFilterHz, (N - 1) / PRF);
+    chain.step(session.engine.sample, [0, 0, 0], 1 / PRF);
+    chain.flush();
+    // La ventana de 128 muestras debe contener sólo el equipo nuevo; ninguna de las 127 antiguas.
+    expect(chain.spectral.columns).toHaveLength(0);
+    chain.begin(PRF, next.f0Hz, next.gainDb, next.wallFilterHz, N / PRF);
+    chain.step(session.engine.sample, [0, 0, 0], (N - 1) / PRF);
+    chain.flush();
+    expect(chain.spectral.columns).toHaveLength(1);
+    expect(Math.max(...chain.spectral.columns[0].powerDb)).toBeGreaterThan(-190);
+    expect(chain.sampleVolume.particleCount).toBe(particles);
   });
 });

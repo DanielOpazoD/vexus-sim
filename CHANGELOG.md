@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler PW: cambiar filtro, ganancia, frecuencia o escala descarta la adquisición incompatible incluso congelado; la captura usa sus ajustes adquiridos y conserva los resultados anteriores identificados (292).
+
 - Referencia acústica: añade adquisición 3D reproducible del espesor de corte, controles de foco/altura y verificación de perfiles desde RF; conserva la referencia 2D y no reajusta el render (291).
 
 - Fidelidad: hace reproducible la dependencia del moteado respecto al recorrido y la cadencia, con controles de retorno y tres contratos pendientes explícitos; no modifica el render (290).

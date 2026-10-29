@@ -227,7 +227,7 @@ export class SpectrogramView {
       this.reset();
     }
     const pw = sim.pw;
-    const presentation = `${pw.prfHz}/${pw.baselineShift}/${pw.invert}/${secondsVisible}`;
+    const presentation = `${sim.pwChain.revision}/${pw.prfHz}/${pw.baselineShift}/${pw.invert}/${secondsVisible}`;
     if (presentation !== this.#presentation) {
       this.reset();
       this.#presentation = presentation;
@@ -287,6 +287,11 @@ export class SpectrogramView {
       this.#offCtx.putImageData(strip, x0, 0);
     }
     ctx.drawImage(this.#off, 0, 0);
+    if (!columns.length) {
+      ctx.fillStyle = '#9aa7b4';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('Sin adquisición nueva', 8, 16);
+    }
     // Línea de base y escala
     const baselineY = (() => {
       let frac = 0.5 - pw.baselineShift; // posición de f=0 dentro de la banda, de abajo a arriba
@@ -316,7 +321,7 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
-    if (capture && capture.prfHz === pw.prfHz && overlayOnSpectrum(capture, columns))
+    if (capture && capture.revision === sim.pwChain.revision && capture.prfHz === pw.prfHz && overlayOnSpectrum(capture, columns))
       drawCaptureOverlay(ctx, capture, (t) => ecgX(t, this.#timeline.rightT, secondsVisible, W), H, pw);
     if (cursorT !== null) drawCursor(ctx, ecgX(cursorT, this.#timeline.rightT, secondsVisible, W), H);
   }

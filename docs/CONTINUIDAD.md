@@ -1,5 +1,24 @@
 # Continuidad de VExUS LAB
 
+## Fronteras de adquisición PW (29 de octubre, decisión 292)
+
+Cambiar ajustes efectivos de filtro, ganancia, frecuencia o PRF descarta FFT,
+historia, memoria del filtro y audio pendiente, incluso antes del próximo paso
+o estando congelado. La captura obtiene señal y ajustes de la misma adquisición;
+las mediciones guardadas permanecen identificadas como previas. Inversión,
+línea de base, ángulo y barrido conservan la adquisición. No reinicia partículas,
+semilla, puerta ni fisiología.
+
+La reproducción con puerta portal real demostró una ventana de 127 muestras
+antiguas más una nueva; no demostró una PF falsa. Tres regresiones fallaron en
+la base y pasan corregidas. El recorrido Metal de congelación, A→B→A y nueva
+captura pasa, con espectro/trazado vacío y resultado previo conservado.
+Se reemplaza expresamente la expectativa antigua de conservar historia al
+cambiar PRF en la cadena; el procesador espectral genérico conserva su contrato.
+Evidencia y negativos: `vexus-pw-transitions-evidence-20261028`.
+Revisión independiente, check completo y CI del head final se acreditan antes
+de integrar. El moteado persistente y el ajuste físico elevacional siguen abiertos.
+
 ## Referencia elevacional 3D (28 de octubre, decisión 291)
 
 Nuevo protocolo sintético separado de la referencia puntual 2D. PyMUST 0.1.9

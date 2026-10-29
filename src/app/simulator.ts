@@ -131,19 +131,19 @@ export class Simulator {
   renderer: UltrasoundRenderer;
   pose: ProbePose = defaultPose();
   /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
-  equipment: EquipmentSettings = defaultEquipment();
+  #requestedEquipment: EquipmentSettings = defaultEquipment();
   frozen = false;
   acquisitionEpoch = 0;
   acquisitionFrameAfter: number | null = null;
   /** Marco del último avance físico, conservado para estimar la velocidad aunque se dibuje entre pasos. */
-  private lastFrame: ProbeFrame;
+  #lastFrame: ProbeFrame;
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
-  private lastContact: ProbeContact;
-  private contactPose: ProbePose;
-  private probeVel: Vec3 = [0, 0, 0];
-  private lastColorUpdate = -Infinity;
-  private readonly acquisition = new AcquisitionEquipment();
-  private lastGate: GateGeometry | null = null;
+  #lastContact: ProbeContact;
+  #contactPose: ProbePose;
+  #probeVel: Vec3 = [0, 0, 0];
+  #lastColorUpdate = -Infinity;
+  readonly #acquisition = new AcquisitionEquipment();
+  #lastGate: GateGeometry | null = null;
   /** Información de la puerta para la UI/depuración. */
   gateInfo: PwGateInfo | null = null;
   /** Sangre de cada vaso en el volumen de muestra en cada actualización de la puerta (identidad del vaso, decisión 93). */
@@ -163,12 +163,23 @@ export class Simulator {
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
     this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
-    this.lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
-    this.lastFrame = this.lastContact.frame;
-    this.contactPose = this.pose;
-    this.anatomy.setProbeCompression(this.lastContact);
+    this.equipment = this.#requestedEquipment;
+    this.#lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
+    this.#lastFrame = this.#lastContact.frame;
+    this.#contactPose = this.pose;
+    this.anatomy.setProbeCompression(this.#lastContact);
     if (renderer) renderer.setScene(this.scene);
     this.renderer = renderer ?? new UltrasoundRenderer(canvas, this.scene, this.profile);
+  }
+
+  get equipment(): EquipmentSettings {
+    return this.#requestedEquipment;
+  }
+
+  set equipment(next: EquipmentSettings) {
+    const { pw } = this.#acquisition.get(next, this.transducer.lines, this.profile.colorLineSpacingRad, C_RECONSTRUCTION_MM_S);
+    this.pwChain.configure({ prfHz: pw.prfHz, f0Hz: this.transducer.f0Doppler, gainDb: pw.gainDb, wallFilterHz: pw.wallFilterHz });
+    this.#requestedEquipment = next;
   }
 
   // Ajustes de solo lectura: se cambian con comandos (`EquipmentController`), nunca en sitio
@@ -176,10 +187,10 @@ export class Simulator {
     return this.equipment.bmode;
   }
   get color(): Readonly<ColorSettings> {
-    return this.acquiredEquipment.color;
+    return this.#acquiredEquipment.color;
   }
   get pw(): Readonly<PwSettings> {
-    return this.acquiredEquipment.pw;
+    return this.#acquiredEquipment.pw;
   }
   get mmode(): Readonly<MModeSettings> {
     return this.equipment.mmode;
@@ -204,14 +215,14 @@ export class Simulator {
   }
   /** Marco efectivo de la sonda: el de la pose hundido lo que aprieta el operador (decisión 63). */
   get frame(): ProbeFrame {
-    return this.lastContact.frame;
+    return this.#lastContact.frame;
   }
   /** Contacto de la sonda del último marco (decisión 63): la misma compresión que ven la CPU y la GPU. */
   get contact(): ProbeContact {
-    return this.lastContact;
+    return this.#lastContact;
   }
   get probeVelocity(): Vec3 {
-    return this.probeVel;
+    return this.#probeVel;
   }
 
   setPose(p: ProbePose): void {
@@ -230,10 +241,10 @@ export class Simulator {
 
   /** El contacto depende de la pose, no de que el reloj haya integrado otro paso (decisión 179). */
   private syncProbeContact(): void {
-    if (samePose(this.pose, this.contactPose)) return;
-    this.lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
-    this.contactPose = this.pose;
-    this.anatomy.setProbeCompression(this.lastContact);
+    if (samePose(this.pose, this.#contactPose)) return;
+    this.#lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
+    this.#contactPose = this.pose;
+    this.anatomy.setProbeCompression(this.#lastContact);
   }
 
   /** Reconstruye el renderizador tras una pérdida de contexto GPU; el estado del paciente se conserva. */
@@ -264,11 +275,11 @@ export class Simulator {
     // pose): se reutiliza
     this.syncProbeContact();
     // Sonda: velocidad estimada entre cuadros (clutter y destello por movimiento)
-    const newFrame = this.lastContact.frame;
+    const newFrame = this.#lastContact.frame;
     // Las dos poses delimitan este lote, no el lote previo más el actual.
     // Color y PW reciben la velocidad cinemática sin atenuación arbitraria.
-    this.probeVel = probeVelocity(this.lastFrame, newFrame, steps * clock.dt);
-    this.lastFrame = newFrame;
+    this.#probeVel = probeVelocity(this.#lastFrame, newFrame, steps * clock.dt);
+    this.#lastFrame = newFrame;
 
     const pw = this.pw;
     if (pw.enabled) this.pwChain.begin(pw.prfHz, this.transducer.f0Doppler, pw.gainDb, pw.wallFilterHz, t0 + clock.dt);
@@ -276,16 +287,16 @@ export class Simulator {
       const s = this.physiology.step();
       if (!pw.enabled) continue;
       if (i === 0 || i % 8 === 0) this.updateGate(s);
-      this.pwChain.step(s, this.probeVel, clock.dt);
+      this.pwChain.step(s, this.#probeVel, clock.dt);
     }
     if (pw.enabled) this.pwChain.flush();
   }
 
   /** Geometría de la puerta a partir del cursor PW y la pose actual (`pwGate`, la misma que la cadena del alumno). */
   private updateGate(s: PhysiologySample): void {
-    const { gate, info } = pwGate(this.anatomy, this.lastFrame, this.lastContact, this.profile, this.bmode.focusMm, this.pw, s);
+    const { gate, info } = pwGate(this.anatomy, this.#lastFrame, this.#lastContact, this.profile, this.bmode.focusMm, this.pw, s);
     this.pwChain.setGate(gate, s);
-    this.lastGate = gate;
+    this.#lastGate = gate;
     this.gateInfo = info;
     // la sangre que ve la puerta, para la identidad del vaso de una captura (decisión 93)
     this.gateTrack.push({ t: s.t, vessels: this.pwChain.sampleVolume.lastComposition.vessels });
@@ -294,13 +305,13 @@ export class Simulator {
     if (old > 0) this.gateTrack.splice(0, old);
   }
 
-  private get acquiredEquipment() {
-    return this.acquisition.get(this.equipment, this.transducer.lines, this.profile.colorLineSpacingRad, C_RECONSTRUCTION_MM_S);
+  get #acquiredEquipment() {
+    return this.#acquisition.get(this.equipment, this.transducer.lines, this.profile.colorLineSpacingRad, C_RECONSTRUCTION_MM_S);
   }
 
   /** Cadencia compartida por B/Color/PW, con líneas y ensembles completos. */
   get colorTiming(): ColorTiming {
-    return this.acquiredEquipment.timing;
+    return this.#acquiredEquipment.timing;
   }
 
   /** Dibuja un cuadro con el estado actual; `measure` solo lo pasan los ganchos de medida. */
@@ -310,21 +321,21 @@ export class Simulator {
     const t = this.physiology.clock.t;
     // Con Doppler, cada imagen reserva todas las recepciones B/Color/PW.
     // La UI puede responder entre adquisiciones sin inventar un cuadro nuevo.
-    const colorPeriod = this.color.enabled || this.pw.enabled ? this.acquiredEquipment.schedule.frameS : 0;
+    const colorPeriod = this.color.enabled || this.pw.enabled ? this.#acquiredEquipment.schedule.frameS : 0;
     const forceColor = measure?.forceColor === true;
     if (forceColor && !this.color.enabled) throw new Error('render({ forceColor }) exige la caja de color encendida');
-    const updateColor = forceColor || t - this.lastColorUpdate >= colorPeriod;
+    const updateColor = forceColor || t - this.#lastColorUpdate >= colorPeriod;
     if ((this.color.enabled || this.pw.enabled) && !updateColor) return;
-    if (updateColor) this.lastColorUpdate = t;
+    if (updateColor) this.#lastColorUpdate = t;
     this.renderer.render(
       {
         sample: s,
-        frame: this.lastContact.frame,
+        frame: this.#lastContact.frame,
         pose: this.pose,
-        compression: this.lastContact,
+        compression: this.#lastContact,
         transducer: this.transducer,
         caliber: this.anatomy.caliberFor(s),
-        probeVelocity: this.probeVel,
+        probeVelocity: this.#probeVel,
         bmode: this.bmode,
         color: this.color,
         updateColor,
@@ -354,10 +365,10 @@ export class Simulator {
       sample: s,
       frame: at.frame,
       pose: at.pose ?? this.pose,
-      compression: at.compression ?? this.lastContact,
+      compression: at.compression ?? this.#lastContact,
       transducer: at.transducer ?? this.transducer,
       caliber: this.anatomy.caliberFor(s),
-      probeVelocity: this.probeVel,
+      probeVelocity: this.#probeVel,
       bmode: { ...this.bmode, depthMm: at.depthMm },
       color: this.color,
       updateColor: false,
@@ -384,7 +395,7 @@ export class Simulator {
         sample: s,
         frame,
         pose: this.pose,
-        compression: opts.compression ?? this.lastContact,
+        compression: opts.compression ?? this.#lastContact,
         transducer: this.transducer,
         caliber: this.anatomy.caliberFor(s),
         probeVelocity: [0, 0, 0],
@@ -405,10 +416,10 @@ export class Simulator {
 
   /** Frecuencia Doppler física esperada en el centro de la puerta (Hz), para depuración. */
   gateExpectedShiftHz(): number | null {
-    if (!this.lastGate) return null;
-    const q = this.anatomy.classifyWorld(this.lastGate.center, this.sample);
+    if (!this.#lastGate) return null;
+    const q = this.anatomy.classifyWorld(this.#lastGate.center, this.sample);
     if (!q.bloodVelocity) return null;
-    const b = this.lastGate.beamDir;
+    const b = this.#lastGate.beamDir;
     const v = q.bloodVelocity;
     const vAlong = -(v[0] * b[0] + v[1] * b[1] + v[2] * b[2]);
     return dopplerShiftHz(vAlong, this.transducer.f0Doppler);

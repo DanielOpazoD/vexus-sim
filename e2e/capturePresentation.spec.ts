@@ -184,8 +184,8 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   const beforeSweep = await snapshot(page);
   await page.getByRole('group', { name: 'Barrido', exact: true }).getByRole('button', { name: '100', exact: true }).click();
   await expectTransformed(page, beforeSweep);
-  // Changing the acquisition scale while frozen must not relabel old pixels
-  // or the capture overlay. The source signal and physiological clock stay intact.
+  // Cambiar la escala congelada descarta la adquisición incompatible (decisión 292),
+  // sin reetiquetar píxeles/trazado antiguos ni avanzar el reloj fisiológico.
   const acquisition = () =>
     page.evaluate(() => {
       const s = window.__vexusTest!.sim();
@@ -208,7 +208,8 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
     });
   await expect.poll(async () => (await snapshot(page)).bitmap.length).toBe(0);
   expect((await snapshot(page)).points).toHaveLength(0);
-  expect(await acquisition()).toEqual(beforeScale);
+  expect(beforeScale.columns.length).toBeGreaterThan(0);
+  expect(await acquisition()).toEqual({ ...beforeScale, columns: [] });
   await page.locator('#spectrum').screenshot({ path: test.info().outputPath('pw-new-scale-frozen.png') });
   expect(errors).toEqual([]);
 });

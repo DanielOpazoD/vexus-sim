@@ -223,12 +223,17 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   que cruza una costilla o gas y se desvía cuenta con su energía entera). Tras el primer gas el gradiente de Ψ̃ suma luces
   que ya no reciben eco (sin efecto: ahí no hay transmisión); junto al borde del espejo del pulmón compara un camino
   reflejado con uno recto, y ese efecto no está medido.
-- **La bilis y la orina, a 20 °C** (`fluid-sound-speed-20c`): TISSUES da 1482 m/s al líquido de la vesícula y de los
-  conductos y a la orina de la pelvis, el agua a 20 °C; a 37 °C el agua va a ~1524 m/s (Del Grosso y Mader 1972, J Acoust
-  Soc Am 52:1442) y la bilis, algo por encima. El desajuste con el hígado sale del 7,0 % en lugar del ~4 %: la refracción
-  de la vesícula (decisión 86) es ~1,7 veces la real, con sombras de borde más anchas y hondas (gemelo: −22 dB a 4 cm), y
-  la cara de la luz de la vesícula refleja con R 0,075 en lugar de ~0,061. Cambiarla toca la calibración del eco de esa
-  cara (`interfaceEcho.test.ts`, decisiones 57 y 65).
+- **La bilis y la orina, a 20 °C** (`fluid-sound-speed-20c`, decisión 293): TISSUES da 1482 m/s al líquido de la vesícula,
+  de los conductos y de la vejiga y a la orina de la pelvis, el agua a 20 °C; a 37 °C el agua va a 1523,7 m/s (Marczak 1997) y los líquidos medidos a esa temperatura, algo más (amniótico 1541,1 y orina 1551,3 m/s; Verma, Humphrey y Duck
+  2005). La bilis no tiene medida directa en esas fuentes. El desajuste con el hígado sale del 7,0 % en lugar del
+  2,9–4,1 % y la cara de la luz de la vesícula refleja con R 0,075 en lugar de 0,055–0,061 (+1,8 a +2,6 dB). La sombra
+  del borde, en cambio, no sale exagerada: el modelo paraxial de la decisión 86 la subestima a contraste bajo y, con la c
+  de la tabla, cumple los criterios de esa decisión frente al banco de ondas con la bilis a 1524 y 1541 m/s, dos
+  escenarios de sensibilidad (`refraction.test.ts`); con 1551 m/s el error medio sale 0,84 (límite 0,8). Su centro queda
+  hasta 3,1 dB más oscuro que esos bancos. Corregir solo la c deja el borde hasta 3,1 dB menos hondo que el banco de su
+  misma c y las pruebas lo rechazan: antes hace falta una refracción que cumpla a 37 °C por sí misma. La orina de la
+  vejiga usa el mismo líquido y su cara refleja +2,9 dB frente a la orina a 1551 m/s, sin banco propio; la de la pelvis no
+  refracta ni tiene cara de interfaz.
 - **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos

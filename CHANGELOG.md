@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Refracción: fija frente al banco de ondas con la bilis a 37 °C (1524 y 1541 m/s) que la c de la tabla reproduce la sombra del borde de la vesícula y que corregirla sola la deja menos honda; no modifica el render (293).
+
 - Doppler PW: cambiar filtro, ganancia, frecuencia o escala descarta la adquisición incompatible incluso congelado; la captura usa sus ajustes adquiridos y conserva los resultados anteriores identificados (292).
 
 - Referencia acústica: añade adquisición 3D reproducible del espesor de corte, controles de foco/altura y verificación de perfiles desde RF; conserva la referencia 2D y no reajusta el render (291).

@@ -28,10 +28,16 @@ function setup() {
     offscreen = canvas();
   vi.stubGlobal('document', { createElement: () => offscreen.element });
   const pw = { ...defaultEquipment().pw, enabled: true, prfHz: 2000 };
-  const sim = { pw, spectral: { fftSize: 128, hop: 16 }, pwNyquistCms: () => pw.prfHz * 0.0154 } as unknown as Simulator;
+  const sim = {
+    pw,
+    pwChain: { revision: 0 },
+    spectral: { fftSize: 128, hop: 16 },
+    pwNyquistCms: () => pw.prfHz * 0.0154,
+  } as unknown as Simulator;
   const view = new SpectrogramView(visible.element);
   const columns: SpectralColumn[] = [0.8, 0.9].map((t) => ({ t, prfHz: 2000, powerDb: new Float32Array(128).fill(-30) }));
   const capture: CaptureOverlay = {
+    revision: 0,
     accepted: true,
     prfHz: 2000,
     trace: [
@@ -47,6 +53,20 @@ function setup() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('una escala PW solo rotula su propia adquisición', () => {
+  it('una nueva revisión borra bitmap y overlay aunque el reloj esté congelado y no haya columnas', () => {
+    const s = setup();
+    s.view.draw(s.sim, s.columns, 1, 3, null, s.capture);
+    s.offscreen.context.fillRect.mockClear();
+    s.offscreen.context.putImageData.mockClear();
+    s.visible.context.save.mockClear();
+    Object.defineProperty(s.sim.pwChain, 'revision', { value: 1 });
+    s.view.draw(s.sim, [], 1, 3, null, s.capture);
+    expect(s.offscreen.context.fillRect).toHaveBeenCalledWith(0, 0, 400, 100);
+    expect(s.offscreen.context.putImageData).not.toHaveBeenCalled();
+    expect(s.visible.context.save).not.toHaveBeenCalled();
+    expect(s.visible.context.fillText).toHaveBeenCalledWith('Sin adquisición nueva', 8, 16);
+  });
+
   it('borra bitmap y trazado de otra PRF incluso con tiempo congelado, y los recupera al volver', () => {
     const s = setup();
     const before = structuredClone(s.columns);

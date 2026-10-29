@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { captureProtocolVessel } from '../doppler/capture';
+import type { PwCaptureSource } from '../doppler/pwChain';
+import { receiverNoiseDb } from '../doppler/sampleVolume';
 import { qualityText } from '../doppler/qualityMessages';
 import type { SpectralColumn } from '../doppler/spectral';
 import type { GateVesselSample } from '../doppler/vesselIdentity';
@@ -26,6 +28,19 @@ const spectrum = (edge = false): SpectralColumn[] =>
     for (let k = 50; k < 59; k++) powerDb[k] = -50;
     return { t: (i * 16) / 2600, prfHz: 2600, powerDb };
   });
+// El fixture tiene suelo de -80 dB por bin; se declara la ganancia que produce ese suelo.
+const source = (columns: SpectralColumn[]): PwCaptureSource => ({
+  kind: 'ready',
+  revision: 0,
+  columns,
+  acquiredEquipment: {
+    f0Hz: opts.f0Hz,
+    wallFilterHz: opts.wallFilterHz,
+    fftSize: opts.fftSize,
+    prfHz: 2600,
+    gainDb: -80 - receiverNoiseDb(0, 128),
+  },
+});
 const track = (arterial: (t: number) => boolean): GateVesselSample[] =>
   Array.from({ length: 540 }, (_, i) => {
     const t = i * 0.01,
@@ -39,7 +54,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
       before = cols.map((c) => [...c.powerDb]);
     const m = captureProtocolVessel(
       'renal',
-      cols,
+      source(cols),
       rhythm,
       5.4,
       opts,
@@ -55,7 +70,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('conserva una captura cuyo volumen está dominado por la vena', () => {
     const m = captureProtocolVessel(
       'renal',
-      spectrum(),
+      source(spectrum()),
       rhythm,
       5.4,
       opts,
@@ -67,7 +82,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('considera solo la identidad de los latidos realmente medidos', () => {
     const t = track((v) => v < 2);
     for (const s of t) if (s.t < 2) s.vessels.interlobarArtery2 = 100;
-    const m = captureProtocolVessel('renal', spectrum(), rhythm, 5.4, opts, t)!;
+    const m = captureProtocolVessel('renal', source(spectrum()), rhythm, 5.4, opts, t)!;
     expect(m.measuredBeats[0].tR).toBeGreaterThanOrEqual(2);
     expect(m.quality.issue).toBeNull();
     expect(m.quality.renalArterialDominance).toBeUndefined();
@@ -75,7 +90,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('rechaza un latido arterial aunque la media de toda la captura sea venosa', () => {
     const m = captureProtocolVessel(
       'renal',
-      spectrum(),
+      source(spectrum()),
       rhythm,
       5.4,
       opts,
@@ -87,7 +102,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('no oculta un problema físico de aliasing ya detectado', () => {
     const m = captureProtocolVessel(
       'renal',
-      spectrum(true),
+      source(spectrum(true)),
       rhythm,
       5.4,
       opts,
@@ -101,7 +116,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('el aliasing de una puerta venosa no inventa predominio arterial', () => {
     const m = captureProtocolVessel(
       'renal',
-      spectrum(true),
+      source(spectrum(true)),
       rhythm,
       5.4,
       opts,
@@ -115,7 +130,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
   it('no atribuye a una captura portal la identidad renal de su puerta equivocada', () => {
     const m = captureProtocolVessel(
       'portal',
-      spectrum(true),
+      source(spectrum(true)),
       rhythm,
       5.4,
       opts,

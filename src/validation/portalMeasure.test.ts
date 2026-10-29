@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { PwCaptureSource } from '../doppler/pwChain';
 import { captureColumns, captureProtocolVessel, WALL_SETTLE_S } from '../doppler/capture';
 import { assessQuality, outerBandExcessDb, qualityText } from '../doppler/measureQuality';
 import { receiverNoiseDb } from '../doppler/sampleVolume';
@@ -80,6 +81,13 @@ function portalColumns(o: Synth, seed = 3): SpectralColumn[] {
 /** La porta del caso: envolvente 13 → 20 bins (PF de la envolvente 35 %) con un latido de 0,8 s. */
 const pulsatile = (t: number) => 16.5 + 3.5 * Math.sin((2 * Math.PI * (t - 0.4)) / 0.8);
 const opts = { f0Hz: 2.5e6, angleCorrectionRad: 0, invert: false, fftSize: N, wallFilterHz: 25 };
+
+const source = (columns: SpectralColumn[]): PwCaptureSource => ({
+  kind: 'ready',
+  revision: 0,
+  columns,
+  acquiredEquipment: { f0Hz: opts.f0Hz, wallFilterHz: opts.wallFilterHz, fftSize: N, prfHz: PRF, gainDb: NOISE_DB - receiverNoiseDb(0, N) },
+});
 
 describe('Envolvente de semiplano fijo (decisión 94)', () => {
   it('ignora el clutter simétrico y el bin suelto junto a la línea de base', () => {
@@ -310,10 +318,10 @@ describe('Identidad del vaso de la puerta (decisión 94)', () => {
     const tNow = cols[cols.length - 1].t;
     const hv = Array.from({ length: 200 }, (_, i) => ({ t: tNow - 6.9 + i * 0.03, vessels: { hvRight: 0.3 } }));
     const pv = hv.map((s) => ({ ...s, vessels: { pvTrunk: 0.3 } }));
-    const wrong = captureProtocolVessel('portal', cols, rhythm, tNow, opts, hv)!;
+    const wrong = captureProtocolVessel('portal', source(cols), rhythm, tNow, opts, hv)!;
     expect(wrong.quality.issue).toBe('wrong-vessel');
     expect(qualityText(wrong.quality)).toContain('vaso equivocado, la puerta está en una suprahepática');
-    expect(captureProtocolVessel('portal', cols, rhythm, tNow, opts, pv)!.quality.issue).toBeNull();
+    expect(captureProtocolVessel('portal', source(cols), rhythm, tNow, opts, pv)!.quality.issue).toBeNull();
   });
 });
 
@@ -331,7 +339,7 @@ describe('Columnas de la captura (decisión 94)', () => {
         const other = kind === 'portal' ? 'hvRight' : 'pvTrunk';
         return { t, vessels: { [wrong ? other : correct]: old ? 1 : 0.02 } };
       });
-      const m = captureProtocolVessel(kind, cols, rhythm, tNow, opts, track)!;
+      const m = captureProtocolVessel(kind, source(cols), rhythm, tNow, opts, track)!;
       expect(m.measuredBeats).toHaveLength(3);
       expect(m.measuredBeats[0].tR).toBeGreaterThanOrEqual(2.8);
       expect(m.quality.issue).toBe(wrongNow ? 'wrong-vessel' : null);
@@ -378,9 +386,9 @@ describe('Trazado de la captura sobre el espectro (decisión 94)', () => {
 
   it('la traza se guarda en Hz físicos: la misma captura invertida o corregida en ángulo cae en las mismas filas', () => {
     const cols = portalColumns({ top: pulsatile, snrDb: 30 });
-    const a = captureOverlay(measureObservedPortal(cols, beats, opts)!, opts, PRF);
+    const a = captureOverlay(measureObservedPortal(cols, beats, opts)!, opts, PRF, 0);
     const inv = { ...opts, invert: true, angleCorrectionRad: 0.6 };
-    const b = captureOverlay(measureObservedPortal(cols, beats, inv)!, inv, PRF);
+    const b = captureOverlay(measureObservedPortal(cols, beats, inv)!, inv, PRF, 0);
     const fa = a.trace.map((p) => p.fHz).filter(Number.isFinite);
     const fb = b.trace.map((p) => p.fHz).filter(Number.isFinite);
     expect(fb.length).toBe(fa.length);

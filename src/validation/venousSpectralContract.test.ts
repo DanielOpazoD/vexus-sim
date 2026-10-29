@@ -77,10 +77,10 @@ describe('contratos de adquisición PW comparada', () => {
       expect(m.marks.length).toBeGreaterThanOrEqual(8);
       const capture = captureProtocolVessel(
         VENOUS_COMPARISON_CHANNELS[i].id,
-        columns,
+        a.chains[i].readCapture(),
         engine.rhythm,
         samples.at(-1)!.t,
-        opts,
+        { angleCorrectionRad: 0, invert: false },
         a.gateTracks[i],
       );
       expect(capture?.quality.issue).toBeNull();

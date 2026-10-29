@@ -79,17 +79,10 @@ describe('puerta virtual portal dentro del tronco', () => {
         expect(trunk / total).toBeGreaterThan(0.9);
         const m = captureProtocolVessel(
           'portal',
-          a.chains[1].spectral.columns,
+          a.chains[1].readCapture(),
           engine.rhythm,
           engine.clock.t,
-          {
-            f0Hz: a.f0Hz,
-            angleCorrectionRad: 0,
-            invert: false,
-            fftSize: 128,
-            wallFilterHz: 15,
-            gainDb: 0,
-          },
+          { angleCorrectionRad: 0, invert: false },
           a.gateTracks[1],
         );
         expect(m).not.toBeNull();

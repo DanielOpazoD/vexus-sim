@@ -30,13 +30,33 @@ test('PW diferido: no se descarga al arrancar y la captura preparada es síncron
   await expect(cancel).toBeFocused();
   // La lectura y el resultado ocurren en el mismo turno del clic, sin await ni ventana
   // para capturar otro paciente/equipo. La cadena con flujo válido la cubre smoke.spec.
-  const result = await page.evaluate(() => {
-    const button = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Capturar')!;
-    const card = button.closest<HTMLElement>('.callout')!;
-    button.click();
-    return { completed: card.hidden, result: document.querySelector('.result')?.textContent };
-  });
-  expect(result.completed).toBe(true);
+  // Sin señal PW elegible (antes del primer cuadro tras armar, que SwiftShader tarda en
+  // dibujar) el clic solo lo informa en ese mismo turno (decisión 292); se reintenta cuando
+  // avanza el reloj del estado. Cada intento vacía espera y resultado y exige la tarjeta a la
+  // vista: una captura que terminara fuera del clic no se aceptaría en el intento siguiente.
+  const click = () =>
+    page.evaluate(() => {
+      const button = [...document.querySelectorAll('button')].find((b) => b.textContent === 'Capturar')!;
+      const card = button.closest<HTMLElement>('.callout')!;
+      const wait = card.querySelector('[role="status"]')!;
+      const result = document.querySelector('.result')!;
+      const shown = !card.hidden;
+      wait.textContent = '';
+      result.textContent = '';
+      button.click();
+      return { shown, completed: card.hidden, waiting: wait.textContent, result: result.textContent };
+    });
+  const clock = async () => Number(/ t (\d+\.\d) s/.exec(await page.locator('#status').innerText())?.[1]);
+  let result = await click();
+  for (let attempt = 1; !result.completed; attempt++) {
+    expect(result.shown, 'tarjeta a la vista antes del clic').toBe(true);
+    expect(result.waiting).toMatch(/^(Adquiere|Estabilizando) señal nueva/);
+    expect(attempt, `sin señal PW elegible: ${result.waiting}`).toBeLessThan(8);
+    const t = await clock();
+    await expect.poll(clock).toBeGreaterThan(t);
+    result = await click();
+  }
+  expect(result.shown, 'tarjeta a la vista antes del clic').toBe(true);
   expect(result.result).toContain('VSH:');
   expect(requests).toBe(1);
 });

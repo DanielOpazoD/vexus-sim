@@ -6,7 +6,6 @@ import { AnatomyQuery } from '../../anatomy/query';
 import { AnatomyScene } from '../../anatomy/scene';
 import { captureProtocolVessel, type CaptureResult } from '../../doppler/capture';
 import { PwDopplerChain } from '../../doppler/pwChain';
-import type { MeasureOptions } from '../../doppler/spectralMeasure';
 import type { GateVesselSample, ProtocolVessel } from '../../doppler/vesselIdentity';
 import { PhysiologyEngine } from '../../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../../physiology/patientState';
@@ -101,14 +100,6 @@ export function acquire<K extends ProtocolVessel>(
   const cursor = { theta: best.theta, depthMm: best.r, gateMm: o.gateMm ?? 4 };
   const gainDb = o.gainDb ?? 0;
   const wallFilterHz = o.wallFilterHz ?? 25;
-  const opts: MeasureOptions = {
-    f0Hz: TR.f0Doppler,
-    angleCorrectionRad: 0,
-    invert: false,
-    fftSize: chain.spectral.fftSize,
-    wallFilterHz,
-    gainDb,
-  };
   const track: GateVesselSample[] = [];
   const captures: Array<{ t: number; m: CaptureResult[K] | null }> = [];
   chain.reset();
@@ -129,7 +120,10 @@ export function acquire<K extends ProtocolVessel>(
     chain.flush();
     if (engine.clock.t + 1e-9 >= next) {
       const tNow = engine.clock.t;
-      captures.push({ t: +tNow.toFixed(2), m: captureProtocolVessel(kind, chain.spectral.columns, engine.rhythm, tNow, opts, track) });
+      captures.push({
+        t: +tNow.toFixed(2),
+        m: captureProtocolVessel(kind, chain.readCapture(), engine.rhythm, tNow, { angleCorrectionRad: 0, invert: false }, track),
+      });
       if (o.captureEvery === undefined) break;
       next += o.captureEvery;
     }

@@ -295,3 +295,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [289](DECISIONS.md#L9380) | Detectar pronto una PF portal falsa causada por renovación PW | vigente |
 | [290](DECISIONS.md#L9392) | Conservar el contrato incumplido de retorno del moteado | vigente |
 | [291](DECISIONS.md#L9404) | Referencia elevacional 3D con el motor independiente intacto | vigente |
+| [292](DECISIONS.md#L9416) | Frontera única de adquisición para captura PW | vigente |

@@ -8,6 +8,7 @@ import type { AppState, MeasureTool } from '../../app/store';
 import type { MeasurementQuality } from '../../doppler/measureQuality';
 import type { ObservedHepatic, ObservedPortal, ObservedRenal } from '../../doppler/spectralMeasure';
 import type * as CaptureMeasurements from '../../doppler/capture';
+import type { PwAcquiredEquipment, PwPresentation } from '../../doppler/pwChain';
 import type { ProtocolVessel } from '../../doppler/vesselIdentity';
 import { captureOverlay, type CaptureOverlay } from '../captureOverlay';
 import { portalBeatSummary } from '../portalBeatSummary';
@@ -31,18 +32,21 @@ import {
   type ContextFlag,
 } from './vexusText';
 
-interface AcquisitionStamp {
+interface AcquisitionContext {
   epoch: number;
   time: number;
   respiration: RespiratoryPattern;
   pose: ProbePose;
   equipment: EquipmentSettings;
 }
+type AcquisitionStamp = AcquisitionContext &
+  ({ kind: 'image' } | { kind: 'pw'; revision: number; acquiredEquipment: PwAcquiredEquipment; presentation: PwPresentation });
 type Stamps = Partial<Record<'ivc' | 'mmode' | 'hepatic' | 'portal' | 'renal', AcquisitionStamp>>;
 
 function acquisitionStamp(sim: Simulator, image = false): AcquisitionStamp {
   const frame = image ? sim.renderer.displayedFrame : null;
   return structuredClone({
+    kind: 'image',
     epoch: sim.acquisitionEpoch,
     time: frame?.t ?? sim.physiology.clock.t,
     respiration: sim.patient.respiratoryPattern,
@@ -75,6 +79,8 @@ export class MeasureTab {
   private lastPortal: ObservedPortal | null = null;
   private lastRenal: ObservedRenal | null = null;
   #lastOverlay: CaptureOverlay | null = null;
+  #presentedPwRevision = -1;
+  #captureWait!: HTMLElement;
   #ivcCaliperMm: number | null = null;
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   #mPoints: MMark[] = [];
@@ -208,7 +214,14 @@ export class MeasureTab {
 
   /** Trazado de la última captura sobre el espectro (null sin captura o tras borrar). */
   get captureOverlay(): CaptureOverlay | null {
-    return this.#lastOverlay;
+    return this.#lastOverlay?.revision === this.#ctx.sim().pwChain.revision ? this.#lastOverlay : null;
+  }
+
+  syncAcquisition(): void {
+    const revision = this.#ctx.sim().pwChain.revision;
+    if (revision === this.#presentedPwRevision) return;
+    this.#presentedPwRevision = revision;
+    this.renderResult();
   }
 
   /** Calibres del modo M a la vista en la franja (los del último resultado o los que se están poniendo). */
@@ -413,6 +426,8 @@ export class MeasureTab {
       this.#updateCaptureButton(b);
     }
     button(r, 'Cancelar (Esc)', () => this.#ctx.store.set({ tool: 'none' }));
+    this.#captureWait = note(this.#captureCard);
+    this.#captureWait.setAttribute('role', 'status');
   }
 
   #updateCaptureButton(b: HTMLButtonElement): void {
@@ -449,29 +464,34 @@ export class MeasureTab {
     const { captureProtocolVessel } = this.#observations;
     const sim = this.#ctx.sim();
     const tNow = sim.physiology.clock.t;
-    const opts = {
-      f0Hz: sim.transducer.f0Doppler,
-      angleCorrectionRad: sim.pw.angleCorrection,
-      invert: sim.pw.invert,
-      fftSize: sim.spectral.fftSize,
-      wallFilterHz: sim.pw.wallFilterHz,
-      gainDb: sim.pw.gainDb,
-    };
-    // los últimos latidos completos del espectro guardado (7 s), como captura un equipo, y la identidad del vaso
-    const cap = <K extends ProtocolVessel>(k: K) =>
-      captureProtocolVessel(k, sim.spectral.columns, sim.physiology.rhythm, tNow, opts, sim.gateTrack);
+    const source = sim.pwChain.readCapture();
+    if (source.kind === 'waiting') {
+      this.#captureWait.textContent =
+        source.reason === 'samples'
+          ? 'Adquiere señal nueva antes de capturar. Si está congelada, reanuda el PW.'
+          : 'Estabilizando señal nueva. Espera antes de capturar.';
+      return;
+    }
+    const display = { angleCorrectionRad: sim.pw.angleCorrection, invert: sim.pw.invert };
+    const opts = { ...source.acquiredEquipment, ...display };
+    const cap = <K extends ProtocolVessel>(k: K) => captureProtocolVessel(k, source, sim.physiology.rhythm, tNow, display, sim.gateTrack);
     const m =
       kind === 'hepatic'
         ? (this.lastHepatic = cap('hepatic'))
         : kind === 'portal'
           ? (this.lastPortal = cap('portal'))
           : (this.lastRenal = cap('renal'));
-    const cols = sim.spectral.columns;
     if (m) {
-      this.#stamps[kind] = acquisitionStamp(sim);
+      this.#stamps[kind] = structuredClone({
+        ...acquisitionStamp(sim),
+        kind: 'pw',
+        revision: source.revision,
+        acquiredEquipment: source.acquiredEquipment,
+        presentation: display,
+      });
       this.#seriesNote = '';
     }
-    this.#lastOverlay = m && cols.length ? captureOverlay(m, opts, cols[cols.length - 1].prfHz) : null;
+    this.#lastOverlay = m ? captureOverlay(m, opts, source.acquiredEquipment.prfHz, source.revision) : null;
     this.#ctx.store.set({ tool: 'none' });
     this.renderResult();
     this.#ctx.onCapture?.();
@@ -497,8 +517,11 @@ export class MeasureTab {
     const modified = classifyModifiedVexus(veins, this.#context);
     const excluded = excludedTerritories(res);
     // una línea por territorio, marcada si el contexto la vuelve poco fiable
-    const line = (t: Territory, inner: string) =>
-      `<div>${inner}${excluded.has(t) ? ' <span class="small unreliable">· no fiable</span>' : ''}</div>`;
+    const line = (t: Territory, inner: string) => {
+      const stamp = this.#stamps[t];
+      const previous = stamp?.kind === 'pw' && stamp.revision !== this.#ctx.sim().pwChain.revision;
+      return `<div>${inner}${excluded.has(t) ? ' <span class="small unreliable">· no fiable</span>' : ''}${previous ? ' <span class="small">· captura previa</span>' : ''}</div>`;
+    };
     const rejected = (m: { quality: MeasurementQuality } | null, name: string) =>
       m && m.quality.issue ? `${name}: <b>${this.#observations!.qualityText(m.quality)}</b>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.#ivcCaliperMm !== null ? 1 : 0) + (this.#ivcM ? 1 : 0);

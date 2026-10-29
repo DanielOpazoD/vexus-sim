@@ -586,10 +586,10 @@ export class VenousViewer {
       if (this.#processedT[i] - this.#marksT[i] >= 0.5) {
         const m = captureProtocolVessel(
           VENOUS_COMPARISON_CHANNELS[i].id,
-          acquisition.chains[0].spectral.columns,
+          acquisition.chains[0].readCapture(),
           rhythm,
           Math.min(end, this.#processedT[i]),
-          { f0Hz: acquisition.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: this.#wallFilters[i], gainDb: 0 },
+          { angleCorrectionRad: 0, invert: false },
           acquisition.gateTracks[0],
         );
         this.#velocitySummaries[i] = observedVelocitySummary(m, this.#inverted[i]);

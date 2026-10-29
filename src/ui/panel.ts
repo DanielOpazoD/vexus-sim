@@ -140,6 +140,7 @@ export class ControlPanel implements PanelContext {
   }
 
   sync(): void {
+    this.#measure?.syncAcquisition();
     for (const s of this.#syncables) s.sync();
   }
 

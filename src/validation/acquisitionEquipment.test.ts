@@ -36,6 +36,7 @@ function rig() {
   );
   const equipment = new EquipmentController(triplex(), ctx);
   sim.equipment = equipment.state;
+  audio.reset.mockClear();
   equipment.subscribe((next) => {
     sim.equipment = next;
   });
@@ -152,25 +153,62 @@ describe('estado solicitado y relojes efectivos', () => {
     const filter = vi.spyOn(sim.pwChain.wallFilter, 'design');
     const before = sim.pw.prfHz;
     sim.advance(0.12);
-    expect(signal).toHaveBeenLastCalledWith(expect.objectContaining({ prfHz: before }));
-    expect(filter).toHaveBeenLastCalledWith(sim.pw.wallFilterHz, before);
+    // El equipo se adopta al asignarlo, antes de advance; un lote equivalente no vuelve a configurarlo.
+    expect(signal).not.toHaveBeenCalled();
+    expect(filter).not.toHaveBeenCalled();
+    expect(sim.pwChain.readCapture()).toMatchObject({
+      kind: 'ready',
+      acquiredEquipment: { prfHz: before, wallFilterHz: sim.pw.wallFilterHz },
+    });
+    expect(sim.pwChain.wallFilter.cutoffHz).toBe(sim.pw.wallFilterHz);
     expect(audio.pushIQ.mock.calls.at(-1)![3]).toBe(before);
     expect(sim.spectral.columns.length).toBeGreaterThan(0);
     expect(sim.spectral.columns.every((c) => c.prfHz === before)).toBe(true);
     expect(sim.pwNyquistCms()).toBe(nyquistVelocityCms(before, sim.transducer.f0Doppler, sim.pw.angleCorrection));
-    const retained = sim.spectral.columns.length;
     dispatch({ type: 'bmode', patch: { depthMm: 240 } });
     const after = sim.pw.prfHz;
     expect(after).not.toBe(before);
     sim.advance(0.004);
     expect(audio.reset).toHaveBeenCalledTimes(1);
-    expect(sim.spectral.columns).toHaveLength(retained); // less than one fresh FFT window
+    expect(sim.spectral.columns).toHaveLength(0); // Se descarta el tramo incompatible, aún falta una ventana nueva.
     sim.advance(0.12);
-    expect(sim.spectral.columns.length).toBeGreaterThan(retained);
-    expect(sim.spectral.columns.slice(retained).every((c) => c.prfHz === after)).toBe(true);
-    expect(sim.spectral.columns.slice(0, retained).every((c) => c.prfHz === before)).toBe(true);
+    expect(sim.spectral.columns.length).toBeGreaterThan(0);
+    expect(sim.spectral.columns.every((c) => c.prfHz === after)).toBe(true);
     expect(audio.pushIQ.mock.calls.at(-1)![3]).toBe(after);
     expect(signal).toHaveBeenLastCalledWith(expect.objectContaining({ prfHz: after }));
+  });
+
+  it('invalida PW al asignar filtro/ganancia congelado, conservando reloj y población', () => {
+    const { sim, dispatch } = rig();
+    sim.advance(0.12);
+    const t = sim.sample.t,
+      particles = sim.sampleVolume.particleCount;
+    expect(sim.spectral.columns.length).toBeGreaterThan(0);
+    sim.frozen = true;
+    dispatch({ type: 'pw', patch: { gainDb: 12 } });
+    expect(sim.spectral.columns).toEqual([]);
+    expect(sim.pwChain.readCapture()).toMatchObject({ kind: 'waiting', reason: 'samples' });
+    expect(sim.sample.t).toBe(t);
+    expect(sim.sampleVolume.particleCount).toBe(particles);
+    const valid = sim.equipment;
+    expect(() => {
+      sim.equipment = { ...valid, pw: { ...valid.pw, gainDb: NaN } };
+    }).toThrow(RangeError);
+    expect(sim.equipment).toBe(valid);
+    expect(sim.pw.gainDb).toBe(12);
+  });
+
+  it('los cuatro mandos de presentación no reacquieren ni alteran señal/audio', () => {
+    const { sim, audio, dispatch } = rig();
+    sim.advance(0.12);
+    const columns = structuredClone(sim.spectral.columns),
+      revision = sim.pwChain.revision;
+    sim.frozen = true;
+    audio.reset.mockClear();
+    dispatch({ type: 'pw', patch: { baselineShift: 0.2, invert: true, angleCorrection: 0.3, sweepMmS: 100 } });
+    expect(sim.spectral.columns).toEqual(columns);
+    expect(sim.pwChain.revision).toBe(revision);
+    expect(audio.reset).not.toHaveBeenCalled();
   });
 
   it('conserva el cuadro adquirido al mover puerta/caja o congelar y entrega el nuevo reloj en la siguiente adquisición', () => {

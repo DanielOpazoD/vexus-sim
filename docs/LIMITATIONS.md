@@ -528,7 +528,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   respirar son válidas.
 - **Respirando, la PF portal se acepta menos, y la técnica la mide lejos de la bifurcación** (`portal-pf-breathing-quality`, decisión 294): con la
   población nueva, la lectura responde a la puerta que barre la luz y las ramas, y tres reglas de calidad rechazan lo que no es pulsación
-  cardíaca. La selección automática pone la puerta a ≥ 20 mm de la bifurcación. Esos 20 mm se eligieron tras un fallo de la cadena, con el extremo de
+  cardíaca. La selección automática pone la puerta a ≥ 20 mm de la bifurcación si allí el ángulo no pasa de 60°. Esos 20 mm se eligieron tras un fallo de la cadena, con el extremo de
   los 1–2 cm de la suprahepática y no con una referencia portal [EXTRAPOLACIÓN PROPIA]; el umbral de la deriva es la tolerancia de la decisión 94, y las reglas se
   eligieron sobre la propia cadena. En 280 capturas no usadas para elegirlas (s41–45): 169 aceptadas, todas a ≤ 10 puntos de la verdad, frente a 194 de
   antes de la decisión, también todas; respirando se aceptan 48 de 140 (antes 68), ninguna en el sano, la FA, la insuficiencia tricuspídea y la ventilación

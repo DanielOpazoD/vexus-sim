@@ -40,7 +40,7 @@ que toda señal contralateral sea suya ni que el ruido restante deba borrarse.
 ## Cambio propuesto y límites
 
 El visor automático exige al centro portal una distancia material de al menos
-una longitud de puerta (6 mm) respecto al extremo de bifurcación (desde la decisión 294, ≥ 20 mm en toda selección automática). Es una guarda
+una longitud de puerta (6 mm) respecto al extremo de bifurcación (desde la decisión 294, ≥ 20 mm con un ángulo de hasta 60° en toda selección automática). Es una guarda
 geométrica experimental, no un umbral clínico publicado. Mantiene calibre,
 flujo, retrodispersión, ganancia, escala y longitud de muestra. No recorta bins
 negativos ni impide inversión fisiológica. No cambia cómo el alumno coloca

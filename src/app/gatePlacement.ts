@@ -8,7 +8,7 @@ import { lineDirection, pointOnLine, type ProbeFrame, type Transducer } from '..
  * a ≥ OTHER_VESSEL_MM de la VCI si el vaso desemboca en ella (el protocolo VExUS muestrea la
  * suprahepática a 1–2 cm de la confluencia: en la desembocadura, la VCI dilatada del caso grave
  * engullía la puerta y su sangre, casi perpendicular al haz, no daba señal; los vecinos naturales,
- * como la arteria de la tríada portal o la interlobar, no cuentan), en el tronco portal a ≥ PORTAL_FORK_MM de su bifurcación y
+ * como la arteria de la tríada portal o la interlobar, no cuentan), en el tronco portal lejos de su bifurcación (PORTAL_FORK_MM) y
  * con el mejor ángulo posible.
  * Puntuación |cos α|·min(bd, 3 mm) sobre una rejilla del sector, multiplicada por el peso opcional
  * del candidato (`acousticWindowWeight`: la transmisión hasta el punto). Sin peso no mira la
@@ -28,11 +28,13 @@ export interface GatePlacement {
 /** Distancia mínima a la VCI (mm) para las venas que desembocan en ella. */
 const OTHER_VESSEL_MM = 10;
 /**
- * Distancia mínima (mm) del tronco portal a su bifurcación: el extremo de los 1–2 cm con que el protocolo se aleja de la confluencia en
- * la suprahepática, porque aquí el mejor ángulo cae justo en ella (a 2,4 mm). Al respirar la puerta cabalgaba tronco y ramas, la
- * envolvente saltaba entre sus velocidades y la PF salía falsa: 52 frente a 19 en el sano (decisión 294). [EXTRAPOLACIÓN PROPIA]
+ * Distancia (mm) del tronco portal a su bifurcación que busca la técnica: el extremo de los 1–2 cm con que el protocolo se aleja de la
+ * confluencia en la suprahepática, porque el mejor ángulo cae justo en ella (a 2,4 mm). Al respirar la puerta cabalgaba tronco y ramas, la
+ * envolvente saltaba entre sus velocidades y la PF salía falsa: 52 frente a 19 en el sano (decisión 294). Manda el ángulo: si lejos de la
+ * bifurcación ninguno baja de 60° (ventana subcostal), vale el mejor punto. [EXTRAPOLACIÓN PROPIA]
  */
 const PORTAL_FORK_MM = 20;
+const MIN_TRUNK_COS = 0.5;
 
 export function bestGateOnVessel(
   anatomy: AnatomyQuery,
@@ -66,18 +68,12 @@ export function bestGateOnVessel(
   };
   // puntuar todos los candidatos y comprobar la confluencia solo de mejor a peor (8 consultas
   // por candidato: hacerlo en todos triplicaba el coste de la cadena del alumno)
-  const candidates: Array<GatePlacement & { score: number }> = [];
+  const candidates: Array<GatePlacement & { score: number; apt: boolean }> = [];
   const fork = anatomy.scene.vesselById.get('pvTrunk')?.tube.nodes.at(-1)?.p;
   for (let th = -tr.halfSector; th <= tr.halfSector; th += 0.015)
     for (let r = 15; r <= maxDepthMm; r += 1.5) {
       const q = classify(th, r);
       if (!q.vessel || !vessels.includes(q.vessel) || !q.vesselHit || q.boundaryDistance < minWallMm) continue;
-      if (
-        q.vessel === 'pvTrunk' &&
-        fork &&
-        Math.hypot(q.material[0] - fork[0], q.material[1] - fork[1], q.material[2] - fork[2]) < PORTAL_FORK_MM
-      )
-        continue;
       const d = lineDirection(frame, th);
       const tg = q.vesselHit.tangent;
       const cosAngle = Math.abs(d[0] * tg[0] + d[1] * tg[1] + d[2] * tg[2]);
@@ -88,11 +84,18 @@ export function bestGateOnVessel(
         cosAngle,
         vessel: q.vessel,
         score: cosAngle * Math.min(q.boundaryDistance, 3) * (weight ? weight(th, r) : 1),
+        // el tronco, lejos de la bifurcación y con un ángulo que sirva
+        apt:
+          q.vessel !== 'pvTrunk' ||
+          !fork ||
+          (cosAngle >= MIN_TRUNK_COS &&
+            Math.hypot(q.material[0] - fork[0], q.material[1] - fork[1], q.material[2] - fork[2]) >= PORTAL_FORK_MM),
       });
     }
   candidates.sort((a, b) => b.score - a.score);
-  const best = candidates.find((c) => (!accept || accept(c)) && !nearCava(c.theta, c.r, c.vessel)) ?? null;
+  const usable = (c: GatePlacement) => (!accept || accept(c)) && !nearCava(c.theta, c.r, c.vessel);
+  const best = candidates.find((c) => c.apt && usable(c)) ?? candidates.find(usable);
   if (!best) return null;
-  const { score: _score, ...placement } = best;
+  const { score: _score, apt: _apt, ...placement } = best;
   return placement;
 }

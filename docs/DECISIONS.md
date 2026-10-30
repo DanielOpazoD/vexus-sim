@@ -9495,16 +9495,16 @@ transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
 
 | Puerta        | Apnea, antes | Apnea, ahora        | Respirando, antes | Respirando, ahora   |
 | ------------- | ------------ | ------------------- | ----------------- | ------------------- |
-| Interlobar    | 0,662        | 0,998 (0,964–1,032) | 0,213             | 1,014 (0,979–1,049) |
-| Tronco portal | 0,981        | 0,993 (0,941–1,045) | 0,719             | 0,933 (0,897–0,969) |
-| Suprahepática | 0,970        | 1,011 (0,968–1,054) | 1,069             | 1,033 (1,006–1,060) |
+| Interlobar    | 0,662        | 0,998 (0,964–1,032) | 0,213             | 1,023 (0,989–1,058) |
+| Tronco portal | 0,981        | 0,993 (0,941–1,045) | 0,719             | 0,935 (0,898–0,971) |
+| Suprahepática | 0,970        | 1,005 (0,961–1,050) | 1,069             | 1,047 (1,002–1,091) |
 
 Respirando se cuentan los instantes con el vaso en la puerta. Respirando, la porta queda algo por debajo y la
 suprahepática algo por encima de una siembra nueva. En el escenario del alumno, las capturas tras
-respirar son monofásicas válidas y la población vuelve a 0,876 de una siembra nueva (16 semillas, 0,67–1,11). El salto
+respirar son monofásicas válidas y la población vuelve a 0,865 de una siembra nueva (16 semillas, 0,61–1,05). El salto
 del diafragma al pasar a apnea deja ese déficit (`pw-breath-apnea-jump`). El mapa lineal se separa de la deformación
 exacta junto a la columna (`pw-gate-linear-map`) y la corriente gira de golpe en los codos (`pw-stream-capsule-joints`).
-La cadena PW cuesta más (A/B intercalado con la misma carga): ×1,0–1,7 en apnea; respirando, ×1,1–1,3 en la interlobar, ×2,5–2,8 en la suprahepática y ×4,0–4,5 en el tronco portal (≈0,38 s de CPU por segundo simulado en el hilo principal, frente a ≈0,3 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. Se retira `thin-vessel-sample-volume-lag`.
+La cadena PW cuesta más (A/B intercalado con la misma carga): ×1,0–1,6 en apnea; respirando, ×1,1–1,3 en la interlobar, ×2,5–3,1 en la suprahepática y ×3,9–4,5 en el tronco portal (0,34–0,39 s de CPU por segundo simulado en el hilo principal con poca carga, frente a ≈0,3 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. Se retira `thin-vessel-sample-volume-lag`.
 
 **Verificación.** `pwPopulation.test.ts`: interlobar en apnea, interlobar respirando y el escenario del alumno con cuatro
 semillas en los dos brazos. Fallan con el código anterior: 0,633; 0,535; y en el escenario, 0,69 en apnea, `intermittent`

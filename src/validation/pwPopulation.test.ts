@@ -107,7 +107,7 @@ describe('población PW de una vena fina frente a una siembra nueva (decisión 2
     // Escenario del alumno: puerta colocada en apnea, 10 s de respiración tranquila, apnea otra vez y captura sin mover la
     // puerta. Antes la población se vaciaba un poco más en cada ciclo y la apnea no la reponía: «no-signal» en todas las
     // capturas (peso 0 frente a 0,093 de una siembra nueva) hasta mover la puerta. Ahora la población vuelve a ≈0,87 de
-    // una siembra nueva (16 semillas: 0,70–1,01); el salto de la respiración a la apnea deja ese déficit residual
+    // una siembra nueva (16 semillas: 0,61–1,05); el salto de la respiración a la apnea deja ese déficit residual
     // (`pw-breath-apnea-jump`). Cuatro semillas de la población; los umbrales se fijaron con esa distribución medida.
     for (const breathe of [false, true]) {
       const tag = breathe ? 'tras respirar' : 'en apnea';

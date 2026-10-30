@@ -521,7 +521,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-breath-apnea-jump`, decisión 294): al pasar a
   apnea espiratoria el diafragma vuelve de golpe a su referencia (hasta 10 mm en un paso de la fisiología). La población del
-  volumen de muestra queda entonces por debajo de una siembra nueva en la interlobar del caso grave (0,876 de media con 16 semillas, 0,67–1,11),
+  volumen de muestra queda entonces por debajo de una siembra nueva en la interlobar del caso grave (0,865 de media con 16 semillas, 0,61–1,05),
   y en apnea solo la renueva el flujo. Respirando sigue a una siembra nueva y las capturas tras respirar son válidas.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se

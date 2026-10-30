@@ -474,7 +474,7 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
       pvRadiusScale: 1,
       hvRadiusScale: 1,
       resp: { ...raw.resp, diaphragmCaudalMm: 0, diaphragmVelocityMmS: 0 },
-      velocities: Object.fromEntries(Object.entries(raw.velocities).map(([id, u]) => [id, -(u as number)])) as typeof raw.velocities,
+      velocities: Object.fromEntries(Object.entries(raw.velocities).map(([id, u]) => [id, -u])) as typeof raw.velocities,
     };
     const caliber = anatomy.caliberFor(phys);
     const gate: GateGeometry = {

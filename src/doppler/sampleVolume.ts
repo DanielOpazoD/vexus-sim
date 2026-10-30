@@ -2,7 +2,7 @@ import { hannWindow } from '../core/fft';
 import { SeededRandom } from '../core/random';
 import type { Vec3 } from '../core/vec3';
 import { dopplerShiftHz } from '../core/units';
-import { shapeMetric, tubeNoise, tubeQuery, type Tube, type TubeHit } from '../anatomy/primitives';
+import { shapeMetric, tubeNoise, tubeQuery, type Tube } from '../anatomy/primitives';
 import type { AnatomyQuery } from '../anatomy/query';
 import { vesselApScale, wallThicknessMm, type VesselCaliber } from '../anatomy/scene';
 import type { DuctDef, VesselDef } from '../anatomy/vesselTree';

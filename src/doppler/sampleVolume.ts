@@ -317,6 +317,11 @@ function radiusAt(st: Stream, seg: number, s: number, scale: number): number {
   return amp > 0 ? r * (1 + amp * tubeNoise(tube.shape!.seed, st.geom.arc0[seg] + c * st.geom.len[seg])[0]) : r;
 }
 
+/** Velocidad relativa a la media en el radio normalizado `rho` (perfil de exponente `n`), por el flowFactor. */
+function radialProfile(rho: number, n: number, ff: number): number {
+  return ((n + 2) / n) * (1 - Math.pow(rho, n)) * ff;
+}
+
 /** El tubo del vaso con el semieje AP del instante. */
 function instantTube(def: VesselDef, caliber: VesselCaliber): Tube {
   const ap = vesselApScale(def.id, def.tube.apScale, caliber);
@@ -641,7 +646,7 @@ export class SampleVolumeIQ {
     const o = st.off0;
     const rhoK = sectionDist(sec, o[0], o[1], o[2], 0, g.t[i]) / st.grow;
     st.rho = s < 0 || s > 1 ? sectionDist(sec, ox, oy, oz, s < 0 ? s * g.len[i] : (s - 1) * g.len[i], g.t[i]) / (r * st.grow) : rhoK;
-    st.k = st.rho < 1 && rhoK < 1 ? ((st.n + 2) / st.n) * (1 - Math.pow(rhoK, st.n)) * st.ff : 0;
+    st.k = st.rho < 1 && rhoK < 1 ? radialProfile(rhoK, st.n, st.ff) : 0;
   }
 
   /**
@@ -658,7 +663,7 @@ export class SampleVolumeIQ {
     const { def, hit } = found;
     const n = (scene.vesselById.get(def.id) ?? def).profileN;
     const ff = def.flowFactor ?? 1;
-    const k = ((n + 2) / n) * (1 - Math.pow(Math.min(1, hit.rho), n)) * ff;
+    const k = radialProfile(Math.min(1, hit.rho), n, ff);
     const tg = hit.tangent;
     if (Math.abs(tg[0] * k - flowBasis[0]) + Math.abs(tg[1] * k - flowBasis[1]) + Math.abs(tg[2] * k - flowBasis[2]) > 1e-9) return null;
     const geom = tubeGeom(def.tube);
@@ -748,10 +753,14 @@ export class SampleVolumeIQ {
     return s;
   }
 
+  private randomScatterer(phys: PhysiologySample): Scatterer {
+    return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+  }
+
   private reseed(phys: PhysiologySample): void {
     this.findJunctions();
     this.scatterers.length = 0;
-    for (let i = 0; i < N_SCATTERERS; i++) this.scatterers.push(this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true));
+    for (let i = 0; i < N_SCATTERERS; i++) this.scatterers.push(this.randomScatterer(phys));
     this.updateComposition();
     // Numerical refinement for a small lumen relative to the lateral beam.
     // Geometry and observable sample-volume weight only; never case or grade.
@@ -761,7 +770,7 @@ export class SampleVolumeIQ {
     });
     if (refine) {
       for (let i = N_SCATTERERS; i < 4 * N_SCATTERERS; i++)
-        this.scatterers.push(this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true));
+        this.scatterers.push(this.randomScatterer(phys));
       this.updateComposition();
     }
     this.particleAmplitudeScale = particleAmplitudeScale(this.scatterers.length);
@@ -903,16 +912,13 @@ export class SampleVolumeIQ {
     let tOut = Infinity;
     for (let i = 0; i < 3; i++) {
       dv[i] /= speed;
-      if (Math.abs(dv[i]) < 1e-9) {
-        if (Math.abs(c[i]) > h[i]) return null;
-        continue;
-      }
+      // con dv = 0 los dos cortes son ±∞: dentro de esa franja no limitan; fuera, dejan la cuerda vacía
       const t1 = (-h[i] - c[i]) / dv[i];
       const t2 = (h[i] - c[i]) / dv[i];
       tIn = Math.max(tIn, Math.min(t1, t2));
       tOut = Math.min(tOut, Math.max(t1, t2));
     }
-    if (!(tIn < tOut) || !Number.isFinite(tOut)) return null;
+    if (!(tIn < tOut)) return null;
     const chord = tOut - tIn;
     const t = (Math.floor(tIn / chord) + 1) * chord;
     return [c[0] + dv[0] * t, c[1] + dv[1] * t, c[2] + dv[2] * t];
@@ -970,9 +976,7 @@ export class SampleVolumeIQ {
           hi = dOut + st.chord + 0.3;
         if (at(lo) && !at(hi)) {
           const chord = (inBox(hi) ? this.bisect(at, lo, hi, false) : cross(lo, hi)) - dOut;
-          const x = cloneStream(st);
-          if (chord > 0 && advanceStream(x, -dir * chord) && this.validOnStream(x, delta, m, c) && this.placeUpstream(p, dir, chord))
-            return true;
+          if (chord > 0 && at(chord) && this.placeUpstream(p, dir, chord)) return true;
         }
       }
     }
@@ -1010,7 +1014,6 @@ export class SampleVolumeIQ {
    */
   private placeUpstream(p: Scatterer, dir: number, chord: number, shift = chord): boolean {
     const st = p.stream!;
-    if (!(chord > 0)) return false;
     const x = cloneStream(st);
     if (!advanceStream(x, -dir * shift)) return false;
     Object.assign(st, x);
@@ -1112,7 +1115,7 @@ export class SampleVolumeIQ {
   private chordReenter(exited: Scatterer, phys: PhysiologySample): Scatterer {
     const v = exited.vBlood;
     const entry = Math.hypot(v[0], v[1], v[2]) > 1e-6 ? this.chordImage(exited.g, v) : null;
-    if (!entry) return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+    if (!entry) return this.randomScatterer(phys);
     const phase = this.rng.float() * 2 * Math.PI;
     return {
       ...exited,
@@ -1129,8 +1132,6 @@ export class SampleVolumeIQ {
       dAmp: 0,
       rampLeft: 0,
       weightEpoch: -1,
-      vBlood: [v[0], v[1], v[2]],
-      flowBasis: [exited.flowBasis[0], exited.flowBasis[1], exited.flowBasis[2]],
     };
   }
 
@@ -1226,9 +1227,7 @@ export class SampleVolumeIQ {
         let s = this.scatterers[j];
         const m = s.m;
         if (s.fading) {
-          s.g[0] = A[0] * m[0] + A[1] * m[1] + A[2] * m[2] + bk0;
-          s.g[1] = A[3] * m[0] + A[4] * m[1] + A[5] * m[2] + bk1;
-          s.g[2] = A[6] * m[0] + A[7] * m[1] + A[8] * m[2] + bk2;
+          this.gateOf(m, delta, s.g);
           if (s.rampLeft <= 0) {
             // ya se apagó fuera: entra otro por la cara opuesta a lo largo de su salida
             s = this.motionEntry([s.g[0], s.g[1], s.g[2]], s.exitMotion, phys);
@@ -1291,7 +1290,7 @@ export class SampleVolumeIQ {
           if ((wasInside && (!inTube || !flowIn || leftLumen || leftDomain)) || stray) {
             if (!this.wrapUpstream(s, prev, dArc >= 0 ? 1 : -1, stray ? 0 : Math.abs(dArc) * 1.001 + 1e-9)) {
               this.delta = prev;
-              s = this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+              s = this.randomScatterer(phys);
               this.delta = delta;
               this.scatterers[j] = s;
             }
@@ -1318,9 +1317,7 @@ export class SampleVolumeIQ {
           m[0] += s.vBlood[0] * dt;
           m[1] += s.vBlood[1] * dt;
           m[2] += s.vBlood[2] * dt;
-          s.g[0] = A[0] * m[0] + A[1] * m[1] + A[2] * m[2] + bk0;
-          s.g[1] = A[3] * m[0] + A[4] * m[1] + A[5] * m[2] + bk1;
-          s.g[2] = A[6] * m[0] + A[7] * m[1] + A[8] * m[2] + bk2;
+          this.gateOf(m, delta, s.g);
           // Transport at every emitted pulse, with periodic overshoot preserved: no density clumps at PRF/8.
           // The replacement already occupies this pulse's position: its echo is evaluated in this same pulse.
           if (!(Math.abs(s.g[0]) <= hA && Math.abs(s.g[1]) <= hL && Math.abs(s.g[2]) <= hE)) {

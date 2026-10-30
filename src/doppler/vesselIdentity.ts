@@ -46,6 +46,34 @@ export interface GateVesselSample {
  */
 const MIN_MEAN_BLOOD = 0.01;
 
+/** Peso de sangre de un sistema vascular en una muestra de la puerta. */
+function systemBlood(s: GateVesselSample, system: VesselSystem): number {
+  let blood = 0;
+  for (const [id, weight] of Object.entries(s.vessels) as [VesselId, number][]) if (VESSEL_META[id].system === system) blood += weight;
+  return blood;
+}
+
+/** ¿Pasa la sangre del sistema por debajo de `floor` durante un tramo observado de al menos `windowSeconds`? */
+function gateDropout(
+  track: readonly GateVesselSample[],
+  system: VesselSystem,
+  t0: number,
+  t1: number,
+  windowSeconds: number,
+  floor: number,
+): boolean {
+  let start: number | null = null;
+  for (const s of track) {
+    if (s.t < t0 || s.t > t1) continue;
+    if (systemBlood(s, system) >= floor) start = null;
+    else {
+      start ??= s.t;
+      if (s.t - start >= windowSeconds) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Pérdida sostenida de sangre suprahepática en la puerta, no ausencia de caudal.
  * Los extremos observados de un tramo deben abarcar una ventana FFT completa.
@@ -53,19 +81,18 @@ const MIN_MEAN_BLOOD = 0.01;
  * esto no clasifica como mala una pausa venosa fisiológica por sí misma.
  */
 export function hepaticGateDropout(track: readonly GateVesselSample[], t0: number, t1: number, windowSeconds: number): boolean {
-  let start: number | null = null;
-  for (const s of track) {
-    if (s.t < t0 || s.t > t1) continue;
-    let blood = 0;
-    for (const [id, weight] of Object.entries(s.vessels) as [VesselId, number][])
-      if (VESSEL_META[id].system === 'hepaticVein') blood += weight;
-    if (blood >= MIN_MEAN_BLOOD) start = null;
-    else {
-      start ??= s.t;
-      if (s.t - start >= windowSeconds) return true;
-    }
-  }
-  return false;
+  return gateDropout(track, 'hepaticVein', t0, t1, windowSeconds, MIN_MEAN_BLOOD);
+}
+
+/**
+ * La puerta pierde más de la mitad de la sangre portal que llegó a tener en la captura (decisión 294): con la respiración, el
+ * vaso se le va de la puerta. La PF de esos latidos no compara el mismo flujo; como supervisor, el simulador pide apnea. Las
+ * capturas se separan solas: o no bajan de 0,5 de su máximo o caen por debajo de 0,25.
+ */
+export function portalGateDropout(track: readonly GateVesselSample[], t0: number, t1: number, windowSeconds: number): boolean {
+  let peak = 0;
+  for (const s of track) if (s.t >= t0 && s.t <= t1) peak = Math.max(peak, systemBlood(s, 'portal'));
+  return gateDropout(track, 'portal', t0, t1, windowSeconds, 0.5 * peak);
 }
 
 /**

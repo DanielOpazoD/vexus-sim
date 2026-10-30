@@ -520,11 +520,14 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-population-after-breathing`, decisión 294):
-  en la interlobar del caso grave, la población del volumen de muestra queda en 0,865 de una siembra nueva tras 10 s de
-  respiración tranquila y vuelta a apnea (16 semillas, 0,61–1,05; repartiendo la fase del cambio en un ciclo, 0,906 en 12
-  ejecuciones), frente a 0,992 en apnea sin haber respirado y 0,979 respirando (8 semillas cada uno); en la suprahepática
-  del sano, 0,842 (8 semillas). La causa no está aislada: no depende del tamaño del salto del diafragma al pasar a apnea.
-  En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras respirar son válidas.
+  en la interlobar del caso grave, la población del volumen de muestra queda en 0,824 de una siembra nueva tras 10 s de
+  respiración tranquila y vuelta a apnea (16 semillas, 0,61–0,97), frente a 0,992 en apnea sin haber respirado y 0,962
+  respirando (8 semillas cada uno); en la suprahepática del sano, 0,870 (8 semillas). Repartiendo la fase del cambio en un
+  ciclo, la versión de la primera revisión daba 0,906 en 12 ejecuciones. La causa no está aislada: no se encontró relación
+  con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla, así
+  que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
+  respirar son válidas. Respirando, el tronco portal del sano también queda por debajo: 0,937 de una siembra nueva
+  (16 semillas, IC95 % 0,900–0,974).
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,
@@ -533,7 +536,17 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
 - **En los codos de un tubo la corriente gira en el nodo** (`pw-stream-capsule-joints`, decisión 294): la sección pasa de un
   segmento al siguiente con la rotación mínima de la tangente, de modo que la cuña exterior del casquete de un nodo interior
   no recibe sangre transportada y la parte interior se recorre con la geometría del segmento. La interlobar medida, con un
-  codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja.
+  codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja. La
+  corriente conserva el radio normalizado de su siembra en todo el tubo (su velocidad y su pertenencia a la luz): tras un
+  codo, o en un casquete, la velocidad puede diferir de la del campo en ese punto, y la sangre sembrada en un casquete lleva
+  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo. En una unión, el dominio de cada
+  corriente se comprueba cada 8 pulsos: la sangre que cruza al de la otra rama vuelve en el tick lento siguiente (en el
+  tronco portal del sano respirando, 0,035 del peso sanguíneo de una siembra nueva está en ese tránsito).
+- **La luz que crece sobre tejido tarda hasta una visita en llenarse** (`pw-lumen-growth-lag`, decisión 294): el tejido que
+  la luz del instante pasa a contener cambia a sangre cuando lo visita la reclasificación, que recorre un cuarto de la
+  población cada 96 pulsos (hasta 384 pulsos, ~0,15 s a 2,6 kHz) y después se enciende en dos rampas de 32 pulsos. La
+  sangre que la luz deja fuera, y el tejido que fue sangre de una corriente que la luz vuelve a contener, no esperan a la
+  visita. Mientras dura, ese tejido sigue sonando dentro de la luz.
 
 ## Enseñanza
 

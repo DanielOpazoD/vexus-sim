@@ -46,6 +46,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'pw-population-after-breathing',
   'pw-gate-linear-map',
   'pw-stream-capsule-joints',
+  'pw-lumen-growth-lag',
   'venous-reservoir-compliance-scope',
   'venous-teaching-pressure-model',
   'severe-aliasing-not-detected',

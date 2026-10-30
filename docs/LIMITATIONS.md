@@ -526,17 +526,17 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   relación con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla,
   así que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
   respirar son válidas.
-- **Respirando, la PF portal se rechaza más y acierta menos que antes** (`portal-pf-breathing-quality`, decisión 294): con la
-  población nueva, la lectura responde a la puerta que barre la luz y las ramas, y dos reglas de calidad rechazan lo que no es
-  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s36–40, código final): 170 aceptadas, 168 a ≤ 10 puntos de la verdad
-  y ninguna a más de 15, frente a 192, 192 y ninguna antes de la decisión; respirando se aceptan 45 de 140 (antes 66), ninguna en la
-  cirrosis, el grave y la hipertensión abdominal. En los cuatro paneles con las dos reglas, 653 de 666 aceptadas están a ≤ 10 puntos y una a
-  más de 15 (el sano, 37,7 frente a 19,4); del sano respirando se aceptan 15 de 80, 7 de ellas a más de 10 puntos. Una lectura leve con verdad
-  normal es más probable que antes (14 frente a 5 en esos paneles), aunque el total de cruces del umbral de 30 % baja (43 frente a 65). No se aisló
-  por qué antes erraba menos. La regla de deriva usa la tolerancia de la
-  decisión 94 como umbral, no un valor publicado [EXTRAPOLACIÓN PROPIA], y las dos se eligieron sobre la propia cadena. La de la puerta
-  lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), más que su ventana espectral. Una captura aceptada
-  respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
+- **Respirando, la PF portal se acepta menos, y la técnica la mide lejos de la bifurcación** (`portal-pf-breathing-quality`, decisión 294): con la
+  población nueva, la lectura responde a la puerta que barre la luz y las ramas, y tres reglas de calidad rechazan lo que no es pulsación
+  cardíaca. La selección automática pone la puerta a ≥ 20 mm de la bifurcación. Esos 20 mm se eligieron tras un fallo de la cadena, con el extremo de
+  los 1–2 cm de la suprahepática y no con una referencia portal [EXTRAPOLACIÓN PROPIA]; el umbral de la deriva es la tolerancia de la decisión 94, y las reglas se
+  eligieron sobre la propia cadena. En 280 capturas no usadas para elegirlas (s41–45): 169 aceptadas, todas a ≤ 10 puntos de la verdad, frente a 194 de
+  antes de la decisión, también todas; respirando se aceptan 48 de 140 (antes 68), ninguna en el sano, la FA, la insuficiencia tricuspídea y la ventilación
+  mecánica. Con la puerta manual sobre la bifurcación, 0 de 140 respirando y en apnea 125 de 140, 2 de ellas a más de 10 puntos. El alumno no tiene prohibido colocarla
+  ahí: a 5–20 mm se aceptaron 12 de 64, todas a ≤ 10, en un conjunto acotado. La regla del reparto solo mira la fracción del tronco: un intercambio entre dos ramas
+  no lo detecta. Lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), igual que la de la puerta que pierde el vaso. El cálculo es caótico y las
+  mismas semillas no dan lo mismo en Linux x86 y en Mac ARM: una captura falsa rara puede salir en una plataforma y no en otra (52 frente a 19 en el sano, en CI, con la
+  técnica anterior). Una captura aceptada respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,

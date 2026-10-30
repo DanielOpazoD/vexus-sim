@@ -144,157 +144,157 @@ Generado por `npm run docs:index` — no editar a mano.
 | [138](DECISIONS.md#L5549) | Fases de validación paralelas, reconciliadas por commit e integridad | vigente |
 | [139](DECISIONS.md#L5577) | Encabezado compacto del visor sin ocultar el Doppler móvil | vigente |
 | [140](DECISIONS.md#L5602) | La adquisición portal virtual evita el extremo de bifurcación | vigente |
-| [141](DECISIONS.md#L5623) | Una ventana virtual ausente no es una avería del bucle | vigente |
-| [142](DECISIONS.md#L5650) | Calentar fisiología antes de activar PW en la prueba de regla lateral | vigente |
-| [143](DECISIONS.md#L5671) | Alternativa de inclinación física para la ventana suprahepática virtual | vigente |
-| [144](DECISIONS.md#L5702) | PRF virtual limitada por el retorno del eco y escala efectiva visible | vigente |
-| [145](DECISIONS.md#L5735) | Longitud de puerta PW como mando físico por territorio | vigente |
-| [146](DECISIONS.md#L5768) | Recuperar margen con un cuarto banco de transporte GLSL | vigente |
-| [147](DECISIONS.md#L5796) | Matriz hepática exhaustiva sin repetir instrumentación de cobertura | vigente |
-| [148](DECISIONS.md#L5856) | Mostrar el muestreo espectral sin prometer exactitud clínica | vigente |
-| [149](DECISIONS.md#L5888) | Comparar imágenes en un estado fisiológico fijado y registrado | vigente |
-| [150](DECISIONS.md#L5941) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
-| [151](DECISIONS.md#L6005) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
-| [152](DECISIONS.md#L6035) | Ventanas PW independientes con fallo visible por territorio | vigente |
-| [153](DECISIONS.md#L6068) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
-| [154](DECISIONS.md#L6104) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
-| [155](DECISIONS.md#L6133) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
-| [156](DECISIONS.md#L6213) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
-| [157](DECISIONS.md#L6241) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
-| [158](DECISIONS.md#L6267) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
-| [159](DECISIONS.md#L6288) | Mostrar la variación portal de los latidos realmente medidos | vigente |
-| [160](DECISIONS.md#L6314) | Separar adquisición y presentación en la validación rápida | vigente |
-| [161](DECISIONS.md#L6340) | Declarar el corte efectivo del filtro de pared PW | vigente |
-| [162](DECISIONS.md#L6363) | Un fallo esperado no debe esconder una avería de preparación | vigente |
-| [163](DECISIONS.md#L6382) | Retener la ventana de captura PW también a PRF alta | vigente |
-| [164](DECISIONS.md#L6412) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
-| [165](DECISIONS.md#L6434) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
-| [166](DECISIONS.md#L6463) | Doce pares costales y esternón en la anatomía acústica local | vigente |
-| [167](DECISIONS.md#L6481) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
-| [168](DECISIONS.md#L6499) | Adquisición portal intrahepática separada del tronco principal | vigente |
-| [169](DECISIONS.md#L6507) | Interpolación del Doppler color en el plano complejo | vigente |
-| [170](DECISIONS.md#L6517) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
-| [171](DECISIONS.md#L6537) | Resolver juntos los caudales de la unión cavoauricular | vigente |
-| [172](DECISIONS.md#L6541) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
-| [173](DECISIONS.md#L6557) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
-| [174](DECISIONS.md#L6565) | Conservar las barreras fijas al convertir transmisión para color | vigente |
-| [175](DECISIONS.md#L6573) | Consulta costal con descarte geométrico conservador | vigente |
-| [176](DECISIONS.md#L6579) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6666) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
-| [178](DECISIONS.md#L6674) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
-| [179](DECISIONS.md#L6686) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
-| [180](DECISIONS.md#L6719) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
-| [181](DECISIONS.md#L6760) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
-| [182](DECISIONS.md#L6793) | Deslizar la sonda conserva los ejes en el paciente | vigente |
-| [183](DECISIONS.md#L6805) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
-| [184](DECISIONS.md#L6850) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
-| [185](DECISIONS.md#L6862) | Admitir una pareja renal sin confundir paciente y plano | vigente |
-| [186](DECISIONS.md#L6874) | Concentración continua del medio dispersor en la rama principal | vigente |
-| [187](DECISIONS.md#L6886) | Registro renal rígido con hitos reservados y escala fija | vigente |
-| [188](DECISIONS.md#L6898) | TAC remuestreado en los centros físicos del plano US | vigente |
-| [189](DECISIONS.md#L6910) | Identidad canónica de los módulos GLSL de Three | vigente |
-| [190](DECISIONS.md#L6922) | Descomponer los impactos Atlas en SwiftShader | vigente |
-| [191](DECISIONS.md#L6932) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
-| [192](DECISIONS.md#L6942) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
-| [193](DECISIONS.md#L6952) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
-| [194](DECISIONS.md#L6962) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
-| [195](DECISIONS.md#L6996) | Doce grupos para la colección E2E del Atlas | vigente |
-| [196](DECISIONS.md#L7008) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
-| [197](DECISIONS.md#L7020) | Secuencias GLSL de transporte sin pérdida | vigente |
-| [198](DECISIONS.md#L7032) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
-| [199](DECISIONS.md#L7052) | Gradiente de velocidad color sin pedestal brillante | vigente |
-| [200](DECISIONS.md#L7062) | Contenido colónico separado del líquido simple | vigente |
-| [201](DECISIONS.md#L7072) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |
-| [202](DECISIONS.md#L7084) | Lecho renal con grasa y fascia volumétricas | vigente |
-| [203](DECISIONS.md#L7100) | Extremos musculares continuos en el lecho renal Atlas | vigente |
-| [204](DECISIONS.md#L7114) | Arranque de ambas vistas sin acumular cuadros GPU | vigente |
-| [205](DECISIONS.md#L7146) | Traslación sin topes angulares ni bloqueo de silueta | vigente |
-| [206](DECISIONS.md#L7186) | Corte sin espera de reposo durante el movimiento adquirido | vigente |
-| [207](DECISIONS.md#L7202) | Continuidad canónica y reproducciones locales sin sobrescribir evidencia | vigente |
-| [208](DECISIONS.md#L7214) | Rotar la reclasificación PW sin resolver población pierde señal renal — experimento rechazado | vigente |
-| [209](DECISIONS.md#L7247) | El mando de presión comparte los límites reales de separación y hundimiento | vigente |
-| [210](DECISIONS.md#L7268) | Interfaz clara y espacio de examen adaptable sin perder adquisición | vigente |
-| [211](DECISIONS.md#L7300) | Doppler durante el arrastre y nueva ventana en 2D | vigente |
-| [212](DECISIONS.md#L7330) | Selector por territorio y acceso portal subcostal anterior | vigente |
-| [213](DECISIONS.md#L7367) | VExUS LAB y porta subcostal derecha con el esqueleto completo | vigente |
-| [214](DECISIONS.md#L7413) | Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido | vigente |
-| [215](DECISIONS.md#L7445) | Contrato previo para afinar la textura del seno renal | vigente |
-| [216](DECISIONS.md#L7480) | Pared corporal continua y normales compartidas entre apoyo, corte y ecografía | vigente |
-| [217](DECISIONS.md#L7542) | Redondear la transición costal sin anclar de nuevo sus rectas auxiliares | vigente |
-| [218](DECISIONS.md#L7580) | No fabricar vallas GPU en una pausa sin comandos | vigente |
-| [219](DECISIONS.md#L7618) | Acortar el feedback sin sustituir la aceptación completa | vigente |
-| [220](DECISIONS.md#L7675) | Afinar el medio dispersor del seno renal sin filtrar la imagen | vigente |
-| [221](DECISIONS.md#L7709) | La orientación de los septos sigue su campo material tridimensional | vigente |
-| [222](DECISIONS.md#L7757) | Continuidad parietal bajo el borde hepático sin cuña de relleno | vigente |
-| [223](DECISIONS.md#L7819) | Distancia ósea precisa y errores de arranque visibles de inmediato | vigente |
-| [224](DECISIONS.md#L7877) | Transporte compacto de capturas sin modificar la imagen | vigente |
-| [225](DECISIONS.md#L7907) | Medir dos vistas sin grabación continua adicional | vigente |
-| [226](DECISIONS.md#L7943) | Costes de iteración medidos, reparto actualizado y una carga GPU local | vigente |
-| [227](DECISIONS.md#L7979) | Identidad automática del build antes de ocupar la GPU local | vigente |
-| [228](DECISIONS.md#L8018) | Auditoría del build antes de continuar la fidelidad | vigente |
-| [229](DECISIONS.md#L8034) | Reunir los planos interoblicuos al llegar a la espalda | vigente |
-| [230](DECISIONS.md#L8062) | Curvatura vertebral derivada del mismo campo que su superficie | vigente |
-| [231](DECISIONS.md#L8091) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
-| [232](DECISIONS.md#L8122) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
-| [233](DECISIONS.md#L8145) | Acortar la validación local sin reducir sus controles | vigente |
-| [234](DECISIONS.md#L8180) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
-| [235](DECISIONS.md#L8217) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
-| [236](DECISIONS.md#L8242) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
-| [237](DECISIONS.md#L8264) | Admitir referencias externas sin confundir identidad con validación | vigente |
-| [238](DECISIONS.md#L8296) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
-| [239](DECISIONS.md#L8341) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
-| [240](DECISIONS.md#L8369) | Evitar gradientes completos en tiles que el eco no consume | vigente |
-| [241](DECISIONS.md#L8429) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
-| [242](DECISIONS.md#L8489) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |
-| [243](DECISIONS.md#L8542) | Transportar los mismos programas GLSL con margen para iterar | vigente |
-| [244](DECISIONS.md#L8550) | Vincular la auditoría visual a los bytes realmente servidos | vigente |
-| [245](DECISIONS.md#L8558) | Registrar la fase receptora en la comparación de imágenes | vigente |
-| [246](DECISIONS.md#L8566) | Separar adquisición PW cuando cambia la PRF | vigente |
-| [247](DECISIONS.md#L8574) | Convertir ganancia Color como potencia de autocorrelación | vigente |
-| [248](DECISIONS.md#L8582) | Derivar la normal muscular de la fase material completa | vigente |
-| [249](DECISIONS.md#L8590) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
-| [250](DECISIONS.md#L8598) | Mezclar correlaciones Color antes de estimar su fase | vigente |
-| [251](DECISIONS.md#L8606) | Aplazar la corrección de septos grasos con la métrica material | vigente |
-| [252](DECISIONS.md#L8614) | Eliminar la costura posterior de reflectividad | vigente |
-| [253](DECISIONS.md#L8622) | Reutilizar la captura registrada para verificar su hash | vigente |
-| [254](DECISIONS.md#L8630) | Conservar rango y fase del Color al recuperar cine | vigente |
-| [255](DECISIONS.md#L8638) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
-| [256](DECISIONS.md#L8646) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
-| [257](DECISIONS.md#L8654) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |
-| [258](DECISIONS.md#L8666) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
-| [259](DECISIONS.md#L8684) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |
-| [260](DECISIONS.md#L8698) | Comparar geometría del contorno entre arquitecturas | vigente |
-| [261](DECISIONS.md#L8712) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
-| [262](DECISIONS.md#L8726) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
-| [263](DECISIONS.md#L8740) | Conservar campos fuente constantes al interpolar distancias | vigente |
-| [264](DECISIONS.md#L8752) | Incluir el eco sanguíneo en el pulso de reentrada | vigente |
-| [265](DECISIONS.md#L8778) | Una ejecución venosa temprana por suite | vigente |
-| [266](DECISIONS.md#L8790) | Referencia espectral independiente de camino y receptor | vigente |
-| [267](DECISIONS.md#L8802) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
-| [268](DECISIONS.md#L8822) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
-| [269](DECISIONS.md#L8836) | Calendario Doppler con intervalos completos y escalas efectivas | vigente |
-| [270](DECISIONS.md#L8908) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |
-| [271](DECISIONS.md#L8946) | Presión auricular y ritmo independientes en el laboratorio docente | vigente |
-| [272](DECISIONS.md#L8990) | No inferir patrones venosos a partir de fases ausentes o entradas imposibles | vigente |
-| [273](DECISIONS.md#L9024) | Separar series al cambiar respiración o intervenir | vigente |
-| [274](DECISIONS.md#L9034) | Escala renal inicial y lectura del filtro color | vigente |
-| [275](DECISIONS.md#L9046) | Repeticiones GLSL sin cambiar los programas | vigente |
-| [276](DECISIONS.md#L9056) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
-| [277](DECISIONS.md#L9068) | Sentido portal dominante no equivale a hepatopetalia | vigente |
-| [278](DECISIONS.md#L9076) | Negativo M congelado antes de los calibres | vigente |
-| [279](DECISIONS.md#L9084) | Captura E2E con el formato decimal de PF | vigente |
-| [280](DECISIONS.md#L9092) | La banda PW no termina en el primer resto basal | vigente |
-| [281](DECISIONS.md#L9108) | Tributarias suprahepáticas y preajustes independientes por ventana | vigente |
-| [282](DECISIONS.md#L9169) | Continuidad parietal al terminar el hígado (26 de octubre de 2026) | vigente |
-| [283](DECISIONS.md#L9238) | Movimiento Doppler cinemático y borde espectral periódico | vigente |
-| [284](DECISIONS.md#L9250) | Envolvente parietal continua y prioridad Color con filtro bajo | vigente |
-| [285](DECISIONS.md#L9266) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
-| [286](DECISIONS.md#L9286) | Reutilización exacta de la geometría de apoyo | vigente |
-| [287](DECISIONS.md#L9333) | Identificar la prueba E2E antes de su resultado | vigente |
-| [288](DECISIONS.md#L9368) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |
-| [289](DECISIONS.md#L9380) | Detectar pronto una PF portal falsa causada por renovación PW | vigente |
-| [290](DECISIONS.md#L9392) | Conservar el contrato incumplido de retorno del moteado | vigente |
-| [291](DECISIONS.md#L9404) | Referencia elevacional 3D con el motor independiente intacto | vigente |
-| [292](DECISIONS.md#L9416) | Frontera única de adquisición para captura PW | vigente |
-| [293](DECISIONS.md#L9434) | La c de la bilis compensa la refracción paraxial frente a ondas a 37 °C | vigente |
-| [294](DECISIONS.md#L9456) | Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta | vigente |
+| [141](DECISIONS.md#L5625) | Una ventana virtual ausente no es una avería del bucle | vigente |
+| [142](DECISIONS.md#L5652) | Calentar fisiología antes de activar PW en la prueba de regla lateral | vigente |
+| [143](DECISIONS.md#L5673) | Alternativa de inclinación física para la ventana suprahepática virtual | vigente |
+| [144](DECISIONS.md#L5704) | PRF virtual limitada por el retorno del eco y escala efectiva visible | vigente |
+| [145](DECISIONS.md#L5737) | Longitud de puerta PW como mando físico por territorio | vigente |
+| [146](DECISIONS.md#L5770) | Recuperar margen con un cuarto banco de transporte GLSL | vigente |
+| [147](DECISIONS.md#L5798) | Matriz hepática exhaustiva sin repetir instrumentación de cobertura | vigente |
+| [148](DECISIONS.md#L5858) | Mostrar el muestreo espectral sin prometer exactitud clínica | vigente |
+| [149](DECISIONS.md#L5890) | Comparar imágenes en un estado fisiológico fijado y registrado | vigente |
+| [150](DECISIONS.md#L5943) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
+| [151](DECISIONS.md#L6007) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
+| [152](DECISIONS.md#L6037) | Ventanas PW independientes con fallo visible por territorio | vigente |
+| [153](DECISIONS.md#L6070) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
+| [154](DECISIONS.md#L6106) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
+| [155](DECISIONS.md#L6135) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
+| [156](DECISIONS.md#L6215) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
+| [157](DECISIONS.md#L6243) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
+| [158](DECISIONS.md#L6269) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
+| [159](DECISIONS.md#L6290) | Mostrar la variación portal de los latidos realmente medidos | vigente |
+| [160](DECISIONS.md#L6316) | Separar adquisición y presentación en la validación rápida | vigente |
+| [161](DECISIONS.md#L6342) | Declarar el corte efectivo del filtro de pared PW | vigente |
+| [162](DECISIONS.md#L6365) | Un fallo esperado no debe esconder una avería de preparación | vigente |
+| [163](DECISIONS.md#L6384) | Retener la ventana de captura PW también a PRF alta | vigente |
+| [164](DECISIONS.md#L6414) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
+| [165](DECISIONS.md#L6436) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
+| [166](DECISIONS.md#L6465) | Doce pares costales y esternón en la anatomía acústica local | vigente |
+| [167](DECISIONS.md#L6483) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
+| [168](DECISIONS.md#L6501) | Adquisición portal intrahepática separada del tronco principal | vigente |
+| [169](DECISIONS.md#L6509) | Interpolación del Doppler color en el plano complejo | vigente |
+| [170](DECISIONS.md#L6519) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
+| [171](DECISIONS.md#L6539) | Resolver juntos los caudales de la unión cavoauricular | vigente |
+| [172](DECISIONS.md#L6543) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6559) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6567) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6575) | Consulta costal con descarte geométrico conservador | vigente |
+| [176](DECISIONS.md#L6581) | Registro renal y muscular posterior coherente con la columna | vigente |
+| [177](DECISIONS.md#L6668) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [178](DECISIONS.md#L6676) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
+| [179](DECISIONS.md#L6688) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
+| [180](DECISIONS.md#L6721) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
+| [181](DECISIONS.md#L6762) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
+| [182](DECISIONS.md#L6795) | Deslizar la sonda conserva los ejes en el paciente | vigente |
+| [183](DECISIONS.md#L6807) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
+| [184](DECISIONS.md#L6852) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
+| [185](DECISIONS.md#L6864) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6876) | Concentración continua del medio dispersor en la rama principal | vigente |
+| [187](DECISIONS.md#L6888) | Registro renal rígido con hitos reservados y escala fija | vigente |
+| [188](DECISIONS.md#L6900) | TAC remuestreado en los centros físicos del plano US | vigente |
+| [189](DECISIONS.md#L6912) | Identidad canónica de los módulos GLSL de Three | vigente |
+| [190](DECISIONS.md#L6924) | Descomponer los impactos Atlas en SwiftShader | vigente |
+| [191](DECISIONS.md#L6934) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
+| [192](DECISIONS.md#L6944) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
+| [193](DECISIONS.md#L6954) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
+| [194](DECISIONS.md#L6964) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
+| [195](DECISIONS.md#L6998) | Doce grupos para la colección E2E del Atlas | vigente |
+| [196](DECISIONS.md#L7010) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
+| [197](DECISIONS.md#L7022) | Secuencias GLSL de transporte sin pérdida | vigente |
+| [198](DECISIONS.md#L7034) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
+| [199](DECISIONS.md#L7054) | Gradiente de velocidad color sin pedestal brillante | vigente |
+| [200](DECISIONS.md#L7064) | Contenido colónico separado del líquido simple | vigente |
+| [201](DECISIONS.md#L7074) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |
+| [202](DECISIONS.md#L7086) | Lecho renal con grasa y fascia volumétricas | vigente |
+| [203](DECISIONS.md#L7102) | Extremos musculares continuos en el lecho renal Atlas | vigente |
+| [204](DECISIONS.md#L7116) | Arranque de ambas vistas sin acumular cuadros GPU | vigente |
+| [205](DECISIONS.md#L7148) | Traslación sin topes angulares ni bloqueo de silueta | vigente |
+| [206](DECISIONS.md#L7188) | Corte sin espera de reposo durante el movimiento adquirido | vigente |
+| [207](DECISIONS.md#L7204) | Continuidad canónica y reproducciones locales sin sobrescribir evidencia | vigente |
+| [208](DECISIONS.md#L7216) | Rotar la reclasificación PW sin resolver población pierde señal renal — experimento rechazado | vigente |
+| [209](DECISIONS.md#L7249) | El mando de presión comparte los límites reales de separación y hundimiento | vigente |
+| [210](DECISIONS.md#L7270) | Interfaz clara y espacio de examen adaptable sin perder adquisición | vigente |
+| [211](DECISIONS.md#L7302) | Doppler durante el arrastre y nueva ventana en 2D | vigente |
+| [212](DECISIONS.md#L7332) | Selector por territorio y acceso portal subcostal anterior | vigente |
+| [213](DECISIONS.md#L7369) | VExUS LAB y porta subcostal derecha con el esqueleto completo | vigente |
+| [214](DECISIONS.md#L7415) | Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido | vigente |
+| [215](DECISIONS.md#L7447) | Contrato previo para afinar la textura del seno renal | vigente |
+| [216](DECISIONS.md#L7482) | Pared corporal continua y normales compartidas entre apoyo, corte y ecografía | vigente |
+| [217](DECISIONS.md#L7544) | Redondear la transición costal sin anclar de nuevo sus rectas auxiliares | vigente |
+| [218](DECISIONS.md#L7582) | No fabricar vallas GPU en una pausa sin comandos | vigente |
+| [219](DECISIONS.md#L7620) | Acortar el feedback sin sustituir la aceptación completa | vigente |
+| [220](DECISIONS.md#L7677) | Afinar el medio dispersor del seno renal sin filtrar la imagen | vigente |
+| [221](DECISIONS.md#L7711) | La orientación de los septos sigue su campo material tridimensional | vigente |
+| [222](DECISIONS.md#L7759) | Continuidad parietal bajo el borde hepático sin cuña de relleno | vigente |
+| [223](DECISIONS.md#L7821) | Distancia ósea precisa y errores de arranque visibles de inmediato | vigente |
+| [224](DECISIONS.md#L7879) | Transporte compacto de capturas sin modificar la imagen | vigente |
+| [225](DECISIONS.md#L7909) | Medir dos vistas sin grabación continua adicional | vigente |
+| [226](DECISIONS.md#L7945) | Costes de iteración medidos, reparto actualizado y una carga GPU local | vigente |
+| [227](DECISIONS.md#L7981) | Identidad automática del build antes de ocupar la GPU local | vigente |
+| [228](DECISIONS.md#L8020) | Auditoría del build antes de continuar la fidelidad | vigente |
+| [229](DECISIONS.md#L8036) | Reunir los planos interoblicuos al llegar a la espalda | vigente |
+| [230](DECISIONS.md#L8064) | Curvatura vertebral derivada del mismo campo que su superficie | vigente |
+| [231](DECISIONS.md#L8093) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
+| [232](DECISIONS.md#L8124) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
+| [233](DECISIONS.md#L8147) | Acortar la validación local sin reducir sus controles | vigente |
+| [234](DECISIONS.md#L8182) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
+| [235](DECISIONS.md#L8219) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
+| [236](DECISIONS.md#L8244) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
+| [237](DECISIONS.md#L8266) | Admitir referencias externas sin confundir identidad con validación | vigente |
+| [238](DECISIONS.md#L8298) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
+| [239](DECISIONS.md#L8343) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
+| [240](DECISIONS.md#L8371) | Evitar gradientes completos en tiles que el eco no consume | vigente |
+| [241](DECISIONS.md#L8431) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
+| [242](DECISIONS.md#L8491) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |
+| [243](DECISIONS.md#L8544) | Transportar los mismos programas GLSL con margen para iterar | vigente |
+| [244](DECISIONS.md#L8552) | Vincular la auditoría visual a los bytes realmente servidos | vigente |
+| [245](DECISIONS.md#L8560) | Registrar la fase receptora en la comparación de imágenes | vigente |
+| [246](DECISIONS.md#L8568) | Separar adquisición PW cuando cambia la PRF | vigente |
+| [247](DECISIONS.md#L8576) | Convertir ganancia Color como potencia de autocorrelación | vigente |
+| [248](DECISIONS.md#L8584) | Derivar la normal muscular de la fase material completa | vigente |
+| [249](DECISIONS.md#L8592) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
+| [250](DECISIONS.md#L8600) | Mezclar correlaciones Color antes de estimar su fase | vigente |
+| [251](DECISIONS.md#L8608) | Aplazar la corrección de septos grasos con la métrica material | vigente |
+| [252](DECISIONS.md#L8616) | Eliminar la costura posterior de reflectividad | vigente |
+| [253](DECISIONS.md#L8624) | Reutilizar la captura registrada para verificar su hash | vigente |
+| [254](DECISIONS.md#L8632) | Conservar rango y fase del Color al recuperar cine | vigente |
+| [255](DECISIONS.md#L8640) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
+| [256](DECISIONS.md#L8648) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
+| [257](DECISIONS.md#L8656) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |
+| [258](DECISIONS.md#L8668) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
+| [259](DECISIONS.md#L8686) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |
+| [260](DECISIONS.md#L8700) | Comparar geometría del contorno entre arquitecturas | vigente |
+| [261](DECISIONS.md#L8714) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
+| [262](DECISIONS.md#L8728) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
+| [263](DECISIONS.md#L8742) | Conservar campos fuente constantes al interpolar distancias | vigente |
+| [264](DECISIONS.md#L8754) | Incluir el eco sanguíneo en el pulso de reentrada | vigente |
+| [265](DECISIONS.md#L8780) | Una ejecución venosa temprana por suite | vigente |
+| [266](DECISIONS.md#L8792) | Referencia espectral independiente de camino y receptor | vigente |
+| [267](DECISIONS.md#L8804) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
+| [268](DECISIONS.md#L8824) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
+| [269](DECISIONS.md#L8838) | Calendario Doppler con intervalos completos y escalas efectivas | vigente |
+| [270](DECISIONS.md#L8910) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |
+| [271](DECISIONS.md#L8948) | Presión auricular y ritmo independientes en el laboratorio docente | vigente |
+| [272](DECISIONS.md#L8992) | No inferir patrones venosos a partir de fases ausentes o entradas imposibles | vigente |
+| [273](DECISIONS.md#L9026) | Separar series al cambiar respiración o intervenir | vigente |
+| [274](DECISIONS.md#L9036) | Escala renal inicial y lectura del filtro color | vigente |
+| [275](DECISIONS.md#L9048) | Repeticiones GLSL sin cambiar los programas | vigente |
+| [276](DECISIONS.md#L9058) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
+| [277](DECISIONS.md#L9070) | Sentido portal dominante no equivale a hepatopetalia | vigente |
+| [278](DECISIONS.md#L9078) | Negativo M congelado antes de los calibres | vigente |
+| [279](DECISIONS.md#L9086) | Captura E2E con el formato decimal de PF | vigente |
+| [280](DECISIONS.md#L9094) | La banda PW no termina en el primer resto basal | vigente |
+| [281](DECISIONS.md#L9110) | Tributarias suprahepáticas y preajustes independientes por ventana | vigente |
+| [282](DECISIONS.md#L9171) | Continuidad parietal al terminar el hígado (26 de octubre de 2026) | vigente |
+| [283](DECISIONS.md#L9240) | Movimiento Doppler cinemático y borde espectral periódico | vigente |
+| [284](DECISIONS.md#L9252) | Envolvente parietal continua y prioridad Color con filtro bajo | vigente |
+| [285](DECISIONS.md#L9268) | Punta parietal renal y continuidad hepatobiliar registrada | vigente |
+| [286](DECISIONS.md#L9288) | Reutilización exacta de la geometría de apoyo | vigente |
+| [287](DECISIONS.md#L9335) | Identificar la prueba E2E antes de su resultado | vigente |
+| [288](DECISIONS.md#L9370) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |
+| [289](DECISIONS.md#L9382) | Detectar pronto una PF portal falsa causada por renovación PW | vigente |
+| [290](DECISIONS.md#L9394) | Conservar el contrato incumplido de retorno del moteado | vigente |
+| [291](DECISIONS.md#L9406) | Referencia elevacional 3D con el motor independiente intacto | vigente |
+| [292](DECISIONS.md#L9418) | Frontera única de adquisición para captura PW | vigente |
+| [293](DECISIONS.md#L9436) | La c de la bilis compensa la refracción paraxial frente a ondas a 37 °C | vigente |
+| [294](DECISIONS.md#L9458) | Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta | vigente |

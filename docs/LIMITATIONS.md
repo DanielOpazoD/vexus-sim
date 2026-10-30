@@ -527,11 +527,13 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   así que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
   respirar son válidas.
 - **Respirando, la PF portal se rechaza más y acierta menos que antes** (`portal-pf-breathing-quality`, decisión 294): con la
-  población fiel, la lectura responde a la puerta que barre la luz y las ramas, y dos reglas de calidad rechazan lo que no es
-  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s16–20): 161 aceptadas, 158 a ≤ 10 puntos de la verdad y ninguna a
-  más de 15, frente a 191 y 191 antes de la decisión; respirando se aceptan 38 de 140 (antes 65). La regla de deriva usa la tolerancia de la decisión 94 como umbral,
-  no un valor publicado [EXTRAPOLACIÓN PROPIA], y las dos se eligieron sobre la propia cadena. Una captura aceptada respirando no es
-  tan segura como una en apnea: el alumno debe pedir apnea.
+  población nueva, la lectura responde a la puerta que barre la luz y las ramas, y dos reglas de calidad rechazan lo que no es
+  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s26–30, código final): 170 aceptadas, 168 a ≤ 10 puntos de la verdad
+  y ninguna a más de 15, frente a 196 y 194 antes de la decisión; respirando se aceptan 44 de 140 (antes 70), y ninguna en la
+  cirrosis, el grave y la hipertensión abdominal. No se aisló por qué antes erraba menos. La regla de deriva usa la tolerancia de la
+  decisión 94 como umbral, no un valor publicado [EXTRAPOLACIÓN PROPIA], y las dos se eligieron sobre la propia cadena. La de la puerta
+  lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), más que su ventana espectral. Una captura aceptada
+  respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,

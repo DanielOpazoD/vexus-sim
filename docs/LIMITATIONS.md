@@ -520,17 +520,20 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-population-after-breathing`, decisión 294):
-  en la interlobar del caso grave, la población del volumen de muestra queda en 0,839 de una siembra nueva tras 10 s de
-  respiración tranquila y vuelta a apnea (16 semillas, 0,62–0,98), frente a 0,974 en apnea sin haber respirado y 0,964
-  respirando (8 semillas cada uno); en la suprahepática del sano, 0,868 (8 semillas). La causa no está aislada: no se encontró
+  en la interlobar del caso grave, la población del volumen de muestra queda en 0,892 de una siembra nueva tras 10 s de
+  respiración tranquila y vuelta a apnea (16 semillas, 0,75–1,08), frente a 0,992 en apnea sin haber respirado y 0,967
+  respirando (8 semillas cada uno); en la suprahepática del sano, 0,933 (8 semillas). La causa no está aislada: no se encontró
   relación con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla,
   así que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
   respirar son válidas.
 - **Respirando, la PF portal se rechaza más y acierta menos que antes** (`portal-pf-breathing-quality`, decisión 294): con la
   población nueva, la lectura responde a la puerta que barre la luz y las ramas, y dos reglas de calidad rechazan lo que no es
-  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s26–30, código final): 170 aceptadas, 168 a ≤ 10 puntos de la verdad
-  y ninguna a más de 15, frente a 196 y 194 antes de la decisión; respirando se aceptan 44 de 140 (antes 70), y ninguna en la
-  cirrosis, el grave y la hipertensión abdominal. No se aisló por qué antes erraba menos. La regla de deriva usa la tolerancia de la
+  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s36–40, código final): 170 aceptadas, 168 a ≤ 10 puntos de la verdad
+  y ninguna a más de 15, frente a 192, 192 y ninguna antes de la decisión; respirando se aceptan 45 de 140 (antes 66), ninguna en la
+  cirrosis, el grave y la hipertensión abdominal. En los cuatro paneles con las dos reglas, 653 de 666 aceptadas están a ≤ 10 puntos y una a
+  más de 15 (el sano, 37,7 frente a 19,4); del sano respirando se aceptan 15 de 80, 7 de ellas a más de 10 puntos. Una lectura leve con verdad
+  normal es más probable que antes (14 frente a 5 en esos paneles), aunque el total de cruces del umbral de 30 % baja (43 frente a 65). No se aisló
+  por qué antes erraba menos. La regla de deriva usa la tolerancia de la
   decisión 94 como umbral, no un valor publicado [EXTRAPOLACIÓN PROPIA], y las dos se eligieron sobre la propia cadena. La de la puerta
   lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), más que su ventana espectral. Una captura aceptada
   respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
@@ -545,7 +548,9 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja. La
   corriente conserva el radio normalizado de su siembra en todo el tubo (su velocidad y su pertenencia a la luz): tras un
   codo, o en un casquete, la velocidad puede diferir de la del campo en ese punto, y la sangre sembrada en un casquete lleva
-  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo.
+  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo. Las cajas de las uniones se calculan al sembrar con
+  un margen de ×1,25 sobre el calibre del instante: no es una cota de todo crecimiento (un bolo de 500 ml en el caso grave llega a ×1,34), aunque
+  en esos recorridos no se midió peso con la corriente de otro tubo.
 - **La luz que crece sobre tejido tarda hasta una visita en llenarse** (`pw-lumen-growth-lag`, decisión 294): el tejido que
   la luz del instante pasa a contener cambia a sangre cuando lo visita la reclasificación, que recorre un cuarto de la
   población cada 96 pulsos (hasta 384 pulsos, ~0,15 s a 2,6 kHz) y después se enciende en dos rampas de 32 pulsos. La

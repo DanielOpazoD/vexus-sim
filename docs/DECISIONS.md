@@ -9476,7 +9476,7 @@ bifurcación (1,12).
 desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la corriente del tubo que eligió la
 clasificación (`AnatomyScene.vesselTubeAt`): segmento, parámetro y desplazamiento de la sección normalizado por el radio del tubo con el calibre de la siembra.
 
-- Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda anterior solo orienta la búsqueda de los dos cruces, porque la caja se mueve respecto del material (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905). Los cruces con la caja se calculan cortando su cara con la recta de la corriente.
+- Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda medida se reutiliza mientras no cambie el mapa; con el mapa cambiado solo orienta la búsqueda de los dos cruces (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905). Los cruces con la caja se calculan cortando su cara con la recta de la corriente.
 - Salida por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento. Su identidad es la del punto material del mapa (`AnatomyQuery.classifyMaterial`, sin invertir la deformación), de modo que identidad y posición coinciden.
   El tejido sale y entra en rampa; la sangre, con su amplitud.
 - Más allá de los nodos extremos, la corriente sigue recta por el casquete hasta salir de la luz del instante (la esfera del nodo con la métrica de su sección).
@@ -9492,13 +9492,13 @@ transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
 
 | Puerta        | Apnea, antes | Apnea, ahora        | Respirando, antes | Respirando, ahora   |
 | ------------- | ------------ | ------------------- | ----------------- | ------------------- |
-| Interlobar    | 0,662        | 0,994 (0,961–1,027) | 0,213             | 1,034 (1,002–1,067) |
-| Tronco portal | 0,981        | 0,992 (0,940–1,043) | 0,719             | 0,972 (0,932–1,013) |
-| Suprahepática | 0,970        | 0,979 (0,927–1,030) | 1,069             | 1,018 (0,983–1,052) |
+| Interlobar    | 0,662        | 1,000 (0,967–1,033) | 0,213             | 1,045 (1,013–1,078) |
+| Tronco portal | 0,981        | 0,996 (0,945–1,047) | 0,719             | 0,971 (0,930–1,012) |
+| Suprahepática | 0,970        | 0,986 (0,931–1,041) | 1,069             | 1,013 (0,981–1,045) |
 
 Respirando se cuentan los instantes con el vaso en la puerta. En el escenario del alumno, las capturas tras respirar son
-monofásicas válidas, pero la población queda en 0,839 de una siembra nueva (16 semillas, 0,62–0,98, DE 0,10). Sin haber
-respirado, esa puerta da 0,974 en apnea y 0,964 respirando (8 semillas); en la suprahepática del sano, 0,868 tras respirar
+monofásicas válidas, pero la población queda en 0,892 de una siembra nueva (16 semillas, 0,75–1,08, DE 0,10). Sin haber
+respirado, esa puerta da 0,992 en apnea y 0,967 respirando (8 semillas); en la suprahepática del sano, 0,933 tras respirar
 (8 semillas). La causa no está aislada; no se encontró relación con el tamaño del salto del diafragma en 12 ejecuciones que
 cambian a la vez fase y semilla (`pw-population-after-breathing`). El mapa lineal se separa de la deformación exacta junto a la columna
 (`pw-gate-linear-map`), y la corriente gira de golpe en los codos y conserva su radio normalizado en todo el tubo
@@ -9519,15 +9519,21 @@ Se descartaron, medidos: la variación de composición y la ganancia axial (rech
 | --------------------------------- | ------------ | ------------- | ------ | --------------------- | ----------------------------------- |
 | s11–15, solo la regla de deriva   | 184 (65,7 %) | 180 (97,8 %)  | 1      | 58/140                | 193 (68,9 %), 193, 69/140           |
 | s16–20, las dos reglas            | 161 (57,5 %) | 158 (98,1 %)  | 0      | 38/140                | 191 (68,2 %), 191, 65/140           |
-| s26–30, código final              | 170 (60,7 %) | 168 (98,8 %)  | 0      | 44/140                | 196 (70,0 %), 194, 70/140           |
+| s26–30, antes de r5               | 170 (60,7 %) | 168 (98,8 %)  | 0      | 44/140                | 196 (70,0 %), 194, 70/140           |
+| s31–35, antes de r6               | 165 (58,9 %) | 159 (96,4 %)  | 1      | 40/140                | 193 (68,9 %), 193, 67/140           |
+| s36–40, código final              | 170 (60,7 %) | 168 (98,8 %)  | 0      | 45/140                | 192 (68,6 %), 192, 66/140           |
 
-La captura a más de 15 puntos del primer panel (cirrosis, 45,6 frente a 30,0, a 15,6 puntos) motivó la segunda regla, que por eso se validó con otras semillas; el tercer panel se ejecutó tras corregir el transporte según la cuarta revisión. En los tres, en apnea a ±40–±80 todas las capturas son medibles en cada caso, las reglas no rechazan ninguna en apnea y ninguna sale «grave» con verdad < 30. Respirando, la cirrosis, el grave y la hipertensión abdominal quedan en 0 de 20 aceptadas en los dos últimos paneles, aunque la mayoría de esas PF rechazadas estaba a ≤ 10 puntos de la verdad (46 y 49 de 60): la exactitud de una lectura no basta si la puerta se sale del vaso. Frente a main se piden más apneas, y en las capturas respirando que aceptan las dos versiones el error absoluto mediano es de 3,4–3,7 puntos frente a 2,0–2,3 de main. No se aisló por qué main se equivoca menos: su población también cambia con la geometría, así que no se le puede atribuir solo a que no la vea. Evidencia en `qc-r1/` de la carpeta de evidencia (`portal-pf-breathing-quality`).
+La captura a más de 15 puntos del primer panel (cirrosis, 45,6 frente a 30,0, a 15,6 puntos) motivó la segunda regla, que por eso se validó con otras semillas; los tres últimos paneles se ejecutaron tras corregir el transporte según las revisiones cuarta a sexta. En todos, en apnea a ±40–±80 todas las capturas son medibles en cada caso, las reglas no rechazan ninguna en apnea y ninguna sale «grave» con verdad < 30. **El panel s31–35 incumple uno de los criterios registrados:** el sano respirando a ±40 da 37,7 frente a 19,4 (18,3 puntos), y 4 de sus 5 capturas aceptadas respirando están a más de 10 puntos. No se retocaron las reglas con esas semillas; el panel siguiente, con otras, los cumple todos. En los cuatro paneles con las dos reglas, 653 de 666 aceptadas están a ≤ 10 puntos (98,0 %) y una a más de 15.
+
+Una regla más estricta se midió sobre los primeros paneles y se descartó: rechazar si Vmáx cambia entre latidos más que la pulsación deja ninguna captura del sano respirando y ninguna a más de 15 puntos, pero también solo 9–14 de 140 aceptadas respirando y el total en 47,5–50,6 %. Se midió sobre capturas ya hechas, sin validarla aparte.
+
+Respirando, la cirrosis, el grave y la hipertensión abdominal quedan en 0 de 20 aceptadas en los cuatro últimos paneles, aunque la mayoría de esas PF rechazadas estaba a ≤ 10 puntos de la verdad (46, 49, 54 y 50 de 60): la exactitud de una lectura no basta si la puerta se sale del vaso. Frente a main se piden más apneas, y en las capturas respirando que aceptan las dos versiones el error absoluto mediano es de 3,4–3,8 puntos frente a 1,6–2,9 de main. Los cruces del umbral de PF de 30 % entre las aceptadas no aumentan en conjunto (8, 11, 13 y 11 frente a 13, 19, 12 y 21 de main en s16–20, s26–30, s31–35 y s36–40), pero cambian de sentido: más lecturas leves con verdad normal (2, 2, 5 y 5 frente a 0, 2, 1 y 2) y menos normales con verdad leve. En las capturas falsas del sano, en el primer latido la puerta está dentro de la luz (peso 0,97–0,99) y la traza varía 7,9 cm/s con el flujo variando 2,2; es compatible con una envolvente que salta entre el tronco y la rama derecha al barrer la unión, sin aislar. Tampoco se aisló por qué main se equivoca menos: su población también cambia con la geometría, así que no se le puede atribuir solo a que no la vea. Evidencia en `qc-r1/` de la carpeta de evidencia (`portal-pf-breathing-quality`).
 
 La cadena PW cuesta más. El A/B intercalado con main, de tres rondas, cronometra solo `chain.step` a 2600 Hz, sin `setGate`,
-la búsqueda inicial de uniones ni el resto del cuadro (carga ~2). En apnea da ×1,3–1,4 en la interlobar, ×3,0–3,8 en el tronco
-portal y ×2,9–4,5 en la suprahepática; respirando, ×1,2–2,0, ×3,7–7,2 y ×1,6–3,6. En CPU por segundo simulado, el máximo es
-0,27–0,38 s en la porta respirando, frente a 0,14–0,25 s de la interlobar, el máximo de main. Ninguna prueba fija ese
-presupuesto: queda medido y declarado. El JavaScript total pasa de 1032,9 a 1044,9 KiB (`sampleVolume.ts`, de 9,4 a ≈ 22 kB
+la búsqueda inicial de uniones ni el resto del cuadro (carga ~4). En apnea da ×1,3–1,5 en la interlobar, ×1,4–2,4 en el tronco
+portal y ×2,5–3,0 en la suprahepática; respirando, ×1,3–1,5, ×5,5 y ×2,5–2,7. En CPU por segundo simulado, el máximo es
+0,48 s en la porta respirando, frente a 0,27–0,35 s de la interlobar, el máximo de main. Ninguna prueba fija ese
+presupuesto: queda medido y declarado. El JavaScript total pasa de 1032,9 a 1044,6 KiB (`sampleVolume.ts`, de 9,4 a ≈ 22 kB
 minificado); con la aprobación del usuario, su presupuesto sube de 1033 a 1045 KiB y los límites por chunk se conservan. Se
 retira `thin-vessel-sample-volume-lag`.
 

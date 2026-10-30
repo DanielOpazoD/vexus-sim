@@ -297,3 +297,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [291](DECISIONS.md#L9404) | Referencia elevacional 3D con el motor independiente intacto | vigente |
 | [292](DECISIONS.md#L9416) | Frontera única de adquisición para captura PW | vigente |
 | [293](DECISIONS.md#L9434) | La c de la bilis compensa la refracción paraxial frente a ondas a 37 °C | vigente |
+| [294](DECISIONS.md#L9456) | Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta | vigente |

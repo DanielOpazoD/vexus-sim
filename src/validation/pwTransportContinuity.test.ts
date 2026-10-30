@@ -15,7 +15,8 @@ function acquire(u: number, prf: number, seed: number, angle = 0) {
   const anatomy = new AnatomyQuery(scene);
   const base = new PhysiologyEngine(patient, scene.vesselAreas()).sample;
   const template = anatomy.classifyWorld([0, 0, 0], base);
-  anatomy.classifyWorld = (p) => ({
+  // El volumen de muestra clasifica puntos materiales (decisión 294); `classifyWorld` también pasa por aquí.
+  anatomy.classifyMaterial = (p) => ({
     ...template,
     tissue: Tissue.Blood,
     vessel: 'hvRight',

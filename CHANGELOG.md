@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler PW: la sangre del volumen de muestra sigue la corriente de su tubo y entra por la cara opuesta; tras respirar y volver a apnea, la vena interlobar se capta sin mover la puerta (294).
+
 - Refracción: fija frente al banco de ondas con la bilis a 37 °C (1524 y 1541 m/s) que la c de la tabla reproduce la sombra del borde de la vesícula y que corregirla sola la deja menos honda; no modifica el render (293).
 
 - Doppler PW: cambiar filtro, ganancia, frecuencia o escala descarta la adquisición incompatible incluso congelado; la captura usa sus ajustes adquiridos y conserva los resultados anteriores identificados (292).

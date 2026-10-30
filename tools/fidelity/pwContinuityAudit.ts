@@ -16,7 +16,8 @@ for (const u of [100, 300])
       engine = new PhysiologyEngine(patient, scene.vesselAreas());
     const base = engine.sample,
       template = anatomy.classifyWorld([0, 0, 0], base);
-    anatomy.classifyWorld = (p) => ({
+    // El volumen de muestra clasifica puntos materiales (decisión 294); `classifyWorld` también pasa por aquí.
+    anatomy.classifyMaterial = (p) => ({
       ...template,
       tissue: Tissue.Blood,
       vessel: 'hvRight',

@@ -519,12 +519,19 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   latidos completos, y en la FA la PF portal cambia de un latido a otro (12–47 % en una misma captura de la cadena del
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
-- **Los vasos finos vuelven a la puerta con menos sangre de la real** (`thin-vessel-sample-volume-lag`):
-  cuando una interlobar sale de la puerta con la respiración y vuelve, su región queda con menos
-  dispersores (30–45 % de sangre frente al 69 % de una siembra nueva en fin de espiración); además
-  la reclasificación solo alcanza a un cuarto fijo de la población. Rotarla y reponer la población
-  sin más introduce saltos bruscos de amplitud de pared y tejido (30–40 dB sobre la sangre) que el
-  filtro de pared no quita: hace falta un control de población con transiciones lentas.
+- **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-breath-apnea-jump`, decisión 294): al pasar a
+  apnea espiratoria el diafragma vuelve de golpe a su referencia (hasta 10 mm en un paso de la fisiología). La población del
+  volumen de muestra queda entonces por debajo de una siembra nueva en la interlobar del caso grave (0,876 de media con 16 semillas, 0,67–1,11),
+  y en apnea solo la renueva el flujo. Respirando sigue a una siembra nueva y las capturas tras respirar son válidas.
+- **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
+  294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
+  separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,
+  0,02–0,05 mm. Las identidades se clasifican en el punto material del mapa: la población es coherente consigo misma, pero
+  respirando la puerta renal ve su anatomía con esa distorsión.
+- **En los codos de un tubo la corriente gira en el nodo** (`pw-stream-capsule-joints`, decisión 294): la sección pasa de un
+  segmento al siguiente con la rotación mínima de la tangente, de modo que la cuña exterior del casquete de un nodo interior
+  no recibe sangre transportada y la parte interior se recorre con la geometría del segmento. La interlobar medida, con un
+  codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja.
 
 ## Enseñanza
 

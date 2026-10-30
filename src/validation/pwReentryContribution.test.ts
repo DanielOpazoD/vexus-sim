@@ -33,9 +33,23 @@ function acquire(scenario: Scenario, chunks = [1, 1]) {
   const velocity: Vec3 = [vx, 0, vz];
   const sample = { resp: {}, velocities: { hvRight: 1 } } as unknown as PhysiologySample;
   const anatomy = {
-    deformation: { displacement: () => [0, 0, 0], tissueVelocity: () => [0, 0, 0] },
+    // Sin deformación: el mapa material ↔ mundo del volumen de muestra (decisión 294) es la identidad.
+    deformation: {
+      displacement: () => [0, 0, 0],
+      tissueVelocity: () => [0, 0, 0],
+      toMaterial: (p: Vec3) => [...p],
+      toWorld: (m: Vec3) => [...m],
+    },
     scene: { vesselById: new Map() },
     classifyWorld: (p: Vec3) => ({
+      tissue,
+      vessel: blood ? 'hvRight' : null,
+      material: p,
+      bloodVelocity: blood ? velocity : null,
+      flowBasis: blood ? velocity : null,
+      tissueVelocity: [0, 0, 0],
+    }),
+    classifyMaterial: (p: Vec3) => ({
       tissue,
       vessel: blood ? 'hvRight' : null,
       material: p,

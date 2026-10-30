@@ -13,7 +13,8 @@ function phantom(radius: number, sigma = 1) {
   // Same vessel identity and patient in every test; only numerical geometry changes.
   for (const n of scene.vesselById.get('hvRight')!.tube.nodes) n.r = radius;
   const template = anatomy.classifyWorld([0, 0, 0], base);
-  anatomy.classifyWorld = (p) => ({
+  // El volumen de muestra clasifica puntos materiales (decisión 294); `classifyWorld` también pasa por aquí.
+  anatomy.classifyMaterial = (p) => ({
     ...template,
     tissue: Tissue.Blood,
     vessel: 'hvRight',

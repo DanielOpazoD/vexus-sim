@@ -82,7 +82,15 @@ export class AnatomyQuery {
   }
 
   classifyWorld(p: Vec3, s: PhysiologySample): WorldQuery {
-    const m = this.deformation.toMaterial(p, s.resp);
+    return this.classifyMaterial(this.deformation.toMaterial(p, s.resp), s);
+  }
+
+  /**
+   * La de `classifyWorld` en un punto MATERIAL ya resuelto. El volumen de muestra PW (decisión 294) clasifica así el punto
+   * de su mapa local, sin invertir la deformación: identidad y posición coinciden. Un fantoma que sustituye este método
+   * cambia también `classifyWorld`.
+   */
+  classifyMaterial(m: Vec3, s: PhysiologySample): WorldQuery {
     const c = this.scene.classify(m, this.caliberFor(s));
     const tissueVelocity = this.deformation.tissueVelocity(m, s.resp);
     let bloodVelocity: Vec3 | null = null;

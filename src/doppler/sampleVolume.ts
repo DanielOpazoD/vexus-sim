@@ -32,9 +32,9 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  * perfil radial con el radio normalizado de su siembra en la sección del instante (calibre, semieje AP, forma orgánica),
  * como la de `classifyMaterial` en el punto de la siembra; ese radio no cambia a lo largo de la corriente. Dos salidas, dos
  * entradas:
- *  - por flujo (con el desplazamiento del pulso anterior; también la salida de la luz por un casquete): reentra por su
- *    corriente en la entrada aguas arriba de la parte válida, con el sobrepaso (envoltura periódica a lo largo de la
- *    corriente);
+ *  - por flujo (con el desplazamiento del pulso anterior; también la salida de la luz por un casquete y la del dominio de su
+ *    tubo en una unión): reentra por su corriente en la entrada aguas arriba de la parte válida, con el sobrepaso (envoltura
+ *    periódica a lo largo de la corriente);
  *  - por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento, con
  *    la identidad del punto de entrada. El tejido sale y entra en rampa; la sangre, con su amplitud (caras de peso ≈ 0).
  * Más allá de los nodos extremos la corriente sigue recta por el casquete hasta salir de la luz. En una unión, una
@@ -131,9 +131,10 @@ interface Stream {
   scaleSeed: number;
   rGeoSeed: number;
   grow: number;
-  /** Cuerda de la caja a lo largo de esta corriente (mm de arco) y época del mapa en que se midió. */
+  /** Última cuerda válida a lo largo de esta corriente (mm de arco). */
   chord: number;
-  chordEpoch: number;
+  /** Arco (mm) que aún puede recorrer sin poder dejar el dominio de su tubo en una unión (`domainArc`). */
+  domainLeft: number;
 }
 
 /** Zona de una unión: otro tubo cuya luz solapa la de este cerca de la caja (caja material). */
@@ -314,6 +315,12 @@ function radiusAt(st: Stream, seg: number, s: number, scale: number): number {
   const r = (n[seg].r + (n[seg + 1].r - n[seg].r) * w) * scale;
   const amp = tube.shape?.amp ?? 0;
   return amp > 0 ? r * (1 + amp * tubeNoise(tube.shape!.seed, st.geom.arc0[seg] + c * st.geom.len[seg])[0]) : r;
+}
+
+/** El tubo del vaso con el semieje AP del instante. */
+function instantTube(def: VesselDef, caliber: VesselCaliber): Tube {
+  const ap = vesselApScale(def.id, def.tube.apScale, caliber);
+  return ap === def.tube.apScale ? def.tube : { ...def.tube, apScale: ap };
 }
 
 /** ¿Está la corriente más allá del primer o del último nodo (casquete)? */
@@ -685,7 +692,7 @@ export class SampleVolumeIQ {
       rGeoSeed: r / scale,
       grow: 1,
       chord: -1,
-      chordEpoch: -1,
+      domainLeft: 0,
     };
   }
 
@@ -788,10 +795,7 @@ export class SampleVolumeIQ {
     scene.ducts.forEach((def, i) => collect(true, def, scene.tubeBounds[scene.vessels.length + i]));
     if (near.length < 2) return;
     const caliber = this.caliber();
-    const tubeOf = (def: VesselDef) => {
-      const ap = vesselApScale(def.id, def.tube.apScale, caliber);
-      return ap === def.tube.apScale ? def.tube : { ...def.tube, apScale: ap };
-    };
+    const tubeOf = (def: VesselDef) => instantTube(def, caliber);
     let seed = 0x9e3779b9;
     const unit = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
     for (const x of near) {
@@ -840,12 +844,27 @@ export class SampleVolumeIQ {
 
   /** ¿Gana la clasificación el tubo de la corriente en el punto material `m`? (la búsqueda de `bestTube`, con sus socios). */
   private ownsPoint(st: Stream, m: Vec3): boolean {
+    return this.domainArc(st, m) >= 0;
+  }
+
+  /**
+   * Arco (mm) que la corriente puede recorrer desde `m` sin dejar de ganar la clasificación, o negativo si ya no la gana: la
+   * distancia a la caja de cada zona, a la pared del socio o, dentro de ella, la mitad de lo que su distancia a la luz le saca
+   * a la propia (se acercan como mucho a 1 mm/mm cada una; ×0,8 por el afilamiento y la forma orgánica). Evita consultar los
+   * tubos en cada pulso: basta con hacerlo cerca del reparto.
+   */
+  private domainArc(st: Stream, m: Vec3): number {
     const zones = this.junctions.get(st.def);
-    if (!zones) return true;
+    if (!zones) return Infinity;
     let caliber: VesselCaliber | null = null;
     let own = Number.NaN;
+    let arc = Infinity;
     for (const z of zones) {
-      if (m[0] < z.lo[0] || m[0] > z.hi[0] || m[1] < z.lo[1] || m[1] > z.hi[1] || m[2] < z.lo[2] || m[2] > z.hi[2]) continue;
+      const outside = Math.max(z.lo[0] - m[0], m[0] - z.hi[0], z.lo[1] - m[1], m[1] - z.hi[1], z.lo[2] - m[2], m[2] - z.hi[2]);
+      if (outside > 0) {
+        arc = Math.min(arc, outside);
+        continue;
+      }
       caliber ??= this.caliber();
       let hit: TubeHit;
       let wall: number;
@@ -854,52 +873,55 @@ export class SampleVolumeIQ {
         wall = (z.def as DuctDef).wallMm;
       } else {
         const def = z.def as VesselDef;
-        const ap = vesselApScale(def.id, def.tube.apScale, caliber);
-        hit = tubeQuery(m, ap === def.tube.apScale ? def.tube : { ...def.tube, apScale: ap }, caliber.radiusScale(def.id));
+        hit = tubeQuery(m, instantTube(def, caliber), caliber.radiusScale(def.id));
         wall = wallThicknessMm(def, hit.r);
       }
-      if (!(hit.d < wall)) continue;
+      if (!(hit.d < wall)) {
+        arc = Math.min(arc, hit.d - wall);
+        continue;
+      }
       // la distancia propia exacta (forma orgánica, semieje AP, casquetes): una aproximación por |off| erraba ~1 mm en la
       // confluencia portal y dejaba un 6 % del peso sanguíneo en la rama equivocada
-      if (Number.isNaN(own)) {
-        const def = st.def;
-        const ap = vesselApScale(def.id, def.tube.apScale, caliber);
-        own = tubeQuery(m, ap === def.tube.apScale ? def.tube : { ...def.tube, apScale: ap }, caliber.radiusScale(def.id)).d;
-      }
-      if (hit.d < own) return false;
+      if (Number.isNaN(own)) own = tubeQuery(m, instantTube(st.def, caliber), caliber.radiusScale(st.def.id)).d;
+      if (hit.d < own) return -1;
+      arc = Math.min(arc, 0.5 * (hit.d - own));
     }
-    return true;
+    return 0.8 * arc;
+  }
+
+  /**
+   * Imagen periódica del punto de puerta `c` en la caja a lo largo de `along` (mundo, sentido de la salida): la envoltura de
+   * su cuerda, por la cara opuesta. null si `along` es nulo o la recta no cruza la caja.
+   */
+  private chordImage(c: Vec3, along: Vec3): Vec3 | null {
+    const g = this.gate!;
+    const dv = this.worldToGate([g.center[0] - along[0], g.center[1] - along[1], g.center[2] - along[2]]);
+    const speed = Math.hypot(dv[0], dv[1], dv[2]);
+    if (speed <= 1e-12) return null;
+    const h = [this.halfAxial, this.halfLateral, this.halfElev];
+    let tIn = -Infinity;
+    let tOut = Infinity;
+    for (let i = 0; i < 3; i++) {
+      dv[i] /= speed;
+      if (Math.abs(dv[i]) < 1e-9) {
+        if (Math.abs(c[i]) > h[i]) return null;
+        continue;
+      }
+      const t1 = (-h[i] - c[i]) / dv[i];
+      const t2 = (h[i] - c[i]) / dv[i];
+      tIn = Math.max(tIn, Math.min(t1, t2));
+      tOut = Math.min(tOut, Math.max(t1, t2));
+    }
+    if (!(tIn < tOut) || !Number.isFinite(tOut)) return null;
+    const chord = tOut - tIn;
+    const t = (Math.floor(tIn / chord) + 1) * chord;
+    return [c[0] + dv[0] * t, c[1] + dv[1] * t, c[2] + dv[2] * t];
   }
 
   /** Entrada por movimiento: por la cara opuesta a lo largo de `motion` (mundo), envoltura periódica de la cuerda. */
   private motionEntry(exitGate: Vec3, motion: Vec3, phys: PhysiologySample): Scatterer {
-    const g = this.gate!;
-    const dv = this.worldToGate([g.center[0] - motion[0], g.center[1] - motion[1], g.center[2] - motion[2]]);
-    const speed = Math.hypot(dv[0], dv[1], dv[2]);
-    if (speed > 1e-12) {
-      for (let i = 0; i < 3; i++) dv[i] /= speed;
-      const c = exitGate;
-      const h = [this.halfAxial, this.halfLateral, this.halfElev];
-      let tIn = -Infinity;
-      let tOut = Infinity;
-      let ok = true;
-      for (let i = 0; i < 3; i++) {
-        if (Math.abs(dv[i]) < 1e-9) {
-          if (Math.abs(c[i]) > h[i]) ok = false;
-          continue;
-        }
-        const t1 = (-h[i] - c[i]) / dv[i];
-        const t2 = (h[i] - c[i]) / dv[i];
-        tIn = Math.max(tIn, Math.min(t1, t2));
-        tOut = Math.min(tOut, Math.max(t1, t2));
-      }
-      if (ok && tIn < tOut && Number.isFinite(tOut)) {
-        const chord = tOut - tIn;
-        const t = (Math.floor(tIn / chord) + 1) * chord;
-        return this.makeScatterer(this.gateToWorld([c[0] + dv[0] * t, c[1] + dv[1] * t, c[2] + dv[2] * t]), phys, false);
-      }
-    }
-    return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+    const entry = this.chordImage(exitGate, motion);
+    return this.makeScatterer(this.gateToWorld(entry ?? this.randomInBox()), phys, !entry);
   }
 
   /**
@@ -914,38 +936,22 @@ export class SampleVolumeIQ {
 
   /**
    * Reentrada aguas arriba por la propia corriente (sangre que salió de la caja, de la luz o de su dominio por el flujo),
-   * conservando el sobrepaso: retrocede la cuerda válida de la corriente. Con el mismo mapa se reutiliza la cuerda
-   * medida si el punto de llegada es válido. Con el mapa cambiado (la caja se mueve respecto del material) la cuerda
-   * anterior solo orienta la búsqueda de los dos cruces: reutilizarla tal cual (50 ms) dejaba la porta respirando en 0,905
-   * de una siembra nueva frente a 0,933 midiéndola (16 semillas). `step`: arco (mm) en que pudo cruzar la salida, 0 si no
-   * se sabe (sangre que ya estaba fuera).
+   * conservando el sobrepaso: retrocede la cuerda válida de la corriente. La cuerda anterior solo orienta la búsqueda de los
+   * dos cruces: la caja se mueve respecto del material y reutilizarla tal cual (50 ms) dejaba la porta respirando en 0,905 de
+   * una siembra nueva frente a 0,933 midiéndola (16 semillas). `step`: arco (mm) en que pudo cruzar la salida, 0 si no se sabe
+   * (sangre que ya estaba fuera).
    */
   private wrapUpstream(p: Scatterer, delta: Vec3, dir: number, step: number): boolean {
     const st = p.stream!;
     const m: Vec3 = [0, 0, 0],
       c: Vec3 = [0, 0, 0];
-    if (st.chord > 0 && st.chordEpoch === this.mapEpoch) {
-      const x = cloneStream(st);
-      // la cuerda medida sigue siendo la de la parte válida si un paso aguas arriba de la llegada ya no lo es: una luz que
-      // cambió en un casquete con el mismo mapa la alarga
-      const y = cloneStream(st);
-      if (
-        advanceStream(x, -dir * st.chord) &&
-        this.validOnStream(x, delta, m, c) &&
-        !(step > 0 && advanceStream(y, -dir * (st.chord + step)) && this.validOnStream(y, delta, m, c))
-      ) {
-        Object.assign(st, x);
-        this.renewBlood(p);
-        return true;
-      }
-    }
     const at = (d: number): boolean => {
       const x = cloneStream(st);
       return advanceStream(x, -dir * d) && this.validOnStream(x, delta, m, c);
     };
     if (st.chord > 0 && step > 0) {
-      // La salida está dentro del último paso y la entrada, cerca de donde la dejaba la cuerda anterior. Los cruces se
-      // buscan con la caja y la luz; la unión se comprueba una vez en el punto de llegada (el tick lento la vigila).
+      // La salida está dentro del último paso y la entrada, cerca de donde la dejaba la cuerda anterior. Los dos cruces son de
+      // la caja o, dentro de ella, de la luz o del dominio de la unión.
       const inBox = (d: number): boolean => {
         const x = cloneStream(st);
         if (!advanceStream(x, -dir * d)) return false;
@@ -953,11 +959,17 @@ export class SampleVolumeIQ {
         this.gateOf(m, delta, c);
         return this.inside(c) && x.rho < 1;
       };
-      if (!inBox(0) && inBox(step)) {
-        const dOut = this.bisect(inBox, 0, step, true);
-        const guess = dOut + st.chord;
-        if (inBox(guess - 0.3) && !inBox(guess + 0.3)) {
-          const chord = this.bisect(inBox, guess - 0.3, guess + 0.3, false) - dOut;
+      const cross = (inner: number, outer: number): number => {
+        const d = this.boxCrossing(st, delta, dir, inner, outer);
+        return d >= 0 ? d : inner < outer ? this.bisect(inBox, inner, outer, false) : this.bisect(inBox, outer, inner, true);
+      };
+      const in0 = inBox(0);
+      if (in0 ? !at(0) && at(step) : inBox(step)) {
+        const dOut = in0 ? this.bisect(at, 0, step, true) : cross(step, 0);
+        const lo = dOut + st.chord - 0.3,
+          hi = dOut + st.chord + 0.3;
+        if (at(lo) && !at(hi)) {
+          const chord = (inBox(hi) ? this.bisect(at, lo, hi, false) : cross(lo, hi)) - dOut;
           const x = cloneStream(st);
           if (chord > 0 && advanceStream(x, -dir * chord) && this.validOnStream(x, delta, m, c) && this.placeUpstream(p, dir, chord))
             return true;
@@ -985,16 +997,16 @@ export class SampleVolumeIQ {
       prevD = d;
     }
     if (dOut < 0 || dIn < 0) return false;
-    // la imagen periódica dentro de la parte válida: un sobrepaso mayor que la cuerda (la salida de una unión se comprueba
-    // cada 8 pulsos; al respirar, la unión entra en la caja y acorta la del tronco) da más de una vuelta. Con una sola, la
-    // sangre volvía a caer en el dominio de la otra rama y quedaba allí
+    // la imagen periódica dentro de la parte válida: un sobrepaso mayor que la cuerda (al respirar, la unión entra en la caja
+    // y acorta la del tronco) da más de una vuelta. Con una sola, la sangre volvía a caer en el dominio de la otra rama y
+    // quedaba allí
     const chord = dIn - dOut;
     return chord > 0 && this.placeUpstream(p, dir, chord, chord * (Math.floor(dOut / chord) + 1));
   }
 
   /**
    * Retrocede `shift` mm por la corriente (envoltura periódica con el sobrepaso: un múltiplo de la cuerda) y guarda la
-   * cuerda con su mapa.
+   * cuerda.
    */
   private placeUpstream(p: Scatterer, dir: number, chord: number, shift = chord): boolean {
     const st = p.stream!;
@@ -1003,9 +1015,30 @@ export class SampleVolumeIQ {
     if (!advanceStream(x, -dir * shift)) return false;
     Object.assign(st, x);
     st.chord = chord;
-    st.chordEpoch = this.mapEpoch;
     this.renewBlood(p);
     return true;
+  }
+
+  /**
+   * Cruce de la cara de la caja entre `inner` (dentro) y `outer` (fuera), a esas distancias aguas arriba: a esta escala la
+   * corriente es recta y basta cortar la cara con la recta. −1 si no se corta (limita la luz de un casquete) o hay un nodo por
+   * medio.
+   */
+  private boxCrossing(st: Stream, delta: Vec3, dir: number, inner: number, outer: number): number {
+    const m: Vec3 = [0, 0, 0],
+      a: Vec3 = [0, 0, 0],
+      b: Vec3 = [0, 0, 0];
+    const x = cloneStream(st),
+      y = cloneStream(st);
+    if (!advanceStream(x, -dir * inner) || !advanceStream(y, -dir * outer) || x.seg !== y.seg || inCap(x) || inCap(y)) return -1;
+    this.streamPoint(x, m);
+    this.gateOf(m, delta, a);
+    this.streamPoint(y, m);
+    this.gateOf(m, delta, b);
+    const h = [this.halfAxial, this.halfLateral, this.halfElev];
+    let t = Infinity;
+    for (let i = 0; i < 3; i++) if (Math.abs(b[i]) > h[i]) t = Math.min(t, ((b[i] > 0 ? h[i] : -h[i]) - a[i]) / (b[i] - a[i]));
+    return t >= 0 && t <= 1 ? inner + (outer - inner) * t : -1;
   }
 
   /** Cruce entre lo (lado contrario) y hi (lado `toValid`) a lo largo de la corriente: el centro del intervalo final, sin sesgo. */
@@ -1031,6 +1064,7 @@ export class SampleVolumeIQ {
     p.rampLeft = 0;
     p.dAmp = 0;
     p.fresh = true;
+    p.stream!.domainLeft = 0;
     this.streamPoint(p.stream!, p.m);
     p.ampImp = p.stream!.rel;
     p.imp = p.ampImp * p.ampImp;
@@ -1077,51 +1111,27 @@ export class SampleVolumeIQ {
   /** Sangre sin tubo (clasificador sintético): reentra por el extremo opuesto de su recta, con su identidad (decisión 48). */
   private chordReenter(exited: Scatterer, phys: PhysiologySample): Scatterer {
     const v = exited.vBlood;
-    const speed = Math.hypot(v[0], v[1], v[2]);
-    if (speed > 1e-6) {
-      const g = this.gate!;
-      const c = exited.g;
-      const dv = this.worldToGate([g.center[0] - v[0] / speed, g.center[1] - v[1] / speed, g.center[2] - v[2] / speed]);
-      const h = [this.halfAxial, this.halfLateral, this.halfElev];
-      let tIn = -Infinity;
-      let tOut = Infinity;
-      let ok = true;
-      for (let i = 0; i < 3; i++) {
-        if (Math.abs(dv[i]) < 1e-9) {
-          if (Math.abs(c[i]) > h[i]) ok = false;
-          continue;
-        }
-        const t1 = (-h[i] - c[i]) / dv[i];
-        const t2 = (h[i] - c[i]) / dv[i];
-        tIn = Math.max(tIn, Math.min(t1, t2));
-        tOut = Math.min(tOut, Math.max(t1, t2));
-      }
-      if (ok && tIn < tOut && Number.isFinite(tOut)) {
-        const chord = tOut - tIn;
-        const t = (Math.floor(tIn / chord) + 1) * chord;
-        const entry: Vec3 = [c[0] + dv[0] * t, c[1] + dv[1] * t, c[2] + dv[2] * t];
-        const phase = this.rng.float() * 2 * Math.PI;
-        return {
-          ...exited,
-          m: this.materialOf(this.gateToWorld(entry), this.delta),
-          g: entry,
-          amp: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
-          apAngle: this.rng.gaussian(),
-          cr: Math.cos(phase),
-          ci: Math.sin(phase),
-          rotC: 1,
-          rotS: 0,
-          fresh: true,
-          fading: false,
-          dAmp: 0,
-          rampLeft: 0,
-          weightEpoch: -1,
-          vBlood: [v[0], v[1], v[2]],
-          flowBasis: [exited.flowBasis[0], exited.flowBasis[1], exited.flowBasis[2]],
-        };
-      }
-    }
-    return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+    const entry = Math.hypot(v[0], v[1], v[2]) > 1e-6 ? this.chordImage(exited.g, v) : null;
+    if (!entry) return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
+    const phase = this.rng.float() * 2 * Math.PI;
+    return {
+      ...exited,
+      m: this.materialOf(this.gateToWorld(entry), this.delta),
+      g: entry,
+      amp: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
+      apAngle: this.rng.gaussian(),
+      cr: Math.cos(phase),
+      ci: Math.sin(phase),
+      rotC: 1,
+      rotS: 0,
+      fresh: true,
+      fading: false,
+      dAmp: 0,
+      rampLeft: 0,
+      weightEpoch: -1,
+      vBlood: [v[0], v[1], v[2]],
+      flowBasis: [exited.flowBasis[0], exited.flowBasis[1], exited.flowBasis[2]],
+    };
   }
 
   /**
@@ -1233,7 +1243,7 @@ export class SampleVolumeIQ {
           // (no la sacó el flujo) y no reentra; queda quieta (k = 0) y se convierte en el tick lento
           let outBefore = false;
           if (inCap(st)) {
-            this.streamPoint(st, m);
+            if (st.sec.phys !== phys) this.streamPoint(st, m);
             outBefore = st.rho >= 1;
           }
           const dArc = st.k * (s.vessel ? vel[s.vessel] : 0) * dt;
@@ -1269,7 +1279,16 @@ export class SampleVolumeIQ {
           // queda quieta (k = 0) y se convierte en el tick lento.
           const stray = !wasInside && !flowIn;
           const leftLumen = moved && st.rho >= 1 && !s.pending && !outBefore;
-          if ((wasInside && (!inTube || !flowIn || leftLumen)) || stray) {
+          // La salida del dominio de su tubo en una unión también es por flujo y se atiende aquí, antes del movimiento: atendida
+          // después, la franja junto a la cara de entrada estaba vacía cuando esa cara avanzaba y el movimiento no sacaba a nadie
+          // por ella, pero en la fase contraria sí entraba sangre. La porta respirando quedaba en ≈ 0,89 de una siembra nueva.
+          st.domainLeft -= Math.abs(dArc);
+          let leftDomain = false;
+          if ((slow || st.domainLeft <= 0) && wasInside && flowIn && inTube && st.rho < 1 && !s.pending) {
+            st.domainLeft = this.domainArc(st, m);
+            leftDomain = st.domainLeft < 0;
+          }
+          if ((wasInside && (!inTube || !flowIn || leftLumen || leftDomain)) || stray) {
             if (!this.wrapUpstream(s, prev, dArc >= 0 ? 1 : -1, stray ? 0 : Math.abs(dArc) * 1.001 + 1e-9)) {
               this.delta = prev;
               s = this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
@@ -1321,15 +1340,6 @@ export class SampleVolumeIQ {
             s.exitMotion = [delta[0] - prev[0], delta[1] - prev[1], delta[2] - prev[2]];
             startAmpRamp(s, 0);
           }
-        }
-        if (slow && !s.fading && s.stream && s.stream.rho < 1 && this.junctions.has(s.stream.def) && !this.ownsPoint(s.stream, s.m)) {
-          // entró en la luz que gana otro tubo de la unión: sale de su dominio y vuelve por su corriente
-          const u = s.stream.k * (s.vessel ? vel[s.vessel] : 0);
-          if (!this.wrapUpstream(s, delta, u >= 0 ? 1 : -1, Math.abs(u) * dt * SLOW_EVERY * 1.001 + 1e-9)) {
-            s = this.makeScatterer(this.gateToWorld(this.randomInBox()), phys, true);
-            this.scatterers[j] = s;
-          }
-          this.gateOf(s.m, delta, s.g);
         }
         if (slow && !s.fading && !s.pending) {
           // la luz del instante (calibre, semieje AP) dejó fuera a la corriente sin que el flujo la moviera, o vuelve a

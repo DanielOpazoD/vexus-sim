@@ -90,6 +90,73 @@ function straightTube() {
   return { anatomy, at };
 }
 
+/**
+ * Unión sintética con la geometría de la bifurcación portal (el tronco y una rama que gira 115°, con la luz solapada) y una
+ * deformación rígida casi a lo largo del tronco: la sangre del tronco sale por el reparto con la rama, dentro de la caja.
+ */
+function junctionTube() {
+  const defOf = (id: string, nodes: Tube['nodes']) =>
+    ({ id, tube: { kind: 'tube', nodes, apScale: 1 } as Tube, profileN: 4, flowFactor: 1, wallMm: 0.5 }) as unknown as VesselDef;
+  const trunk = defOf('pvTrunk', [
+    { p: [-3, 6, -100], r: 5.5 },
+    { p: [-26, 2, -56], r: 5.5 },
+    { p: [-34, 0, -45], r: 5.5 },
+  ]);
+  const branch = defOf('pvLeft', [
+    { p: [-34, 0, -45], r: 3.8 },
+    { p: [8, 30, -38], r: 3.4 },
+  ]);
+  const defs = [trunk, branch];
+  const velocities = { pvTrunk: 200, pvLeft: 200 };
+  const find = (m: Vec3) => {
+    const hits = defs.map((def) => ({ def, hit: tubeQuery(m, def.tube, 1) }));
+    return hits[0].hit.d <= hits[1].hit.d ? hits[0] : hits[1];
+  };
+  const axis: Vec3 = [0, 0.14834, -0.98894];
+  const anatomy = {
+    deformation: {
+      compression: null,
+      displacement: (_m: Vec3, r: { diaphragmCaudalMm: number }) => axis.map((x) => x * r.diaphragmCaudalMm),
+      toWorld: (m: Vec3, r: { diaphragmCaudalMm: number }) => m.map((x, i) => x + axis[i] * r.diaphragmCaudalMm),
+      toMaterial: (w: Vec3, r: { diaphragmCaudalMm: number }) => w.map((x, i) => x - axis[i] * r.diaphragmCaudalMm),
+      tissueVelocity: (_m: Vec3, r: { diaphragmVelocityMmS: number }) => axis.map((x) => x * r.diaphragmVelocityMmS),
+    },
+    scene: {
+      vessels: defs,
+      ducts: [],
+      tubeBounds: defs.map(() => ({ center: [0, 0, 0], r: 300 })),
+      vesselById: new Map(defs.map((d) => [d.id, d])),
+      vesselTubeAt: find,
+    },
+    caliberFor: () => ({ radiusScale: () => 1, ivcApScale: 1 }),
+    classifyMaterial: (m: Vec3) => {
+      const { def, hit } = find(m);
+      if (hit.d >= 0)
+        return { tissue: Tissue.Liver, vessel: null, material: m, bloodVelocity: null, flowBasis: null, tissueVelocity: [0, 0, 0] };
+      const k = 1.5 * (1 - Math.min(1, hit.rho) ** 4);
+      const flowBasis: Vec3 = [hit.tangent[0] * k, hit.tangent[1] * k, hit.tangent[2] * k];
+      return {
+        tissue: Tissue.Blood,
+        vessel: def.id,
+        vesselHit: hit,
+        flowFactor: 1,
+        material: m,
+        bloodVelocity: flowBasis.map((x) => x * 200),
+        flowBasis,
+        tissueVelocity: [0, 0, 0],
+      };
+    },
+  } as unknown as AnatomyQuery;
+  const at = (D: number, v: number) =>
+    ({
+      resp: { diaphragmCaudalMm: D, diaphragmVelocityMmS: v },
+      velocities,
+      hvRadiusScale: 1,
+      pvRadiusScale: 1,
+    }) as unknown as PhysiologySample;
+  return { anatomy, at };
+}
+
 /** Censo directo: peso sanguíneo, peso total y número de dispersores de tejido. */
 function census(volume: SampleVolumeIQ) {
   const internals = volume as unknown as Internals;
@@ -103,6 +170,14 @@ function census(volume: SampleVolumeIQ) {
     else tissue++;
   }
   return { fraction: blood / all, tissue: tissue / internals.scatterers.length };
+}
+
+/** Peso de sangre por dispersor (Σ w_sangre / N), el de `pwPopulation.test.ts`. */
+function bloodWeight(volume: SampleVolumeIQ): number {
+  const internals = volume as unknown as Internals;
+  let blood = 0;
+  for (const s of internals.scatterers) if (s.isBlood) blood += internals.weightAt(s.g) * s.imp;
+  return blood / internals.scatterers.length;
 }
 
 describe('población PW con flujo y movimiento a la vez (decisión 294)', () => {
@@ -148,6 +223,56 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     }
     const worst = Math.max(...density.flat().map((x) => Math.abs(x / samples - 1)));
     expect(worst).toBeLessThan(0.25);
+  });
+
+  it('la sangre que sale por el reparto de una unión no vacía la caja al respirar', () => {
+    // Sin esto, la porta del sano respirando quedaba en ≈ 0,89 del peso de una siembra nueva. La salida del dominio se atendía
+    // después del paso de movimiento: la franja junto a la cara de entrada estaba vacía cuando esa cara avanzaba, así que el
+    // movimiento no sacaba a nadie por ella, pero en la fase contraria seguía entrando sangre por esa cara. Aquí daba 0,92.
+    const { anatomy, at } = junctionTube();
+    const gate: GateGeometry = {
+      center: [-30.4, 3.5, -47],
+      beamDir: [0.96, 0.28, 0.01],
+      lateral: [-0.0487, 0.1324, 0.9900],
+      elevation: [0.2758, -0.9509, 0.1394],
+      lengthMm: 4,
+      pulseSigmaMm: 0.5,
+      lateralSigmaMm: 1.11,
+      elevationSigmaMm: 1.88,
+      transmission: 1,
+    };
+    const bands = 5;
+    const dt = 10 / 2500;
+    const w = (2 * Math.PI) / 4;
+    const density = [0, 1, 2].map(() => new Array<number>(bands).fill(0));
+    let transported = 0;
+    let fresh = 0;
+    let samples = 0;
+    const re = new Float32Array(16),
+      im = new Float32Array(16);
+    for (const seed of [47, 48, 49]) {
+      const volume = new SampleVolumeIQ(anatomy, seed);
+      volume.setGate(gate, at(0, 0));
+      const internals = volume as unknown as Internals;
+      const half = [internals.halfAxial, internals.halfLateral, internals.halfElev];
+      for (let k = 1; k <= Math.round(8 / dt); k++) {
+        const now = k * dt;
+        const phys = at(5 * Math.sin(w * now), 5 * w * Math.cos(w * now));
+        volume.generate(phys, [0, 0, 0], 10, re, im);
+        if (now < 4 || k % 125 !== 0) continue;
+        samples++;
+        transported += bloodWeight(volume);
+        const seeded = new SampleVolumeIQ(anatomy, 900 + k);
+        seeded.setGate(gate, phys);
+        fresh += bloodWeight(seeded);
+        for (const s of internals.scatterers)
+          for (let a = 0; a < 3; a++)
+            density[a][Math.min(bands - 1, Math.max(0, Math.floor(((s.g[a] / half[a] + 1) / 2) * bands)))] +=
+              bands / internals.scatterers.length;
+      }
+    }
+    expect(transported / fresh).toBeGreaterThan(0.95);
+    expect(Math.max(...density.flat().map((x) => Math.abs(x / samples - 1)))).toBeLessThan(0.15);
   });
 
   it('el casquete que se contrae convierte en tejido la sangre que deja fuera, con y sin flujo', () => {

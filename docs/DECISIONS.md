@@ -9515,13 +9515,13 @@ pulsación cardíaca:
 
 Se descartaron, medidos: la variación de composición y la ganancia axial (rechazaban las FA correctas y dejaban menos de la mitad de las capturas aceptadas), la sensibilidad a la geometría congelada (la captura falsa conocida daba 2,7 puntos), la deriva entre inicios de latidos consecutivos (1 de 7 falsas), la deriva menos la mediana de la captura (se le escapa la deriva del mismo signo) y la onda promedio por fase del ECG (rechaza casi todo lo que se captura respirando). Con registro previo y paneles de 280 capturas no usados para elegir (7 casos, apnea y respiración tranquila, ±20–±80):
 
-| Panel, código                     | Aceptadas    | A ≤ 10 puntos | A > 15 | Respirando, aceptadas | main: aceptadas, a ≤ 10, respirando |
-| --------------------------------- | ------------ | ------------- | ------ | --------------------- | ----------------------------------- |
-| s11–15, solo la regla de deriva   | 184 (65,7 %) | 180 (97,8 %)  | 1      | 58/140                | 193 (68,9 %), 193, 69/140           |
-| s16–20, las dos reglas            | 161 (57,5 %) | 158 (98,1 %)  | 0      | 38/140                | 191 (68,2 %), 191, 65/140           |
-| s26–30, antes de r5               | 170 (60,7 %) | 168 (98,8 %)  | 0      | 44/140                | 196 (70,0 %), 194, 70/140           |
-| s31–35, antes de r6               | 165 (58,9 %) | 159 (96,4 %)  | 1      | 40/140                | 193 (68,9 %), 193, 67/140           |
-| s36–40, código final              | 170 (60,7 %) | 168 (98,8 %)  | 0      | 45/140                | 192 (68,6 %), 192, 66/140           |
+| Panel, código                   | Aceptadas    | A ≤ 10 puntos | A > 15 | Respirando, aceptadas | main: aceptadas, a ≤ 10, respirando |
+| ------------------------------- | ------------ | ------------- | ------ | --------------------- | ----------------------------------- |
+| s11–15, solo la regla de deriva | 184 (65,7 %) | 180 (97,8 %)  | 1      | 58/140                | 193 (68,9 %), 193, 69/140           |
+| s16–20, las dos reglas          | 161 (57,5 %) | 158 (98,1 %)  | 0      | 38/140                | 191 (68,2 %), 191, 65/140           |
+| s26–30, antes de r5             | 170 (60,7 %) | 168 (98,8 %)  | 0      | 44/140                | 196 (70,0 %), 194, 70/140           |
+| s31–35, antes de r6             | 165 (58,9 %) | 159 (96,4 %)  | 1      | 40/140                | 193 (68,9 %), 193, 67/140           |
+| s36–40, código final            | 170 (60,7 %) | 168 (98,8 %)  | 0      | 45/140                | 192 (68,6 %), 192, 66/140           |
 
 La captura a más de 15 puntos del primer panel (cirrosis, 45,6 frente a 30,0, a 15,6 puntos) motivó la segunda regla, que por eso se validó con otras semillas; los tres últimos paneles se ejecutaron tras corregir el transporte según las revisiones cuarta a sexta. En todos, en apnea a ±40–±80 todas las capturas son medibles en cada caso, las reglas no rechazan ninguna en apnea y ninguna sale «grave» con verdad < 30. **El panel s31–35 incumple uno de los criterios registrados:** el sano respirando a ±40 da 37,7 frente a 19,4 (18,3 puntos), y 4 de sus 5 capturas aceptadas respirando están a más de 10 puntos. No se retocaron las reglas con esas semillas; el panel siguiente, con otras, los cumple todos. En los cuatro paneles con las dos reglas, 653 de 666 aceptadas están a ≤ 10 puntos (98,0 %) y una a más de 15.
 

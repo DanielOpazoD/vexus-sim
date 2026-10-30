@@ -771,8 +771,7 @@ export class SampleVolumeIQ {
       return weight >= 0.02 && vessel && Math.max(...vessel.tube.nodes.map((n) => n.r)) <= 2 * this.gate!.lateralSigmaMm;
     });
     if (refine) {
-      for (let i = N_SCATTERERS; i < 4 * N_SCATTERERS; i++)
-        this.scatterers.push(this.randomScatterer(phys));
+      for (let i = N_SCATTERERS; i < 4 * N_SCATTERERS; i++) this.scatterers.push(this.randomScatterer(phys));
       this.updateComposition();
     }
     this.particleAmplitudeScale = particleAmplitudeScale(this.scatterers.length);
@@ -931,7 +930,13 @@ export class SampleVolumeIQ {
     };
     // con el mismo mapa la cuerda medida sigue valiendo si la llegada es válida y un paso más allá ya no: una luz que cambió en un
     // casquete con el mismo mapa la alarga
-    if (st.chord > 0 && st.chordEpoch === this.mapEpoch && at(st.chord) && !(step > 0 && at(st.chord + step)) && this.placeUpstream(p, dir, st.chord))
+    if (
+      st.chord > 0 &&
+      st.chordEpoch === this.mapEpoch &&
+      at(st.chord) &&
+      !(step > 0 && at(st.chord + step)) &&
+      this.placeUpstream(p, dir, st.chord)
+    )
       return true;
     if (st.chord > 0 && step > 0) {
       // La salida está dentro del último paso y la entrada, cerca de donde la dejaba la cuerda anterior. Los dos cruces son de

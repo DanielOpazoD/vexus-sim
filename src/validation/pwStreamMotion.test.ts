@@ -182,7 +182,17 @@ function census(volume: SampleVolumeIQ) {
  */
 function crossedTubes(other: { id: string; tube: Tube }, velocities: Record<string, number>, sample: { scale: number }) {
   const tubes = [
-    { id: 'hvRight', tube: { kind: 'tube', nodes: [{ p: [0, -30, 0], r: 2 }, { p: [0, 30, 0], r: 2 }], apScale: 1 } as Tube },
+    {
+      id: 'hvRight',
+      tube: {
+        kind: 'tube',
+        nodes: [
+          { p: [0, -30, 0], r: 2 },
+          { p: [0, 30, 0], r: 2 },
+        ],
+        apScale: 1,
+      } as Tube,
+    },
     other,
   ];
   const defs = tubes.map((t) => ({ ...t, profileN: 2, flowFactor: 1, wallMm: 0.1 }) as unknown as VesselDef);
@@ -296,7 +306,7 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     const gate: GateGeometry = {
       center: [-30.4, 3.5, -47],
       beamDir: [0.96, 0.28, 0.01],
-      lateral: [-0.0487, 0.1324, 0.9900],
+      lateral: [-0.0487, 0.1324, 0.99],
       elevation: [0.2758, -0.9509, 0.1394],
       lengthMm: 4,
       pulseSigmaMm: 0.5,
@@ -343,7 +353,17 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     // luz de la porta, 60–63 de 320 partículas saltaban aguas arriba por su corriente y el peso quedaba en 0,64–0,70 de una
     // siembra nueva (cuatro semillas), con solo un 1 % de la sangre en `hvRight` frente al 33 % esperado.
     const sample = { scale: 0.75 };
-    const portal = { id: 'pvTrunk', tube: { kind: 'tube', nodes: [{ p: [-30, 0, 0], r: 5 }, { p: [30, 0, 0], r: 5 }], apScale: 1 } as Tube };
+    const portal = {
+      id: 'pvTrunk',
+      tube: {
+        kind: 'tube',
+        nodes: [
+          { p: [-30, 0, 0], r: 5 },
+          { p: [30, 0, 0], r: 5 },
+        ],
+        apScale: 1,
+      } as Tube,
+    };
     const { anatomy, phys } = crossedTubes(portal, { pvTrunk: 0, hvRight: 0 }, sample);
     const gate: GateGeometry = {
       center: [0, 3, 0],
@@ -377,7 +397,9 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
         sample.scale = 0.75 + 0.65 * Math.min(1, frame / 250);
         volume.generate(phys(), [0, 0, 0], 10, re, im);
       }
-      moved += internals.scatterers.filter((s, i) => Math.hypot(s.m[0] - start[i][0], s.m[1] - start[i][1], s.m[2] - start[i][2]) > 1e-9).length;
+      moved += internals.scatterers.filter(
+        (s, i) => Math.hypot(s.m[0] - start[i][0], s.m[1] - start[i][1], s.m[2] - start[i][2]) > 1e-9,
+      ).length;
       transported += bloodWeight(volume);
       transportedHv += hvWeight(volume);
     }
@@ -399,7 +421,17 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     // Revisión r4: el arco seguro de `domainArc` suponía que las distancias se acercan a 1 mm/mm, pero el semieje AP 0,3 de la
     // cava las hace cambiar a 3,33 mm/mm. A 2600 Hz se concedían 0,0267 mm cuando el reparto cambia a 0,020 mm: un pulso de
     // 0,024 mm dejaba la partícula de `hvRight` emitiendo en el dominio de `ivcInfra`, con arco aún positivo.
-    const cava = { id: 'ivcInfra', tube: { kind: 'tube', nodes: [{ p: [0, 0, -30], r: 5 }, { p: [0, 0, 30], r: 5 }], apScale: 0.3 } as Tube };
+    const cava = {
+      id: 'ivcInfra',
+      tube: {
+        kind: 'tube',
+        nodes: [
+          { p: [0, 0, -30], r: 5 },
+          { p: [0, 0, 30], r: 5 },
+        ],
+        apScale: 0.3,
+      } as Tube,
+    };
     const { anatomy, phys, find } = crossedTubes(cava, { hvRight: -31.2, ivcInfra: 0 }, { scale: 1 });
     const gate: GateGeometry = {
       center: [0, 1, 0],

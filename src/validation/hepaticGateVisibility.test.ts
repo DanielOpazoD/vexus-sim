@@ -42,6 +42,16 @@ describe('sangre portal que se va de la puerta durante una captura (decisión 29
     expect(portalGateDropout([portal(0, 0.9, 0), portal(0.5, 0.2, 0.7), portal(1, 0.2, 0.7)], 0, 1, 0.25)).toBe(false);
   });
   it('la puerta sin sangre portal no dice nada: eso lo juzgan la identidad y la calidad', () => {
-    expect(portalGateDropout([{ t: 0, vessels: { hvRight: 0.9 } }, { t: 1, vessels: { hvRight: 0.1 } }], 0, 1, 0.25)).toBe(false);
+    expect(
+      portalGateDropout(
+        [
+          { t: 0, vessels: { hvRight: 0.9 } },
+          { t: 1, vessels: { hvRight: 0.1 } },
+        ],
+        0,
+        1,
+        0.25,
+      ),
+    ).toBe(false);
   });
 });

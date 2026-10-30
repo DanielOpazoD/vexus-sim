@@ -254,9 +254,14 @@ export function receiverNoiseDb(gainDb: number, fftSize: number): number {
   return 10 * Math.log10(2 * NOISE_STD * NOISE_STD * sw2) + gainDb;
 }
 
-/** Paso (mm de arco) de la búsqueda de la entrada aguas arriba por la corriente y bisecciones del cruce. */
-const WRAP_STEP_MM = 0.25;
-const WRAP_BISECT = 8;
+/**
+ * Paso (mm de arco) de la búsqueda de la entrada aguas arriba por la corriente (una cuerda junto a una arista de la caja
+ * puede ser más corta) y bisecciones del cruce: 12, con el centro del intervalo final, lo dejan sin sesgo a < 0,1 µm en
+ * 0,6 mm, por debajo del desplazamiento respiratorio de un pulso, que decide si la sangre recién reentrada sale después por
+ * movimiento.
+ */
+const WRAP_STEP_MM = 0.05;
+const WRAP_BISECT = 12;
 
 const geomCache = new WeakMap<object, TubeGeom>();
 /** Segmentos del tubo (origen, vector, longitud, tangente, arco inicial), en caché por la lista de nodos. */
@@ -921,7 +926,14 @@ export class SampleVolumeIQ {
       c: Vec3 = [0, 0, 0];
     if (st.chord > 0 && st.chordEpoch === this.mapEpoch) {
       const x = cloneStream(st);
-      if (advanceStream(x, -dir * st.chord) && this.validOnStream(x, delta, m, c)) {
+      // la cuerda medida sigue siendo la de la parte válida si un paso aguas arriba de la llegada ya no lo es: una luz que
+      // cambió en un casquete con el mismo mapa la alarga
+      const y = cloneStream(st);
+      if (
+        advanceStream(x, -dir * st.chord) &&
+        this.validOnStream(x, delta, m, c) &&
+        !(step > 0 && advanceStream(y, -dir * (st.chord + step)) && this.validOnStream(y, delta, m, c))
+      ) {
         Object.assign(st, x);
         this.renewBlood(p);
         return true;
@@ -973,15 +985,22 @@ export class SampleVolumeIQ {
       prevD = d;
     }
     if (dOut < 0 || dIn < 0) return false;
-    return this.placeUpstream(p, dir, dIn - dOut);
+    // la imagen periódica dentro de la parte válida: un sobrepaso mayor que la cuerda (la salida de una unión se comprueba
+    // cada 8 pulsos; al respirar, la unión entra en la caja y acorta la del tronco) da más de una vuelta. Con una sola, la
+    // sangre volvía a caer en el dominio de la otra rama y quedaba allí
+    const chord = dIn - dOut;
+    return chord > 0 && this.placeUpstream(p, dir, chord, chord * (Math.floor(dOut / chord) + 1));
   }
 
-  /** Retrocede `chord` mm por la corriente (envoltura periódica con el sobrepaso) y guarda la cuerda con su mapa. */
-  private placeUpstream(p: Scatterer, dir: number, chord: number): boolean {
+  /**
+   * Retrocede `shift` mm por la corriente (envoltura periódica con el sobrepaso: un múltiplo de la cuerda) y guarda la
+   * cuerda con su mapa.
+   */
+  private placeUpstream(p: Scatterer, dir: number, chord: number, shift = chord): boolean {
     const st = p.stream!;
     if (!(chord > 0)) return false;
     const x = cloneStream(st);
-    if (!advanceStream(x, -dir * chord)) return false;
+    if (!advanceStream(x, -dir * shift)) return false;
     Object.assign(st, x);
     st.chord = chord;
     st.chordEpoch = this.mapEpoch;
@@ -989,14 +1008,14 @@ export class SampleVolumeIQ {
     return true;
   }
 
-  /** Cruce entre lo (lado contrario) y hi a lo largo de la corriente: el primer punto de `toValid`. */
+  /** Cruce entre lo (lado contrario) y hi (lado `toValid`) a lo largo de la corriente: el centro del intervalo final, sin sesgo. */
   private bisect(at: (d: number) => boolean, lo: number, hi: number, toValid: boolean): number {
     for (let i = 0; i < WRAP_BISECT; i++) {
       const mid = 0.5 * (lo + hi);
       if (at(mid) === toValid) hi = mid;
       else lo = mid;
     }
-    return toValid ? hi : lo;
+    return 0.5 * (lo + hi);
   }
 
   /** Otro hematíe en la misma corriente: fase, amplitud y ángulo de apertura nuevos, en su punto y con su importancia. */
@@ -1210,6 +1229,13 @@ export class SampleVolumeIQ {
           const st = s.stream;
           s.weightEpoch = -1;
           const wasInside = Math.abs(s.g[0]) <= hA && Math.abs(s.g[1]) <= hL && Math.abs(s.g[2]) <= hE;
+          // en un casquete, con la sección de este instante ANTES de avanzar: si ya está fuera de la luz, la contrajo el calibre
+          // (no la sacó el flujo) y no reentra; queda quieta (k = 0) y se convierte en el tick lento
+          let outBefore = false;
+          if (inCap(st)) {
+            this.streamPoint(st, m);
+            outBefore = st.rho >= 1;
+          }
           const dArc = st.k * (s.vessel ? vel[s.vessel] : 0) * dt;
           const segBefore = st.seg;
           const inTube = advanceStream(st, dArc);
@@ -1234,11 +1260,15 @@ export class SampleVolumeIQ {
           let f1x = A[3] * m[0] + A[4] * m[1] + A[5] * m[2] + bp1;
           let f2x = A[6] * m[0] + A[7] * m[1] + A[8] * m[2] + bp2;
           let flowIn = Math.abs(f0x) <= hA && Math.abs(f1x) <= hL && Math.abs(f2x) <= hE;
-          // salida por flujo (caja, extremo del tubo o la luz en un casquete), o sangre que quedó fuera de la caja al entrar
-          // por una cara (el mapa lineal la deja a centésimas): vuelve por su corriente. La que la luz deja fuera sin que el
-          // flujo la mueva (calibre, semieje AP) no reentra: queda quieta (k = 0) y se convierte en el tick lento
+          // Salida por flujo (caja, extremo del tubo o la luz en un casquete), o sangre que quedó fuera de la caja al entrar por
+          // una cara (el mapa lineal la deja a centésimas): vuelve por su corriente en la caja del pulso anterior. Flujo y
+          // movimiento se componen como dos mapas periódicos que conservan la medida (la reentrada por la corriente y después la
+          // del movimiento por la cara opuesta), así que la llegada debe ser exacta: con un error mayor que el desplazamiento
+          // respiratorio del pulso (~0,3 µm), la sangre recién reentrada no salía por movimiento cuando le tocaba y la población
+          // se acumulaba junto a una cara. La que la luz deja fuera sin que el flujo la mueva (calibre, semieje AP) no reentra:
+          // queda quieta (k = 0) y se convierte en el tick lento.
           const stray = !wasInside && !flowIn;
-          const leftLumen = moved && st.rho >= 1 && !s.pending;
+          const leftLumen = moved && st.rho >= 1 && !s.pending && !outBefore;
           if ((wasInside && (!inTube || !flowIn || leftLumen)) || stray) {
             if (!this.wrapUpstream(s, prev, dArc >= 0 ? 1 : -1, stray ? 0 : Math.abs(dArc) * 1.001 + 1e-9)) {
               this.delta = prev;

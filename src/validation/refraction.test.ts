@@ -22,7 +22,8 @@ import {
 import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
 import { STEERED_PREFIX_GLSL, lumenExcessGlsl, lumenExcessPerMm, type SegmentGrid } from '../ultrasound/transmission';
 import { refractionGain, refractionPsi, refractionSlope, steeredPrefixDb } from '../ultrasound/transmissionTwin';
-import { REFRACTION_BENCH } from './support/refractionBench';
+import { REFRACTION_BENCH, type RefractionBenchCase } from './support/refractionBench';
+import { BILE_37C_SPEEDS, refractionBench37 } from './support/refractionBench37';
 import { GRID_GEOMETRY, gridLineAngle, segmentGridFromScene, type GridGeometry } from './support/segmentGrid';
 
 /**
@@ -67,6 +68,77 @@ function lensRow(tissue: Tissue, a: number, z0: number, r: number): { gainDb: nu
     x: Array.from({ length: G.lines }, (_, l) => (G.curvatureRadius + rr) * Math.sin(gridLineAngle(l))),
     lensDist: Array.from({ length: G.lines }, (_, l) => Math.min(...lens.map((on, m) => (on ? Math.abs(m - l) : Infinity)))),
   };
+}
+
+/**
+ * El modelo de la pasada A frente a un banco de ondas (haz enfocado, ∫I_tx·I_rx), con los criterios de la decisión 86:
+ * la sombra del borde de la vesícula, su centro y los vasos.
+ */
+function expectWaveBench(cases: RefractionBenchCase[], label: string): void {
+  // la geometría plana del banco (líneas de 0,8 mm) con su haz: emisión de 26 mm con Hann (k_tx 2,0) y foco F,
+  // recepción uniforme (k 1,3) de min(26, r/2,5) mm, λ = c_hígado/3,5 MHz
+  const p = 0.8;
+  const R = 1e6;
+  const lines = 256;
+  const flat: GridGeometry = { lines, rows: 160, depthMm: 180, curvatureRadius: R, halfSector: (lines * p) / (2 * R) };
+  const lambda = TISSUES[Tissue.Liver].c / 3.5e3;
+  let sum = 0;
+  let n = 0;
+  for (const c of cases) {
+    const tissue = c.tissue === 'bile' ? Tissue.Fluid : Tissue.Blood;
+    const g = segmentGridFromScene((x, z) => (Math.hypot(x, z - c.z0) < c.a ? tissue : Tissue.Liver), 2.5, flat);
+    const k = Math.round((c.z0 + c.a + c.behind) / g.stepMm - 0.5);
+    const ap: ApertureGeometry = {
+      lines,
+      halfSector: flat.halfSector,
+      curvatureRadius: R,
+      apertureTxMm: 26,
+      apertureRxMaxMm: 26,
+      fNumberRxMin: 2.5,
+      refraction: {
+        focusMm: c.focus,
+        txScale: 1,
+        cTxMm: REFRACTION_SPOT * 2.0 * lambda,
+        cRxMm: REFRACTION_SPOT * 1.3 * lambda,
+        kappaTx: 0,
+        kappaRx: 0,
+        diffractionMm: REFRACTION_DIFFRACTION * 2 * lambda,
+      },
+    };
+    // el perfil del banco en el centro de cada línea (interpolado), desde el eje hasta su final
+    const bench = (x: number): number => {
+      const i = Math.min(c.db.length - 2, Math.floor(x / p));
+      const t = x / p - i;
+      return c.db[i] * (1 - t) + c.db[i + 1] * t;
+    };
+    const rows: { x: number; bench: number; model: number }[] = [];
+    for (let l = lines / 2; (l + 0.5 - lines / 2) * p <= (c.db.length - 1) * p; l++) {
+      const x = (l + 0.5 - lines / 2) * p;
+      rows.push({ x, bench: bench(x), model: db(look0Gain(g, ap, l, k)) });
+    }
+    const err = rows.reduce((s, q) => s + Math.abs(q.model - q.bench), 0) / rows.length;
+    sum += err * rows.length;
+    n += rows.length;
+    const minB = Math.min(...rows.map((q) => q.bench));
+    const minM = Math.min(...rows.map((q) => q.model));
+    const tag = `${label} ${c.id} (${c.tissue} a ${c.a}, ${c.behind} mm tras la luz, foco ${c.focus}): banco ${minB.toFixed(1)} / modelo ${minM.toFixed(1)} dB, centro ${rows[0].bench.toFixed(1)} / ${rows[0].model.toFixed(1)}, error medio ${err.toFixed(2)}`;
+    if (c.tissue === 'bile') {
+      // la sombra del borde: −7 a −9 dB en el banco de la tabla y −5,6 a −8,4 con la bilis a 37 °C (6–8 mm de ancho,
+      // centrada en el borde); el modelo, algo menos honda y de fondo más ancho hacia dentro
+      expect(Math.abs(minM - minB), tag).toBeLessThan(2.5);
+      const atEdge = rows.reduce((b, q) => (Math.abs(q.x - c.a) < Math.abs(b.x - c.a) ? q : b));
+      expect(Math.abs(atEdge.model - atEdge.bench), tag).toBeLessThan(2.5);
+      // el centro: ningún foco (el banco, de −2,6 a +1 dB según el foco); el modelo, hasta 3,3 dB más oscuro
+      expect(rows[0].model, tag).toBeLessThan(0.5);
+      expect(Math.abs(rows[0].model - rows[0].bench), tag).toBeLessThan(3.5);
+      expect(err, tag).toBeLessThan(1.5);
+    } else {
+      // tras un vaso casi nada (la sangre refracta 14 veces menos que la bilis de la tabla)
+      expect(minM, tag).toBeGreaterThan(-1.2);
+      expect(err, tag).toBeLessThan(0.5);
+    }
+  }
+  expect(sum / n).toBeLessThan(0.8);
 }
 
 describe('refracción en las luces líquidas (decisión 86)', () => {
@@ -169,70 +241,14 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
   });
 
   it('frente al banco de ondas (haz enfocado, ∫I_tx·I_rx): la sombra del borde de la vesícula, su centro y los vasos', () => {
-    // la geometría plana del banco (líneas de 0,8 mm) con su haz: emisión de 26 mm con Hann (k_tx 2,0) y foco F,
-    // recepción uniforme (k 1,3) de min(26, r/2,5) mm, λ = c_hígado/3,5 MHz
-    const p = 0.8;
-    const R = 1e6;
-    const lines = 256;
-    const flat: GridGeometry = { lines, rows: 160, depthMm: 180, curvatureRadius: R, halfSector: (lines * p) / (2 * R) };
-    const lambda = TISSUES[Tissue.Liver].c / 3.5e3;
-    let sum = 0;
-    let n = 0;
-    for (const c of REFRACTION_BENCH) {
-      const tissue = c.tissue === 'bile' ? Tissue.Fluid : Tissue.Blood;
-      const g = segmentGridFromScene((x, z) => (Math.hypot(x, z - c.z0) < c.a ? tissue : Tissue.Liver), 2.5, flat);
-      const k = Math.round((c.z0 + c.a + c.behind) / g.stepMm - 0.5);
-      const ap: ApertureGeometry = {
-        lines,
-        halfSector: flat.halfSector,
-        curvatureRadius: R,
-        apertureTxMm: 26,
-        apertureRxMaxMm: 26,
-        fNumberRxMin: 2.5,
-        refraction: {
-          focusMm: c.focus,
-          txScale: 1,
-          cTxMm: REFRACTION_SPOT * 2.0 * lambda,
-          cRxMm: REFRACTION_SPOT * 1.3 * lambda,
-          kappaTx: 0,
-          kappaRx: 0,
-          diffractionMm: REFRACTION_DIFFRACTION * 2 * lambda,
-        },
-      };
-      // el perfil del banco en el centro de cada línea (interpolado), desde el eje hasta su final
-      const bench = (x: number): number => {
-        const i = Math.min(c.db.length - 2, Math.floor(x / p));
-        const t = x / p - i;
-        return c.db[i] * (1 - t) + c.db[i + 1] * t;
-      };
-      const rows: { x: number; bench: number; model: number }[] = [];
-      for (let l = lines / 2; (l + 0.5 - lines / 2) * p <= (c.db.length - 1) * p; l++) {
-        const x = (l + 0.5 - lines / 2) * p;
-        rows.push({ x, bench: bench(x), model: db(look0Gain(g, ap, l, k)) });
-      }
-      const err = rows.reduce((s, q) => s + Math.abs(q.model - q.bench), 0) / rows.length;
-      sum += err * rows.length;
-      n += rows.length;
-      const minB = Math.min(...rows.map((q) => q.bench));
-      const minM = Math.min(...rows.map((q) => q.model));
-      const tag = `${c.id} (${c.tissue} a ${c.a}, ${c.behind} mm tras la luz, foco ${c.focus}): banco ${minB.toFixed(1)} / modelo ${minM.toFixed(1)} dB, centro ${rows[0].bench.toFixed(1)} / ${rows[0].model.toFixed(1)}, error medio ${err.toFixed(2)}`;
-      if (c.tissue === 'bile') {
-        // la sombra del borde: −7 a −9 dB en el banco (6–8 mm de ancho, centrada en el borde); el modelo, algo menos honda
-        // y de fondo más ancho hacia dentro
-        expect(Math.abs(minM - minB), tag).toBeLessThan(2.5);
-        const atEdge = rows.reduce((b, q) => (Math.abs(q.x - c.a) < Math.abs(b.x - c.a) ? q : b));
-        expect(Math.abs(atEdge.model - atEdge.bench), tag).toBeLessThan(2.5);
-        // el centro: ningún foco (el banco, de −2,6 a +1 dB según el foco); el modelo, hasta 3,3 dB más oscuro
-        expect(rows[0].model, tag).toBeLessThan(0.5);
-        expect(Math.abs(rows[0].model - rows[0].bench), tag).toBeLessThan(3.5);
-        expect(err, tag).toBeLessThan(1.5);
-      } else {
-        // tras un vaso casi nada (la sangre refracta 14 veces menos que la bilis de la tabla)
-        expect(minM, tag).toBeGreaterThan(-1.2);
-        expect(err, tag).toBeLessThan(0.5);
-      }
-    }
-    expect(sum / n).toBeLessThan(0.8);
+    expectWaveBench(REFRACTION_BENCH, 'tabla');
+  });
+
+  // La c de la tabla es la del agua a 20 °C (decisión 293): con la bilis a 37 °C el contraste real es menor, pero el
+  // modelo paraxial subestima la sombra a ese contraste y con la c de la tabla reproduce la óptica de ondas a 37 °C.
+  // Corregir solo la c deja el borde hasta 3,1 dB menos hondo frente al banco con su misma c y no cumple.
+  it.each(BILE_37C_SPEEDS)('la c de la tabla reproduce la óptica de ondas con la bilis a 37 °C (%i m/s)', (bileC) => {
+    expectWaveBench(refractionBench37(bileC), `bilis ${bileC} m/s:`);
   });
 
   it('en el sector: la vesícula oscurece sus bordes más que su centro; una vena, casi nada; lejos de las luces, 1', () => {

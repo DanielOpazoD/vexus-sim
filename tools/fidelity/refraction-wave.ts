@@ -8,6 +8,8 @@
  *
  * Genera las referencias de `src/validation/support/refractionBench.ts` (tarda unos minutos):
  *   npx tsx tools/fidelity/refraction-wave.ts > perfiles.json
+ * `--bile-c <m/s>` sustituye la c de la bilis de TISSUES (los vasos conservan la suya): así salen las referencias a
+ * temperatura corporal de `refractionBench37.ts`.
  */
 import { TISSUES, Tissue } from '../../src/anatomy/tissues';
 
@@ -38,6 +40,9 @@ const N = 4096;
 const DX = 0.05;
 const DZ = 0.05;
 const C0 = TISSUES[Tissue.Liver].c;
+const bileArg = process.argv.indexOf('--bile-c');
+const BILE_C = bileArg > 0 ? Number(process.argv[bileArg + 1]) : TISSUES[Tissue.Fluid].c;
+if (!Number.isFinite(BILE_C) || BILE_C <= 0) throw new Error('--bile-c debe ser una velocidad finita en m/s');
 const LAMBDA = C0 / (F_MHZ * 1e3);
 const K0 = (2 * Math.PI) / LAMBDA;
 const X = Float64Array.from({ length: N }, (_, i) => (i - N / 2) * DX);
@@ -140,7 +145,7 @@ function intensity(c: BenchCase, n: number, r: number, xc: number, D: number, F:
 }
 
 const out = CASES.map((c) => {
-  const n = C0 / TISSUES[c.tissue === 'bile' ? Tissue.Fluid : Tissue.Blood].c;
+  const n = C0 / (c.tissue === 'bile' ? BILE_C : TISSUES[Tissue.Blood].c);
   const r = c.z0 + c.a + c.behind;
   const dRx = Math.min(26, r / 2.5);
   const x: number[] = [];
@@ -159,6 +164,7 @@ const out = CASES.map((c) => {
     x.push(Number(xi.toFixed(2)));
     db.push(Number((10 * Math.log10(s / s0)).toFixed(2)));
   }
-  return { ...c, r, x, db };
+  // con --bile-c, cada caso declara la c usada; sin ella, la salida histórica, byte a byte
+  return bileArg > 0 ? { ...c, bileC: BILE_C, r, x, db } : { ...c, r, x, db };
 });
 console.log(JSON.stringify(out));

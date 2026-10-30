@@ -9501,7 +9501,7 @@ apnea sin haber respirado y 0,979 respirando en esa misma puerta; en la suprahep
 aislada y no depende del tamaño del salto del diafragma (`pw-population-after-breathing`). El mapa lineal se separa de la
 deformación exacta junto a la columna (`pw-gate-linear-map`) y la corriente gira de golpe en los codos
 (`pw-stream-capsule-joints`). Las paredes que se mueven con el calibre cambian identidades en dos rampas, como en la
-decisión 48, ahora en toda la población. La cadena PW cuesta más (A/B intercalado, tres rondas con poca carga): en apnea, ×0,8–1,1 en la interlobar, ×1,4–1,9 en el tronco portal y ×2,1–2,5 en la suprahepática; respirando, ×1,0–1,6, ×3,8–5,4 y ×2,1–2,7 (hasta 0,39 s de CPU por segundo simulado en el hilo principal, frente a 0,27–0,34 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. Se retira
+decisión 48, ahora en toda la población. La cadena PW cuesta más (A/B intercalado, tres rondas con poca carga): en apnea, ×0,8–1,1 en la interlobar, ×1,4–1,9 en el tronco portal y ×2,1–2,5 en la suprahepática; respirando, ×1,0–1,6, ×3,8–5,4 y ×2,1–2,7 (hasta 0,39 s de CPU por segundo simulado en el hilo principal, frente a 0,27–0,34 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. El JavaScript total pasa de 1032,9 a 1044,0 KiB (`sampleVolume.ts`, de 9,4 a 21,5 kB minificado); con la aprobación del usuario, su presupuesto sube de 1033 a 1045 KiB y los límites por chunk se conservan. Se retira
 `thin-vessel-sample-volume-lag`.
 
 **Verificación.** `pwPopulation.test.ts`: interlobar en apnea, interlobar respirando y el escenario del alumno con cuatro

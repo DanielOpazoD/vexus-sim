@@ -96,6 +96,25 @@ export function portalGateDropout(track: readonly GateVesselSample[], t0: number
 }
 
 /**
+ * El reparto de la sangre portal entre el tronco y sus ramas cambia durante la captura (decisión 294): la puerta sobre la bifurcación que
+ * se mueve con la respiración pasa de un vaso a otro, y la envolvente salta entre sus velocidades sin que cambie el flujo. Rango entre
+ * los cuantiles 0,05 y 0,95 de la fracción del tronco, frente a la tolerancia de reproducibilidad geométrica del QC renal (0,15). Medido:
+ * ≤ 0,14 en apnea, 0,2–0,5 respirando sobre la bifurcación y 0 en el tronco a ≥ 20 mm. [EXTRAPOLACIÓN PROPIA]
+ */
+export function portalBranchShift(track: readonly GateVesselSample[], t0: number, t1: number): boolean {
+  const shares: number[] = [];
+  for (const s of track) {
+    if (s.t < t0 || s.t > t1) continue;
+    const portal = systemBlood(s, 'portal');
+    if (portal >= MIN_MEAN_BLOOD) shares.push((s.vessels.pvTrunk ?? 0) / portal);
+  }
+  if (!shares.length) return false;
+  shares.sort((a, b) => a - b);
+  const at = (q: number) => shares[Math.round(q * (shares.length - 1))];
+  return at(0.95) - at(0.05) > 0.15;
+}
+
+/**
  * Sistema vascular que domina la sangre de la puerta en [t0, t1] (suma de los pesos de sangre de cada muestra), o
  * null si la puerta apenas ve sangre.
  */

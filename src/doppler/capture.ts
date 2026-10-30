@@ -15,6 +15,7 @@ import {
 import {
   dominantGateSystem,
   hepaticGateDropout,
+  portalBranchShift,
   portalGateDropout,
   wrongGateVessel,
   type GateVesselSample,
@@ -88,5 +89,7 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
     )
   )
     return { ...m, quality: { ...m.quality, issue: 'intermittent' } };
+  if (kind === 'portal' && m.quality.issue === null && portalBranchShift(gateTrack, effective[0].tR, last.tR + last.rr))
+    return { ...m, quality: { ...m.quality, issue: 'inconsistent' } };
   return m;
 }

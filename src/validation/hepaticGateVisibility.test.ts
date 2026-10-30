@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hepaticGateDropout, portalGateDropout, type GateVesselSample } from '../doppler/vesselIdentity';
+import { hepaticGateDropout, portalBranchShift, portalGateDropout, type GateVesselSample } from '../doppler/vesselIdentity';
 const sample = (t: number, hvRight: number): GateVesselSample => ({ t, vessels: { hvRight } });
 describe('visibilidad de sangre suprahepática durante una captura', () => {
   it('requiere un tramo observado tan largo como la ventana espectral', () => {
@@ -53,5 +53,26 @@ describe('sangre portal que se va de la puerta durante una captura (decisión 29
         0.25,
       ),
     ).toBe(false);
+  });
+});
+
+describe('reparto de la sangre portal que cambia durante una captura (decisión 294)', () => {
+  const frames = (shares: readonly number[], total = 0.8): GateVesselSample[] =>
+    shares.map((share, i) => ({ t: i * 0.1, vessels: { pvTrunk: total * share, pvRight: total * (1 - share) } }));
+  it('la puerta sobre la bifurcación que respira cambia de vaso: tronco de 0,9 a 0,5 de la sangre portal', () => {
+    expect(portalBranchShift(frames([0.9, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5, 0.6, 0.7, 0.8]), 0, 1)).toBe(true);
+  });
+  it('un reparto quieto o solo con el ruido de la población no cuenta, aunque sea mitad y mitad', () => {
+    expect(portalBranchShift(frames([0.5, 0.52, 0.48, 0.55, 0.45, 0.5, 0.51, 0.49]), 0, 1)).toBe(false);
+    expect(portalBranchShift(frames([1, 1, 1, 1, 1, 1, 1, 1]), 0, 1)).toBe(false);
+  });
+  it('solo cuenta lo que pasa en los latidos medidos', () => {
+    const track = [...frames([0.9, 0.9, 0.9, 0.9]), ...frames([0.5, 0.5, 0.5, 0.5]).map((s) => ({ ...s, t: s.t + 1 }))];
+    expect(portalBranchShift(track, 1, 2)).toBe(false);
+    expect(portalBranchShift(track, 0, 2)).toBe(true);
+  });
+  it('sin sangre portal apreciable en la puerta no hay reparto que juzgar', () => {
+    expect(portalBranchShift(frames([0.9, 0.1, 0.9, 0.1, 0.9, 0.1], 0.005), 0, 1)).toBe(false);
+    expect(portalBranchShift([], 0, 1)).toBe(false);
   });
 });

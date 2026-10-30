@@ -10,7 +10,8 @@ import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../ap
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { captureProtocolVessel } from '../doppler/capture';
 import { bestGateOnVessel } from '../app/gatePlacement';
-import { openSession, probeAt, TR } from './support/studentChain';
+import { pointOnLine } from '../probe/probe';
+import { openSession, placeGate, probeAt, TR } from './support/studentChain';
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));
 const body = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 afterEach(() => setReferenceBody());
@@ -33,6 +34,22 @@ describe('puerta virtual portal dentro del tronco', () => {
     quiet.respiratoryPattern = 'apnea-expiratory';
     for (let i = 0; i < 750; i++) engine.step();
     expect(() => new VenousSpectralAcquisition(query, engine.sample, quiet.seed, quiet, DEFAULT_BMODE)).not.toThrow();
+  });
+
+  it('la técnica mide en el tronco, lejos de la bifurcación, en todos los casos y en cualquier fase', () => {
+    // Decisión 294: la puerta quedaba a la entrada de la bifurcación, donde el mejor ángulo. Al respirar cabalgaba tronco y ramas, la
+    // envolvente saltaba entre sus velocidades (la rama derecha se proyecta ×1,5 mejor sobre el haz) y la PF salía falsa: 52 frente
+    // a 19 en el sano.
+    for (const base of CASES)
+      for (const respiration of ['quiet', 'apnea-expiratory'] as const) {
+        const session = openSession(base, respiration);
+        const contact = probeAt(session, 'portalTrunk');
+        const best = placeGate(session, contact, ['pvTrunk'])!;
+        const nodes = session.scene.vesselById.get('pvTrunk')!.tube.nodes;
+        const fork = nodes[nodes.length - 1].p;
+        const m = session.anatomy.deformation.toMaterial(pointOnLine(contact.frame, TR, best.theta, best.r), session.engine.sample.resp);
+        expect(Math.hypot(m[0] - fork[0], m[1] - fork[1], m[2] - fork[2]), `${base.id} ${respiration}`).toBeGreaterThanOrEqual(20);
+      }
   });
 
   it('una restricción imposible devuelve null, no el candidato de puntuación cero', () => {

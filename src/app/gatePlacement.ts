@@ -8,7 +8,8 @@ import { lineDirection, pointOnLine, type ProbeFrame, type Transducer } from '..
  * a ≥ OTHER_VESSEL_MM de la VCI si el vaso desemboca en ella (el protocolo VExUS muestrea la
  * suprahepática a 1–2 cm de la confluencia: en la desembocadura, la VCI dilatada del caso grave
  * engullía la puerta y su sangre, casi perpendicular al haz, no daba señal; los vecinos naturales,
- * como la arteria de la tríada portal o la interlobar, no cuentan) y con el mejor ángulo posible.
+ * como la arteria de la tríada portal o la interlobar, no cuentan), en el tronco portal a ≥ PORTAL_FORK_MM de su bifurcación y
+ * con el mejor ángulo posible.
  * Puntuación |cos α|·min(bd, 3 mm) sobre una rejilla del sector, multiplicada por el peso opcional
  * del candidato (`acousticWindowWeight`: la transmisión hasta el punto). Sin peso no mira la
  * transmisión y desde algunos puntos de partida la mejor puerta cae en una sombra (limitación
@@ -26,6 +27,12 @@ export interface GatePlacement {
 
 /** Distancia mínima a la VCI (mm) para las venas que desembocan en ella. */
 const OTHER_VESSEL_MM = 10;
+/**
+ * Distancia mínima (mm) del tronco portal a su bifurcación: el extremo de los 1–2 cm con que el protocolo se aleja de la confluencia en
+ * la suprahepática, porque aquí el mejor ángulo cae justo en ella (a 2,4 mm). Al respirar la puerta cabalgaba tronco y ramas, la
+ * envolvente saltaba entre sus velocidades y la PF salía falsa: 52 frente a 19 en el sano (decisión 294). [EXTRAPOLACIÓN PROPIA]
+ */
+const PORTAL_FORK_MM = 20;
 
 export function bestGateOnVessel(
   anatomy: AnatomyQuery,
@@ -60,10 +67,17 @@ export function bestGateOnVessel(
   // puntuar todos los candidatos y comprobar la confluencia solo de mejor a peor (8 consultas
   // por candidato: hacerlo en todos triplicaba el coste de la cadena del alumno)
   const candidates: Array<GatePlacement & { score: number }> = [];
+  const fork = anatomy.scene.vesselById.get('pvTrunk')?.tube.nodes.at(-1)?.p;
   for (let th = -tr.halfSector; th <= tr.halfSector; th += 0.015)
     for (let r = 15; r <= maxDepthMm; r += 1.5) {
       const q = classify(th, r);
       if (!q.vessel || !vessels.includes(q.vessel) || !q.vesselHit || q.boundaryDistance < minWallMm) continue;
+      if (
+        q.vessel === 'pvTrunk' &&
+        fork &&
+        Math.hypot(q.material[0] - fork[0], q.material[1] - fork[1], q.material[2] - fork[2]) < PORTAL_FORK_MM
+      )
+        continue;
       const d = lineDirection(frame, th);
       const tg = q.vesselHit.tangent;
       const cosAngle = Math.abs(d[0] * tg[0] + d[1] * tg[1] + d[2] * tg[2]);

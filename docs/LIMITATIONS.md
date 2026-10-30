@@ -520,14 +520,18 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-population-after-breathing`, decisión 294):
-  en la interlobar del caso grave, la población del volumen de muestra queda en 0,824 de una siembra nueva tras 10 s de
-  respiración tranquila y vuelta a apnea (16 semillas, 0,61–0,97), frente a 0,992 en apnea sin haber respirado y 0,962
-  respirando (8 semillas cada uno); en la suprahepática del sano, 0,870 (8 semillas). Repartiendo la fase del cambio en un
-  ciclo, la versión de la primera revisión daba 0,906 en 12 ejecuciones. La causa no está aislada: no se encontró relación
-  con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla, así
-  que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
-  respirar son válidas. Respirando, el tronco portal del sano también queda por debajo: 0,937 de una siembra nueva
-  (16 semillas, IC95 % 0,900–0,974).
+  en la interlobar del caso grave, la población del volumen de muestra queda en 0,839 de una siembra nueva tras 10 s de
+  respiración tranquila y vuelta a apnea (16 semillas, 0,62–0,98), frente a 0,974 en apnea sin haber respirado y 0,964
+  respirando (8 semillas cada uno); en la suprahepática del sano, 0,868 (8 semillas). La causa no está aislada: no se encontró
+  relación con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla,
+  así que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
+  respirar son válidas.
+- **Respirando, la PF portal se rechaza más y acierta menos que antes** (`portal-pf-breathing-quality`, decisión 294): con la
+  población fiel, la lectura responde a la puerta que barre la luz y las ramas, y dos reglas de calidad rechazan lo que no es
+  pulsación cardíaca. En 280 capturas no usadas para elegirlas (s16–20): 161 aceptadas, 158 a ≤ 10 puntos de la verdad y ninguna a
+  más de 15, frente a 191 y 191 antes de la decisión; respirando se aceptan 38 de 140 (antes 65). La regla de deriva usa la tolerancia de la decisión 94 como umbral,
+  no un valor publicado [EXTRAPOLACIÓN PROPIA], y las dos se eligieron sobre la propia cadena. Una captura aceptada respirando no es
+  tan segura como una en apnea: el alumno debe pedir apnea.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,
@@ -539,9 +543,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja. La
   corriente conserva el radio normalizado de su siembra en todo el tubo (su velocidad y su pertenencia a la luz): tras un
   codo, o en un casquete, la velocidad puede diferir de la del campo en ese punto, y la sangre sembrada en un casquete lleva
-  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo. En una unión, el dominio de cada
-  corriente se comprueba cada 8 pulsos: la sangre que cruza al de la otra rama vuelve en el tick lento siguiente (en el
-  tronco portal del sano respirando, 0,035 del peso sanguíneo de una siembra nueva está en ese tránsito).
+  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo.
 - **La luz que crece sobre tejido tarda hasta una visita en llenarse** (`pw-lumen-growth-lag`, decisión 294): el tejido que
   la luz del instante pasa a contener cambia a sangre cuando lo visita la reclasificación, que recorre un cuarto de la
   población cada 96 pulsos (hasta 384 pulsos, ~0,15 s a 2,6 kHz) y después se enciende en dos rampas de 32 pulsos. La

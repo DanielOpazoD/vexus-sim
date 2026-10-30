@@ -9476,11 +9476,11 @@ bifurcación (1,12).
 desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la corriente del tubo que eligió la
 clasificación (`AnatomyScene.vesselTubeAt`): segmento, parámetro y desplazamiento de la sección normalizado por el radio del tubo con el calibre de la siembra.
 
-- Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda medida se reutiliza mientras no cambie el mapa; con el mapa cambiado solo orienta la búsqueda de los dos cruces, que se acotan cerca de ella (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905).
+- Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda anterior solo orienta la búsqueda de los dos cruces, porque la caja se mueve respecto del material (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905). Los cruces con la caja se calculan cortando su cara con la recta de la corriente.
 - Salida por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento. Su identidad es la del punto material del mapa (`AnatomyQuery.classifyMaterial`, sin invertir la deformación), de modo que identidad y posición coinciden.
   El tejido sale y entra en rampa; la sangre, con su amplitud.
 - Más allá de los nodos extremos, la corriente sigue recta por el casquete hasta salir de la luz del instante (la esfera del nodo con la métrica de su sección).
-- En una unión, una corriente vale solo donde su tubo gana la clasificación. Los socios se buscan al sembrar por solape real de luces (muestras deterministas, calibre ×1,15) y, en la caja del solape, se comparan las distancias exactas de los dos tubos.
+- En una unión, una corriente vale solo donde su tubo gana la clasificación. Los socios se buscan al sembrar por solape real de luces (muestras deterministas, calibre ×1,15) y, en la caja del solape, se comparan las distancias exactas de los dos tubos. Salir de ese dominio es una salida por flujo y se atiende en el paso de flujo, antes del movimiento. Atendida después, la franja junto a la cara de entrada está vacía cuando esa cara avanza: el movimiento no saca a nadie por ella, pero en la fase contraria sigue entrando sangre (tronco y rama izquierda reales, puerta fija y respiración rígida: 0,841, y 0,68 con la rama invertida; antes del movimiento, 0,978 y 0,985). `domainArc` da el arco que falta para poder dejar el dominio y evita consultar los tubos en cada pulso.
 - Cada partícula de sangre lleva la importancia (r/r_siembra)² del radio del tubo a lo largo de su corriente: en un tubo afilado la circulación conserva la densidad por arco y no por volumen. La importancia multiplica el peso en la composición y su raíz, la amplitud IQ (potencia incoherente esperada).
 - La velocidad es la del perfil radial con el radio normalizado de la siembra en la sección del instante (calibre, semieje AP de la cava, forma orgánica), como la de `classifyMaterial` en el punto de la siembra. Ese radio es constante a lo largo de la corriente: recalculado en cada nodo o casquete, la densidad por arco iba como 1/velocidad y la interlobar en apnea quedaba en 0,83 de una siembra nueva.
 - La luz que crece o mengua no mueve las corrientes: cambia en dos rampas (decisión 48) la identidad del punto. Con ese mismo radio, la sangre que la luz deja fuera se detiene (perfil nulo) y empieza a convertirse en el tick lento en que se detecta. El tejido que queda dentro cambia en la visita de la reclasificación, que cada turno recorre otro cuarto de la población (con la sangre en su corriente esa rotación ya no la vacía, como en la 208), o antes si fue sangre de una corriente que la luz vuelve a contener. Al terminar la rampa se enciende la identidad del punto en ese instante, no la de la visita, y la sangre recibe la corriente de esa misma clasificación. Una reentrada solo acepta puntos dentro de la luz del instante de su tubo.
@@ -9492,36 +9492,48 @@ transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
 
 | Puerta        | Apnea, antes | Apnea, ahora        | Respirando, antes | Respirando, ahora   |
 | ------------- | ------------ | ------------------- | ----------------- | ------------------- |
-| Interlobar    | 0,662        | 1,000 (0,967–1,033) | 0,213             | 1,022 (0,985–1,059) |
-| Tronco portal | 0,981        | 0,993 (0,942–1,045) | 0,719             | 0,937 (0,900–0,974) |
-| Suprahepática | 0,970        | 0,983 (0,931–1,035) | 1,069             | 1,019 (0,982–1,056) |
+| Interlobar    | 0,662        | 0,994 (0,961–1,027) | 0,213             | 1,034 (1,002–1,067) |
+| Tronco portal | 0,981        | 0,992 (0,940–1,043) | 0,719             | 0,972 (0,932–1,013) |
+| Suprahepática | 0,970        | 0,979 (0,927–1,030) | 1,069             | 1,018 (0,983–1,052) |
 
-Respirando se cuentan los instantes con el vaso en la puerta. El tronco portal respirando queda por debajo de una siembra
-nueva. Con 6 semillas, la versión de la primera revisión daba 0,947 y esta 0,927, una diferencia dentro del ruido entre
-semillas, sin tejido dentro de la luz esperando su cambio de identidad. En las dos, 0,035–0,040 del peso es sangre del
-tronco que cruza al dominio de la rama derecha y vuelve en el tick lento siguiente: el dominio de una unión se comprueba
-cada 8 pulsos. El resto del déficit no está aislado. En el escenario del alumno, las capturas tras respirar son
-monofásicas válidas, pero la población queda en 0,824 de una siembra nueva (16 semillas, 0,61–0,97; la versión de la
-primera revisión daba 0,865, con la misma dispersión, DE 0,09). Sin haber respirado, esa puerta da 0,992 en apnea y 0,962
-respirando (8 semillas); en la suprahepática del sano, 0,870 tras respirar (8 semillas). La causa no está aislada; no se
-encontró relación con el tamaño del salto del diafragma en 12 ejecuciones que cambian a la vez fase y semilla
-(`pw-population-after-breathing`). El mapa lineal se separa de la deformación exacta junto a la columna
+Respirando se cuentan los instantes con el vaso en la puerta. En el escenario del alumno, las capturas tras respirar son
+monofásicas válidas, pero la población queda en 0,839 de una siembra nueva (16 semillas, 0,62–0,98, DE 0,10). Sin haber
+respirado, esa puerta da 0,974 en apnea y 0,964 respirando (8 semillas); en la suprahepática del sano, 0,868 tras respirar
+(8 semillas). La causa no está aislada; no se encontró relación con el tamaño del salto del diafragma en 12 ejecuciones que
+cambian a la vez fase y semilla (`pw-population-after-breathing`). El mapa lineal se separa de la deformación exacta junto a la columna
 (`pw-gate-linear-map`), y la corriente gira de golpe en los codos y conserva su radio normalizado en todo el tubo
 (`pw-stream-capsule-joints`). El tejido sobre el que crece la luz espera la visita de la reclasificación
 (`pw-lumen-growth-lag`).
 
+La PF portal respirando cambia, y es la pérdida de esta decisión. Con la población fiel, la lectura responde a la puerta que
+barre la luz y las ramas, no solo a la fisiología: las capturas falsas y las correctas tienen la misma cobertura, señal y
+composición, y la PF del sano ronda 30–40 % con una verdad de 20 %. Lo que queda acertado respirando es sobre todo lo que ya andaba
+por ahí. Dos reglas de calidad, sobre lo que no es pulsación cardíaca:
+
+- Deriva (`measureObservedPortal`, solo traza y ECG): si quitar la deriva dentro del latido cambia la mediana de la PF más que la tolerancia de aceptación (10 puntos, decisión 94) y el nivel de inicio no se repite entre latidos, la captura es `inconsistent`. Sin esa segunda condición, ya exigida por el testigo de deriva, se rechazaban ondas periódicas con un salto en el borde del latido.
+- La puerta pierde el vaso (`portalGateDropout`, supervisor del simulador, como `hepaticGateDropout`): si la sangre portal de la puerta baja de la mitad de su máximo durante una ventana espectral, la captura es `intermittent`. Las capturas se separan solas: en desarrollo ninguna cae entre 0,25 y 0,5 de su máximo.
+
+Se descartaron, medidos: la variación de composición y la ganancia axial (rechazaban las FA correctas y dejaban menos de la mitad de las capturas aceptadas), la sensibilidad a la geometría congelada (la captura falsa conocida daba 2,7 puntos), la deriva entre inicios de latidos consecutivos (1 de 7 falsas), la deriva menos la mediana de la captura (se le escapa la deriva del mismo signo) y la onda promedio por fase del ECG (rechaza casi todo lo que se captura respirando). Con registro previo y paneles de 280 capturas no usados para elegir (7 casos, apnea y respiración tranquila, ±20–±80):
+
+| Panel, código                    | Aceptadas     | A ≤ 10 puntos   | A > 15 | Respirando, aceptadas | main: aceptadas, a ≤ 10 |
+| -------------------------------- | ------------- | --------------- | ------ | --------------------- | ----------------------- |
+| s11–15, solo la regla de deriva  | 184 (65,7 %)  | 180 (97,8 %)    | 1      | 58/140                | 193 (68,9 %), 193       |
+| s16–20, las dos reglas           | 161 (57,5 %)  | 158 (98,1 %)    | 0      | 38/140                | 191 (68,2 %), 191       |
+
+La captura a más de 15 puntos del primer panel (cirrosis, 45,6 frente a 30,0, a 15,6 puntos) motivó la segunda regla, que por eso se validó con otras semillas. En los dos paneles, en apnea a ±40–±80 todas las capturas son medibles en cada caso, las reglas no rechazan ninguna en apnea y ninguna sale «grave» con verdad < 30. En s16–20, respirando, la cirrosis y el grave quedan en 0 de 20 aceptadas: la puerta pierde el vaso. Frente a main se piden más apneas y respirando hay aciertos menos seguros; la evidencia está en `qc-r1/` de la carpeta de evidencia (`portal-pf-breathing-quality`).
+
 La cadena PW cuesta más. El A/B intercalado con main, de tres rondas, cronometra solo `chain.step` a 2600 Hz, sin `setGate`,
-la búsqueda inicial de uniones ni el resto del cuadro. En apnea da ×1,0–1,1 en la interlobar, ×1,6–1,8 en el tronco
-portal y ×2,1–2,4 en la suprahepática; respirando, ×1,2–1,5, ×4,5–5,9 y ×2,4–3,0. En CPU por segundo simulado, el máximo
-depende de la carga del equipo: 0,29 s con carga ~6 y 0,72 s con carga 10–23, las dos veces en la porta respirando,
-frente a 0,16–0,49 s de la interlobar en main. Ninguna prueba fija ese presupuesto: queda medido y declarado. El
-JavaScript total pasa de 1032,9 a 1044,9 KiB (`sampleVolume.ts`, de 9,4 a 22,5 kB minificado); con la aprobación del
-usuario, su presupuesto sube de 1033 a 1045 KiB y los límites por chunk se conservan. Se retira
-`thin-vessel-sample-volume-lag`.
+la búsqueda inicial de uniones ni el resto del cuadro (carga ~2). En apnea da ×1,3–1,4 en la interlobar, ×3,0–3,8 en el tronco
+portal y ×2,9–4,5 en la suprahepática; respirando, ×1,2–2,0, ×3,7–7,2 y ×1,6–3,6. En CPU por segundo simulado, el máximo es
+0,27–0,38 s en la porta respirando, frente a 0,14–0,25 s de la interlobar, el máximo de main. Ninguna prueba fija ese
+presupuesto: queda medido y declarado. El JavaScript total pasa de 1032,9 a 1044,8 KiB (`sampleVolume.ts`, de 9,4 a ≈ 22 kB
+minificado); con la aprobación del usuario, su presupuesto sube de 1033 a 1045 KiB y los límites por chunk se conservan. Se
+retira `thin-vessel-sample-volume-lag`.
 
 **Verificación.** `pwPopulation.test.ts`: interlobar en apnea, interlobar respirando y el escenario del alumno con cuatro
 semillas en los dos brazos. Fallan con el código anterior: 0,633; 0,535; y en el escenario, 0,69 en apnea, `intermittent`
 y 0,022 tras respirar. Los umbrales del escenario se fijaron con la distribución medida de 16 semillas.
+`pwStreamMotion.test.ts` fija con anatomía sintética el flujo y la respiración a la vez en un tubo recto (densidad por franja a 0,59 de la uniforme con el código anterior), los casquetes que se contraen (0,9999 de fracción sanguínea frente a 0,469) y la salida por el reparto de una unión (0,92 con el código anterior). `portalMeasure.test.ts` y `hepaticGateVisibility.test.ts`, las dos reglas de calidad.
 `pwLumenIdentity.test.ts` fija los contraejemplos de las dos revisiones independientes (gpt-6.1-sol). De la primera: la
 suprahepática que crece sobre una puerta de tejido (antes 0,012 de una siembra nueva), el colapso AP de la cava (antes el
 100 % del peso sanguíneo fuera de la luz) y la confluencia portal (antes un 6,3 % del peso sanguíneo aceptado en la rama
@@ -9530,8 +9542,8 @@ que se revierte antes de terminar su rampa (antes 80 dispersores de tejido sonan
 aplana con su flujo (antes un 6,7 % del peso sanguíneo fuera de la luz) y la velocidad frente al campo oficial al dilatar
 y al contraer (antes 0,585). Cada grupo falla con la versión anterior a su respuesta y pasa ahora. Con la versión de la
 primera revisión, el check completo fallaba en la cadena del alumno: PF portal del caso grave a 9,06 puntos de la verdad
-(límite 8) y PF portal del sano respirando a ±80 cm/s aceptada en 37,6 frente a 19,4. Con esta, `examChain` y
-`examChainScale` pasan. Los fantomas de `pwTransportContinuity`, `pwSamplingDensity` y `pwContinuityAudit` sustituyen
+(límite 8) y PF portal del sano respirando a ±80 cm/s aceptada en 37,6 frente a 19,4. `examChain` y `examChainScale` pasan
+ahora sin cambiar sus tolerancias. Los fantomas de `pwTransportContinuity`, `pwSamplingDensity` y `pwContinuityAudit` sustituyen
 ahora `classifyMaterial`, por donde pasa también `classifyWorld`, sin cambiar aserciones. Se mantienen el testigo portal
 (289), la IQ idéntica con y sin caché, el transporte analítico de la decisión 264 (su anatomía falsa añade el mapa
 identidad y `classifyMaterial`, sin cambiar aserciones) y las suites de adquisición, renales, venosas y portales. Diseños,

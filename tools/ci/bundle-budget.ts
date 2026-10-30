@@ -85,8 +85,8 @@ const BUDGETS: Array<[RegExp, number]> = [
 // Integración: se conserva el presupuesto original de main, sin ampliación.
 // 29-10-2026: +12 KiB aprobados para la población PW por corrientes de tubo (decisión 294): sampleVolume.ts pasa de 9,4 a
 // 21,5 kB minificado (corrientes, uniones, casquetes, reentradas y conversiones de identidad). Medido 1044,0 KiB frente a
-// 1032,9 KiB de main d798952; límites por chunk conservados. Tras la segunda revisión (identidad del instante, perfil de
-// la sección actual), 22,5 kB y 1044,9 KiB.
+// 1032,9 KiB de main d798952; límites por chunk conservados. Tras las revisiones (identidad del instante, perfil de la sección
+// actual, reentrada exacta, reglas de calidad de la PF portal), ≈ 22 kB y 1044,8 KiB.
 const TOTAL_JS_BUDGET = 1045 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;

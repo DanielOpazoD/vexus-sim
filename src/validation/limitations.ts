@@ -44,6 +44,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',
   'pw-population-after-breathing',
+  'portal-pf-breathing-quality',
   'pw-gate-linear-map',
   'pw-stream-capsule-joints',
   'pw-lumen-growth-lag',

@@ -103,41 +103,48 @@ describe('población PW de una vena fina frente a una siembra nueva (decisión 2
     expect(ratio).toBeLessThan(1.2);
   });
 
-  it('tras respirar y volver a apnea, la interlobar del caso grave se capta como sin haber respirado', () => {
-    // Escenario del alumno: puerta colocada en apnea, 10 s de respiración tranquila, apnea otra vez y captura sin mover la
-    // puerta. Antes la población se vaciaba un poco más en cada ciclo y la apnea no la reponía: «no-signal» en todas las
-    // capturas (peso 0 frente a 0,093 de una siembra nueva) hasta mover la puerta. Ahora la población vuelve a ≈0,87 de
-    // una siembra nueva (16 semillas: 0,61–1,05); queda ese déficit residual
-    // (`pw-population-after-breathing`). Cuatro semillas de la población; los umbrales se fijaron con esa distribución medida.
-    for (const breathe of [false, true]) {
-      const tag = breathe ? 'tras respirar' : 'en apnea';
-      let transported = 0;
-      let fresh = 0;
-      for (const seed of [31, 32, 33, 34]) {
-        const session = openSession(SEVERE_CONGESTION, 'apnea-expiratory', 0, 30);
-        session.chain = new PwDopplerChain(session.anatomy, seed);
-        const contact = probeAt(session, 'renal');
-        const best = placeGate(session, contact, RENAL_VEINS, { acoustic: false, maxDepthMm: 170 })!;
-        const gateMm = Math.min(4, 2 * best.bd);
-        if (breathe) {
-          session.patient.respiratoryPattern = 'quiet';
-          acquire(session, contact, best, 'renal', { prfHz: 2600, seconds: 10, gateMm });
-          session.patient.respiratoryPattern = 'apnea-expiratory';
-        }
-        const { captures } = acquire(session, contact, best, 'renal', { prfHz: 2600, seconds: 8.5, gateMm });
-        const result = captures.at(-1)!.m;
-        // Todas las semillas y ambos brazos se evalúan y se informan aunque falle uno.
-        expect.soft(result, `${tag}, semilla ${seed}`).not.toBeNull();
-        expect.soft(result?.quality.issue, `${tag}, semilla ${seed}`).toBeNull();
-        expect.soft(result && 'pattern' in result && result.pattern, `${tag}, semilla ${seed}`).toBe('monophasic');
-        const population = sampleRatio(session, contact, { theta: best.theta, depthMm: best.r, gateMm }, session.chain, seed, 2);
-        expect.soft(population.samples, `${tag}, semilla ${seed}`).toBeGreaterThanOrEqual(5);
-        transported += population.transported;
-        fresh += population.fresh;
+  // Escenario del alumno: puerta colocada en apnea, 10 s de respiración tranquila, apnea otra vez y captura sin mover la
+  // puerta. Antes la población se vaciaba un poco más en cada ciclo y la apnea no la reponía: «no-signal» en todas las
+  // capturas (peso 0 frente a 0,093 de una siembra nueva) hasta mover la puerta. Ahora la población vuelve a ≈0,84 de una
+  // siembra nueva (16 semillas: 0,62–0,98); queda ese déficit residual (`pw-population-after-breathing`). Cuatro semillas
+  // de la población por brazo; los umbrales se fijaron con esa distribución medida. Los dos brazos van en pruebas aparte:
+  // juntos pasaban de 180 s con la cobertura instrumentada en el check completo.
+  function studentScenario(breathe: boolean) {
+    const tag = breathe ? 'tras respirar' : 'en apnea';
+    let transported = 0;
+    let fresh = 0;
+    for (const seed of [31, 32, 33, 34]) {
+      const session = openSession(SEVERE_CONGESTION, 'apnea-expiratory', 0, 30);
+      session.chain = new PwDopplerChain(session.anatomy, seed);
+      const contact = probeAt(session, 'renal');
+      const best = placeGate(session, contact, RENAL_VEINS, { acoustic: false, maxDepthMm: 170 })!;
+      const gateMm = Math.min(4, 2 * best.bd);
+      if (breathe) {
+        session.patient.respiratoryPattern = 'quiet';
+        acquire(session, contact, best, 'renal', { prfHz: 2600, seconds: 10, gateMm });
+        session.patient.respiratoryPattern = 'apnea-expiratory';
       }
-      const ratio = transported / fresh;
-      expect.soft(ratio, tag).toBeGreaterThan(breathe ? 0.7 : 0.85);
-      expect.soft(ratio, tag).toBeLessThan(1.15);
+      const { captures } = acquire(session, contact, best, 'renal', { prfHz: 2600, seconds: 8.5, gateMm });
+      const result = captures.at(-1)!.m;
+      // Todas las semillas se evalúan y se informan aunque falle una.
+      expect.soft(result, `${tag}, semilla ${seed}`).not.toBeNull();
+      expect.soft(result?.quality.issue, `${tag}, semilla ${seed}`).toBeNull();
+      expect.soft(result && 'pattern' in result && result.pattern, `${tag}, semilla ${seed}`).toBe('monophasic');
+      const population = sampleRatio(session, contact, { theta: best.theta, depthMm: best.r, gateMm }, session.chain, seed, 2);
+      expect.soft(population.samples, `${tag}, semilla ${seed}`).toBeGreaterThanOrEqual(5);
+      transported += population.transported;
+      fresh += population.fresh;
     }
+    const ratio = transported / fresh;
+    expect.soft(ratio, tag).toBeGreaterThan(breathe ? 0.7 : 0.85);
+    expect.soft(ratio, tag).toBeLessThan(1.15);
+  }
+
+  it('sin haber respirado, la interlobar del caso grave se capta en apnea (brazo de control del escenario)', () => {
+    studentScenario(false);
+  });
+
+  it('tras respirar y volver a apnea, la interlobar del caso grave se capta como sin haber respirado', () => {
+    studentScenario(true);
   });
 });

@@ -131,8 +131,9 @@ interface Stream {
   scaleSeed: number;
   rGeoSeed: number;
   grow: number;
-  /** Última cuerda válida a lo largo de esta corriente (mm de arco). */
+  /** Última cuerda válida a lo largo de esta corriente (mm de arco) y época del mapa en que se midió. */
   chord: number;
+  chordEpoch: number;
   /** Arco (mm) que aún puede recorrer sin poder dejar el dominio de su tubo en una unión (`domainArc`). */
   domainLeft: number;
 }
@@ -697,6 +698,7 @@ export class SampleVolumeIQ {
       rGeoSeed: r / scale,
       grow: 1,
       chord: -1,
+      chordEpoch: -1,
       domainLeft: 0,
     };
   }
@@ -780,7 +782,7 @@ export class SampleVolumeIQ {
    * Uniones cerca de la caja: para cada vaso, los tubos cuya luz puede solapar la suya y la caja material de ese solape, la
    * intersección de las cajas de los segmentos que están más cerca que la suma de sus radios. Fuera de esas cajas una corriente no
    * necesita consultar a nadie: en ellas vale solo donde su tubo gana la clasificación. Los radios llevan el calibre del instante
-   * (hasta ×1,5 si crece después de sembrar, sin volver a buscar) y 1 mm. Estimarlas con muestras dejaba fuera parte del solape:
+   * (hasta ×1,25 si crece después de sembrar, sin volver a buscar) y 0,5 mm. Estimarlas con muestras dejaba fuera parte del solape:
    * hasta un 3,7 % del peso sonaba con la corriente de otro tubo.
    */
   private findJunctions(): void {
@@ -797,10 +799,10 @@ export class SampleVolumeIQ {
       if (Math.hypot(b[0] - center[0], b[1] - center[1], b[2] - center[2]) > bound.r + reach) return;
       const segs: Array<[Vec3, Vec3, number]> = [];
       const n = def.tube.nodes;
-      const scale = 1.5 * (duct ? 1 : Math.max(1, caliber.radiusScale((def as VesselDef).id)));
+      const scale = 1.25 * (duct ? 1 : Math.max(1, caliber.radiusScale((def as VesselDef).id)));
       for (let i = 0; i < n.length - 1; i++) {
         const r = Math.max(n[i].r, n[i + 1].r);
-        if (segPointDist(n[i].p, n[i + 1].p, center) <= reach + r) segs.push([n[i].p, n[i + 1].p, scale * r + 1]);
+        if (segPointDist(n[i].p, n[i + 1].p, center) <= reach + r) segs.push([n[i].p, n[i + 1].p, scale * r + 0.5]);
       }
       if (segs.length) near.push({ duct, def, segs });
     };
@@ -835,16 +837,16 @@ export class SampleVolumeIQ {
   /**
    * Arco (mm) que la corriente puede recorrer desde `m` sin dejar de ganar la clasificación, o negativo si ya no la gana. Evita
    * consultar los tubos en cada pulso: basta con hacerlo cerca del reparto. Es la distancia a la caja de cada zona, a la pared del
-   * socio o, dentro de ella, lo que su distancia a la luz le saca a la propia, dividido por lo rápido que pueden acercarse: cada
-   * distancia cambia hasta 1 mm/mm, y hasta 1/AP con el semieje AP de la cava (AP 0,3: 3,33 mm/mm). El ×0,8 cubre la métrica de la
-   * forma orgánica (hasta 1,17 mm/mm), el ruido del radio y el afilamiento, que no se miden aquí.
+   * socio o, dentro de ella, lo que su distancia a la luz le saca a la propia, dividido por lo rápido que puede acercarse: la del socio
+   * cambia hasta 1 mm/mm, y hasta 1/AP con el semieje AP de la cava (AP 0,3: 3,33 mm/mm); la propia casi no cambia a lo largo de la
+   * corriente, que conserva su radio normalizado, salvo en un casquete. El ×0,8 cubre la métrica de la forma orgánica (hasta
+   * 1,17 mm/mm), el ruido del radio y el afilamiento, que no se miden aquí.
    */
   private domainArc(st: Stream, m: Vec3): number {
     const zones = this.junctions.get(st.def);
     if (!zones) return Infinity;
     let caliber: VesselCaliber | null = null;
     let own = Number.NaN;
-    let ownRate = 1;
     let arc = Infinity;
     for (const z of zones) {
       const outside = Math.max(z.lo[0] - m[0], m[0] - z.hi[0], z.lo[1] - m[1], m[1] - z.hi[1], z.lo[2] - m[2], m[2] - z.hi[2]);
@@ -863,13 +865,9 @@ export class SampleVolumeIQ {
       }
       // la distancia propia exacta (forma orgánica, semieje AP, casquetes): una aproximación por |off| erraba ~1 mm en la
       // confluencia portal y dejaba un 6 % del peso sanguíneo en la rama equivocada
-      if (Number.isNaN(own)) {
-        const ownTube = instantTube(st.def, caliber);
-        own = tubeQuery(m, ownTube, caliber.radiusScale(st.def.id)).d;
-        ownRate = 1 / Math.min(1, ownTube.apScale);
-      }
+      if (Number.isNaN(own)) own = tubeQuery(m, instantTube(st.def, caliber), caliber.radiusScale(st.def.id)).d;
       if (hit.d < own) return -1;
-      arc = Math.min(arc, (hit.d - own) / (rate + ownRate));
+      arc = Math.min(arc, (hit.d - own) / (rate + (inCap(st) ? 1 : 0)));
     }
     return 0.8 * arc;
   }
@@ -918,10 +916,10 @@ export class SampleVolumeIQ {
 
   /**
    * Reentrada aguas arriba por la propia corriente (sangre que salió de la caja, de la luz o de su dominio por el flujo),
-   * conservando el sobrepaso: retrocede la cuerda válida de la corriente. La cuerda anterior solo orienta la búsqueda de los
-   * dos cruces: la caja se mueve respecto del material y reutilizarla tal cual (50 ms) dejaba la porta respirando en 0,905 de
-   * una siembra nueva frente a 0,933 midiéndola (16 semillas). `step`: arco (mm) en que pudo cruzar la salida, 0 si no se sabe
-   * (sangre que ya estaba fuera).
+   * conservando el sobrepaso: retrocede la cuerda válida de la corriente. Con el mismo mapa se reutiliza la cuerda medida si el
+   * punto de llegada es válido. Con el mapa cambiado (la caja se mueve respecto del material) la cuerda anterior solo orienta la
+   * búsqueda de los dos cruces: reutilizarla tal cual (50 ms) dejaba la porta respirando en 0,905 de una siembra nueva frente a
+   * 0,933 midiéndola (16 semillas). `step`: arco (mm) en que pudo cruzar la salida, 0 si no se sabe (sangre que ya estaba fuera).
    */
   private wrapUpstream(p: Scatterer, delta: Vec3, dir: number, step: number): boolean {
     const st = p.stream!;
@@ -931,6 +929,10 @@ export class SampleVolumeIQ {
       const x = cloneStream(st);
       return advanceStream(x, -dir * d) && this.validOnStream(x, delta, m, c);
     };
+    // con el mismo mapa la cuerda medida sigue valiendo si la llegada es válida y un paso más allá ya no: una luz que cambió en un
+    // casquete con el mismo mapa la alarga
+    if (st.chord > 0 && st.chordEpoch === this.mapEpoch && at(st.chord) && !(step > 0 && at(st.chord + step)) && this.placeUpstream(p, dir, st.chord))
+      return true;
     if (st.chord > 0 && step > 0) {
       // La salida está dentro del último paso y la entrada, cerca de donde la dejaba la cuerda anterior. Los dos cruces son de
       // la caja o, dentro de ella, de la luz o del dominio de la unión.
@@ -993,6 +995,7 @@ export class SampleVolumeIQ {
     if (!advanceStream(x, -dir * shift)) return false;
     Object.assign(st, x);
     st.chord = chord;
+    st.chordEpoch = this.mapEpoch;
     this.renewBlood(p);
     return true;
   }

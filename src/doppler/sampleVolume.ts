@@ -777,9 +777,11 @@ export class SampleVolumeIQ {
   }
 
   /**
-   * Uniones cerca de la caja: para cada vaso, los tubos cuya luz solapa la suya (muestras deterministas dentro de su luz,
-   * con el calibre ×1,15) y la caja material de ese solape. Fuera de esas cajas una corriente no necesita consultar a
-   * nadie: en ellas vale solo donde su tubo gana la clasificación.
+   * Uniones cerca de la caja: para cada vaso, los tubos cuya luz puede solapar la suya y la caja material de ese solape, la
+   * intersección de las cajas de los segmentos que están más cerca que la suma de sus radios. Fuera de esas cajas una corriente no
+   * necesita consultar a nadie: en ellas vale solo donde su tubo gana la clasificación. Los radios llevan el calibre del instante
+   * (hasta ×1,5 si crece después de sembrar, sin volver a buscar) y 1 mm. Estimarlas con muestras dejaba fuera parte del solape:
+   * hasta un 3,7 % del peso sonaba con la corriente de otro tubo.
    */
   private findJunctions(): void {
     this.junctions.clear();
@@ -789,65 +791,39 @@ export class SampleVolumeIQ {
     const reach = Math.hypot(this.halfAxial, this.halfLateral, this.halfElev) + 20;
     type Near = { duct: boolean; def: VesselDef | DuctDef; segs: Array<[Vec3, Vec3, number]> };
     const near: Near[] = [];
+    const caliber = this.caliber();
     const collect = (duct: boolean, def: VesselDef | DuctDef, bound: { center: Vec3; r: number }) => {
       const b = bound.center;
       if (Math.hypot(b[0] - center[0], b[1] - center[1], b[2] - center[2]) > bound.r + reach) return;
       const segs: Array<[Vec3, Vec3, number]> = [];
       const n = def.tube.nodes;
+      const scale = 1.5 * (duct ? 1 : Math.max(1, caliber.radiusScale((def as VesselDef).id)));
       for (let i = 0; i < n.length - 1; i++) {
         const r = Math.max(n[i].r, n[i + 1].r);
-        if (segPointDist(n[i].p, n[i + 1].p, center) <= reach + r) segs.push([n[i].p, n[i + 1].p, r]);
+        if (segPointDist(n[i].p, n[i + 1].p, center) <= reach + r) segs.push([n[i].p, n[i + 1].p, scale * r + 1]);
       }
       if (segs.length) near.push({ duct, def, segs });
     };
     scene.vessels.forEach((def, i) => collect(false, def, scene.tubeBounds[i]));
     scene.ducts.forEach((def, i) => collect(true, def, scene.tubeBounds[scene.vessels.length + i]));
-    if (near.length < 2) return;
-    const caliber = this.caliber();
-    const tubeOf = (def: VesselDef) => instantTube(def, caliber);
-    let seed = 0x9e3779b9;
-    const unit = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
     for (const x of near) {
       if (x.duct) continue;
-      const xDef = x.def as VesselDef;
-      const xTube = tubeOf(xDef);
-      const xScale = 1.15 * caliber.radiusScale(xDef.id);
       const zones: JunctionZone[] = [];
       for (const y of near) {
         if (y === x) continue;
-        let close = false;
-        for (const [a, b, ra] of x.segs)
-          for (const [c, d, rb] of y.segs) if (!close && segSegDist(a, b, c, d) < 1.3 * (ra + rb) + 1) close = true;
-        if (!close) continue;
-        const yTube = y.duct ? y.def.tube : tubeOf(y.def as VesselDef);
-        const yScale = y.duct ? 1.15 : 1.15 * caliber.radiusScale((y.def as VesselDef).id);
         const lo: Vec3 = [Infinity, Infinity, Infinity],
           hi: Vec3 = [-Infinity, -Infinity, -Infinity];
-        let hits = 0;
-        for (const [a, b, ra] of x.segs) {
-          for (let k = 0; k < 300; k++) {
-            const t = unit(),
-              r = 1.15 * ra * Math.cbrt(unit()),
-              u = 2 * unit() - 1,
-              ph = 2 * Math.PI * unit(),
-              q = Math.sqrt(1 - u * u);
-            const p: Vec3 = [
-              a[0] + (b[0] - a[0]) * t + r * q * Math.cos(ph),
-              a[1] + (b[1] - a[1]) * t + r * q * Math.sin(ph),
-              a[2] + (b[2] - a[2]) * t + r * u,
-            ];
-            if (Math.hypot(p[0] - center[0], p[1] - center[1], p[2] - center[2]) > reach) continue;
-            if (tubeQuery(p, xTube, xScale).d >= 0 || tubeQuery(p, yTube, yScale).d >= 0) continue;
-            hits++;
+        for (const [a, b, ra] of x.segs)
+          for (const [c, d, rb] of y.segs) {
+            if (segSegDist(a, b, c, d) >= ra + rb) continue;
             for (let i = 0; i < 3; i++) {
-              lo[i] = Math.min(lo[i], p[i] - 1);
-              hi[i] = Math.max(hi[i], p[i] + 1);
+              lo[i] = Math.min(lo[i], Math.max(Math.min(a[i], b[i]) - ra, Math.min(c[i], d[i]) - rb));
+              hi[i] = Math.max(hi[i], Math.min(Math.max(a[i], b[i]) + ra, Math.max(c[i], d[i]) + rb));
             }
           }
-        }
-        if (hits) zones.push({ duct: y.duct, def: y.def, lo, hi });
+        if (lo[0] < Infinity) zones.push({ duct: y.duct, def: y.def, lo, hi });
       }
-      if (zones.length) this.junctions.set(xDef, zones);
+      if (zones.length) this.junctions.set(x.def as VesselDef, zones);
     }
   }
 
@@ -860,8 +836,8 @@ export class SampleVolumeIQ {
    * Arco (mm) que la corriente puede recorrer desde `m` sin dejar de ganar la clasificación, o negativo si ya no la gana. Evita
    * consultar los tubos en cada pulso: basta con hacerlo cerca del reparto. Es la distancia a la caja de cada zona, a la pared del
    * socio o, dentro de ella, lo que su distancia a la luz le saca a la propia, dividido por lo rápido que pueden acercarse: cada
-   * distancia cambia hasta 1 mm/mm, y hasta 1/AP con el semieje AP de la cava (AP 0,3: 3,33 mm/mm). El ×0,8 cubre la forma orgánica
-   * (hasta ≈ 1,06 mm/mm con su métrica más el ruido del radio) y el afilamiento, que no se miden aquí.
+   * distancia cambia hasta 1 mm/mm, y hasta 1/AP con el semieje AP de la cava (AP 0,3: 3,33 mm/mm). El ×0,8 cubre la métrica de la
+   * forma orgánica (hasta 1,17 mm/mm), el ruido del radio y el afilamiento, que no se miden aquí.
    */
   private domainArc(st: Stream, m: Vec3): number {
     const zones = this.junctions.get(st.def);
@@ -1001,8 +977,10 @@ export class SampleVolumeIQ {
     // la imagen periódica dentro de la parte válida: un sobrepaso mayor que la cuerda (al respirar, la unión entra en la caja
     // y acorta la del tronco) da más de una vuelta. Con una sola, la sangre volvía a caer en el dominio de la otra rama y
     // quedaba allí
+    // (a una decena de nanómetros, el error de la bisección, del cruce de entrada: si no, la llegada podía caer justo fuera de la luz
+    // de un casquete y convertirse en tejido)
     const chord = dIn - dOut;
-    return chord > 0 && this.placeUpstream(p, dir, chord, chord * (Math.floor(dOut / chord) + 1));
+    return chord > 0 && this.placeUpstream(p, dir, chord, Math.min(chord * (Math.floor(dOut / chord) + 1), dIn - 1e-5));
   }
 
   /**
@@ -1237,6 +1215,9 @@ export class SampleVolumeIQ {
           const wasInside = Math.abs(s.g[0]) <= hA && Math.abs(s.g[1]) <= hL && Math.abs(s.g[2]) <= hE;
           // en un casquete, con la sección de este instante ANTES de avanzar: si ya está fuera de la luz, la contrajo el calibre
           // (no la sacó el flujo) y no reentra; queda quieta (k = 0) y se convierte en el tick lento
+          const m0 = m[0],
+            m1 = m[1],
+            m2 = m[2];
           let outBefore = false;
           if (inCap(st)) {
             if (st.sec.phys !== phys) this.streamPoint(st, m);
@@ -1283,12 +1264,10 @@ export class SampleVolumeIQ {
           if ((slow || st.domainLeft <= 0) && wasInside && flowIn && inTube && st.rho < 1 && !s.pending) {
             st.domainLeft = this.domainArc(st, m);
             if (st.domainLeft < 0) {
-              // Si ya estaba fuera antes de avanzar, no la sacó el flujo: lo movió la geometría (calibre, semieje AP). No reentra:
-              // cambia de identidad donde está, en dos rampas, como la luz que crece o mengua.
-              const x = cloneStream(st);
-              advanceStream(x, -dArc);
-              this.streamPoint(x, this.scratch);
-              leftDomain = this.ownsPoint(x, this.scratch);
+              // Si su punto anterior ya estaba fuera, no la sacó el flujo: lo movió la geometría (calibre, semieje AP). No reentra:
+              // cambia de identidad en dos rampas, como la luz que crece o mengua, sin saltar aguas arriba. (El punto real, no
+              // retroceder el arco: con otro radio caía a micras y tomaba por geometría los cruces por flujo.)
+              leftDomain = this.ownsPoint(st, [m0, m1, m2]);
               if (!leftDomain) {
                 s.pending = { ampFactor: 0.7 + 0.6 * this.rng.float() };
                 startAmpRamp(s, 0);

@@ -17,6 +17,9 @@ interface Particle {
   isBlood: boolean;
   imp: number;
   vessel: string | null;
+  amp: number;
+  pending: object | null;
+  stream: { def: VesselDef; domainLeft: number } | null;
 }
 interface Internals {
   scatterers: Particle[];
@@ -413,17 +416,69 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     volume.setGate(gate, phys());
     volume.setEquipment({ prfHz: 2600 });
     const internals = volume as unknown as Internals & {
-      makeScatterer(world: Vec3, phys: PhysiologySample, ramp: boolean): Particle & { vessel: string; stream: { domainLeft: number } };
+      makeScatterer(world: Vec3, phys: PhysiologySample, ramp: boolean): Particle;
       domainArc(stream: object, m: Vec3): number;
       tick: number;
     };
     const particle = internals.makeScatterer([0, 0.92, 0], phys(), false);
     internals.scatterers = [particle];
-    particle.stream.domainLeft = internals.domainArc(particle.stream, particle.m);
+    particle.stream!.domainLeft = internals.domainArc(particle.stream!, particle.m);
     internals.tick = 1; // entre dos ticks lentos
     volume.generate(phys(), [0, 0, 0], 1, new Float32Array(1), new Float32Array(1));
-    const now = internals.scatterers[0] as Particle & { vessel: string };
+    const now = internals.scatterers[0];
     expect(find(now.m).def.id).toBe(now.vessel);
+  });
+
+  it('en una unión real, ninguna sangre emite con la identidad de otro tubo ni confunde el flujo con la geometría', () => {
+    // Revisión r5, con la anatomía real y el flujo invertido (también sale por el reparto de las ramas distales de `pvLeft`), geometría
+    // fija. Las cajas de las uniones se estimaban con muestras y dejaban fuera parte del solape: hasta un 3,7 % del peso emitía
+    // con la corriente de otro tubo sin consultar el reparto. Y «antes de avanzar» se reconstruía con otro radio, a 0,5–3,4 µm del
+    // punto real: 9 cruces por flujo en 100 ms se tomaban por cambios de geometría y seguían sonando 12 ms en el dominio ajeno.
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const anatomy = new AnatomyQuery(scene);
+    const raw = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas()).sample;
+    const phys: PhysiologySample = {
+      ...raw,
+      pvRadiusScale: 1,
+      hvRadiusScale: 1,
+      resp: { ...raw.resp, diaphragmCaudalMm: 0, diaphragmVelocityMmS: 0 },
+      velocities: Object.fromEntries(Object.entries(raw.velocities).map(([id, u]) => [id, -(u as number)])) as typeof raw.velocities,
+    };
+    const caliber = anatomy.caliberFor(phys);
+    const gate: GateGeometry = {
+      center: [8, 30, -38],
+      beamDir: [1, 0, 0],
+      lateral: [0, 1, 0],
+      elevation: [0, 0, 1],
+      lengthMm: 6,
+      pulseSigmaMm: 0.5,
+      lateralSigmaMm: 2,
+      elevationSigmaMm: 2,
+      transmission: 1,
+    };
+    const volume = new SampleVolumeIQ(anatomy, 47);
+    volume.setGate(gate, phys);
+    volume.setEquipment({ prfHz: 2600 });
+    const internals = volume as unknown as Internals;
+    let worst = 0;
+    let started = 0;
+    const re = new Float32Array(1),
+      im = new Float32Array(1);
+    for (let pulse = 0; pulse < 260; pulse++) {
+      const waiting = new Set(internals.scatterers.filter((s) => s.pending));
+      volume.generate(phys, [0, 0, 0], 1, re, im);
+      let all = 0;
+      let wrong = 0;
+      for (const s of internals.scatterers) {
+        const w = internals.weightAt(s.g) * s.imp;
+        all += w;
+        if (s.pending && !waiting.has(s)) started++;
+        if (s.stream && !s.pending && s.amp > 1e-10 && scene.vesselTubeAt(s.m, caliber)?.def !== s.stream.def) wrong += w;
+      }
+      worst = Math.max(worst, wrong / all);
+    }
+    expect(worst).toBeLessThan(0.01);
+    expect(started).toBe(0);
   });
 
   it('el casquete que se contrae convierte en tejido la sangre que deja fuera, con y sin flujo', () => {

@@ -16,6 +16,7 @@ interface Particle {
   g: Vec3;
   isBlood: boolean;
   imp: number;
+  vessel: string | null;
 }
 interface Internals {
   scatterers: Particle[];
@@ -172,6 +173,65 @@ function census(volume: SampleVolumeIQ) {
   return { fraction: blood / all, tissue: tissue / internals.scatterers.length };
 }
 
+/**
+ * Dos tubos rectos cruzados con la sangre quieta o con flujo solo en `hvRight`, sin movimiento, forma ni afilamiento: lo único
+ * que decide el reparto entre ellos es su geometría del instante (`scale` de `hvRight`, semieje AP de `ivcInfra`).
+ */
+function crossedTubes(other: { id: string; tube: Tube }, velocities: Record<string, number>, sample: { scale: number }) {
+  const tubes = [
+    { id: 'hvRight', tube: { kind: 'tube', nodes: [{ p: [0, -30, 0], r: 2 }, { p: [0, 30, 0], r: 2 }], apScale: 1 } as Tube },
+    other,
+  ];
+  const defs = tubes.map((t) => ({ ...t, profileN: 2, flowFactor: 1, wallMm: 0.1 }) as unknown as VesselDef);
+  const scaleOf = (id: string) => (id === 'hvRight' ? sample.scale : 1);
+  const find = (m: Vec3) => {
+    const hits = defs.map((def) => ({ def, hit: tubeQuery(m, def.tube, scaleOf(def.id)) }));
+    return hits[0].hit.d <= hits[1].hit.d ? hits[0] : hits[1];
+  };
+  const anatomy = {
+    deformation: {
+      compression: null,
+      displacement: () => [0, 0, 0],
+      toWorld: (m: Vec3) => m,
+      toMaterial: (w: Vec3) => w,
+      tissueVelocity: () => [0, 0, 0],
+    },
+    scene: {
+      vessels: defs,
+      ducts: [],
+      tubeBounds: defs.map(() => ({ center: [0, 0, 0], r: 100 })),
+      vesselById: new Map(defs.map((d) => [d.id, d])),
+      vesselTubeAt: find,
+    },
+    caliberFor: () => ({ radiusScale: scaleOf, ivcApScale: other.tube.apScale }),
+    classifyMaterial: (m: Vec3) => {
+      const { def, hit } = find(m);
+      if (hit.d >= 0)
+        return { tissue: Tissue.Liver, vessel: null, material: m, bloodVelocity: null, flowBasis: null, tissueVelocity: [0, 0, 0] };
+      const k = 2 * (1 - Math.min(1, hit.rho) ** 2);
+      const flowBasis: Vec3 = [hit.tangent[0] * k, hit.tangent[1] * k, hit.tangent[2] * k];
+      return {
+        tissue: Tissue.Blood,
+        vessel: def.id,
+        vesselHit: hit,
+        flowFactor: 1,
+        material: m,
+        bloodVelocity: flowBasis.map((x) => x * velocities[def.id]),
+        flowBasis,
+        tissueVelocity: [0, 0, 0],
+      };
+    },
+  } as unknown as AnatomyQuery;
+  const phys = () =>
+    ({
+      resp: { diaphragmCaudalMm: 0, diaphragmVelocityMmS: 0 },
+      velocities,
+      hvRadiusScale: sample.scale,
+      pvRadiusScale: 1,
+    }) as unknown as PhysiologySample;
+  return { anatomy, phys, find };
+}
+
 /** Peso de sangre por dispersor (Σ w_sangre / N), el de `pwPopulation.test.ts`. */
 function bloodWeight(volume: SampleVolumeIQ): number {
   const internals = volume as unknown as Internals;
@@ -273,6 +333,97 @@ describe('población PW con flujo y movimiento a la vez (decisión 294)', () => 
     }
     expect(transported / fresh).toBeGreaterThan(0.95);
     expect(Math.max(...density.flat().map((x) => Math.abs(x / samples - 1)))).toBeLessThan(0.15);
+  });
+
+  it('el reparto de una unión que cambia con el calibre no mueve la sangre: cambia su identidad', () => {
+    // Revisión r4: la salida del dominio se trataba siempre como salida por flujo. Sin flujo, al crecer `hvRight` dentro de la
+    // luz de la porta, 60–63 de 320 partículas saltaban aguas arriba por su corriente y el peso quedaba en 0,64–0,70 de una
+    // siembra nueva (cuatro semillas), con solo un 1 % de la sangre en `hvRight` frente al 33 % esperado.
+    const sample = { scale: 0.75 };
+    const portal = { id: 'pvTrunk', tube: { kind: 'tube', nodes: [{ p: [-30, 0, 0], r: 5 }, { p: [30, 0, 0], r: 5 }], apScale: 1 } as Tube };
+    const { anatomy, phys } = crossedTubes(portal, { pvTrunk: 0, hvRight: 0 }, sample);
+    const gate: GateGeometry = {
+      center: [0, 3, 0],
+      beamDir: [1, 0, 0],
+      lateral: [0, 1, 0],
+      elevation: [0, 0, 1],
+      lengthMm: 4,
+      pulseSigmaMm: 0.5,
+      lateralSigmaMm: 0.4,
+      elevationSigmaMm: 0.4,
+      transmission: 1,
+    };
+    const hvWeight = (volume: SampleVolumeIQ) => {
+      const internals = volume as unknown as Internals;
+      let w = 0;
+      for (const s of internals.scatterers) if (s.vessel === 'hvRight') w += internals.weightAt(s.g) * s.imp;
+      return w / internals.scatterers.length;
+    };
+    let transported = 0;
+    let transportedHv = 0;
+    let moved = 0;
+    const re = new Float32Array(10),
+      im = new Float32Array(10);
+    for (const seed of [47, 48, 49, 50]) {
+      sample.scale = 0.75;
+      const volume = new SampleVolumeIQ(anatomy, seed);
+      volume.setGate(gate, phys());
+      const internals = volume as unknown as Internals;
+      const start = internals.scatterers.map((s) => [...s.m]);
+      for (let frame = 1; frame <= 1000; frame++) {
+        sample.scale = 0.75 + 0.65 * Math.min(1, frame / 250);
+        volume.generate(phys(), [0, 0, 0], 10, re, im);
+      }
+      moved += internals.scatterers.filter((s, i) => Math.hypot(s.m[0] - start[i][0], s.m[1] - start[i][1], s.m[2] - start[i][2]) > 1e-9).length;
+      transported += bloodWeight(volume);
+      transportedHv += hvWeight(volume);
+    }
+    let fresh = 0;
+    let freshHv = 0;
+    for (let seed = 900; seed < 908; seed++) {
+      const volume = new SampleVolumeIQ(anatomy, seed);
+      volume.setGate(gate, phys());
+      fresh += bloodWeight(volume) / 2;
+      freshHv += hvWeight(volume) / 2;
+    }
+    expect(moved).toBe(0);
+    expect(transported / fresh).toBeGreaterThan(0.9);
+    expect(transported / fresh).toBeLessThan(1.1);
+    expect(transportedHv / transported).toBeGreaterThan(0.7 * (freshHv / fresh));
+  });
+
+  it('con la cava aplanada, la sangre no pasa ni un pulso en el dominio de la cava como si fuera suyo', () => {
+    // Revisión r4: el arco seguro de `domainArc` suponía que las distancias se acercan a 1 mm/mm, pero el semieje AP 0,3 de la
+    // cava las hace cambiar a 3,33 mm/mm. A 2600 Hz se concedían 0,0267 mm cuando el reparto cambia a 0,020 mm: un pulso de
+    // 0,024 mm dejaba la partícula de `hvRight` emitiendo en el dominio de `ivcInfra`, con arco aún positivo.
+    const cava = { id: 'ivcInfra', tube: { kind: 'tube', nodes: [{ p: [0, 0, -30], r: 5 }, { p: [0, 0, 30], r: 5 }], apScale: 0.3 } as Tube };
+    const { anatomy, phys, find } = crossedTubes(cava, { hvRight: -31.2, ivcInfra: 0 }, { scale: 1 });
+    const gate: GateGeometry = {
+      center: [0, 1, 0],
+      beamDir: [0, 1, 0],
+      lateral: [1, 0, 0],
+      elevation: [0, 0, 1],
+      lengthMm: 4,
+      pulseSigmaMm: 0.5,
+      lateralSigmaMm: 0.5,
+      elevationSigmaMm: 0.5,
+      transmission: 1,
+    };
+    const volume = new SampleVolumeIQ(anatomy, 47);
+    volume.setGate(gate, phys());
+    volume.setEquipment({ prfHz: 2600 });
+    const internals = volume as unknown as Internals & {
+      makeScatterer(world: Vec3, phys: PhysiologySample, ramp: boolean): Particle & { vessel: string; stream: { domainLeft: number } };
+      domainArc(stream: object, m: Vec3): number;
+      tick: number;
+    };
+    const particle = internals.makeScatterer([0, 0.92, 0], phys(), false);
+    internals.scatterers = [particle];
+    particle.stream.domainLeft = internals.domainArc(particle.stream, particle.m);
+    internals.tick = 1; // entre dos ticks lentos
+    volume.generate(phys(), [0, 0, 0], 1, new Float32Array(1), new Float32Array(1));
+    const now = internals.scatterers[0] as Particle & { vessel: string };
+    expect(find(now.m).def.id).toBe(now.vessel);
   });
 
   it('el casquete que se contrae convierte en tejido la sangre que deja fuera, con y sin flujo', () => {

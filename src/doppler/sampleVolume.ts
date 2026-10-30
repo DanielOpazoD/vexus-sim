@@ -857,16 +857,18 @@ export class SampleVolumeIQ {
   }
 
   /**
-   * Arco (mm) que la corriente puede recorrer desde `m` sin dejar de ganar la clasificación, o negativo si ya no la gana: la
-   * distancia a la caja de cada zona, a la pared del socio o, dentro de ella, la mitad de lo que su distancia a la luz le saca
-   * a la propia (se acercan como mucho a 1 mm/mm cada una; ×0,8 por el afilamiento y la forma orgánica). Evita consultar los
-   * tubos en cada pulso: basta con hacerlo cerca del reparto.
+   * Arco (mm) que la corriente puede recorrer desde `m` sin dejar de ganar la clasificación, o negativo si ya no la gana. Evita
+   * consultar los tubos en cada pulso: basta con hacerlo cerca del reparto. Es la distancia a la caja de cada zona, a la pared del
+   * socio o, dentro de ella, lo que su distancia a la luz le saca a la propia, dividido por lo rápido que pueden acercarse: cada
+   * distancia cambia hasta 1 mm/mm, y hasta 1/AP con el semieje AP de la cava (AP 0,3: 3,33 mm/mm). El ×0,8 cubre la forma orgánica
+   * (hasta ≈ 1,06 mm/mm con su métrica más el ruido del radio) y el afilamiento, que no se miden aquí.
    */
   private domainArc(st: Stream, m: Vec3): number {
     const zones = this.junctions.get(st.def);
     if (!zones) return Infinity;
     let caliber: VesselCaliber | null = null;
     let own = Number.NaN;
+    let ownRate = 1;
     let arc = Infinity;
     for (const z of zones) {
       const outside = Math.max(z.lo[0] - m[0], m[0] - z.hi[0], z.lo[1] - m[1], m[1] - z.hi[1], z.lo[2] - m[2], m[2] - z.hi[2]);
@@ -875,25 +877,23 @@ export class SampleVolumeIQ {
         continue;
       }
       caliber ??= this.caliber();
-      let hit: TubeHit;
-      let wall: number;
-      if (z.duct) {
-        hit = tubeQuery(m, z.def.tube, 1);
-        wall = (z.def as DuctDef).wallMm;
-      } else {
-        const def = z.def as VesselDef;
-        hit = tubeQuery(m, instantTube(def, caliber), caliber.radiusScale(def.id));
-        wall = wallThicknessMm(def, hit.r);
-      }
+      const tube = z.duct ? z.def.tube : instantTube(z.def as VesselDef, caliber);
+      const hit = tubeQuery(m, tube, z.duct ? 1 : caliber.radiusScale(z.def.id as VesselId));
+      const wall = z.duct ? (z.def as DuctDef).wallMm : wallThicknessMm(z.def as VesselDef, hit.r);
+      const rate = 1 / Math.min(1, tube.apScale);
       if (!(hit.d < wall)) {
-        arc = Math.min(arc, hit.d - wall);
+        arc = Math.min(arc, (hit.d - wall) / rate);
         continue;
       }
       // la distancia propia exacta (forma orgánica, semieje AP, casquetes): una aproximación por |off| erraba ~1 mm en la
       // confluencia portal y dejaba un 6 % del peso sanguíneo en la rama equivocada
-      if (Number.isNaN(own)) own = tubeQuery(m, instantTube(st.def, caliber), caliber.radiusScale(st.def.id)).d;
+      if (Number.isNaN(own)) {
+        const ownTube = instantTube(st.def, caliber);
+        own = tubeQuery(m, ownTube, caliber.radiusScale(st.def.id)).d;
+        ownRate = 1 / Math.min(1, ownTube.apScale);
+      }
       if (hit.d < own) return -1;
-      arc = Math.min(arc, 0.5 * (hit.d - own));
+      arc = Math.min(arc, (hit.d - own) / (rate + ownRate));
     }
     return 0.8 * arc;
   }
@@ -981,22 +981,19 @@ export class SampleVolumeIQ {
       }
     }
     const maxMm = 4 * Math.hypot(this.halfAxial, this.halfLateral, this.halfElev);
-    let prevValid = this.validOnStream(cloneStream(st), delta, m, c);
+    let prevValid = at(0);
     // dOut: distancia aguas arriba hasta volver a lo válido (0 si sigue en la caja: llegó al extremo del tubo dentro de
     // ella); dIn: hasta dejarlo otra vez (borde de la caja, del casquete o de la unión aguas arriba)
     let dOut = prevValid ? 0 : -1;
     let dIn = -1;
     let prevD = 0;
     for (let d = WRAP_STEP_MM; d <= maxMm + 1e-9; d += WRAP_STEP_MM) {
-      const x = cloneStream(st);
-      const ok = advanceStream(x, -dir * d);
-      const valid = ok && this.validOnStream(x, delta, m, c);
+      const valid = at(d);
       if (dOut < 0 && valid) dOut = this.bisect(at, prevD, d, true);
       if (dOut >= 0 && !valid && prevValid) {
         dIn = this.bisect(at, prevD, d, false);
         break;
       }
-      if (!ok) break;
       prevValid = valid;
       prevD = d;
     }
@@ -1285,7 +1282,18 @@ export class SampleVolumeIQ {
           let leftDomain = false;
           if ((slow || st.domainLeft <= 0) && wasInside && flowIn && inTube && st.rho < 1 && !s.pending) {
             st.domainLeft = this.domainArc(st, m);
-            leftDomain = st.domainLeft < 0;
+            if (st.domainLeft < 0) {
+              // Si ya estaba fuera antes de avanzar, no la sacó el flujo: lo movió la geometría (calibre, semieje AP). No reentra:
+              // cambia de identidad donde está, en dos rampas, como la luz que crece o mengua.
+              const x = cloneStream(st);
+              advanceStream(x, -dArc);
+              this.streamPoint(x, this.scratch);
+              leftDomain = this.ownsPoint(x, this.scratch);
+              if (!leftDomain) {
+                s.pending = { ampFactor: 0.7 + 0.6 * this.rng.float() };
+                startAmpRamp(s, 0);
+              }
+            }
           }
           if ((wasInside && (!inTube || !flowIn || leftLumen || leftDomain)) || stray) {
             if (!this.wrapUpstream(s, prev, dArc >= 0 ? 1 : -1, stray ? 0 : Math.abs(dArc) * 1.001 + 1e-9)) {

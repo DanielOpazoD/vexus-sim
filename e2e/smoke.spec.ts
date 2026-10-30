@@ -1338,13 +1338,9 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
 });
 
-/** Imagen mostrada (una muestra de sus píxeles), cuadro del cine en pantalla y cursor del ECG (su x media). */
-async function cineShot(page: Page) {
-  return page.evaluate(() => {
-    const r = window.__vexusTest!.sim().renderer;
-    const d = r.readDisplay();
-    const gray: number[] = [];
-    for (let i = 0; i < d.gray.length; i += 13) gray.push(d.gray[i]);
+/** Cursor del ECG (su x media), o null sin cursor: se lee sin tocar la GPU. */
+const ecgCursorX = (page: Page) =>
+  page.evaluate(() => {
     const ecg = document.getElementById('ecg') as HTMLCanvasElement;
     const px = ecg.getContext('2d')!.getImageData(0, 0, ecg.width, ecg.height).data;
     const y = Math.floor(ecg.height / 2);
@@ -1358,15 +1354,24 @@ async function cineShot(page: Page) {
         nx++;
       }
     }
+    return nx ? sx / nx : null;
+  });
+
+/** Imagen mostrada (una muestra de sus píxeles), cuadro del cine en pantalla y cursor del ECG. */
+async function cineShot(page: Page) {
+  const shot = await page.evaluate(() => {
+    const r = window.__vexusTest!.sim().renderer;
+    const d = r.readDisplay();
+    const gray: number[] = [];
+    for (let i = 0; i < d.gray.length; i += 13) gray.push(d.gray[i]);
     return {
       gray,
       t: r.cineShownFrame?.t ?? null,
       tEnd: r.cineCount ? r.cineFrame(r.cineCount - 1).t : null,
       times: Array.from({ length: r.cineCount }, (_, i) => r.cineFrame(i).t),
-      cursorX: nx ? sx / nx : null,
-      ecgWidth: ecg.width,
     };
   });
+  return { ...shot, cursorX: await ecgCursorX(page) };
 }
 
 test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve el cursor del ECG; al final, el cuadro congelado', async ({
@@ -1408,6 +1413,11 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
     return t === end.times[target] || `cuadro en ${t} s (se esperaba ${end.times[target]} s)`;
   });
   await withinFrames(page, 2, 'el instante del cuadro', contains(page, '#cine-time', /^−\d,\d\d s$/));
+  // La tecla cambia el cuadro en su propio evento; las franjas se redibujan en la vuelta siguiente del bucle
+  await withinFrames(page, 2, 'el cursor del ECG deja el cuadro final', async () => {
+    const x = await ecgCursorX(page);
+    return (x !== null && x < end.cursorX!) || `cursor en ${x}, el final en ${end.cursorX}`;
+  });
   const back = await cineShot(page);
   const tag = JSON.stringify({ end: { t: end.t, x: end.cursorX }, back: { t: back.t, x: back.cursorX }, target, times: end.times });
   expect(Math.abs(back.t! - (end.tEnd! - 1)), tag).toBeLessThan(0.3);
@@ -1426,9 +1436,12 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
     const t = await shownT();
     return t === end.t || `cuadro en ${t} s (se esperaba ${end.t} s)`;
   });
+  await withinFrames(page, 2, 'el cursor del ECG en el último cuadro', async () => {
+    const x = await ecgCursorX(page);
+    return x === end.cursorX || `cursor en ${x}, se esperaba ${end.cursorX}`;
+  });
   const again = await cineShot(page);
   expect(again.gray, tag).toEqual(end.gray);
-  expect(again.cursorX).toBe(end.cursorX);
   // al descongelar el cine se va y la imagen vuelve a correr
   await page.keyboard.press(' ');
   await expect(page.locator('#cine')).toBeHidden();

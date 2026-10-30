@@ -106,12 +106,12 @@ test('Atlas: identifica y demarca hígado/porta sin alterar señal; sale, cambia
   await page.locator('#cine').fill(String(old.index));
   await page.locator('#cine').dispatchEvent('input');
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.displayedFrame!.anatomy.frame)).toEqual(old.frame);
-  await expect
-    .poll(async () => {
-      await pointAt(page, [140, 90, 60]);
-      return page.locator('#overlay').getAttribute('data-anatomy-hover');
-    })
-    .toBe('Hígado');
+  // Plazo en cuadros: con SwiftShader, el movimiento del ratón espera a un cuadro que puede pasar de 15 s (run 41141286846)
+  await withinFrames(page, 30, 'el mapa del cuadro viejo identifica el hígado', async () => {
+    await pointAt(page, [140, 90, 60]);
+    const hover = await page.locator('#overlay').getAttribute('data-anatomy-hover');
+    return hover === 'Hígado' || `rótulo: ${hover}`;
+  });
   await page.screenshot({ path: info.outputPath('hover-old-cine.png') });
   await page.mouse.move(700, 20);
   await page.selectOption('#case-select', 'severe-congestion');

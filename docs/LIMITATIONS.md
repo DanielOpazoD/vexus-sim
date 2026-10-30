@@ -519,10 +519,12 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   latidos completos, y en la FA la PF portal cambia de un latido a otro (12–47 % en una misma captura de la cadena del
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
-- **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-breath-apnea-jump`, decisión 294): al pasar a
-  apnea espiratoria el diafragma vuelve de golpe a su referencia (hasta 10 mm en un paso de la fisiología). La población del
-  volumen de muestra queda entonces por debajo de una siembra nueva en la interlobar del caso grave (0,865 de media con 16 semillas, 0,61–1,05),
-  y en apnea solo la renueva el flujo. Respirando sigue a una siembra nueva y las capturas tras respirar son válidas.
+- **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-population-after-breathing`, decisión 294):
+  en la interlobar del caso grave, la población del volumen de muestra queda en 0,865 de una siembra nueva tras 10 s de
+  respiración tranquila y vuelta a apnea (16 semillas, 0,61–1,05; repartiendo la fase del cambio en un ciclo, 0,906 en 12
+  ejecuciones), frente a 0,992 en apnea sin haber respirado y 0,979 respirando (8 semillas cada uno); en la suprahepática
+  del sano, 0,842 (8 semillas). La causa no está aislada: no depende del tamaño del salto del diafragma al pasar a apnea.
+  En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras respirar son válidas.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,

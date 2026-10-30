@@ -23,19 +23,21 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  * la transmisión acumulada. La frecuencia Doppler física usa la velocidad
  * relativa v_rel = v_sangre + v_tejido − v_sonda proyectada sobre el haz.
  *
- * Población (decisión 294): la de una siembra nueva en todo momento, sin reclasificar la sangre. Todo dispersor vive en
- * su punto material verdadero (el de `classifyWorld`); un mapa local de la llamada (material → mundo, lineal en el centro
- * de la puerta) y el desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la línea de
- * corriente de SU tubo (el que eligió la clasificación): segmento, parámetro y desplazamiento de la sección normalizado
- * por el radio, así que no sale de la luz en los vasos curvos ni afilados. Dos salidas, dos entradas:
+ * Población (decisión 294): la de una siembra nueva en todo momento. Todo dispersor vive en su punto material verdadero
+ * (el de `classifyMaterial`); un mapa local de la llamada (material → mundo, lineal en el centro de la puerta) y el
+ * desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la línea de corriente de SU tubo (el
+ * que eligió la clasificación): segmento, parámetro y desplazamiento de la sección normalizado por el radio del tubo con
+ * el calibre de la siembra, así que no sale de la luz en los vasos curvos ni afilados. Dos salidas, dos entradas:
  *  - por flujo (con el desplazamiento del pulso anterior): reentra por su corriente en la entrada aguas arriba de la
- *    caja, con el sobrepaso (envoltura periódica a lo largo de la corriente; la cuerda medida se reutiliza);
+ *    caja, con el sobrepaso (envoltura periódica a lo largo de la corriente);
  *  - por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento, con
  *    la identidad del punto de entrada. El tejido sale y entra en rampa; la sangre, con su amplitud (caras de peso ≈ 0).
  * Más allá de los nodos extremos la corriente sigue recta por el casquete hasta salir de la luz. En una unión, una
  * corriente vale solo donde su tubo gana la clasificación (los socios de unión se buscan por solape real al sembrar). En
  * un tubo afilado la circulación conserva la densidad por arco y no por volumen: cada partícula lleva la importancia
- * (r/r_siembra)², que multiplica su peso en la composición y su raíz, la amplitud (potencia incoherente esperada).
+ * (r/r_siembra)², que multiplica su peso en la composición y su raíz, la amplitud (potencia incoherente esperada). La luz
+ * que crece o mengua (calibre, semieje AP de la cava) no mueve las corrientes: la reclasificación cambia en dos rampas la
+ * identidad de los dispersores que quedan dentro o fuera de ella.
  *
  * El resultado es una IQ que comparten espectro y audio. El color no la usa:
  * es una emulación analítica por celda (pasada F) que solo comparte con el PW
@@ -90,14 +92,16 @@ interface Stream {
   off: Vec3;
   /** Perfil radial × flowFactor, como `classifyWorld`. */
   k: number;
-  /** Radio verdadero al último reanclaje (mm) y su relación con el de la siembra. */
+  /**
+   * Radio de la corriente al último reanclaje (mm): el del tubo en ese punto con el calibre de la siembra. La corriente no
+   * se mueve con el calibre del instante: la luz que crece o mengua (calibre, semieje AP de la cava) cambia la identidad
+   * de los dispersores por reclasificación. `rel`: ese radio frente al de la siembra (afilamiento a lo largo del tubo).
+   */
   r: number;
   rel: number;
-  /**
-   * Radio verdadero de la siembra, con el calibre de entonces: la partícula representa una fracción fija de la sección, así
-   * que su importancia (r/r_siembra)² sigue al afilamiento a lo largo del tubo y al calibre que cambia con la presión.
-   */
-  rSeed: number;
+  /** Calibre del vaso en la siembra y radio de la siembra sin él. */
+  scaleSeed: number;
+  rGeoSeed: number;
   /** Cuerda de la caja a lo largo de esta corriente (mm de arco) y época del mapa en que se midió. */
   chord: number;
   chordEpoch: number;
@@ -149,8 +153,12 @@ interface Scatterer {
   stationaryWeight: number;
   /** Corriente de la sangre en su tubo; null en el tejido y en la sangre sin tubo (fantomas con clasificador sintético). */
   stream: Stream | null;
-  /** Tejido que quedó en una luz (calibre que crece): silenciado en rampa; la sangre de esa luz ya la representa su corriente. */
-  latent: boolean;
+  /**
+   * Identidad nueva a la espera de que la vieja se apague (decisión 48): el tejido que queda en una luz que creció pasa a
+   * sangre y la sangre que queda fuera de toda luz, a tejido, en dos rampas. La amplitud nunca viaja con la velocidad de
+   * la otra identidad.
+   */
+  pending: { isBlood: boolean; tissue: Tissue; vessel: VesselId | null; flowBasis: Vec3; amp: number } | null;
   /** Importancia de la medida (r/r_siembra)² de la sangre en un tubo afilado y su raíz (amplitud); 1 en el resto. */
   imp: number;
   ampImp: number;
@@ -543,15 +551,14 @@ export class SampleVolumeIQ {
     return this.anatomy.caliberFor(this.phys!);
   }
 
-  /** Punto material de la corriente con el radio y el calibre del instante (reancla `r` y la importancia). */
+  /** Punto material de la corriente con el radio del tubo en él y el calibre de la siembra (reancla `r` y la importancia). */
   private streamPoint(st: Stream, out: Vec3): void {
     const g = st.geom,
       i = st.seg,
       s = st.s;
-    const scale = this.caliber().radiusScale(st.def.id);
-    const r = radiusAt(st, i, s, scale);
+    const r = radiusAt(st, i, s, st.scaleSeed);
     st.r = r;
-    st.rel = r / st.rSeed;
+    st.rel = r / (st.rGeoSeed * st.scaleSeed);
     out[0] = g.a[i][0] + g.ab[i][0] * s + st.off[0] * r;
     out[1] = g.a[i][1] + g.ab[i][1] * s + st.off[1] * r;
     out[2] = g.a[i][2] + g.ab[i][2] * s + st.off[2] * r;
@@ -593,7 +600,8 @@ export class SampleVolumeIQ {
       k,
       r,
       rel: 1,
-      rSeed: r,
+      scaleSeed: caliber.radiusScale(def.id),
+      rGeoSeed: r / caliber.radiusScale(def.id),
       chord: -1,
       chordEpoch: -1,
     };
@@ -638,7 +646,7 @@ export class SampleVolumeIQ {
       weightEpoch: -1,
       stationaryWeight: 0,
       stream,
-      latent: false,
+      pending: null,
       imp: 1,
       ampImp: 1,
     };
@@ -753,9 +761,6 @@ export class SampleVolumeIQ {
     if (!zones) return true;
     let caliber: VesselCaliber | null = null;
     let own = Number.NaN;
-    // distancia propia aproximada por la corriente (|off| ≈ ρ); exacta solo si la comparación queda a < 0,25 mm
-    const off = st.off;
-    const approx = (Math.hypot(off[0], off[1], off[2]) - 1) * st.r;
     for (const z of zones) {
       if (m[0] < z.lo[0] || m[0] > z.hi[0] || m[1] < z.lo[1] || m[1] > z.hi[1] || m[2] < z.lo[2] || m[2] > z.hi[2]) continue;
       caliber ??= this.caliber();
@@ -771,12 +776,14 @@ export class SampleVolumeIQ {
         wall = wallThicknessMm(def, hit.r);
       }
       if (!(hit.d < wall)) continue;
-      if (Math.abs(hit.d - approx) < 0.25 && Number.isNaN(own)) {
+      // la distancia propia exacta (forma orgánica, semieje AP, casquetes): una aproximación por |off| erraba ~1 mm en la
+      // confluencia portal y dejaba un 6 % del peso sanguíneo en la rama equivocada
+      if (Number.isNaN(own)) {
         const def = st.def;
         const ap = vesselApScale(def.id, def.tube.apScale, caliber);
         own = tubeQuery(m, ap === def.tube.apScale ? def.tube : { ...def.tube, apScale: ap }, caliber.radiusScale(def.id)).d;
       }
-      if (hit.d < (Number.isNaN(own) ? approx : own)) return false;
+      if (hit.d < own) return false;
     }
     return true;
   }
@@ -913,6 +920,8 @@ export class SampleVolumeIQ {
 
   /** Otro hematíe en la misma corriente: fase, amplitud y ángulo de apertura nuevos, en su punto y con su importancia. */
   private renewBlood(p: Scatterer): void {
+    // otro hematíe: un cambio de identidad pendiente era del anterior
+    p.pending = null;
     const phase = this.rng.float() * 2 * Math.PI;
     p.cr = Math.cos(phase);
     p.ci = Math.sin(phase);
@@ -1207,19 +1216,43 @@ export class SampleVolumeIQ {
           }
           this.gateOf(s.m, delta, s.g);
         }
+        if (slow && !s.fading && s.pending && s.rampLeft <= 0) {
+          // la identidad vieja ya se apagó: se enciende la nueva en el mismo punto material
+          const q = s.pending;
+          s.pending = null;
+          const stream = q.isBlood ? this.streamAt(s.m, q.flowBasis) : null;
+          if (q.isBlood && !stream) {
+            startAmpRamp(s, TISSUES[s.tissue].backscatter * (0.7 + 0.6 * this.rng.float()));
+          } else {
+            s.isBlood = q.isBlood;
+            s.stream = stream;
+            s.vessel = q.vessel;
+            s.tissue = q.tissue;
+            s.flowBasis = [q.flowBasis[0], q.flowBasis[1], q.flowBasis[2]];
+            s.imp = 1;
+            s.ampImp = 1;
+            s.weightEpoch = -1;
+            s.fresh = true;
+            startAmpRamp(s, q.amp);
+          }
+        }
         if ((slow || s.fresh) && !s.fading) {
-          if (reclass && !s.isBlood && (j + this.tick / SLOW_EVERY) % 4 === 0) {
-            // Tejido en una luz que creció (calibre): se silencia en rampa y vuelve al salir; nunca se vuelve sangre
-            // (la luz ya tiene su sangre). Por la aritmética (96/8 = 12 ≡ 0 mod 4) solo alcanza a j ≡ 0 (mod 4).
+          if (reclass && !s.pending && (j + this.tick / RECLASSIFY_EVERY) % 4 === 0) {
+            // La luz que crece o mengua (calibre, semieje AP de la cava) cambia la identidad del punto: el tejido que queda
+            // en una luz pasa a sangre con su corriente y la sangre fuera de toda luz, a tejido, en dos rampas. Cada turno
+            // visita otro cuarto; con la sangre en su corriente la reclasificación ya no vacía la población (208). La
+            // sangre sin tubo (fantomas con clasificador sintético) no se reclasifica.
             const q = this.anatomy.classifyMaterial(s.m, phys);
             const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
-            if (nowBlood && !s.latent) {
-              s.latent = true;
+            if (nowBlood !== s.isBlood && (nowBlood || s.stream)) {
+              s.pending = {
+                isBlood: nowBlood,
+                tissue: q.tissue,
+                vessel: q.vessel,
+                flowBasis: q.flowBasis ?? [0, 0, 0],
+                amp: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
+              };
               startAmpRamp(s, 0);
-            } else if (!nowBlood && s.latent) {
-              s.latent = false;
-              s.tissue = q.tissue;
-              startAmpRamp(s, TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()));
             }
           }
           if (s.isBlood && s.vessel) {

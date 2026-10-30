@@ -43,7 +43,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'simplified-retroperitoneum',
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',
-  'pw-breath-apnea-jump',
+  'pw-population-after-breathing',
   'pw-gate-linear-map',
   'pw-stream-capsule-joints',
   'venous-reservoir-compliance-scope',

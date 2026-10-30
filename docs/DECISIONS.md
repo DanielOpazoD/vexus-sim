@@ -9474,19 +9474,15 @@ bifurcación (1,12).
 **Decisión.** Todo dispersor vive en su punto material verdadero. Un mapa lineal por llamada en el centro de la puerta
 (material → mundo, cuatro evaluaciones de la deformación, solo si cambian respiración, compresión o puerta) y el
 desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la corriente del tubo que eligió la
-clasificación (`AnatomyScene.vesselTubeAt`): segmento, parámetro y desplazamiento de la sección normalizado por el radio.
+clasificación (`AnatomyScene.vesselTubeAt`): segmento, parámetro y desplazamiento de la sección normalizado por el radio del tubo con el calibre de la siembra.
 
 - Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda medida se reutiliza mientras no cambie el mapa; con el mapa cambiado solo orienta la búsqueda de los dos cruces, que se acotan cerca de ella (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905).
 - Salida por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento. Su identidad es la del punto material del mapa (`AnatomyQuery.classifyMaterial`, sin invertir la deformación), de modo que identidad y posición coinciden.
   El tejido sale y entra en rampa; la sangre, con su amplitud.
 - Más allá de los nodos extremos, la corriente sigue recta por el casquete hasta salir de la esfera del nodo.
-- En una unión, una corriente vale solo donde su tubo gana la clasificación. Los socios se buscan al sembrar por solape
-  real de luces (muestras deterministas, calibre ×1,15) y la prueba exacta solo corre en la caja del solape.
-- Cada partícula de sangre lleva la importancia (r/r_siembra)², con el radio verdadero y su calibre en cada momento. En un
-  tubo afilado la circulación conserva la densidad por arco y no por volumen; con el calibre que cambia con la presión,
-  la partícula sigue representando la misma fracción de la sección. La importancia multiplica el peso en la composición
-  y su raíz, la amplitud IQ (potencia incoherente esperada).
-- La sangre no se reclasifica. El tejido que queda en una luz que creció se silencia en rampa y vuelve al salir.
+- En una unión, una corriente vale solo donde su tubo gana la clasificación. Los socios se buscan al sembrar por solape real de luces (muestras deterministas, calibre ×1,15) y, en la caja del solape, se comparan las distancias exactas de los dos tubos.
+- Cada partícula de sangre lleva la importancia (r/r_siembra)² del radio del tubo a lo largo de su corriente: en un tubo afilado la circulación conserva la densidad por arco y no por volumen. La importancia multiplica el peso en la composición y su raíz, la amplitud IQ (potencia incoherente esperada).
+- La luz que crece o mengua (calibre, semieje AP de la cava) no mueve las corrientes: la reclasificación cambia en dos rampas (decisión 48) la identidad del punto. El tejido que queda en una luz pasa a sangre con su corriente y la sangre fuera de toda luz, a tejido. Cada turno visita otro cuarto de la población; con la sangre en su corriente esa rotación ya no vacía la población, como ocurrió en la 208.
 
 La sangre de un clasificador sintético (fantomas analíticos), sin tubo cuya base de flujo coincida, conserva el
 transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
@@ -9496,19 +9492,27 @@ transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
 | Puerta        | Apnea, antes | Apnea, ahora        | Respirando, antes | Respirando, ahora   |
 | ------------- | ------------ | ------------------- | ----------------- | ------------------- |
 | Interlobar    | 0,662        | 0,998 (0,964–1,032) | 0,213             | 1,023 (0,989–1,058) |
-| Tronco portal | 0,981        | 0,993 (0,941–1,045) | 0,719             | 0,935 (0,898–0,971) |
-| Suprahepática | 0,970        | 1,005 (0,961–1,050) | 1,069             | 1,047 (1,002–1,091) |
+| Tronco portal | 0,981        | 0,994 (0,942–1,045) | 0,719             | 0,961 (0,922–0,999) |
+| Suprahepática | 0,970        | 1,006 (0,958–1,054) | 1,069             | 1,045 (1,007–1,082) |
 
-Respirando se cuentan los instantes con el vaso en la puerta. Respirando, la porta queda algo por debajo y la
-suprahepática algo por encima de una siembra nueva. En el escenario del alumno, las capturas tras
-respirar son monofásicas válidas y la población vuelve a 0,865 de una siembra nueva (16 semillas, 0,61–1,05). El salto
-del diafragma al pasar a apnea deja ese déficit (`pw-breath-apnea-jump`). El mapa lineal se separa de la deformación
-exacta junto a la columna (`pw-gate-linear-map`) y la corriente gira de golpe en los codos (`pw-stream-capsule-joints`).
-La cadena PW cuesta más (A/B intercalado con la misma carga): ×1,0–1,6 en apnea; respirando, ×1,1–1,3 en la interlobar, ×2,5–3,1 en la suprahepática y ×3,9–4,5 en el tronco portal (0,34–0,39 s de CPU por segundo simulado en el hilo principal con poca carga, frente a ≈0,3 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. Se retira `thin-vessel-sample-volume-lag`.
+Respirando se cuentan los instantes con el vaso en la puerta. En el escenario del alumno, las capturas tras respirar son
+monofásicas válidas, pero la población queda en 0,865 de una siembra nueva (16 semillas, 0,61–1,05), frente a 0,992 en
+apnea sin haber respirado y 0,979 respirando en esa misma puerta; en la suprahepática del sano, 0,842. La causa no está
+aislada y no depende del tamaño del salto del diafragma (`pw-population-after-breathing`). El mapa lineal se separa de la
+deformación exacta junto a la columna (`pw-gate-linear-map`) y la corriente gira de golpe en los codos
+(`pw-stream-capsule-joints`). Las paredes que se mueven con el calibre cambian identidades en dos rampas, como en la
+decisión 48, ahora en toda la población. La cadena PW cuesta más (A/B intercalado, tres rondas con poca carga): en apnea, ×0,8–1,1 en la interlobar, ×1,4–1,9 en el tronco portal y ×2,1–2,5 en la suprahepática; respirando, ×1,0–1,6, ×3,8–5,4 y ×2,1–2,7 (hasta 0,39 s de CPU por segundo simulado en el hilo principal, frente a 0,27–0,34 de la interlobar antes). Ninguna prueba fija ese presupuesto: queda medido y declarado. Se retira
+`thin-vessel-sample-volume-lag`.
 
 **Verificación.** `pwPopulation.test.ts`: interlobar en apnea, interlobar respirando y el escenario del alumno con cuatro
 semillas en los dos brazos. Fallan con el código anterior: 0,633; 0,535; y en el escenario, 0,69 en apnea, `intermittent`
-y 0,022 tras respirar. Pasan con el nuevo. Los umbrales del escenario se fijaron con la distribución medida de 16
-semillas. Los fantomas de `pwTransportContinuity`, `pwSamplingDensity` y `pwContinuityAudit` sustituyen ahora `classifyMaterial`, por donde pasa también `classifyWorld`, sin cambiar aserciones. Se mantienen el testigo portal (289), la IQ idéntica con y sin caché, el transporte analítico de la decisión 264
-(su anatomía falsa añade el mapa identidad y `classifyMaterial`, sin cambiar aserciones) y las suites de adquisición, renales, venosas y
-portales. Diseños, prototipos, negativos, semillas y costes: `vexus-pw-transport-evidence-20261029`.
+y 0,022 tras respirar. Los umbrales del escenario se fijaron con la distribución medida de 16 semillas.
+`pwLumenIdentity.test.ts` fija los tres contraejemplos de la revisión independiente (gpt-6.1-sol): la suprahepática que
+crece sobre una puerta de tejido (antes 0,012 de una siembra nueva), el colapso AP de la cava (antes el 100 % del peso
+sanguíneo fuera de la luz) y la confluencia portal (antes un 6,3 % del peso sanguíneo aceptado en la rama equivocada).
+Fallan con la primera versión revisada y pasan con la corregida. Los fantomas de `pwTransportContinuity`,
+`pwSamplingDensity` y `pwContinuityAudit` sustituyen ahora `classifyMaterial`, por donde pasa también `classifyWorld`, sin
+cambiar aserciones. Se mantienen el testigo portal (289), la IQ idéntica con y sin caché, el transporte analítico de la
+decisión 264 (su anatomía falsa añade el mapa identidad y `classifyMaterial`, sin cambiar aserciones) y las suites de
+adquisición, renales, venosas y portales. Diseños, prototipos, negativos, semillas, revisión y costes:
+`vexus-pw-transport-evidence-20261029`.

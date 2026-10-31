@@ -61,7 +61,9 @@ const BUDGETS: Array<[RegExp, number]> = [
   [/abdominal-atlas\.gzip-.*\.bin$/, 6 * 1024 * KB],
   [/abdominal-surface\.gzip-.*\.bin$/, 6 * 1024 * KB],
   [/thoracic-(atlas|surface)\.gzip-.*\.bin$/, 6 * 1024 * KB],
-  [/three.*\.js$/, 700 * KB],
+  // 31-10-2026 (decisión 307): retirados XR, sombras, PMREM, bloques de uniformes y la serialización de Three; este límite
+  // bloquea el ahorro de 74,8 KiB para que no vuelva en silencio con una actualización o un consumidor nuevo.
+  [/three.*\.js$/, 376 * KB],
   [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk

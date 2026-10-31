@@ -75,6 +75,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'hepatic-reversal-floor-right-vein',
   'hepatic-edge-exclusion',
   'renal-window-apnea-gate',
+  'near-field-partial-compensation',
   'renal-medulla-atlas-thin',
   'kidney-boundary-ignores-tubes',
   'schematic-static-heart',

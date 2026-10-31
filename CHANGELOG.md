@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Imagen: la pared abdominal sale algo menos oscura: +3 dB de compensación nominal en el campo cercano, lo que admite la meta de la grasa. Sigue por debajo de lo real en cuatro de cinco ventanas (306).
+
 - Imagen: el seno renal deja de ser un óvalo liso: es digitado, con los dedos entre las pirámides, y las pirámides se ven algo mayores. En la ventana renal su contorno entra en lo que se mide en riñones reales; en la hepatorrenal apenas cambia (305).
 
 - Clasificación: la frontera del riñón ya no se salta cambios de tejido en el muestreo elevacional de las ventanas renales (305).

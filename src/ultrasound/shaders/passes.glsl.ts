@@ -1584,7 +1584,7 @@ float tgcAt(float r) {
 }
 float displayGrey(float env, float r) {
   // TGC nominal, con su campo cercano (nearFieldTgcDb), + TGC del usuario: amplifican ecos y ruido por igual (E.2/E.4).
-  float comp = min(uTgcCapDb, tgcAt(r) + uNominalTgcDbPerCm * (r / 10.0) + 3.0 * max(0.0, 1.0 - r / 60.0));
+  float comp = min(uTgcCapDb, tgcAt(r) + uNominalTgcDbPerCm * (r / 10.0) + 8.0 * max(0.0, 1.0 - r / 60.0));
   float db = 20.0 * (log(max(env, 1e-7)) / 2.302585093) + uGainDb + comp + uRefDb;
   float y = clamp((db + uDynRange) / uDynRange, 0.0, 1.0);
   // Mapa «clínico»: expansión exponencial del extremo brillante (la desviación

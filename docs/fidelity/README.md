@@ -614,15 +614,15 @@ líneas a +6,6 dB en el flanco, +8,1–11,3 en la subxifoidea, sin picos saturad
 Metas con GPU (mirada 0, apnea, las vistas de partida; hoy fallan porque la pared no tenía caras ni
 textura; las fija este documento antes de medir y las verifica quien corre el banco):
 
-| #   | Métrica                                                                     | Meta                                                                                    | Hoy (gemelo) | Predicción (banco sobre el gemelo)           |
-| --- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------ | -------------------------------------------- |
-| W1  | `linesInside` (subxifoidea, intercostal, flanco)                            | ≥ 3                                                                                     | 0–1          | 4–7                                          |
-| W2  | `fatToLiver` (interior de los lóbulos; subxifoidea, intercostal, flanco)    | ≤ 0,60                                                                                  | 0,80–0,86    | 0,47–0,57                                    |
-| W3  | `septumDb` y `striationDb` (las mismas vistas)                              | ≥ 3,5 dB (1,5×)                                                                         | ≈ 0          | +5,0–10,4 y +4,4–9,7                         |
-| W4  | `ribPeakDb` (flanco, renal si hay hueso)                                    | ≥ +15 dB                                                                                | −3           | +19,3 (flanco)                               |
-| W7  | `lineLevelDb`, `lineSaturated`, `lineCv` (las cuatro vistas)                | +6 a +14 dB sobre el hígado, ≈ 0 saturadas, CV ≥ 0,3; ≥ 6 dB bajo `ribPeakDb`           | —            | +6,4–13,7 dB, 0–0,2 %, 55–73 %               |
-| W5  | Guardas: hígado p50, SNR y bancos de las decisiones 52–58 lejos de la pared | p50 99–103 (+0,1–0,6 dB por la grasa preperitoneal), SNR ± 0,01, interfaces sin cambios | —            | sin cambios bajo la pared (gemelo bit a bit) |
-| W6  | `msPerFrame`                                                                | ≤ línea base + 0,6 ms                                                                   | —            | +0,3–0,5 ms estimados                        |
+| #   | Métrica                                                                     | Meta                                                                                             | Hoy (gemelo) | Predicción (banco sobre el gemelo)           |
+| --- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | -------------------------------------------- |
+| W1  | `linesInside` (subxifoidea, intercostal, flanco)                            | ≥ 3                                                                                              | 0–1          | 4–7                                          |
+| W2  | `fatToLiver` (interior de los lóbulos; subxifoidea, intercostal, flanco)    | ≤ 0,72 (≤ 0,60 hasta la decisión 308)                                                            | 0,80–0,86    | 0,47–0,57                                    |
+| W3  | `septumDb` y `striationDb` (las mismas vistas)                              | ≥ 3,5 dB (1,5×)                                                                                  | ≈ 0          | +5,0–10,4 y +4,4–9,7                         |
+| W4  | `ribPeakDb` (flanco, renal si hay hueso)                                    | ≥ +15 dB                                                                                         | −3           | +19,3 (flanco)                               |
+| W7  | `lineLevelDb`, `lineSaturated`, `lineCv` (las cuatro vistas)                | +6 a +14 dB sobre el hígado, ≤ 3,5 % saturadas (decisión 308), CV ≥ 0,3; ≥ 6 dB bajo `ribPeakDb` | —            | +6,4–13,7 dB, 0–0,2 %, 55–73 %               |
+| W5  | Guardas: hígado p50, SNR y bancos de las decisiones 52–58 lejos de la pared | p50 99–103 (+0,1–0,6 dB por la grasa preperitoneal), SNR ± 0,01, interfaces sin cambios          | —            | sin cambios bajo la pared (gemelo bit a bit) |
+| W6  | `msPerFrame`                                                                | ≤ línea base + 0,6 ms                                                                            | —            | +0,3–0,5 ms estimados                        |
 
 Palancas de calibración si W1–W4 o W7 fallan con GPU: el nivel de las líneas es la rugosidad efectiva σz de las
 caras de la pared (0,075 mm; de 0,05 a 0,10, de +15–29 dB al nivel del hígado) y su s; su variación a lo largo,

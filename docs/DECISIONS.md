@@ -9790,3 +9790,13 @@ Frontera, con el barrido de la revisión (`recheck/scan.mts`: 10.000 puntos por 
 **Consecuencias.** JavaScript total 1.070.063 → 995.262 B; pieza de Three 455.027 → 380.390 B; margen 17 → 74.818 B. El filtro de moteado y el Color con IQ caben sin ampliar. El navegador 3D es idéntico píxel a píxel en tres vistas frente a `main`, en Metal, sin errores ni avisos de consola. Actualizar Three exige repasar estos sustitutos: su hash de origen falla si un módulo cambia. Si una función futura usara sombras, mapas de entorno o XR, el sustituto correspondiente se retira con ella; `PMREMGenerator` lanza un error en vez de fallar en silencio.
 
 **Verificación.** `threeUnusedSubsystems.test.ts`: los hashes fallan si cambia un módulo, cada propiedad que lee el renderizador está en el sustituto o tras `xr.enabled`, el producto no toca ninguno de estos subsistemas y la retirada de los métodos deja intactos los demás en todos los módulos de Three. `vexus-owner-evidence-20261031/bundle` (`attrib.mjs`, `nav-compare.mts`).
+
+## 308. Campo cercano a +8 dB, con dos metas relajadas por el propietario
+
+**Problema.** La decisión 306 se quedó en +3 dB porque es donde dejaba la meta W2, y dejó anotado qué pasaba más allá. La pared seguía por debajo de lo real en cuatro de las cinco ventanas. El propietario decide subir a +8 dB y aceptar el coste en W2 y W7.
+
+**Decisión.** `nearFieldTgcDb(r) = 8·max(0, 1 − r/60)` dB, igual en TS y GLSL. Actúa en la presentación sobre ecos y ruido, como la TGC, y no toca tejidos, retrodispersión, transmisión, Doppler ni el banco de envolvente. W2 (`fatToLiver`) pasa de ≤ 0,60 a ≤ 0,72 y W7 (`lineSaturated`) de ≤ 2 % a ≤ 3,5 %; las demás metas no cambian. Bajo la cara, +8 dB supera en unos 2 dB el déficit focal: es un preajuste de equipo, ya no se justifica solo por `focalGain`.
+
+**Consecuencias.** Pared/hígado, misma herramienta, +3 → +8 dB, sano: subxifoidea 0,74 → 0,83, intercostal 0,76 → 0,86, subcostal 0,72 → 0,80, porta 0,87 → 0,97, hepatorrenal 0,67 → 0,77. Grave: 0,68 → 0,76, 0,72 → 0,81, 0,69 → 0,77, 0,84 → 0,95, 0,64 → 0,73. Reales: 0,80–1,65, mediana 1,24. **La pared queda en el extremo bajo de lo real, no en su centro.** Píxeles casi negros en la pared (gris < 30): 0–0,1 % fuera de la hepatorrenal, donde domina la sombra costal. En el gemelo, `fatToLiver` 0,70 y `lineSaturated` hasta 3,1 %. Los picos de fascia más brillantes llegan más veces al blanco: ese es el coste que se acepta.
+
+**Verificación.** `nearFieldDisplay.test.ts` y `wallDisplayTwin.test.ts` con sus metas nuevas; ninguna otra tolerancia cambia. No es validación clínica. `vexus-owner-evidence-20261031/near8`.

@@ -166,8 +166,36 @@ export function faceSiteGain(face: Interface, m: Vec3, scene: WallAcrossScene): 
 }
 /** Actual exterior medium, rather than assuming muscle at every exposed hepatic surface. */
 export function capsuleExteriorGain(tissue: Tissue): number {
-  if (tissue !== Tissue.RetroperitonealFat && tissue !== Tissue.MesentericFat && tissue !== Tissue.UnsegmentedSoftTissue) return 1;
+  // Sin el residuo del atlas: una rendija de 0,5–2,5 mm entre pared e hígado no es grasa, y encendía +12 dB a saltos
+  if (tissue !== Tissue.RetroperitonealFat && tissue !== Tissue.MesentericFat) return 1;
   return Math.max(1, Math.abs(reflectionCoefficient(Tissue.LiverCapsule, tissue)) / interfaceReflectivity(Interface.LiverCapsule));
+}
+/**
+ * Paso (mm) de la normal del lóbulo especular de la cápsula del atlas. La distancia viene de una segmentación con vóxel de 1,5 mm e interpolación
+ * trilineal: su derivada puntual repite el escalón del vóxel, y el lóbulo solo encendía los peldaños que miran a la sonda, un rosario que no está en el
+ * tejido. Un eco especular responde a una zona del orden de √(λ·r) ≈ 5–7 mm a 3,5 MHz y 10 cm: ±3 mm, heurística geométrica [EXTRAPOLACIÓN PROPIA]
+ * (decisión 301). Solo el lóbulo: el perfil del eco, su salida barata y el gradiente de la cara siguen a la distancia local.
+ */
+export const ATLAS_LOBE_EPS_MM = 3;
+/**
+ * Gemelo de la normal del lóbulo de la cápsula del atlas en `interfaceEcho` (GLSL): tetraedro de la distancia que dibuja la cara, en la orientación de
+ * `local`. Si se cancela o se da la vuelta, en un borde fino, devuelve `local`.
+ */
+export function atlasCapsuleLobeNormal(m: Vec3, inner: (p: Vec3) => number, local: readonly number[]): readonly number[] {
+  const e = ATLAS_LOBE_EPS_MM;
+  const v: Vec3 = [0, 0, 0];
+  for (const k of [
+    [e, -e, -e],
+    [-e, -e, e],
+    [-e, e, -e],
+    [e, e, e],
+  ]) {
+    const d = inner([m[0] + k[0], m[1] + k[1], m[2] + k[2]]);
+    for (let i = 0; i < 3; i++) v[i] += k[i] * d;
+  }
+  if (v[0] * local[0] + v[1] * local[1] + v[2] * local[2] <= 0) return local;
+  const l = Math.hypot(v[0], v[1], v[2]);
+  return [v[0] / l, v[1] / l, v[2] / l];
 }
 /** Material-space probe beyond the capsule; bounded first-order projection, not a new layer. */
 export const CAPSULE_OUTSIDE_MM = 0.5;
@@ -547,8 +575,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
     if (offset <= ${CAPSULE_PROJECTION_MAX_MM.toFixed(1)}) {
       // liverInner has an inward gradient in GLSL; the TS faceSdf gradient is outward.
       int exterior = classifyWith(m - fg.xyz * (offset + ${CAPSULE_OUTSIDE_MM.toFixed(1)}), withCurtain).tissue;
-      if (exterior == T_RETROFAT) capsuleGain = ${capsuleExteriorGain(Tissue.RetroperitonealFat).toFixed(7)};
-      else if (exterior == T_MESENTERIC_FAT || exterior == T_UNSEGMENTED) capsuleGain = ${capsuleExteriorGain(Tissue.MesentericFat).toFixed(7)};
+      if (exterior == T_RETROFAT || exterior == T_MESENTERIC_FAT) capsuleGain = ${capsuleExteriorGain(Tissue.MesentericFat).toFixed(7)};
     }
   }
   vec3 nm = fg.xyz; // normal material: la inclinación anclada pertenece a este marco
@@ -575,6 +602,13 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
   // la faceta (decisión 65): la normal inclinada por el campo anclado, sin su componente normal
   vec4 P = uIface[c.iface];
   vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));
+  // Cápsula del atlas: el lóbulo mira la normal media, no el escalón del vóxel; el perfil sigue a la distancia local (decisión 301)
+  if (c.iface == IF_LIVER_CAPSULE && uAbdominalAtlasEnabled != 0) {
+    vec2 e = vec2(3.0, -3.0); // ATLAS_LOBE_EPS_MM
+    vec3 v = e.xyy * liverInner(m + e.xyy) + e.yyx * liverInner(m + e.yyx) + e.yxy * liverInner(m + e.yxy) + e.xxx * liverInner(m + e.xxx);
+    // En un borde fino el tetraedro se cancela o se da la vuelta: ahí manda la local
+    if (dot(v, nm) > 0.0) nm = normalize(v);
+  }
   float cosF = facetCosine(nm, dir, t, w);
   // su lóbulo propio (s_f² = s² − σ_t², σ_t = max(tan 5°, ρ·s): kf = (s_f/s)²) en cosF con la rugosidad fina de frente,
   // χ(0); la difusa: κ_d·R_ef = IFACE_DIFFUSE·P.x·2s por √(1 − χ(0)²), la energía que la rugosidad fina saca de la

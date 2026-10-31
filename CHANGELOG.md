@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Imagen: la cápsula hepática deja de verse como un rosario de cuentas blancas. Era el escalón del vóxel del atlas en la normal; ahora el lóbulo especular usa la normal promediada, y el perfil del eco no cambia. El residuo sin segmentar ya no se trata como grasa (301).
+
 - Imagen: la ventana hepatorrenal muestra el riñón completo en eje largo con el hígado delante, y todo el sector en contacto (300).
 
 - Doppler: velocidades del sano en lo publicado: suprahepáticas S 24 y 23 cm/s (43–51), renal principal 83/33 (144/58), ramas portales 21 y 19 (26 y 25). Preajuste suprahepático ±40 cm/s. La verdad de la vena derecha no depende de esta escala. Una onda en el último 15 % de la banda pide subir la escala (299).

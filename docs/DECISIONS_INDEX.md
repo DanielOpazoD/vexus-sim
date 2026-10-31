@@ -304,3 +304,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [298](DECISIONS.md#L9646) | Dos auditorías sin cambios de producto: materiales acústicos y Color emulado | vigente |
 | [299](DECISIONS.md#L9656) | Velocidades del sano que aún se apartaban de lo publicado: suprahepáticas, renal principal y ramas portales | vigente |
 | [300](DECISIONS.md#L9672) | Pose hepatorrenal del atlas: riñón completo en eje largo con el hígado delante | vigente |
+| [301](DECISIONS.md#L9688) | El rosario de la cápsula hepática era el escalón del vóxel del atlas, no las facetas | vigente |

@@ -307,3 +307,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [301](DECISIONS.md#L9688) | El rosario de la cápsula hepática era el escalón del vóxel del atlas, no las facetas | vigente |
 | [302](DECISIONS.md#L9707) | Menos relleno en `registeredComparison`: `main` agotaba sus 12 minutos | vigente |
 | [303](DECISIONS.md#L9719) | Pose renal del atlas: el sector en contacto, verificado por la captura completa de la vena | vigente |
+| [304](DECISIONS.md#L9733) | `probeFreeNavigation` en dos pruebas: seis regiones no caben en 360 s con los corredores lentos | vigente |

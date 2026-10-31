@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pruebas: la navegación libre por seis regiones pasa a dos pruebas de tres, con el mismo plazo; agotaba sus 6 minutos con los corredores lentos (304).
+
 - Imagen: la ventana renal deja de tener medio sector negro: el riñón sale con contorno y seno claros, y se conserva el acceso Doppler a las interlobares. Respirando, la puerta cuesta más: hay que pedir apnea (303).
 
 - Pruebas: `registeredComparison` rellena ocho cuadros menos por arranque; `main` agotaba sus 12 minutos con los corredores más lentos. Mismo plazo y mismas aserciones (302).

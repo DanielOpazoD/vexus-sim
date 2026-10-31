@@ -9729,3 +9729,17 @@ Se conservan el plazo, los dos arranques, las cuatro capturas, los siete cuadros
 **Coste declarado:** respirando, la búsqueda automática de puerta ya no encuentra la vena en el plano en 20 de 35 sesiones del panel y en 6 de 7 casos de las 42 capturas (`renal-window-apnea-gate`). Respirando no se aceptaba ninguna captura, antes ni ahora; el riñón entra y sale del plano y la consigna ya es pedir apnea. La sombra costal lateral sigue ahí, más estrecha. El interior renal sigue siendo procedural.
 
 **Verificación.** `renalWindow.test.ts` fija contacto, bloqueo y longitud, y falla con la pose anterior; `renalWallPoint.test.ts` registra el plano nuevo. Pasan `renalGateIdentity`, `renalArterialGate`, `windowPreset`, `startPointCards`, `compression`, `atlasWallContinuity`, `examChainScale*`, `renalEnvelope`, `referenceAcquisition`, `faceNormals`, `gateTransmission`, `pwLumenIdentity`. E2E con GPU real de las ventanas renales: 76 de 76, sin cambiar umbrales, incluidas `windowPresets` y `lowFilterAcquisition`. JavaScript: −39 B. No es validación clínica. `vexus-image-evidence-20261031/renal`.
+
+## 304. `probeFreeNavigation` en dos pruebas: seis regiones no caben en 360 s con los corredores lentos
+
+**Contexto.** Con #312 ya fusionada, la CI de `main` en `3f69491` (run 41210744244) agota los 360 s de `free thoracoabdominal translation… six starting regions, normal-adult`, en la última región. No es un cambio de imagen: en las otras ocho corridas del día, la misma prueba tardó 4,0–4,7 min en corredores rápidos y 5,4–6,0 en lentos; la PR #311 pasó con 6,0 (run 41210985630). Los corredores lentos van ~1,4 × más despacio. Es la prueba más ajustada de las 172 (0,99 del plazo); las siguientes son `renalCutTracking` (0,87) y `registeredComparison` (0,80, tras la decisión 302).
+
+**Opciones.** No ampliar el plazo ni reintentar hasta verde (decisiones 149 y 302). Quitar la espera de adquisición antes de cada arrastre ahorraría un cuadro por región, pero deja el marcador 3D con una pose vieja justo cuando la prueba elige dónde agarrar: cambia lo que se prueba según la velocidad de la GPU. Tampoco se quitan regiones ni cotejos.
+
+**Decisión.** Tres regiones por prueba, cada una con su arranque y el mismo plazo. Se conservan las seis regiones, los dos pacientes, el recorrido de ida y vuelta, los giros de ±120/65/70° y los dos cotejos por región. Dos pruebas más (174) y un arranque más por paciente, unos 50 s de tanda.
+
+**También.** La primera CI de esta PR (run 41214561759) falló en `deferredMeasurement`: `expect.poll` espera 15 s a que avance el reloj del estado tras armar el PW, y en un corredor lento pasaron más sin un cuadro (tras armar se compilan sus programas; la prueba tarda 41–53 s en las seis corridas anteriores). El límite era esa suposición sobre un renderizador por software, no lo que se prueba, así que manda el plazo de la prueba, que no cambia, y el tope de ocho intentos. La decisión 292 ya decía que SwiftShader tarda en dibujar ese cuadro.
+
+**Consecuencias.** Cada mitad debería quedar cerca de 0,6 del plazo en un corredor lento: la confirma la CI de esta PR. Sigue habiendo pruebas por encima de 0,8 con esos corredores: una subida de coste por cuadro las alcanzaría.
+
+**Verificación.** Metal (M4): las pruebas de `probeFreeNavigation` y `deferredMeasurement` aprueban sin reintentos. Solo cambian este documento y `e2e/`. No es validación clínica.

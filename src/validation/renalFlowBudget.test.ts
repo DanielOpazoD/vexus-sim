@@ -16,7 +16,8 @@ describe('presupuesto de flujo renal y unidades Q/A', () => {
         if (step % 25) continue;
         for (const system of ['interlobarArtery', 'interlobarVein'] as const) {
           const branches = VESSEL_IDS.filter((id) => VESSEL_META[id].system === system);
-          const total = system === 'interlobarArtery' ? s.qRenalArtery : s.qRenalVein;
+          // La arteria muestra su propio pulso, con el caudal medio de la red (decisión 297; `arterialVelocities.test.ts`)
+          const total = system === 'interlobarArtery' ? (2 * s.velocities.renalArteryRight * areas.renalArteryRight) / 1000 : s.qRenalVein;
           const right = total / 2;
           const fraction = branches.length * INTERLOBAR_FLOW_SHARE;
           expect(fraction).toBeGreaterThan(0);

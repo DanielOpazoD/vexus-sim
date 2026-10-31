@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler: las arterias del sano se acercan a lo publicado, con un perfil menos parabólico: interlobar 34/14 cm/s e IR 0,60 (antes 41/20 y 0,52), renal 144 (175) y aorta 100 (57); la hepática común ya alimenta a la propia (297).
+
 - Doppler: las ramas portales de segundo orden ya no van más rápido que su rama madre (24,4 → 14,5 cm/s en las derechas del sano) y no aliasan antes que el tronco (296).
 - Doppler PW: el tejido del volumen de muestra se mueve con la derivada del mapa y en el instante de cada pulso; desaparecen las líneas horizontales a múltiplos de 250 Hz con respiración profunda (295).
 

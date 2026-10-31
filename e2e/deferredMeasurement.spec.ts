@@ -53,7 +53,8 @@ test('PW diferido: no se descarga al arrancar y la captura preparada es síncron
     expect(result.waiting).toMatch(/^(Adquiere|Estabilizando) señal nueva/);
     expect(attempt, `sin señal PW elegible: ${result.waiting}`).toBeLessThan(8);
     const t = await clock();
-    await expect.poll(clock).toBeGreaterThan(t);
+    // Armar el PW compila sus programas: en SwiftShader el reloj puede pasar > 15 s sin moverse. Manda el plazo de la prueba (decisión 304)
+    await expect.poll(clock, { timeout: 0 }).toBeGreaterThan(t);
     result = await click();
   }
   expect(result.shown, 'tarjeta a la vista antes del clic').toBe(true);

@@ -285,101 +285,106 @@ async function parity(page: Page) {
   return result;
 }
 
+const FREE_NAVIGATION_STARTS = [
+  { name: 'anterior superior', phi: Math.PI / 2, z: 230 },
+  { name: 'tórax derecho', phi: Math.PI, z: 50 },
+  { name: 'renal derecho posterior', phi: 3.8, z: -100 },
+  { name: 'flanco izquierdo', phi: 0.1, z: -100 },
+  { name: 'abdomen anterior inferior', phi: Math.PI / 2, z: -390 },
+  { name: 'espalda y costura angular', phi: -Math.PI / 2 + 0.02, z: -180 },
+];
+// Las seis regiones no caben en un plazo con los corredores lentos: tres y tres, con su arranque (decisión 304).
 for (const caseId of ['normal-adult', 'severe-congestion'])
-  test(`free thoracoabdominal translation and all angles from six starting regions, ${caseId}`, async ({ page }, info) => {
-    budget(180_000);
-    await observe(page);
-    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-    if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
-    await observeNavigator(page);
-    const starts = [
-      { name: 'anterior superior', phi: Math.PI / 2, z: 230 },
-      { name: 'tórax derecho', phi: Math.PI, z: 50 },
-      { name: 'renal derecho posterior', phi: 3.8, z: -100 },
-      { name: 'flanco izquierdo', phi: 0.1, z: -100 },
-      { name: 'abdomen anterior inferior', phi: Math.PI / 2, z: -390 },
-      { name: 'espalda y costura angular', phi: -Math.PI / 2 + 0.02, z: -180 },
-    ];
-    const records = [];
-    for (const [index, start] of starts.entries()) {
-      await page.evaluate((start) => {
-        const s = window.__vexusTest!.sim();
-        s.setPose({ phi: start.phi, z: start.z, yaw: 0.2, rock: 0, tilt: 0, lift: 0 });
-      }, start);
-      await acquired(page);
-      const before = await page.evaluate(() => {
-        const s = window.__vexusTest!.sim();
-        return { pose: s.pose, frame: s.frame, screenX: window.freeNavigation.navigator!.screenX };
-      });
-      const nav = (await page.locator('#nav3d canvas').boundingBox())!;
-      let grab: { x: number; y: number } | undefined;
-      for (const y of [0.55, 0.65, 0.45, 0.75]) {
-        for (const x of [0.5, 0.4, 0.6]) {
-          await page.mouse.move(nav.x + nav.width * x, nav.y + nav.height * y);
-          if ((await page.locator('#nav3d canvas').evaluate((el) => el.style.cursor)) === 'crosshair') {
-            grab = { x: nav.x + nav.width * x, y: nav.y + nav.height * y };
-            break;
-          }
-        }
-        if (grab) break;
-      }
-      expect(grab, 'visible skin for the initial grab').toBeDefined();
-      await page.mouse.move(grab!.x, grab!.y);
-      await page.mouse.down();
-      // Leave the canvas and skin silhouette while capture remains active.
-      const dx = nav.x + nav.width + 100 - grab!.x;
-      let previous = before.pose.phi,
-        travel = 0;
-      for (let step = 1; step <= 8; step++) {
-        await page.mouse.move(grab!.x + (dx * step) / 8, grab!.y - (20 * step) / 8);
-        if (index === 0 && step === 1) {
-          await acquired(page);
-          const screenX = await page.evaluate(() => window.freeNavigation.navigator!.screenX);
-          expect(screenX, 'the actual mirrored 3D probe follows the rightward pointer').toBeGreaterThan(before.screenX);
-        }
-        const moved = await page.evaluate(() => {
+  for (const first of [0, 3])
+    test(`free thoracoabdominal translation and all angles, starting regions ${first + 1}–${first + 3}, ${caseId}`, async ({
+      page,
+    }, info) => {
+      budget(180_000);
+      await observe(page);
+      const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+      if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
+      await observeNavigator(page);
+      const records = [];
+      for (const [offset, start] of FREE_NAVIGATION_STARTS.slice(first, first + 3).entries()) {
+        const index = first + offset;
+        await page.evaluate((start) => {
           const s = window.__vexusTest!.sim();
-          return { pose: s.pose, frame: s.frame };
+          s.setPose({ phi: start.phi, z: start.z, yaw: 0.2, rock: 0, tilt: 0, lift: 0 });
+        }, start);
+        await acquired(page);
+        const before = await page.evaluate(() => {
+          const s = window.__vexusTest!.sim();
+          return { pose: s.pose, frame: s.frame, screenX: window.freeNavigation.navigator!.screenX };
         });
-        const arc = -Math.atan2(Math.sin(moved.pose.phi - previous), Math.cos(moved.pose.phi - previous));
-        expect(arc, `${start.name}: step ${step} remains movable`).toBeGreaterThan(0.01);
-        travel += arc;
-        previous = moved.pose.phi;
-        for (const axis of ['axial', 'lateral', 'elevation'] as const)
-          for (let i = 0; i < 3; i++) expect(moved.frame[axis][i]).toBeCloseTo(before.frame[axis][i], 8);
-      }
-      expect(travel).toBeGreaterThan(0.9);
-      const outward = await parity(page);
-      await page.locator('#freeze').evaluate((el: HTMLButtonElement) => el.click());
-      // A reverse captured gesture traverses the same route without pinning at
-      // the outline or at the old angle stop, from every initial region.
-      await page.mouse.move(grab!.x, grab!.y, { steps: 8 });
-      await page.mouse.up();
-      const returned = await page.evaluate(() => window.__vexusTest!.sim().pose);
-      expect(Math.atan2(Math.sin(returned.phi - before.pose.phi), Math.cos(returned.phi - before.pose.phi))).toBeCloseTo(0, 10);
-      expect(returned.z).toBeCloseTo(before.pose.z, 8);
-      for (const sign of [-1, 1])
-        for (const [name, key, degrees] of [
-          ['Rotación', 'yaw', 120],
-          ['Basculación', 'rock', 65],
-          ['Inclinación', 'tilt', 70],
-        ] as const) {
-          const slider = page.getByRole('slider', { name, exact: true });
-          expect(Number(await slider.getAttribute('min'))).toBe(-180);
-          expect(Number(await slider.getAttribute('max'))).toBe(180);
-          await slider.fill(String(sign * degrees));
-          const value = await page.evaluate((key) => window.__vexusTest!.sim().pose[key], key);
-          expect(value).toBeCloseTo((sign * degrees * Math.PI) / 180, 12);
+        const nav = (await page.locator('#nav3d canvas').boundingBox())!;
+        let grab: { x: number; y: number } | undefined;
+        for (const y of [0.55, 0.65, 0.45, 0.75]) {
+          for (const x of [0.5, 0.4, 0.6]) {
+            await page.mouse.move(nav.x + nav.width * x, nav.y + nav.height * y);
+            if ((await page.locator('#nav3d canvas').evaluate((el) => el.style.cursor)) === 'crosshair') {
+              grab = { x: nav.x + nav.width * x, y: nav.y + nav.height * y };
+              break;
+            }
+          }
+          if (grab) break;
         }
-      const angled = await parity(page);
-      if (index === 2 || index === 3) await page.screenshot({ path: info.outputPath(`${index}-${caseId}.png`) });
-      records.push({ start, travel, returned, outward, angled });
-      await page.locator('#freeze').click();
-    }
-    await info.attach('six-region-navigation', { body: JSON.stringify({ caseId, records }), contentType: 'application/json' });
-    expect(errors).toEqual([]);
-    expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
-  });
+        expect(grab, 'visible skin for the initial grab').toBeDefined();
+        await page.mouse.move(grab!.x, grab!.y);
+        await page.mouse.down();
+        // Leave the canvas and skin silhouette while capture remains active.
+        const dx = nav.x + nav.width + 100 - grab!.x;
+        let previous = before.pose.phi,
+          travel = 0;
+        for (let step = 1; step <= 8; step++) {
+          await page.mouse.move(grab!.x + (dx * step) / 8, grab!.y - (20 * step) / 8);
+          if (index === 0 && step === 1) {
+            await acquired(page);
+            const screenX = await page.evaluate(() => window.freeNavigation.navigator!.screenX);
+            expect(screenX, 'the actual mirrored 3D probe follows the rightward pointer').toBeGreaterThan(before.screenX);
+          }
+          const moved = await page.evaluate(() => {
+            const s = window.__vexusTest!.sim();
+            return { pose: s.pose, frame: s.frame };
+          });
+          const arc = -Math.atan2(Math.sin(moved.pose.phi - previous), Math.cos(moved.pose.phi - previous));
+          expect(arc, `${start.name}: step ${step} remains movable`).toBeGreaterThan(0.01);
+          travel += arc;
+          previous = moved.pose.phi;
+          for (const axis of ['axial', 'lateral', 'elevation'] as const)
+            for (let i = 0; i < 3; i++) expect(moved.frame[axis][i]).toBeCloseTo(before.frame[axis][i], 8);
+        }
+        expect(travel).toBeGreaterThan(0.9);
+        const outward = await parity(page);
+        await page.locator('#freeze').evaluate((el: HTMLButtonElement) => el.click());
+        // A reverse captured gesture traverses the same route without pinning at
+        // the outline or at the old angle stop, from every initial region.
+        await page.mouse.move(grab!.x, grab!.y, { steps: 8 });
+        await page.mouse.up();
+        const returned = await page.evaluate(() => window.__vexusTest!.sim().pose);
+        expect(Math.atan2(Math.sin(returned.phi - before.pose.phi), Math.cos(returned.phi - before.pose.phi))).toBeCloseTo(0, 10);
+        expect(returned.z).toBeCloseTo(before.pose.z, 8);
+        for (const sign of [-1, 1])
+          for (const [name, key, degrees] of [
+            ['Rotación', 'yaw', 120],
+            ['Basculación', 'rock', 65],
+            ['Inclinación', 'tilt', 70],
+          ] as const) {
+            const slider = page.getByRole('slider', { name, exact: true });
+            expect(Number(await slider.getAttribute('min'))).toBe(-180);
+            expect(Number(await slider.getAttribute('max'))).toBe(180);
+            await slider.fill(String(sign * degrees));
+            const value = await page.evaluate((key) => window.__vexusTest!.sim().pose[key], key);
+            expect(value).toBeCloseTo((sign * degrees * Math.PI) / 180, 12);
+          }
+        const angled = await parity(page);
+        if (index === 2 || index === 3) await page.screenshot({ path: info.outputPath(`${index}-${caseId}.png`) });
+        records.push({ start, travel, returned, outward, angled });
+        await page.locator('#freeze').click();
+      }
+      await info.attach('free-navigation-regions', { body: JSON.stringify({ caseId, first, records }), contentType: 'application/json' });
+      expect(errors).toEqual([]);
+      expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+    });
 
 for (const caseId of ['normal-adult', 'severe-congestion'])
   test(`subcostal right portal acquisition retains 3D and cut geometry while moving, ${caseId}`, async ({ page }, info) => {

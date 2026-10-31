@@ -308,3 +308,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [302](DECISIONS.md#L9707) | Menos relleno en `registeredComparison`: `main` agotaba sus 12 minutos | vigente |
 | [303](DECISIONS.md#L9719) | Pose renal del atlas: el sector en contacto, verificado por la captura completa de la vena | vigente |
 | [304](DECISIONS.md#L9733) | `probeFreeNavigation` en dos pruebas: seis regiones no caben en 360 s con los corredores lentos | vigente |
+| [305](DECISIONS.md#L9747) | Seno renal digitado: los dedos entran entre las pirámides, y una cota para la frontera de la pelvis | vigente |

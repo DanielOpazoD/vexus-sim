@@ -90,17 +90,16 @@ it.each([NORMAL_ADULT, SEVERE_CONGESTION])('conserva el plano renal de partida a
   const scene = new AnatomyScene(patient),
     sp = startPointsFor(scene.torso).find((p) => p.id === 'renal')!,
     k = probeContact({ ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
-  // Planos mundo medidos en la base 2e4b06b antes de modificar la piel.
-  // La misma corrección angular, sin consultar el caso, conserva ambas ventanas.
+  // Planos mundo de la pose de la decisión 303. Un cambio de la piel o del marco cutáneo no debe moverlos sin decidirlo.
   const reference =
     patient.id === 'normal-adult'
       ? {
-          elevation: [0.5530687315128402, -0.8252615932795165, -0.1142728352695072],
-          face: [-123.61076047529843, -67.31709429665774, -174.8572512552861],
+          elevation: [0.6059727480169843, -0.7895595953910546, 0.09691580875511759],
+          face: [-112.2452956560258, -71.15828387659501, -175.2414690188642],
         }
       : {
-          elevation: [0.5522020591108655, -0.8258419152593671, -0.11427168028195173],
-          face: [-124.52066770615603, -67.7251812298682, -174.85643592907206],
+          elevation: [0.6057244219046982, -0.7897647019383035, 0.0967969022258532],
+          face: [-113.1125460125747, -71.62580825011196, -175.2757290168087],
         };
   // 0,01 mm y norma 1e-4: registro numérico del plano, no exactitud clínica.
   expect(Math.hypot(...k.frame.elevation.map((v, i) => v - reference.elevation[i]))).toBeLessThan(1e-4);

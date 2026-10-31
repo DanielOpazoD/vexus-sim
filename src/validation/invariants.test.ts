@@ -167,7 +167,7 @@ describe('Invariantes de la guía §21 sobre la señal de la cadena completa', (
 
   it('un vaso que sale de la puerta pierde la señal y la recupera al volver', () => {
     // Apnea y puerta sobre la VSH; luego desplazada 10 mm al parénquima y de vuelta. Sangre en una
-    // columna: ≥ 2 bins contiguos a suelo + 12 dB con |f| ≥ 150 Hz. Con respiración profunda, el clutter del
+    // columna: ≥ 2 bins contiguos a suelo + 12 dB con |f| ≥ 80 Hz. Con respiración profunda, el clutter del
     // tejido que se mueve (hasta 60 dB sobre el ruido, por encima de un filtro de pared de 25 Hz) cubre
     // la parte baja de la banda del flujo venoso lento, como en un equipo real (limitación
     // `respiratory-clutter-masks-slow-flow`); la coherencia entre respiración y volumen de muestra se
@@ -184,7 +184,7 @@ describe('Invariantes de la guía §21 sobre la señal de la cadena completa', (
         let run = 0;
         for (let k = 0; k < N; k++) {
           const f = ((k - N / 2) / N) * c.prfHz;
-          run = Math.abs(f) >= 150 && c.powerDb[k] > floors[i] + 12 ? run + 1 : 0;
+          run = Math.abs(f) >= 80 && c.powerDb[k] > floors[i] + 12 ? run + 1 : 0;
           if (run >= 2) return true;
         }
         return false;

@@ -41,7 +41,7 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     const m = measurePhysiologyTruth(e, { fromT: 5, toT: 14 });
     expect(m.beats).toBeGreaterThan(6);
     expect(m.hvS).toBeGreaterThan(m.hvD);
-    expect(m.hvS).toBeGreaterThan(18);
+    expect(m.hvS).toBeGreaterThan(15);
     expect(m.hvA).toBeLessThan(0); // reversión auricular presente
     expect(m.portalPF).toBeLessThan(30);
     expect(m.ivcMaxMm).toBeLessThan(20);

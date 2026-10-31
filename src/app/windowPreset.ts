@@ -49,7 +49,7 @@ export function windowPreset(id: StartPoint['id'], f0Hz: number, reference: bool
         theta: 0,
         depthMm: 90,
         gateMm: 4,
-        prfHz: prfFromNyquistCms(territory === 'hepatic' ? 60 : 40, f0Hz),
+        prfHz: prfFromNyquistCms(40, f0Hz),
         wallFilterHz: 20,
         gainDb: 0,
         sweepMmS: 50,

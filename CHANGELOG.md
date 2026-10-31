@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler: velocidades del sano en lo publicado: suprahepáticas S 24 y 23 cm/s (43–51), renal principal 83/33 (144/58), ramas portales 21 y 19 (26 y 25). Preajuste suprahepático ±40 cm/s. La verdad de la vena derecha no depende de esta escala. Una onda en el último 15 % de la banda pide subir la escala (299).
+
 - Auditorías de los materiales acústicos y del Color emulado frente a referencias: sin cambios de producto, con lo que se conserva y lo que queda abierto (298).
 
 - Doppler: las arterias del sano se acercan a lo publicado, con un perfil menos parabólico: interlobar 34/14 cm/s e IR 0,60 (antes 41/20 y 0,52), renal 144 (175) y aorta 100 (57); la hepática común ya alimenta a la propia (297).

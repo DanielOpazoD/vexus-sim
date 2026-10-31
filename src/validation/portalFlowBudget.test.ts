@@ -27,6 +27,25 @@ describe('ramas portales: presupuesto de caudal y velocidad', () => {
         expect(flow(child)).toBeCloseTo(s.qPortal * shares[child], 9);
       }
     }
+    // Máximos de los controles de Verma et al. 2023, ± 1 DE, con centro = 1,5 × media: las ramas principales bajan respecto al tronco por su
+    // área de referencia, un área efectiva algo mayor que la luz de sus nodos de origen (decisión 299)
+    if (patient === NORMAL_ADULT) {
+      const e = new PhysiologyEngine({ ...patient, respiratoryPattern: 'apnea-expiratory' }, areas);
+      for (let i = 0; i < 2500; i++) e.step();
+      const v = { pvTrunk: 0, pvRight: 0, pvLeft: 0 };
+      for (let i = 0; i < 2500; i++) {
+        const s = e.step();
+        for (const id of ['pvTrunk', 'pvRight', 'pvLeft'] as const) v[id] = Math.max(v[id], (1.5 * s.velocities[id]) / 10);
+      }
+      for (const [id, mean, sd] of [
+        ['pvTrunk', 25.41, 3.07],
+        ['pvRight', 20.74, 3.26],
+        ['pvLeft', 18.19, 3.76],
+      ] as const) {
+        expect(v[id], id).toBeGreaterThan(mean - sd);
+        expect(v[id], id).toBeLessThan(mean + sd);
+      }
+    }
     // Las ramas representadas y el territorio sin representar completan cada rama principal.
     for (const [parent, children] of [
       ['pvRight', ['pvRightAnterior', 'pvRightPosterior']],

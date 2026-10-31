@@ -2,7 +2,7 @@ import { median, robustExtremeInWindow, type TimeWindow } from '../core/series';
 export { CAPTURE_BEATS, qualityText } from './qualityMessages';
 import { velocityFromShiftMmS } from '../core/units';
 import type { Beat } from '../physiology/rhythm';
-import { RENAL_GAP_MIN_S, beatWindows, systolicPeak } from '../vexus/measurements';
+import { RENAL_GAP_MIN_S, S_REVERSAL_FLOOR_CMS, beatWindows, systolicPeak } from '../vexus/measurements';
 import {
   RENAL_INTERRUPTION_FRACTION,
   hepaticPatternFromPeaks,
@@ -301,7 +301,7 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
   for (const b of beats) {
     const w = beatWindows(b);
     const d = extreme(trace, w.dWindow, Math.abs);
-    if (Number.isFinite(d) && Math.abs(d) > 2) dSigns.push(Math.sign(d));
+    if (Number.isFinite(d) && Math.abs(d) > S_REVERSAL_FLOOR_CMS) dSigns.push(Math.sign(d));
   }
   const anterogradeSign = dSigns.length ? (median(dSigns) >= 0 ? 1 : -1) : -1;
   const oriented = trace.map((p) => ({ t: p.t, vScreen: p.vScreen * anterogradeSign }));
@@ -328,9 +328,18 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
   if (!sList.length) return null;
   const sPeak = median(sList);
   const dPeak = median(dList);
+  const quality = qualityOf(columns, beats, opts, 'both', { s: sList, d: dList });
+  // Exclusión prudente, no prueba de plegado: con una onda en el último 15 % de la banda el estimador no separa un pico real del plegado, que a escala
+  // muy baja llena el espectro sin el hueco que lo delata. «Suba la escala» y se mide. Más lejos del borde, una S retrógrada real se mide (decisión 299)
+  if (
+    quality.issue === null &&
+    Math.max(Math.abs(sPeak), dPeak) >=
+      (PORTAL_CLIP_NYQUIST * velocityFromShiftMmS(columns[0].prfHz / 2, opts.f0Hz, opts.angleCorrectionRad)) / 10
+  )
+    quality.issue = 'aliasing';
   return {
     kind: 'hepatic',
-    quality: qualityOf(columns, beats, opts, 'both', { s: sList, d: dList }),
+    quality,
     sPeak,
     dPeak,
     aPeak: median(aList),

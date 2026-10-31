@@ -14,7 +14,7 @@ import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../physiology/patientState';
 import { peepPleuralShiftMmHg } from '../physiology/respiratory';
 import { classifyModifiedVexus, classifyVexusC, type VexusContext } from '../vexus/classification';
-import { measurePhysiologyTruth } from '../vexus/measurements';
+import { measurePhysiologyTruth, S_REVERSAL_FLOOR_CMS } from '../vexus/measurements';
 
 /**
  * Casos trampa (decisión 82) con el motor completo y la verdad fisiológica: cada uno da la discordancia que enseña
@@ -71,23 +71,23 @@ describe('Casos trampa: la discordancia que enseña cada uno (decisión 82)', ()
       );
       expect(c.m.ivcMaxMm, c.tag).toBeGreaterThanOrEqual(22);
       expect(c.grade().grade, c.tag).toBeGreaterThanOrEqual(2);
-      // la S invertida es de la IT funcional con la PAD alta: sin la IT la suprahepática queda en S < D (medido
-      // 13,1/15,3 y 12,1/13,9 cm/s), y con el contexto el intervalo es 0–1
+      // la S invertida es de la IT funcional con la PAD alta: sin la IT la suprahepática queda en S < D, y con el
+      // contexto el intervalo es 0–1
       const t = observe(without(ABDOMINAL_HYPERTENSION, { tricuspidRegurgitation: NORMAL_ADULT.tricuspidRegurgitation }), pattern);
       expect(t.m.hepaticPattern, t.tag).toBe('mild');
       expect(t.grade(ctx).gradeRange, t.tag).toEqual([0, 1]);
     });
 
     it(`IT grave con PAD casi normal, ${pattern}: grado 2 por la S invertida sin congestión`, () => {
-      // medido: PAD media 7,0/8,0 mmHg; VCI 24,3/25,2 mm; S −7,9/−8,2 cm/s; PF 33/34 %; renal continuo
+      // medido: PAD media 7,0/8,0 mmHg; VCI 24,3/25,2 mm; S −4,4/−4,6 cm/s; PF 33/34 %; renal continuo
       const r = observe(TRICUSPID_REGURGITATION, pattern);
       // los estudios que comparan el VExUS con la PAD toman > 12 mmHg como congestión
       expect(r.rap, r.tag).toBeLessThan(9);
       // la VCI abre la puerta del grado lejos de la zona de ±2 mm del corte
       expect(r.m.ivcMaxMm, r.tag).toBeGreaterThan(22);
       expect(r.grade().ivcNearThreshold, r.tag).toBe(false);
-      // S invertida con margen sobre el umbral de −2 cm/s
-      expect(r.m.hvS, r.tag).toBeLessThan(-5);
+      // S invertida con margen sobre el suelo, el mismo que −5 frente a −2 cm/s antes de la decisión 299
+      expect(r.m.hvS, r.tag).toBeLessThan(-2.5 * S_REVERSAL_FLOOR_CMS);
       expect(r.m.portalPF, r.tag).toBeLessThan(50);
       expect(r.m.renalPattern, r.tag).toBe('continuous');
       expect(r.grade().grade, r.tag).toBe(2);

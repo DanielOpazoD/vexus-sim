@@ -189,7 +189,7 @@ export class VenousViewer {
     label.textContent = 'Escala común ';
     const scale = element('select');
     scale.setAttribute('aria-label', 'Escala común de velocidad');
-    for (const n of [20, 60, 120]) scale.add(new Option(`±${n} cm/s`, String(n)));
+    for (const n of [10, 20, 60, 120]) scale.add(new Option(`±${n} cm/s`, String(n)));
     scale.value = '60';
     scale.addEventListener('change', () => {
       this.#scale = Number(scale.value);

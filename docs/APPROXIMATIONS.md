@@ -317,7 +317,7 @@ geometrías distintas. El calendario limita B+PW/Color/tríplex; la presentació
 cadencia anterior. Las referencias y controles de intervalos no acreditan un secuenciador de
 hardware ni adquisición progresiva por línea. Véase la decisión 269.
 
-Tributarias suprahepáticas (281): su caudal de referencia escala con el área de la rama
+Colectoras suprahepáticas (299): 25,3/15,4/11 % del caudal hepático de la red, no su totalidad, para leer la S publicada; el suelo de la S invertida sigue a esa escala. Tributarias suprahepáticas (281): su caudal de referencia escala con el área de la rama
 y 0,85 de la velocidad media de la colectora. El territorio no representado completa
 el caudal de cada colectora. Este factor evita que una fracción fija sobredimensione
 la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una

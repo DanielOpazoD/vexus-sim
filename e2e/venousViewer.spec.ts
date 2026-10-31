@@ -79,7 +79,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   expect(await page.evaluate(() => window.__vexusTest!.sim().frozen)).toBe(frozen);
   await page.evaluate(() => window.__vexusTest!.advance(1));
   expect(await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')))).toEqual(pausedPaths);
-  await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('20');
+  await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('10');
   await expect(dialog.locator('.venous-status')).toContainText('fuera de escala');
   await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('120');
   await expect(dialog.locator('.venous-limits').first()).toHaveText('+120 / 0 / −120 cm/s');

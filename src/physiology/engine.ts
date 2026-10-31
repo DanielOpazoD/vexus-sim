@@ -7,7 +7,7 @@ import { RespiratoryModel, type RespiratorySample } from './respiratory';
 import { RhythmGenerator, gauss } from './rhythm';
 import { RightAtriumModel } from './rightAtrium';
 import { VenousNetwork, defaultNetworkParams, hvRadiusScaleFromPressure, ivcPtmFromDiameter, type NetworkOutputs } from './venousNetwork';
-import { hepaticFlowShares, INTERLOBAR_FLOW_SHARE, PV_FLOW_SHARE, VESSEL_IDS, type VesselAreas, type VesselId } from './vessels';
+import { hepaticFlowShares, INTERLOBAR_FLOW_SHARE, portalFlowShares, VESSEL_IDS, type VesselAreas, type VesselId } from './vessels';
 
 /**
  * Muestra del estado fisiológico en un instante del reloj. Es la única
@@ -101,13 +101,13 @@ export class PhysiologyEngine {
   private ivcSupraWallAreaMm2: number;
   /** Pmsf del lazo en el paso anterior: su cambio es el volumen que entra o sale de la red (decisión 79). */
   private lastPmsf: number;
-  private readonly hepaticShares: ReturnType<typeof hepaticFlowShares>;
+  private readonly shares: ReturnType<typeof hepaticFlowShares> & ReturnType<typeof portalFlowShares>;
 
   constructor(patient: PatientState, areas: VesselAreas, opts: { dt?: number; historySeconds?: number } = {}) {
     validatePatient(patient);
     this.patient = patient;
     this.areas = areas;
-    this.hepaticShares = hepaticFlowShares(areas);
+    this.shares = { ...hepaticFlowShares(areas), ...portalFlowShares(areas) };
     this.clock = new SimulationClock(opts.dt ?? 0.004);
     this.historySeconds = opts.historySeconds ?? 12;
     this.rhythm = new RhythmGenerator(patient, patient.seed ^ 0x51a7);
@@ -280,7 +280,7 @@ export class PhysiologyEngine {
         case 'hvLeft':
         case 'hvLeftTributary':
         case 'hvCommonTrunk':
-          q = qHv * this.hepaticShares[id];
+          q = qHv * this.shares[id];
           areaScale = hvRadiusScale * hvRadiusScale;
           break;
         case 'pvTrunk':
@@ -290,7 +290,7 @@ export class PhysiologyEngine {
         case 'pvLeft':
         case 'pvLeftLateral':
         case 'pvLeftMedial':
-          q = qPv * PV_FLOW_SHARE[id];
+          q = qPv * this.shares[id];
           areaScale = pvRadiusScale * pvRadiusScale;
           break;
         case 'hepaticArtery':

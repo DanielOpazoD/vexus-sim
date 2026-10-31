@@ -515,7 +515,10 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
   La respuesta estacionaria del filtro coincide con los biquads PW (234), pero no reproduce
-  sus transitorios ni el rechazo de un ensemble finito.
+  sus transitorios ni el rechazo de un ensemble finito. Frente a una referencia de IQ temporal (decisión 298), el aliasing con signo se conserva, pero el filtro se evalúa en la
+  frecuencia central y no en la banda (flujo de 30 Hz con corte de 50: 0,07 % de celdas sobre el umbral frente a 8,6 % con IQ asentada, tras el kernel espacial); una mezcla de flujos opuestos se queda en su
+  correlación media (±250 Hz: 3,3 % frente a 60,7 %); la varianza de la velocidad no sigue la de la banda (N = 8, ancho 0,265: 0,40 frente a 0,86 cm/s; tono estrecho, 0,12 frente a 0,07); y el movimiento
+  dentro del paquete no existe: una aceleración de la mano con velocidad central cero no da flash (0,05 % frente a 99,6 %). No basta una constante: se probaron cuatro parches y se descartaron.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es
   físico solo para vasos finos (el hígado se desplaza 10 mm y una interlobar de 3 mm sale de una
   puerta de 4 mm); el operador debe usar apnea espiratoria o un segmento más grueso, como en la
@@ -548,7 +551,8 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   ahí: a 5–20 mm se aceptaron 12 de 64, todas a ≤ 10, en un conjunto acotado. La regla del reparto solo mira la fracción del tronco: un intercambio entre dos ramas
   no lo detecta. Lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), igual que la de la puerta que pierde el vaso. El cálculo es caótico y las
   mismas semillas no dan lo mismo en Linux x86 y en Mac ARM: una captura falsa rara puede salir en una plataforma y no en otra (52 frente a 19 en el sano, en CI, con la
-  técnica anterior). Una captura aceptada respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
+  técnica anterior). Una captura aceptada respirando no es tan segura como una en apnea: el alumno debe pedir apnea. Las pruebas de la cadena limitan la PRF solo por el tiempo de vuelo: a la profundidad de la porta, ±60 y ±80 cm/s
+  quedan por encima de lo que permite el dúplex de la aplicación (≈ ±40 cm/s), así que esas columnas son robustez de la cadena, no ajustes que el alumno pueda elegir ahí.
 - **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
   294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,

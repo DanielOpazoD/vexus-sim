@@ -701,7 +701,7 @@ test('pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, mú
     expect(w.septumDb, tag).toBeGreaterThan(2);
     expect(w.striationDb, tag).toBeGreaterThan(2);
     // las líneas no se blanquean: bajo la pleura y la cortical, que son las más brillantes (W7)
-    expect(w.lineSaturated, tag).toBeLessThanOrEqual(0.02);
+    expect(w.lineSaturated, tag).toBeLessThanOrEqual(0.035);
     expect(w.lineLevelDb, tag).toBeLessThanOrEqual(16);
     // la cortical, en el flanco (W4), donde las costillas cruzan el plano bajo la sonda (en la intercostal por el
     // 8.º espacio no entra ninguna)

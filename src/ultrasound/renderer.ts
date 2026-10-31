@@ -203,10 +203,10 @@ export function nominalTgcDbPerCm(fMHz: number): number {
 
 /**
  * Compensación nominal del campo cercano (dB): la ganancia focal (`focalGain`, decisión 84) le quita a la pared −6 dB bajo la cara y −1 dB a 60 mm con el foco
- * del preajuste, y la TGC nominal solo sigue a la atenuación. La pared salía 0,6–0,8 veces el hígado, frente a 0,8–1,65 en seis ecografías reales. Compensa
- * la mitad: +3 dB es lo que admite la meta de la grasa de la pared (W2, ≤ 0,60 del hígado) sin tocarla (decisión 306). Gemelo del término de `displayGrey`.
+ * del preajuste, y la TGC nominal solo sigue a la atenuación. La pared salía 0,6–0,8 veces el hígado, frente a 0,8–1,65 en seis ecografías reales. +8 dB la deja
+ * en 0,73–0,97, casi siempre dentro de lo real, con dos metas de la decisión 62 relajadas por el propietario (decisión 308). Gemelo del término de `displayGrey`.
  */
-export const nearFieldTgcDb = (r: number): number => 3 * Math.max(0, 1 - r / 60);
+export const nearFieldTgcDb = (r: number): number => 8 * Math.max(0, 1 - r / 60);
 
 /** Margen del sector en el lienzo de imagen (px); el corte usa el mismo módulo con su propio margen. */
 export const DISPLAY_MARGIN_PX = 8;

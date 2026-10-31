@@ -187,7 +187,8 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
       expect(d.liver.p50, msg).toBeLessThan(120);
       expect(w.profileLines, msg).toBeGreaterThanOrEqual(5);
       expect(w.linesInside, msg).toBeGreaterThanOrEqual(3);
-      expect(w.fatToLiver, msg).toBeLessThanOrEqual(0.6);
+      // Antes ≤ 0,60: el propietario la relaja con los +8 dB del campo cercano (decisión 308).
+      expect(w.fatToLiver, msg).toBeLessThanOrEqual(0.72);
       expect(w.septumDb, msg).toBeGreaterThanOrEqual(RATIO_15_DB);
       expect(w.striationDb, msg).toBeGreaterThanOrEqual(RATIO_15_DB);
       if (id === 'flank') {
@@ -207,8 +208,9 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
       expect(w.lineLevelDb, msg).toBeGreaterThanOrEqual(4);
       expect(w.lineLevelDb, msg).toBeLessThanOrEqual(16);
       // ≤ 2 % como la e2e (decisión 65: con las facetas y la difusa, algún pico de fascia llega al blanco, 1 de 94 en la
-      // subxifoidea; lo que se vigila es la línea blanca y uniforme de la primera versión de la 62)
-      expect(w.lineSaturated, msg).toBeLessThanOrEqual(0.02);
+      // subxifoidea; lo que se vigila es la línea blanca y uniforme de la primera versión de la 62). Con los +8 dB del campo
+      // cercano, relajada por el propietario de 2 a 3,5 % (decisión 308)
+      expect(w.lineSaturated, msg).toBeLessThanOrEqual(0.035);
       expect(w.lineCv, msg).toBeGreaterThanOrEqual(0.3);
       if (id === 'flank') expect(w.ribPeakDb - w.lineLevelDb, msg).toBeGreaterThanOrEqual(6);
     }

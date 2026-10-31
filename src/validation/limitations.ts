@@ -71,6 +71,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'thoracic-atlas-resolution',
   'thoracic-atlas-static-respiration',
   'fixed-arterial-resistive-index',
+  'renal-artery-velocity-high',
+  'hepatic-vein-velocity-high',
   'schematic-static-heart',
   'mediastinal-mirror-normal-approx',
   'vertebra-continuous-geometry',

@@ -128,9 +128,14 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
   sus ramas y el Doppler.
 - **El índice de resistencia arterial es fijo** (`fixed-arterial-resistive-index`): el pulso arterial
-  es multiplicativo y el mismo en todos los casos, así que el IR renal (0,53) y el hepático (0,63) no
-  cambian entre casos; además el pulso sube 130–170 ms antes de la R. Medir el IR hoy no enseñaría
-  nada.
+  es multiplicativo y el mismo en todos los casos, así que el IR renal (0,60 en el Doppler, 0,53 en la red; decisión 297) y el hepático
+  (0,63) no cambian entre casos; además el pulso sube 130–170 ms antes de la R: la última muestra antes de la R no es el mínimo del ciclo y da un IR menor. Medir el IR hoy no
+  enseñaría nada.
+- **La arteria renal principal sigue rápida** (`renal-artery-velocity-high`, decisión 297): 144 cm/s de sistólica y 58 de mínimo en el eje del sano, dentro del rango observado (49–150, Baumgartner et al. 1999)
+  pero por encima de las medias (76–85; 79 ± 8 y 29 ± 5, Gao et al. 2011). 10 mL/s por una luz de 2,5 mm de radio no dan menos sin cambiar la anatomía o el caudal renal, que es de la red.
+- **Las suprahepáticas van más rápido que en los estudios abiertos comparables** (`hepatic-vein-velocity-high`): la S del sano en el eje es 43 cm/s en la derecha y 51 en la media, frente a 23,1 ± 6,0 de máximo anterógrado en la derecha
+  (ningún control > 40; Sudhamshu et al. 2006, a 2–3 cm de la cava) y 21 ± 1,9 en la media en inspiración intermedia (Teichgräber et al. 1997, otra fase). No se encontraron cifras abiertas de ecocardiografía, más cerca de la cava, para contrastarlas. El patrón S > D y la A retrógrada son los esperados, y el grado no depende del valor
+  absoluto. Las fracciones de caudal, el área y la presión auricular van unidas: con las áreas del modelo, esas velocidades no se pueden bajar sin perder drenaje hepático. Falta una calibración conjunta.
 
 ### Confusores de los casos trampa (decisión 82)
 

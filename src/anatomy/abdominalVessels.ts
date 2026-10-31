@@ -321,7 +321,7 @@ export function registerAbdominalVessels(vessels: VesselDef[], ducts: DuctDef[])
       id,
       tube: { kind: 'tube', apScale: 1, nodes: points.map((p) => ({ p: [...p], r })) },
       refRadius: r,
-      profileN: artery ? 2 : portal ? 4 : 3,
+      profileN: artery ? 4 : portal ? 4 : 3,
       wallTissue: artery ? Tissue.ArteryWall : portal ? Tissue.VesselWallPortal : Tissue.VesselWallThin,
       wallMm: portal ? 0.8 : artery ? 0.6 : 0.5,
     });

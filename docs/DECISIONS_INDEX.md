@@ -300,3 +300,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [294](DECISIONS.md#L9458) | Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta | vigente |
 | [295](DECISIONS.md#L9561) | El tejido del volumen de muestra lleva la derivada del mapa, en el instante de cada pulso | vigente |
 | [296](DECISIONS.md#L9600) | Balance de la bifurcación portal: la periferia no acelera | vigente |
+| [297](DECISIONS.md#L9622) | Arterias del Doppler frente a valores publicados | vigente |

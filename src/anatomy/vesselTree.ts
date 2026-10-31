@@ -97,7 +97,7 @@ export function buildVesselTree(
     id,
     tube: tube(nodes),
     refRadius,
-    profileN: 2,
+    profileN: 4,
     wallTissue: Tissue.ArteryWall,
     wallMm,
   });

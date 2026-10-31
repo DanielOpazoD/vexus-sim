@@ -260,6 +260,12 @@ export class PhysiologyEngine {
     const velocities = {} as Record<VesselId, number>;
     const qHv = out.qHepaticVein;
     const qPv = out.qPortal;
+    const pulse = this.arterialPulse(t);
+    // Caudal descendente ilustrativo (no forma parte de VExUS): sistólica ≈ 100 cm/s (Baumgartner 1999: 102 ± 18,5), media por debajo del
+    // gasto y por encima de sus ramas, y en diástole el caudal de las ramas que siguen llenándose (decisión 297).
+    const qAorta = 80 + 190 * pulse;
+    // La red calcula su lecho renal con el pulso 0,8, calibrado con la vena; el Doppler arterial muestra el pulso 1: IR 0,60 (decisión 297).
+    const qRenalShown = (out.qRenalArtery * (1 + pulse)) / (1 + 0.8 * pulse);
     for (const id of VESSEL_IDS) {
       let q: number;
       let areaScale = 1;
@@ -297,38 +303,37 @@ export class PhysiologyEngine {
           q = out.qHepaticArtery;
           break;
         case 'aorta':
-          // Aorta: caudal descendente ilustrativo (no forma parte de VExUS).
-          q = 60 + 90 * this.arterialPulse(t);
+          q = qAorta;
           break;
-        // Ramas viscerales (decisión 69, ilustrativas): celíaco ≈ 0,6 L/min y esplénica ≈ 0,3, con el pulso de baja
-        // resistencia de la hepática; AMS en ayunas ≈ 0,25 L/min con el suyo, trifásico de alta resistencia (pico ≈ 1,5 m/s en
-        // el eje)
+        // Ramas viscerales (decisiones 69 y 297, ilustrativas): el celíaco reparte la esplénica ≈ 0,3 L/min, la gástrica izquierda y la hepática
+        // común, que alimenta a la propia y a la gastroduodenal, con el pulso de baja resistencia de la hepática; AMS en ayunas ≈ 0,25 L/min con
+        // el suyo, trifásico de alta resistencia
         case 'celiacTrunk':
-          q = 10 * (1 + 1.1 * this.arterialPulse(t));
+          q = 1.23 * out.qHepaticArtery + 6.8 * (1 + 1.1 * pulse);
           break;
         case 'splenicArtery':
-          q = 5 * (1 + 1.1 * this.arterialPulse(t));
+          q = 5 * (1 + 1.1 * pulse);
           break;
         case 'commonHepaticArtery':
-          q = 3.2 * (1 + 1.1 * this.arterialPulse(t));
+          q = 1.23 * out.qHepaticArtery;
           break;
         case 'leftGastricArtery':
-          q = 1.8 * (1 + 1.1 * this.arterialPulse(t));
+          q = 1.8 * (1 + 1.1 * pulse);
           break;
         case 'ima':
           q = 5 * this.mesentericFastingPulse(t);
           break;
         case 'iliacArteryRight':
         case 'iliacArteryLeft':
-          q = (60 + 90 * this.arterialPulse(t)) * 0.14;
+          q = qAorta * 0.14;
           break;
         case 'internalIliacArteryRight':
         case 'internalIliacArteryLeft':
-          q = (60 + 90 * this.arterialPulse(t)) * 0.04;
+          q = qAorta * 0.04;
           break;
         case 'externalIliacArteryRight':
         case 'externalIliacArteryLeft':
-          q = (60 + 90 * this.arterialPulse(t)) * 0.1;
+          q = qAorta * 0.1;
           break;
         case 'iliacVeinRight':
         case 'iliacVeinLeft':
@@ -352,7 +357,7 @@ export class PhysiologyEngine {
           break;
         case 'renalArteryRight':
         case 'renalArteryLeft':
-          q = 0.5 * out.qRenalArtery;
+          q = 0.5 * qRenalShown;
           break;
         case 'renalVeinRight':
         case 'renalVeinLeft':
@@ -361,7 +366,7 @@ export class PhysiologyEngine {
         case 'interlobarArtery1':
         case 'interlobarArtery2':
         case 'interlobarArtery3':
-          q = 0.5 * out.qRenalArtery * INTERLOBAR_FLOW_SHARE;
+          q = 0.5 * qRenalShown * INTERLOBAR_FLOW_SHARE;
           break;
         case 'interlobarVein1':
         case 'interlobarVein2':

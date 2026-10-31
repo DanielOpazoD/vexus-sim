@@ -99,7 +99,7 @@ export class PwDopplerChain {
       im.set(this.#iqIm);
       this.#iqIm = im;
     }
-    this.sampleVolume.generate(s, probeVelocity, n, this.#iqRe, this.#iqIm, this.#cursor);
+    this.sampleVolume.generate(s, probeVelocity, n, this.#iqRe, this.#iqIm, this.#cursor, this.#pending);
     this.#cursor += n;
     this.#hadIq = true;
   }

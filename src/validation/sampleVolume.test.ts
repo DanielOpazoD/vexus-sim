@@ -71,7 +71,7 @@ function track(
     acc += prf * engine.clock.dt;
     const n = Math.floor(acc);
     acc -= n;
-    if (n > 0) sv.generate(s, [0, 0, 0], n, re, im);
+    if (n > 0) sv.generate(s, [0, 0, 0], n, re, im, 0, acc);
     if (i % 60 === 0 && s.t - t0 >= fromSeconds) {
       const fresh = new SampleVolumeIQ(anatomy, 99 + i);
       fresh.setGate(gate, s);

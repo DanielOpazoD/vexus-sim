@@ -31,7 +31,7 @@ function acquire(scenario: Scenario, chunks = [1, 1]) {
   const blood = scenario !== 'fallback-tissue';
   const tissue = blood ? Tissue.Blood : Tissue.Liver;
   const velocity: Vec3 = [vx, 0, vz];
-  const sample = { resp: {}, velocities: { hvRight: 1 } } as unknown as PhysiologySample;
+  const sample = { resp: { diaphragmCaudalMm: 0, diaphragmVelocityMmS: 0 }, velocities: { hvRight: 1 } } as unknown as PhysiologySample;
   const anatomy = {
     // Sin deformación: el mapa material ↔ mundo del volumen de muestra (decisión 294) es la identidad.
     deformation: {

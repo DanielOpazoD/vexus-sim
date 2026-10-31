@@ -16,6 +16,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'reference-skeletal-organ-overlap',
   'reference-cartilage-seventh-only',
   'color-emulated-estimator',
+  'color-tissue-velocity-uncompressed',
+  'pw-phase-kinematics',
   'triplex-prf-not-shared',
   'no-sidelobes',
   'specular-pair-single-slope',

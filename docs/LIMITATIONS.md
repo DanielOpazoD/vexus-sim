@@ -473,13 +473,17 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   receptor). Pero con la escala a ±4–6 cm/s la banda del filtro de pared (62,5 Hz con el filtro a 25 Hz) es media banda y
   la porta, débil, no llega a llenar el resto (tampoco la suprahepática del sano a ±4): la captura dice «no hay flujo en
   la puerta» en vez de «suba la escala». Nunca da un valor.
-- **Con respiración, el clutter del tejido tapa el flujo venoso lento en el espectro**
-  (`respiratory-clutter-masks-slow-flow`): el tejido que se mueve a 10–30 mm/s da un clutter 60–70 dB
-  sobre el ruido a 30–100 Hz, por encima de un filtro de pared de 25 Hz; con la ventana de la FFT
-  su falda ocupa hasta ~±450 Hz, la banda de una vena lenta, y la sangre no se distingue del
-  tejido ni en inspiración máxima. Es lo que pasa en un equipo real (por eso se pide apnea o se
-  sube el filtro), pero el simulador no modela un filtro de pared de alto orden (> 60 dB de
-  rechazo) como los de regresión de los equipos.
+- **Con respiración profunda, el clutter del tejido tapa el flujo venoso lento cerca de la línea de base**
+  (`respiratory-clutter-masks-slow-flow`, decisión 295): en la suprahepática media desde la subcostal, en el tercio más rápido de la
+  respiración profunda, el tejido queda 57–61 dB sobre el ruido hasta 25 Hz, por encima de un filtro de pared de 25 Hz, y su falda,
+  la de la ventana de Hann, sigue a 16–20 dB en 100–150 Hz y a 4–7 dB en 200–300 Hz; desde 450 Hz no se separa del ruido. Con
+  respiración tranquila, a ≤ 4 dB en 100–150 Hz y a < 1 dB desde 150 Hz. Es lo que pasa en un equipo real (por eso se
+  pide apnea o se sube el filtro), pero el simulador no modela un filtro de pared de alto orden (> 60 dB de rechazo) como los de
+  regresión de los equipos.
+- **En Color, la velocidad del tejido no lleva la compresión de la sonda** (`color-tissue-velocity-uncompressed`, decisión 295): el
+  PW usa la derivada del mapa en el punto material de la puerta; el shader de Color, `tissueVelocity(m)`, la del diafragma por el
+  peso. Donde la sonda comprime, la frecuencia del clutter de Color difiere de la del mapa: en la suprahepática media desde la subcostal
+  el PW corregía un 14–26 %.
 - **La calidad no tiene criterio de señal débil** (`weak-signal-not-flagged`): con la sangre a
   ~15 dB sobre el suelo (VSH a 11 cm desde la pose inicial, transmisión −32 dB) la envolvente, con
   su margen de 12 dB, recoge picos sueltos del moteado espectral y S varía entre capturas
@@ -542,6 +546,12 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,
   0,02–0,05 mm. Las identidades se clasifican en el punto material del mapa: la población es coherente consigo misma, pero
   respirando la puerta renal ve su anatomía con esa distorsión.
+- **La fase del volumen de muestra usa una sola velocidad del tejido, respiratoria** (`pw-phase-kinematics`, decisión 295): la velocidad es la
+  derivada del mapa respecto al diafragma en el centro de la puerta, con la compresión del cuadro quieta, común a toda la caja y actualizada
+  cada 8 pulsos. Junto a la columna (12 mm de desplazamiento, diafragma a 30 mm/s, haz caudal), los dispersores de una caja irían a 16–82 Hz y suenan todos a
+  48 Hz. Cuando la sonda aprieta, la compresión que cambia no aporta velocidad: subiendo 0,1 mm en 32 ms en apnea, la frecuencia relativa es +10,1 Hz, la del tejido inmóvil, y la
+  del movimiento sería −2,0 Hz. Tras un cambio brusco de velocidad o de PRF, la frecuencia tarda hasta 8 pulsos. El flujo de la sangre tampoco pasa por la jacobiana del
+  mapa: en un fantoma comprimido ×0,7 suena a −354 Hz y su trayectoria en el mundo exigiría −256 Hz.
 - **En los codos de un tubo la corriente gira en el nodo** (`pw-stream-capsule-joints`, decisión 294): la sección pasa de un
   segmento al siguiente con la rotación mínima de la tangente, de modo que la cuña exterior del casquete de un nodo interior
   no recibe sangre transportada y la parte interior se recorre con la geometría del segmento. La interlobar medida, con un

@@ -241,6 +241,11 @@ function startAmpRamp(s: Scatterer, target: number): void {
   s.dAmp = (target - s.amp) / AMP_RAMP_TICKS;
   s.rampLeft = AMP_RAMP_TICKS;
 }
+/** La identidad del punto cambia en dos rampas: se apaga la de ahora y al terminar se enciende la del instante. */
+function startIdentityChange(s: Scatterer, rng: SeededRandom): void {
+  s.pending = { ampFactor: 0.7 + 0.6 * rng.float() };
+  startAmpRamp(s, 0);
+}
 /** Ruido electrónico relativo a la sangre a transmisión 1 ([EXTRAPOLACIÓN PROPIA]). */
 const NOISE_STD = 0.0004;
 
@@ -564,12 +569,9 @@ export class SampleVolumeIQ {
   }
 
   private gateToWorld(c: Vec3): Vec3 {
-    const g = this.gate!;
-    return [
-      g.center[0] + g.beamDir[0] * c[0] + g.lateral[0] * c[1] + g.elevation[0] * c[2],
-      g.center[1] + g.beamDir[1] * c[0] + g.lateral[1] * c[1] + g.elevation[1] * c[2],
-      g.center[2] + g.beamDir[2] * c[0] + g.lateral[2] * c[1] + g.elevation[2] * c[2],
-    ];
+    const o = this.gate!.center,
+      v = this.gateVectorToWorld(c);
+    return [o[0] + v[0], o[1] + v[1], o[2] + v[2]];
   }
 
   private worldToGate(w: Vec3): Vec3 {
@@ -1121,8 +1123,9 @@ export class SampleVolumeIQ {
   /**
    * Genera `n` muestras IQ a la PRF actual con la muestra fisiológica dada y la
    * velocidad de la sonda (mm/s, mundo). Escribe en `re`/`im` desde `offset`.
+   * `afterLast`: periodos de pulso entre la última muestra y el instante de `phys`.
    */
-  generate(phys: PhysiologySample, probeVelocity: Vec3, n: number, re: Float32Array, im: Float32Array, offset = 0): void {
+  generate(phys: PhysiologySample, probeVelocity: Vec3, n: number, re: Float32Array, im: Float32Array, offset = 0, afterLast = 0): void {
     const g = this.gate;
     if (!g) {
       re.fill(0, offset, offset + n);
@@ -1135,10 +1138,20 @@ export class SampleVolumeIQ {
     const apSigma = g.apertureAngleSigmaRad ?? 0;
     // La deformación se evalúa en el centro de la puerta (varía lentamente): el desplazamiento dentro de la llamada es
     // el rígido de ese punto, Δk = −v·(tiempo hasta el final), y el mapa es el del final de la llamada.
-    const tissueVel = this.anatomy.deformation.tissueVelocity(g.center, phys.resp);
     const epoch = this.mapEpoch;
     this.prepareMap(phys);
-    const deltaPrev: Vec3 = [-tissueVel[0] * n * dt, -tissueVel[1] * n * dt, -tissueVel[2] * n * dt];
+    // Velocidad del tejido en el centro de la puerta: la derivada del mapa en su punto material, compresión incluida. Si no fuera la
+    // del mapa, el tejido saltaría en cada llamada: líneas a múltiplos de 250 Hz, con el diafragma rápido, a decenas de dB del ruido.
+    const vD = phys.resp.diaphragmVelocityMmS;
+    const tissueVel = (
+      vD === 0
+        ? [0, 0, 0]
+        : this.anatomy.deformation
+            .toWorld(this.tc, { ...phys.resp, diaphragmCaudalMm: phys.resp.diaphragmCaudalMm + 0.01 })
+            .map((x, i) => ((x - this.w0[i]) * vD) / 0.01)
+    ) as Vec3;
+    const toEnd = (n + afterLast) * dt;
+    const deltaPrev: Vec3 = [-tissueVel[0] * toEnd, -tissueVel[1] * toEnd, -tissueVel[2] * toEnd];
     // Paso de movimiento del mapa nuevo (respiración, compresión): quien sale de la caja cede su sitio a otro que entra
     // por la cara opuesta a lo largo de su movimiento; el tejido sale en rampa. Con el mapa de antes no se mueve nada.
     const c: Vec3 = [0, 0, 0];
@@ -1185,7 +1198,7 @@ export class SampleVolumeIQ {
     for (let k = 0; k < n; k++) {
       // Respiration is sampled on the physiology clock. Reconstruct its smooth
       // displacement at each emitted pulse instead of stepping tissue at 250 Hz.
-      const untilEnd = (n - 1 - k) * dt;
+      const untilEnd = (n - 1 - k + afterLast) * dt;
       if (k > 0) {
         prev[0] = delta[0];
         prev[1] = delta[1];
@@ -1276,10 +1289,7 @@ export class SampleVolumeIQ {
               // cambia de identidad en dos rampas, como la luz que crece o mengua, sin saltar aguas arriba. (El punto real, no
               // retroceder el arco: con otro radio caía a micras y tomaba por geometría los cruces por flujo.)
               leftDomain = this.ownsPoint(st, [m0, m1, m2]);
-              if (!leftDomain) {
-                s.pending = { ampFactor: 0.7 + 0.6 * this.rng.float() };
-                startAmpRamp(s, 0);
-              }
+              if (!leftDomain) startIdentityChange(s, this.rng);
             }
           }
           if ((wasInside && (!inTube || !flowIn || leftLumen || leftDomain)) || stray) {
@@ -1342,10 +1352,7 @@ export class SampleVolumeIQ {
             this.streamPoint(s.lumen, this.scratch);
             change = s.lumen.rho < 1;
           }
-          if (change) {
-            s.pending = { ampFactor: 0.7 + 0.6 * this.rng.float() };
-            startAmpRamp(s, 0);
-          }
+          if (change) startIdentityChange(s, this.rng);
         }
         if (slow && !s.fading && s.pending && s.rampLeft <= 0) {
           // la identidad vieja ya se apagó: se enciende la del punto material en este instante, no la de la visita (la luz
@@ -1377,10 +1384,7 @@ export class SampleVolumeIQ {
             // vacía la población (208). La sangre sin tubo (fantomas con clasificador sintético) no se reclasifica.
             const q = this.anatomy.classifyMaterial(s.m, phys);
             const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
-            if (nowBlood !== s.isBlood && (nowBlood || s.stream)) {
-              s.pending = { ampFactor: 0.7 + 0.6 * this.rng.float() };
-              startAmpRamp(s, 0);
-            }
+            if (nowBlood !== s.isBlood && (nowBlood || s.stream)) startIdentityChange(s, this.rng);
           }
           if (s.isBlood && s.vessel) {
             const u = vel[s.vessel];

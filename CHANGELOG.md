@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pruebas: `registeredComparison` rellena ocho cuadros menos por arranque; `main` agotaba sus 12 minutos con los corredores más lentos. Mismo plazo y mismas aserciones (302).
+
 - Imagen: la cápsula hepática deja de verse como un rosario de cuentas blancas. Era el escalón del vóxel del atlas en la normal; ahora el lóbulo especular usa la normal promediada, y el perfil del eco no cambia. El residuo sin segmentar ya no se trata como grasa (301).
 
 - Imagen: la ventana hepatorrenal muestra el riñón completo en eje largo con el hígado delante, y todo el sector en contacto (300).

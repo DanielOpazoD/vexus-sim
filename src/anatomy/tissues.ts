@@ -196,7 +196,7 @@ export const TISSUES: TissueProps[] = [
   // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62); también el disco
   // intervertebral (PR119; recuperación provisional de la decisión 103: fibrocartílago, hipoecoico, c de 1550–1650 m/s) [EXTRAPOLACIÓN PROPIA]
   { name: 'cartílago', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
-  // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
+  // Riñón (efectivos: c 1560, ρ 1066, α 0,7·f^1,0; IT'IS V5.0 da α 1,04 en la corteza y 0,24 en el riñón global, decisión 298). Corteza iso/ligeramente hipoecoica al hígado;
   // médula (pirámides) hipoecoica pero no negra: −8,2 dB bajo la corteza (decisión 87; −4,6 en la 68, con las pirámides
   // cortadas por el cáliz no se veían) [ESTIMADO]; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5), lo más
   // ecogénico del riñón: 4,5, +13 dB sobre el hígado y +5,5 sobre la grasa perirrenal [ESTIMADO, decisión 87], en lóbulos de

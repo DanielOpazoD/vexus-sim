@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Auditorías de los materiales acústicos y del Color emulado frente a referencias: sin cambios de producto, con lo que se conserva y lo que queda abierto (298).
+
 - Doppler: las arterias del sano se acercan a lo publicado, con un perfil menos parabólico: interlobar 34/14 cm/s e IR 0,60 (antes 41/20 y 0,52), renal 144 (175) y aorta 100 (57); la hepática común ya alimenta a la propia (297).
 
 - Doppler: las ramas portales de segundo orden ya no van más rápido que su rama madre (24,4 → 14,5 cm/s en las derechas del sano) y no aliasan antes que el tronco (296).

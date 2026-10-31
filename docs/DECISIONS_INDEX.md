@@ -301,3 +301,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [295](DECISIONS.md#L9561) | El tejido del volumen de muestra lleva la derivada del mapa, en el instante de cada pulso | vigente |
 | [296](DECISIONS.md#L9600) | Balance de la bifurcación portal: la periferia no acelera | vigente |
 | [297](DECISIONS.md#L9622) | Arterias del Doppler frente a valores publicados | vigente |
+| [298](DECISIONS.md#L9646) | Dos auditorías sin cambios de producto: materiales acústicos y Color emulado | vigente |

@@ -9596,3 +9596,25 @@ aunque el peso respiratorio varíe (una revisión independiente mostró que eval
 con pulsos no enteros por paso, un bloque rígido deja −78,7, −86,0 y −90,8 dB del pico en 300–450, 450–650 y 650–1300 Hz (antes
 −71,4, −76,7 y −80,0); y en la cadena real con respiración profunda, 650–1300 Hz queda a ≤ 1,8 dB del ruido del receptor (antes 3,25). Las
 cuatro fallan con el código anterior. Referencia y mediciones: `vexus-pw-clutter-evidence-20261030`.
+
+## 296. Balance de la bifurcación portal: la periferia no acelera
+
+**Problema.** Bloque 10 de NEXT15. En el sano, en apnea, a 10 s de media: tronco 16,8 cm/s, rama derecha 17,3, izquierda 16,6, pero anterior y
+posterior derechas 24,4 (×1,41 de su madre), lateral izquierda 17,6 y medial 19,1 (×1,06 y ×1,15). Era el defecto de las tributarias
+suprahepáticas (281): fracciones fijas 0,30/0,30/0,20/0,15 que no corresponden al área de referencia de esas ramas, afiladas y medidas lejos
+de su origen. Con el perfil del tubo (centro = 1,5 × media), el centro de una rama anterior llega a 37 cm/s: con el haz alineado aliasa con el preajuste de ±35 cm/s, y
+el tronco, a 25 cm/s, no. Es lo contrario de lo medido: la velocidad baja del tronco a las ramas de primer y segundo orden en 35 sanos ([Furuse et al.
+1992](https://pubmed.ncbi.nlm.nih.gov/1501369/), sin cifras en el resumen), y los máximos de 30 controles ([Verma et al. 2023](https://pmc.ncbi.nlm.nih.gov/articles/PMC10621493/), estudio piloto) son 25,4 en el tronco, 20,7 y 18,2 en
+las ramas derecha e izquierda, 17,3 y 17,4 en anterior y posterior derechas y 11,4–11,8 en los segmentos 2, 3, 4A y 4B.
+
+**Decisión.** Las dos ramas principales conservan el 60 y el 40 % del tronco, y su suma es exactamente el caudal portal. Las cuatro ramas de segundo orden
+reciben la fracción de su área de referencia con una velocidad media relativa a su madre de 0,84 a la derecha (17,35/20,74) y 0,64 a la izquierda (11,6/18,19, con los segmentos 2–3 para la lateral y 4 para la medial); el resto
+de cada rama pertenece a territorio no representado. Son razones de máximos de un estudio piloto aplicadas a velocidades medias: siguen siendo provisionales
+(**NEEDS_CALIBRATION**). No se reparten igual las ramas principales: con las áreas de referencia, 0,82 y 0,72 del tronco dejarían sin destino el 23 % del caudal (`uniform-vessel-velocity`).
+
+**Consecuencias.** En el sano: anterior y posterior 14,5 cm/s, lateral y medial 10,6; caudal, presiones, modulación, tronco y ramas principales iguales. Referido a los máximos (centro = 1,5 × media de los 10 s), el tronco queda en 25,2 frente a 25,4 ± 3,1;
+las ramas principales en 25,9 y 24,9 frente a 20,7 y 18,2; las derechas de segundo orden en 21,8 frente a 17,3 y las izquierdas en 15,9 frente a 11,4–11,8. El árbol procedural que cuelga de ellas baja igual, y con él el color de las ramas finas. La vista portal intrahepática con Metal no cambia de forma visible, en capturas de fases cardíacas distintas (`vexus-portal-branches-evidence-20261030`). No se cambia la velocidad uniforme a lo largo del tubo: imponer caudal constante a un tubo afilado multiplicaba por 2–3
+la velocidad periférica (decisión 6). JavaScript: +129 B, a 21 B del límite tras la decisión 295.
+
+**Verificación.** `portalFlowBudget.test.ts`, con sano y congestión grave: el tronco es la suma de sus ramas, la razón de cada rama de segundo orden con su madre es la de los controles y lo representado
+no llega al caudal de su rama. Falla con las fracciones fijas y con un factor casi nulo (una revisión independiente mostró que el techo `hija ≤ madre` no lo detectaba). La revisión: `vexus-pw-clutter-evidence-20261030/review-r1`.

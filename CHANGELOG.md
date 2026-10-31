@@ -5,6 +5,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler: las ramas portales de segundo orden ya no van más rápido que su rama madre (24,4 → 14,5 cm/s en las derechas del sano) y no aliasan antes que el tronco (296).
 - Doppler PW: el tejido del volumen de muestra se mueve con la derivada del mapa y en el instante de cada pulso; desaparecen las líneas horizontales a múltiplos de 250 Hz con respiración profunda (295).
 
 - Doppler PW: la sangre del volumen de muestra sigue la corriente de su tubo y entra por la cara opuesta; tras respirar y volver a apnea, la vena interlobar se capta sin mover la puerta. Su velocidad sigue el perfil de la sección del instante y la luz que crece o mengua cambia en rampa la identidad de sus dispersores. Respirando, la PF portal ahora responde a la puerta que barre el vaso: la captura se rechaza si la deriva explica más que la tolerancia, si la puerta pierde el vaso o si cambia el reparto entre tronco y ramas, y la selección automática mide el tronco lejos de la bifurcación si el ángulo lo permite; se piden más apneas (294).

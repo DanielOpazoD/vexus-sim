@@ -183,16 +183,24 @@ export function hepaticFlowShares(areas: VesselAreas): Record<HepaticVeinId, num
   };
 }
 
-/** Fracción del caudal portal que lleva cada tramo. */
-export const PV_FLOW_SHARE: Record<PortalVeinId, number> = {
-  pvTrunk: 1,
-  pvRight: 0.6,
-  pvRightAnterior: 0.3,
-  pvRightPosterior: 0.3,
-  pvLeft: 0.4,
-  pvLeftLateral: 0.2,
-  pvLeftMedial: 0.15,
-};
+/**
+ * Fracción del caudal portal que lleva cada tramo. Las dos ramas principales se reparten el tronco. Las de segundo orden llevan la
+ * fracción de su área de referencia con la velocidad media relativa a su madre que dan los máximos de 30 controles de Verma et al. 2023
+ * (derechas 17,35/20,74 = 0,84; izquierdas 11,6/18,19 = 0,64; decisión 296): el resto de su rama va por territorio no representado.
+ */
+export function portalFlowShares(areas: VesselAreas): Record<PortalVeinId, number> {
+  const right = (0.6 * 0.84) / areas.pvRight;
+  const left = (0.4 * 0.64) / areas.pvLeft;
+  return {
+    pvTrunk: 1,
+    pvRight: 0.6,
+    pvRightAnterior: right * areas.pvRightAnterior,
+    pvRightPosterior: right * areas.pvRightPosterior,
+    pvLeft: 0.4,
+    pvLeftLateral: left * areas.pvLeftLateral,
+    pvLeftMedial: left * areas.pvLeftMedial,
+  };
+}
 
 /**
  * Fracción del caudal de un riñón que lleva cada interlobar representada.

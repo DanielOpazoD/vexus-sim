@@ -322,7 +322,9 @@ y 0,85 de la velocidad media de la colectora. El territorio no representado comp
 el caudal de cada colectora. Este factor evita que una fracción fija sobredimensione
 la velocidad periférica; es provisional, **NEEDS_CALIBRATION**, y no representa una
 medición humana ni una estenosis. Los cambios de dirección, proyección angular,
-perfil radial y dilatación siguen actuando sobre Color y PW.
+perfil radial y dilatación siguen actuando sobre Color y PW. Las ramas portales de segundo
+orden siguen la misma regla con 0,84 a la derecha y 0,64 a la izquierda (296): razones de
+máximos de un estudio piloto, aplicadas a velocidades medias, también **NEEDS_CALIBRATION**.
 
 ### Movimiento de la sonda (283)
 

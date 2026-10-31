@@ -42,7 +42,10 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   tranquila, vena interlobar bifásica y PF 34 % con la VCI de 13 mm, grado 0). El bolo es volumen estresado íntegro, sin
   paso al intersticio.
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
-  con el área; no hay conservación explícita en bifurcaciones.
+  con el área. Con las áreas de referencia, el tronco portal se reparte entre sus dos ramas principales y cada rama de segundo
+  orden lleva una fracción de la suya (decisión 296), pero un tubo afilado no conserva caudal a lo largo: en su origen, las dos ramas
+  portales suman un 16 % más que el tronco, un residuo de esta aproximación que ningún territorio omitido explica. Conservar el caudal con esas áreas
+  deja las ramas principales a la velocidad del tronco (1,03 y 0,99), frente a 0,82 y 0,72 en los máximos de 30 controles (Verma et al. 2023).
 - **En la cohorte legacy el hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
   cúpula y una cara visceral en cuña ajustada a mano (decisión 72), con fosa vesicular, impresión renal, fisura
   umbilical y lámina del ligamento venoso; sin caudado propio ni grasa hiliar (la hepática y el colédoco del hilio van

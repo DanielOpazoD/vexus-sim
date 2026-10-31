@@ -6,7 +6,8 @@ import { comparisonState } from '../tools/fidelity/comparisonState';
 import { captureBMode } from '../tools/fidelity/captureBMode';
 
 test('compara imágenes registradas pese a distinto trabajo del receptor antes de adquirir', async ({ page }, info) => {
-  // Dos arranques y hasta 78 cuadros: misma historia de siete cuadros, sin trabajo de relleno innecesario.
+  // Dos arranques y hasta 62 cuadros: misma historia de siete cuadros, sin trabajo de relleno innecesario. En SwiftShader
+  // el serial llega a 21 antes de registrar en el segundo arranque; 25 deja holgura sin rellenar de más (decisión 302).
   budget(360_000, 2);
   const results: {
     raw: ReturnType<typeof comparisonState>;
@@ -51,14 +52,14 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       targetSeconds: 60,
       view: 'portal' as const,
       frames: 6,
-      historyStartFrame: 33,
+      historyStartFrame: 25,
     });
     expect(await page.evaluate(() => window.__vexusTest!.sim().renderer.gl.getError()), 'registro sin errores WebGL').toBe(0);
     expect(registered).toMatchObject({
       time: 60,
       frozen: true,
-      renderedFrame: 39,
-      protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 33, historyEndFrame: 39, frames: 7 },
+      renderedFrame: 31,
+      protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 25, historyEndFrame: 31, frames: 7 },
     });
     const hash = await captureHash(`registered-${trial}.png`);
     results.push({ raw, registered, rawHash, hash });

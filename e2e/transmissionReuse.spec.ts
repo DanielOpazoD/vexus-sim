@@ -4,7 +4,7 @@ import { comparisonState } from '../tools/fidelity/comparisonState';
 import { BOOT_MS, budget } from './support';
 
 test('A0/A1 reutilizados conservan todos sus bytes tras movimiento, profundidad, consulta y evolución', async ({ page }, info) => {
-  // Un arranque y quince renders ordinarios; el registro completo 33–39 se prueba aparte.
+  // Un arranque y quince renders ordinarios; el registro completo se prueba aparte (registeredComparison).
   // 180 s de trabajo más el presupuesto de arranque existente; sin retries.
   budget(180_000);
   const errors: string[] = [];

@@ -305,3 +305,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [299](DECISIONS.md#L9656) | Velocidades del sano que aún se apartaban de lo publicado: suprahepáticas, renal principal y ramas portales | vigente |
 | [300](DECISIONS.md#L9672) | Pose hepatorrenal del atlas: riñón completo en eje largo con el hígado delante | vigente |
 | [301](DECISIONS.md#L9688) | El rosario de la cápsula hepática era el escalón del vóxel del atlas, no las facetas | vigente |
+| [302](DECISIONS.md#L9707) | Menos relleno en `registeredComparison`: `main` agotaba sus 12 minutos | vigente |

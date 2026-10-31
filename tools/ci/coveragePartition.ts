@@ -4,6 +4,9 @@ export const EXHAUSTIVE_MATRIX_FILES = [
   'src/validation/examChainScale.test.ts',
   'src/validation/examChainScalePatterns.test.ts',
   'src/validation/liverContourPoseMatrix.test.ts',
+  'src/validation/pwPopulation.test.ts',
+  'src/validation/portalTrunkWindow.test.ts',
+  'src/validation/portalSubcostalWindow.test.ts',
 ] as const;
 
 export type CoveragePartition = 'all' | 'core' | 'matrix';

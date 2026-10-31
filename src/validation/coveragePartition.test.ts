@@ -14,7 +14,7 @@ describe('partición de cobertura sin perder pruebas', () => {
     const matrix = coverageFiles(files, 'matrix', 'all');
     expect(core.filter((p) => matrix.includes(p))).toEqual([]);
     expect([...core, ...matrix].sort()).toEqual([...files].sort());
-    expect(matrix).toHaveLength(4);
+    expect(matrix).toHaveLength(7);
     expect(core).toEqual(representative);
   });
   it('una prueba nueva entra automáticamente en cobertura', () => {

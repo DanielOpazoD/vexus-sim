@@ -9715,3 +9715,17 @@ Se conservan el plazo, los dos arranques, las cuatro capturas, los siete cuadros
 **Consecuencias.** Dieciséis cuadros menos, de 78 a 62: unos 120 s a los 7,6 s por cuadro de las corridas lentas (de unos 730 a unos 610 s). No se reintenta la corrida para obtener verde ni se amplía el plazo. La prueba sigue siendo la más larga de su tanda.
 
 **Verificación.** Metal (M4): `registeredComparison` y `transmissionReuse` aprueban sin reintentos. La CI de esta PR es la autoridad sobre el tiempo en SwiftShader. Solo cambian dos archivos de `e2e/` y este documento. No es validación clínica.
+
+## 303. Pose renal del atlas: el sector en contacto, verificado por la captura completa de la vena
+
+**Problema.** En la ventana renal, el 43 % de las líneas no tenía contacto y casi medio sector salía negro; el 41 % de las muestras de riñón quedaba tras hueso o sin acoplar. La decisión 300 no pudo arreglarlo: las candidatas elegidas por geometría perdían el acceso a las interlobares.
+
+**Decisión.** Cambiar solo la pose del atlas, sin mover órgano, costilla ni vaso: φ 3,626, z −171,944, giro 0,107, basculación 0,01, inclinación 0,051. Es una posición estimada, no una ventana clínicamente validada. El barrido exige ahora puerta acústica en vena y arteria interlobares y sangre en la caja de Color en cinco fases de la respiración, y cada candidata pasa la **captura completa** de la vena, con la puerta del producto (`renal-verify.mts`: 8 de 8 aceptadas y 0 falsas, 4 casos, s101–102, apnea, ±40). De 35 poses, 12 la superaron; esta, por captura con GPU: riñón con contorno y cápsula claros, seno, músculo vecino y vasos debajo.
+
+**Alternativas descartadas.** Poses con el contacto al 100 % y el riñón algo más largo, pero con una costilla sobre el riñón o la cava en corte largo dominando el fondo. Seguir eligiendo por geometría: dos candidatas previas, con vasos en el plano, cayeron a 23 de 70 aceptadas.
+
+**Consecuencias.** Plano central, CPU, `main` → ahora: líneas en contacto 0,57 → 0,89; riñón visible 70 → 72 mm; corteza 17 → 23 cm²; seno 5,1 → 5,3 cm²; médula 1,1 → 1,75 cm²; riñón tras bloqueo 41 → 18 %; puerta de la vena a 69 mm en vez de 77. Panel con registro previo sobre semillas no vistas (s111–115; 7 casos, ±40 y ±80, vena interlobar, puerta del producto): en apnea, 70 de 70 aceptadas antes y ahora, y las **falsas aceptadas bajan de 4 a 0**: en `main`, bifásica en lugar de monofásica a ±80, en la grave y la cirrosis. 42 capturas de la cadena completa: grados y patrones de verdad iguales; aceptables, 27 → 27.
+
+**Coste declarado:** respirando, la búsqueda automática de puerta ya no encuentra la vena en el plano en 20 de 35 sesiones del panel y en 6 de 7 casos de las 42 capturas (`renal-window-apnea-gate`). Respirando no se aceptaba ninguna captura, antes ni ahora; el riñón entra y sale del plano y la consigna ya es pedir apnea. La sombra costal lateral sigue ahí, más estrecha. El interior renal sigue siendo procedural.
+
+**Verificación.** `renalWindow.test.ts` fija contacto, bloqueo y longitud, y falla con la pose anterior; `renalWallPoint.test.ts` registra el plano nuevo. Pasan `renalGateIdentity`, `renalArterialGate`, `windowPreset`, `startPointCards`, `compression`, `atlasWallContinuity`, `examChainScale*`, `renalEnvelope`, `referenceAcquisition`, `faceNormals`, `gateTransmission`, `pwLumenIdentity`. E2E con GPU real de las ventanas renales: 76 de 76, sin cambiar umbrales, incluidas `windowPresets` y `lowFilterAcquisition`. JavaScript: −39 B. No es validación clínica. `vexus-image-evidence-20261031/renal`.

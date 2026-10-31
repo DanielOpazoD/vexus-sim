@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Imagen: la ventana renal deja de tener medio sector negro: el riñón sale con contorno y seno claros, y se conserva el acceso Doppler a las interlobares. Respirando, la puerta cuesta más: hay que pedir apnea (303).
+
 - Pruebas: `registeredComparison` rellena ocho cuadros menos por arranque; `main` agotaba sus 12 minutos con los corredores más lentos. Mismo plazo y mismas aserciones (302).
 
 - Imagen: la cápsula hepática deja de verse como un rosario de cuentas blancas. Era el escalón del vóxel del atlas en la normal; ahora el lóbulo especular usa la normal promediada, y el perfil del eco no cambia. El residuo sin segmentar ya no se trata como grasa (301).

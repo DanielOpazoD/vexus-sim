@@ -739,6 +739,7 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;
     float inner; float dOuter;
     int region = kidneyQuery(m, k, inner, dOuter);
+    inner *= 0.75;
     float fat = perirenalThicknessMm(kidneyLocal(m, k), k);
     float dFat=uAbdominalAtlasEnabled!=0?perirenalOuterSdf(kidneyLocal(m,k),k):dOuter-fat;
     if (dFat < dPeri) { dPeri = dFat; periThin = fat <= PERI.z; }

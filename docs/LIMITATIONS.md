@@ -9,11 +9,13 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
 ## Anatomía y fisiología
 
 - **Solo el riñón derecho tiene vasos interlobares** (`no-left-interlobar-vessels`): el izquierdo
-  tiene arteria y vena renal pero no vasos intrarrenales; las 14 pirámides, el seno (con un dedo hacia cada papila) y
+  tiene arteria y vena renal pero no vasos intrarrenales; las 14 pirámides, el seno (con doce dedos entre las papilas) y
   la pelvis son procedurales (decisiones 37, 43, 68 y 87), sin cálices diferenciados. La vena renal es un solo tubo que
   nace en el borde medial del seno y resume las segmentarias que la forman en el hilio; dentro del seno solo hay las
   interlobares derechas y el extremo de la arteria renal. Sin pirámides en la cara medial (el seno está desplazado hacia
-  el hilio y allí el parénquima no deja sitio): la médula es el 6 % del volumen del parénquima, el 16 % del corte coronal.
+  el hilio y allí el parénquima no deja sitio).
+- **La frontera de clasificación del riñón no descuenta los tubos ni la compresión** (`kidney-boundary-ignores-tubes`, decisión 305): una interlobar o su pared pueden estar dentro de la distancia declarada a la frontera, y la guarda de la elevación puede reutilizar el tejido del centro junto a ellas; es anterior y vale para todos los órganos. Esa distancia se mide en material: con la compresión de la sonda, fuera del plano central, hay un testigo de seno a corteza a 0,90 × la frontera, que no activa la guarda. En material, entre las regiones del riñón, 0 cruces en 1,6 millones de ensayos; solo la pelvis tiene una cota demostrada, y el 0,75 sale de una medida. Dentro de la pelvis la frontera no pasa de 0,9 mm, así que las comprobaciones CPU/GPU que exigen ≥ 1 mm ya no miran ese tejido.
+- **La médula es mucho menor que la real** (`renal-medulla-atlas-thin`, decisión 305): con el atlas, el 4–5 % del parénquima (15–19 % de un corte coronal), sin él el 8,6 % (22 %), frente al 35 % (27–38) por RM en adolescentes sanos (Liefke 2022; no hay un dato equivalente del adulto simulado). El riñón del atlas mide ±18 mm de grosor: solo el 21 % de su parénquima está a más de los 7 mm de corteza, así que unos conos mayores cambian poco la imagen. No se adelgaza la corteza ni se engorda el riñón para acercar el número.
 - **Vasos arcuatos sin luz ni eco especular** (`arcuate-no-lumen`, decisión 87): los arcuatos son un anillo de pared
   arterial en el borde de la base de cada pirámide (1,2 × 2,5 mm de sección), un dispersor difuso: sin luz, sin Doppler,
   sin la reflexión de sus paredes de frente (que en un equipo los hace focos brillantes) y sin unirse a las interlobares.

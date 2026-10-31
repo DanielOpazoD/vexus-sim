@@ -1087,20 +1087,22 @@ export class AnatomyScene {
         // del canal del seno su grasa sigue en la perirrenal (decisión 87: antes la cápsula la cruzaba). El mismo canal
         // decide la cara de la grasa de fuera, así que las dos mitades de la cara cambian de dueño en el mismo sitio, y la
         // distancia a la frontera lo cuenta
-        let bd = Math.min(kh.inner, -kh.dOuter - RENAL_CAPSULE_MM);
+        // `inner` cambia más deprisa que la distancia: fuera de la pelvis y del seno, la peor razón medida es 0,85. Es una medida en material, no una cota (decisión 305)
+        const inner = kh.inner * 0.75;
+        let bd = Math.min(inner, -kh.dOuter - RENAL_CAPSULE_MM);
         if (-kh.dOuter < RENAL_CAPSULE_MM) {
           const hc = hilumChannelSdf(kidneyLocal(m, k), k);
           if (hc > 0) {
             const cls: Classification = {
               ...NONE,
               tissue: Tissue.RenalCapsule,
-              boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter, kh.inner, hc),
+              boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter, inner, hc),
               interface: Interface.RenalCapsule,
               interfaceDistance: -kh.dOuter,
             };
             return { cls, dPeriMm, periThin };
           }
-          bd = Math.min(kh.inner, -hc);
+          bd = Math.min(inner, -hc);
         }
         return { cls: { ...NONE, tissue: KIDNEY_TISSUE[kh.region], boundaryDistance: bd }, dPeriMm, periThin };
       }

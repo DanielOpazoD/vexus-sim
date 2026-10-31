@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Imagen: el seno renal deja de ser un óvalo liso: es digitado, con los dedos entre las pirámides, y las pirámides se ven algo mayores. En la ventana renal su contorno entra en lo que se mide en riñones reales; en la hepatorrenal apenas cambia (305).
+
+- Clasificación: la frontera del riñón ya no se salta cambios de tejido en el muestreo elevacional de las ventanas renales (305).
+
 - Pruebas: la navegación libre por seis regiones pasa a dos pruebas de tres, con el mismo plazo; agotaba sus 6 minutos con los corredores lentos (304).
 
 - Imagen: la ventana renal deja de tener medio sector negro: el riñón sale con contorno y seno claros, y se conserva el acceso Doppler a las interlobares. Respirando, la puerta cuesta más: hay que pedir apnea (303).

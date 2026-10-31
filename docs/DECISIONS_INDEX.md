@@ -310,3 +310,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [304](DECISIONS.md#L9733) | `probeFreeNavigation` en dos pruebas: seis regiones no caben en 360 s con los corredores lentos | vigente |
 | [305](DECISIONS.md#L9747) | Seno renal digitado: los dedos entran entre las pirámides, y una cota para la frontera de la pelvis | vigente |
 | [306](DECISIONS.md#L9768) | Compensación nominal del campo cercano: +3 dB, hasta donde deja la meta de la grasa | vigente |
+| [307](DECISIONS.md#L9782) | Margen de JavaScript: retirar de Three lo que nadie usa, sin subir el límite | vigente |

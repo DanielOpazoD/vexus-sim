@@ -358,6 +358,12 @@ const PORTAL_Q_HI = 0.97;
 const PORTAL_Q_LO = 0.03;
 /** Fracción de las columnas del latido con traza para medirlo (el resto es un hueco de la señal). */
 const PORTAL_TRACE_COVERAGE = 0.5;
+/**
+ * Puntos de PF que puede explicar la deriva dentro del latido cuando el nivel no se repite de un latido a otro: la tolerancia
+ * de aceptación (decisión 94). La PF se define sobre el ciclo cardíaco; si quitar esa deriva (la respiración, la puerta que se
+ * mueve) cambia la lectura más que la tolerancia, no se puede atribuir al corazón (decisión 294). [EXTRAPOLACIÓN PROPIA]
+ */
+const PORTAL_DRIFT_PF_POINTS = 10;
 /** Fracción del latido que deben cubrir sus columnas para medirlo (la de la calidad). */
 const BEAT_COVERAGE = 0.9;
 /** Vmáx a partir de esta fracción del Nyquist: el pico se recorta o se pliega (aliasing). */
@@ -488,6 +494,7 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   let wallCut = false;
   let drifting = 0;
   const starts: number[] = [];
+  const flatPfs: number[] = [];
   for (const b of beats) {
     const inBeat = trace.filter((p) => p.t >= b.tR && p.t < b.tR + b.rr);
     // portalTrace conserva una muestra por columna: la cobertura se verificó antes de elegir la dirección.
@@ -500,8 +507,12 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
     // Una excursión dominada por la deriva entre fases ECG equivalentes no
     // demuestra pulsación cardíaca. Medianas del 10 % inicial y final.
     const edge = Math.max(1, Math.floor(v.length * 0.1));
-    starts.push(median(v.slice(0, edge)));
-    if (vmax - vmin > 2 * cmsOf(binHz) && Math.abs(median(v.slice(-edge)) - median(v.slice(0, edge))) > 0.75 * (vmax - vmin)) drifting++;
+    const start = median(v.slice(0, edge));
+    const end = median(v.slice(-edge));
+    starts.push(start);
+    if (vmax - vmin > 2 * cmsOf(binHz) && Math.abs(end - start) > 0.75 * (vmax - vmin)) drifting++;
+    const flat = v.map((x, i) => x - (end - start) * (i / (v.length - 1 || 1) - 0.5));
+    flatPfs.push(portalPulsatilityFraction(quantile(flat, PORTAL_Q_HI), quantile(flat, PORTAL_Q_LO)));
     // el pico toca el Nyquist: se recorta (la PF baja) o se pliega al otro lado (se leería como inversión)
     if (vmax >= PORTAL_CLIP_NYQUIST * nyquistCms) clipped = true;
     // Una inversión resuelta lejos de cero no es pérdida por filtro: conserva PF >100%.
@@ -526,8 +537,7 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   else if (wallCut && (quality.issue === null || quality.issue === 'intermittent')) quality.issue = 'wall-filter';
   if (
     quality.issue === null &&
-    drifting >= 3 &&
-    drifting > maxs.length / 2 &&
+    ((drifting >= 3 && drifting > maxs.length / 2) || Math.abs(median(pfs) - median(flatPfs)) > PORTAL_DRIFT_PF_POINTS) &&
     Math.max(...starts) - Math.min(...starts) > median(maxs.map((v, i) => v - mins[i]))
   )
     quality.issue = 'inconsistent';

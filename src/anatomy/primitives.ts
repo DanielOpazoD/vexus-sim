@@ -150,7 +150,7 @@ export function tubeShapeMaxFactor(cls: TubeShapeClass, radiusScale: number): nu
 }
 
 /** Métrica de la sección con la escala de radio del instante: wt = ŵ·√κ_ef y c = (1 + κ_ef)^(−1/4), κ_ef = κ/max(1, s)². */
-function shapeMetric(shape: TubeShape, radiusScale: number): { wt: Vec3; c: number } {
+export function shapeMetric(shape: TubeShape, radiusScale: number): { wt: Vec3; c: number } {
   const s = Math.max(1, radiusScale);
   const k = shape.kappa / (s * s);
   const q = Math.sqrt(k);

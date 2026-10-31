@@ -185,7 +185,8 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   await page.getByRole('group', { name: 'Barrido', exact: true }).getByRole('button', { name: '100', exact: true }).click();
   await expectTransformed(page, beforeSweep);
   // Cambiar la escala congelada descarta la adquisición incompatible (decisión 292),
-  // sin reetiquetar píxeles/trazado antiguos ni avanzar el reloj fisiológico.
+  // sin reetiquetar píxeles/trazado antiguos ni avanzar el reloj fisiológico. Se baja: a esta profundidad, con el
+  // PW intercalado, la PRF no da para subir de ±39 cm/s y pedir ±60 no cambiaría nada.
   const acquisition = () =>
     page.evaluate(() => {
       const s = window.__vexusTest!.sim();
@@ -203,7 +204,7 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
       // Clear the recorder in the same event as the scale change: an old RAF
       // must not repopulate it between two browser calls.
       (window as unknown as { capturePath: [number, number][] }).capturePath = [];
-      (input as HTMLInputElement).value = '60';
+      (input as HTMLInputElement).value = '30';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
   await expect.poll(async () => (await snapshot(page)).bitmap.length).toBe(0);

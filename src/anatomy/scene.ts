@@ -966,6 +966,16 @@ export class AnatomyScene {
   }
 
   /**
+   * Vaso cuya luz o pared contiene un punto MATERIAL según la misma búsqueda de `classifyTubes`: su definición (una rama
+   * procedural comparte `VesselId` con su madre, la definición no) y la consulta de su tubo. null fuera de un vaso o si
+   * gana un conducto. El volumen de muestra PW (decisión 294) transporta la sangre por el tubo que eligió la clasificación.
+   */
+  vesselTubeAt(m: Vec3, caliber: VesselCaliber): { def: VesselDef; hit: TubeHit } | null {
+    const best = this.bestTube(m, caliber);
+    return best?.kind === 'vessel' ? { def: best.def, hit: best.hit } : null;
+  }
+
+  /**
    * Tubo (vaso o conducto) que contiene el punto en su luz o en su pared, con la menor distancia a
    * la luz; a igualdad gana el vaso. Descarte por esfera envolvente. Es la búsqueda de
    * `classifyTubes` y la cara `tube` de `faceSdf` (la misma que recorre `classify` en GLSL).

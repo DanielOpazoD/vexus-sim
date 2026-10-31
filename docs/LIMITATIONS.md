@@ -519,12 +519,43 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   latidos completos, y en la FA la PF portal cambia de un latido a otro (12–47 % en una misma captura de la cadena del
   alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
   a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
-- **Los vasos finos vuelven a la puerta con menos sangre de la real** (`thin-vessel-sample-volume-lag`):
-  cuando una interlobar sale de la puerta con la respiración y vuelve, su región queda con menos
-  dispersores (30–45 % de sangre frente al 69 % de una siembra nueva en fin de espiración); además
-  la reclasificación solo alcanza a un cuarto fijo de la población. Rotarla y reponer la población
-  sin más introduce saltos bruscos de amplitud de pared y tejido (30–40 dB sobre la sangre) que el
-  filtro de pared no quita: hace falta un control de población con transiciones lentas.
+- **Tras respirar, la apnea parte con algo menos de sangre en la puerta** (`pw-population-after-breathing`, decisión 294):
+  en la interlobar del caso grave, la población del volumen de muestra queda en 0,892 de una siembra nueva tras 10 s de
+  respiración tranquila y vuelta a apnea (16 semillas, 0,75–1,08), frente a 0,992 en apnea sin haber respirado y 0,967
+  respirando (8 semillas cada uno); en la suprahepática del sano, 0,933 (8 semillas). La causa no está aislada: no se encontró
+  relación con el tamaño del salto del diafragma al pasar a apnea (12 ejecuciones que cambian a la vez la fase y la semilla,
+  así que no lo excluyen). En apnea solo el flujo renueva la población, así que ese estado se conserva; las capturas tras
+  respirar son válidas.
+- **Respirando, la PF portal se acepta menos, y la técnica la mide lejos de la bifurcación** (`portal-pf-breathing-quality`, decisión 294): con la
+  población nueva, la lectura responde a la puerta que barre la luz y las ramas, y tres reglas de calidad rechazan lo que no es pulsación
+  cardíaca. La selección automática pone la puerta a ≥ 20 mm de la bifurcación si allí el ángulo no pasa de 60°. Esos 20 mm se eligieron tras un fallo de la cadena, con el extremo de
+  los 1–2 cm de la suprahepática y no con una referencia portal [EXTRAPOLACIÓN PROPIA]; el umbral de la deriva es la tolerancia de la decisión 94, y las reglas se
+  eligieron sobre la propia cadena. En 280 capturas no usadas para elegirlas (s41–45): 169 aceptadas, todas a ≤ 10 puntos de la verdad, frente a 194 de
+  antes de la decisión, también todas; respirando se aceptan 48 de 140 (antes 68), ninguna en el sano, la FA, la insuficiencia tricuspídea y la ventilación
+  mecánica. Con la puerta manual sobre la bifurcación, 0 de 140 respirando y en apnea 125 de 140, 2 de ellas a más de 10 puntos. El alumno no tiene prohibido colocarla
+  ahí: a 5–20 mm se aceptaron 12 de 64, todas a ≤ 10, en un conjunto acotado. La regla del reparto solo mira la fracción del tronco: un intercambio entre dos ramas
+  no lo detecta. Lee una composición que se renueva cada 384 pulsos (74–296 ms según la escala), igual que la de la puerta que pierde el vaso. El cálculo es caótico y las
+  mismas semillas no dan lo mismo en Linux x86 y en Mac ARM: una captura falsa rara puede salir en una plataforma y no en otra (52 frente a 19 en el sano, en CI, con la
+  técnica anterior). Una captura aceptada respirando no es tan segura como una en apnea: el alumno debe pedir apnea.
+- **El volumen de muestra lleva la deformación con un mapa lineal en el centro de la puerta** (`pw-gate-linear-map`, decisión
+  294): un mapa material → mundo por paso fisiológico. Junto a la columna, donde el peso respiratorio cambia en 30 mm, se
+  separa de la deformación exacta hasta 1,16 mm en una caja ampliada mientras se respira; en la porta y la suprahepática,
+  0,02–0,05 mm. Las identidades se clasifican en el punto material del mapa: la población es coherente consigo misma, pero
+  respirando la puerta renal ve su anatomía con esa distorsión.
+- **En los codos de un tubo la corriente gira en el nodo** (`pw-stream-capsule-joints`, decisión 294): la sección pasa de un
+  segmento al siguiente con la rotación mínima de la tangente, de modo que la cuña exterior del casquete de un nodo interior
+  no recibe sangre transportada y la parte interior se recorre con la geometría del segmento. La interlobar medida, con un
+  codo de 23° a 6,4 mm del centro de la puerta, cumple la estacionariedad; no se midió un codo dentro de la caja. La
+  corriente conserva el radio normalizado de su siembra en todo el tubo (su velocidad y su pertenencia a la luz): tras un
+  codo, o en un casquete, la velocidad puede diferir de la del campo en ese punto, y la sangre sembrada en un casquete lleva
+  el perfil de su desplazamiento perpendicular, no el de su distancia al nodo extremo. Las cajas de las uniones se calculan al sembrar con
+  un margen de ×1,25 sobre el calibre del instante: no es una cota de todo crecimiento (un bolo de 500 ml en el caso grave llega a ×1,34), aunque
+  en esos recorridos no se midió peso con la corriente de otro tubo.
+- **La luz que crece sobre tejido tarda hasta una visita en llenarse** (`pw-lumen-growth-lag`, decisión 294): el tejido que
+  la luz del instante pasa a contener cambia a sangre cuando lo visita la reclasificación, que recorre un cuarto de la
+  población cada 96 pulsos (hasta 384 pulsos, ~0,15 s a 2,6 kHz) y después se enciende en dos rampas de 32 pulsos. La
+  sangre que la luz deja fuera, y el tejido que fue sangre de una corriente que la luz vuelve a contener, no esperan a la
+  visita. Mientras dura, ese tejido sigue sonando dentro de la luz.
 
 ## Enseñanza
 

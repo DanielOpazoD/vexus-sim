@@ -12,7 +12,15 @@ import {
   type ObservedPortal,
   type ObservedRenal,
 } from './spectralMeasure';
-import { dominantGateSystem, hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
+import {
+  dominantGateSystem,
+  hepaticGateDropout,
+  portalBranchShift,
+  portalGateDropout,
+  wrongGateVessel,
+  type GateVesselSample,
+  type ProtocolVessel,
+} from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
 const CAPTURE_SECONDS = SPECTRAL_CAPTURE_SECONDS;
@@ -70,11 +78,18 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
     return { ...m, quality: { ...m.quality, issue: m.quality.issue ?? 'renal-identity', renalArterialDominance: true } };
 
   if (
-    kind === 'hepatic' &&
+    kind !== 'renal' &&
     m.quality.issue === null &&
     columns.length &&
-    hepaticGateDropout(gateTrack, effective[0].tR, last.tR + last.rr, opts.fftSize / columns.at(-1)!.prfHz)
+    (kind === 'hepatic' ? hepaticGateDropout : portalGateDropout)(
+      gateTrack,
+      effective[0].tR,
+      last.tR + last.rr,
+      opts.fftSize / columns.at(-1)!.prfHz,
+    )
   )
     return { ...m, quality: { ...m.quality, issue: 'intermittent' } };
+  if (kind === 'portal' && m.quality.issue === null && portalBranchShift(gateTrack, effective[0].tR, last.tR + last.rr))
+    return { ...m, quality: { ...m.quality, issue: 'inconsistent' } };
   return m;
 }

@@ -5612,6 +5612,8 @@ longitud de puerta de distancia material respecto al extremo distal del tronco.
 Es una guarda geométrica experimental de 6 mm, no un umbral clínico. La búsqueda
 admite una restricción opcional, evaluada por orden de puntuación, y devuelve
 null si ninguno sirve. Las llamadas sin restricción conservan su comportamiento.
+(Superada por la decisión 294: toda selección automática del tronco portal, también la
+del visor, busca ahora ≥ 20 mm de la bifurcación con un ángulo de hasta 60°.)
 
 **Verificación.** Restricción imposible, disponibilidad de todos los casos en
 ambos cuerpos en apnea, predominio del tronco en cuatro cadenas IQ y patrones
@@ -9452,3 +9454,106 @@ El modelo se comporta como si el contraste fuera menor que el de su c: subestima
 La c de `RenalPelvis` no interviene hoy en la refracción ni en una cara propia. La orina de la vejiga usa `Tissue.Fluid` y entra en ambas: su cara urotelio/orina refleja con R 0,0805 frente a 0,0578 con 1551 m/s (+2,9 dB), y este banco de vesícula biliar no valida esa compensación en la vejiga. El contenido colónico copia como proxy la impedancia y la refracción del líquido (`colonicContents.test.ts`), sin validación física propia. Corregir la c exige antes una refracción que cumpla a 37 °C por sí misma; añadir la pérdida de coherencia por aberración de fase es una hipótesis para un bloque posterior, no validada aquí.
 
 **Verificación.** Bancos regenerados en CPU (seis minutos y medio cada uno) y comparados con el cálculo de `refraction.test.ts`; barridos de difracción y mancha; los perfiles de los vasos salen idénticos con cualquier c de la bilis. Testigos negativos: con la tabla a 1524 m/s falla el banco de 1524 (borde hasta 3,1 dB menos hondo); con 1541 fallan ambos. Revisión independiente con cambios de documentación y procedencia aplicados. Evidencia en `vexus-fluid-sound-speed-evidence-20261029`. Check completo y CI del head final siguen siendo obligatorios.
+
+## 294. Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta
+
+**Contexto.** La población del volumen de muestra se alejaba de una siembra nueva en los vasos finos (bloque 9 de
+NEXT15). La sangre avanzaba en recta y reentraba por su cuerda de la caja aunque esa cuerda saliera de la luz. La
+reclasificación periódica, que solo alcanza a `j ≡ 0 (mod 4)`, convertía en tejido a la que encontraba fuera de su vaso,
+y nada la devolvía. Con 16 semillas, la interlobar en apnea daba 0,662 de una siembra nueva (IC95 % 0,640–0,684) y,
+respirando con el vaso en la puerta, 0,213. Escenario del alumno en congestión grave: puerta colocada en apnea, 10 s
+respirando y vuelta a apnea; todas las capturas renales salían `no-signal` (peso 0 frente a 0,093 de una siembra nueva)
+hasta mover la puerta. `PwDopplerChain.reset` descarta el procesamiento, no la población. La rotación aislada de la
+reclasificación (208) y el recambio aislado de `f6ce803` (289) ya se habían rechazado.
+
+**Opciones.** Dos diseños independientes con OpenAI (gpt-6.1-sol y gpt-6-astra, xhigh) coincidieron en el mecanismo y
+descartaron rotar la reclasificación, resembrar a intervalos o al volver a apnea y proyectar al eje. Propusieron el
+transporte por la geometría del vaso con conservación de la medida. Un prototipo fuera del producto pasó por diez
+versiones, con sus negativos en la evidencia. Por ejemplo, la sangre en el marco material verdadero con el tejido rígido
+mejoraba la apnea pero no la respiración, y sin partición en las uniones la porta respirando contaba dos veces la
+bifurcación (1,12).
+
+**Decisión.** Todo dispersor vive en su punto material verdadero. Un mapa lineal por llamada en el centro de la puerta
+(material → mundo, cuatro evaluaciones de la deformación, solo si cambian respiración, compresión o puerta) y el
+desplazamiento rígido dentro de la llamada lo llevan a la caja. La sangre recorre la corriente del tubo que eligió la
+clasificación (`AnatomyScene.vesselTubeAt`): segmento, parámetro y desplazamiento de la sección normalizado por el radio del tubo con el calibre de la siembra.
+
+- Salida por flujo, con el desplazamiento del pulso anterior: reentra aguas arriba por su corriente, con el sobrepaso. La cuerda medida se reutiliza mientras no cambie el mapa; con el mapa cambiado solo orienta la búsqueda de los dos cruces (reutilizarla tal cual 50 ms dejaba la porta respirando en 0,905). Los cruces con la caja se calculan cortando su cara con la recta de la corriente.
+- Salida por movimiento (respiración, mapa nuevo): entra otro dispersor por la cara opuesta a lo largo del movimiento. Su identidad es la del punto material del mapa (`AnatomyQuery.classifyMaterial`, sin invertir la deformación), de modo que identidad y posición coinciden.
+  El tejido sale y entra en rampa; la sangre, con su amplitud.
+- Más allá de los nodos extremos, la corriente sigue recta por el casquete hasta salir de la luz del instante (la esfera del nodo con la métrica de su sección).
+- En una unión, una corriente vale solo donde su tubo gana la clasificación. Los socios se buscan al sembrar: los segmentos más cerca que la suma de sus radios, con el calibre del instante y margen para que crezca, y la caja del solape es la intersección de las cajas de esos segmentos; en ella se comparan las distancias exactas de los dos tubos. Estimar esa caja con muestras dejaba fuera parte del solape y hasta un 3,7 % del peso sonaba con la corriente de otro tubo. Salir de ese dominio es una salida por flujo y se atiende en el paso de flujo, antes del movimiento. Atendida después, la franja junto a la cara de entrada está vacía cuando esa cara avanza: el movimiento no saca a nadie por ella, pero en la fase contraria sigue entrando sangre (tronco y rama izquierda reales, puerta fija y respiración rígida: 0,841, y 0,68 con la rama invertida; antes del movimiento, 0,978 y 0,985). Si el reparto lo mueve la geometría (calibre, semieje AP de la cava) y el punto anterior de la corriente ya estaba fuera, no reentra: cambia de identidad en dos rampas, sin saltar aguas arriba, y mientras dura sigue su corriente. `domainArc` da el arco que falta para poder dejar el dominio, con lo rápido que puede acercarse cada tubo según su métrica, y evita consultar los tubos en cada pulso.
+- Cada partícula de sangre lleva la importancia (r/r_siembra)² del radio del tubo a lo largo de su corriente: en un tubo afilado la circulación conserva la densidad por arco y no por volumen. La importancia multiplica el peso en la composición y su raíz, la amplitud IQ (potencia incoherente esperada).
+- La velocidad es la del perfil radial con el radio normalizado de la siembra en la sección del instante (calibre, semieje AP de la cava, forma orgánica), como la de `classifyMaterial` en el punto de la siembra. Ese radio es constante a lo largo de la corriente: recalculado en cada nodo o casquete, la densidad por arco iba como 1/velocidad y la interlobar en apnea quedaba en 0,83 de una siembra nueva.
+- La luz que crece o mengua no mueve las corrientes: cambia en dos rampas (decisión 48) la identidad del punto. Con ese mismo radio, la sangre que la luz deja fuera se detiene (perfil nulo) y empieza a convertirse en el tick lento en que se detecta. El tejido que queda dentro cambia en la visita de la reclasificación, que cada turno recorre otro cuarto de la población (con la sangre en su corriente esa rotación ya no la vacía, como en la 208), o antes si fue sangre de una corriente que la luz vuelve a contener. Al terminar la rampa se enciende la identidad del punto en ese instante, no la de la visita, y la sangre recibe la corriente de esa misma clasificación. Una reentrada solo acepta puntos dentro de la luz del instante de su tubo.
+
+La sangre de un clasificador sintético (fantomas analíticos), sin tubo cuya base de flujo coincida, conserva el
+transporte recto y la reentrada por su cuerda de las decisiones 48 y 264.
+
+**Consecuencias.** Con 16 semillas y el código final, la relación media con una siembra nueva queda así (IC95 %):
+
+| Puerta        | Apnea, antes | Apnea, ahora        | Respirando, antes | Respirando, ahora   |
+| ------------- | ------------ | ------------------- | ----------------- | ------------------- |
+| Interlobar    | 0,662        | 1,000 (0,967–1,033) | 0,213             | 1,045 (1,013–1,078) |
+| Tronco portal | 0,981        | 0,994 (0,949–1,039) | 0,719             | 0,960 (0,904–1,015) |
+| Suprahepática | 0,970        | 0,986 (0,931–1,041) | 1,069             | 1,013 (0,981–1,045) |
+
+Respirando se cuentan los instantes con el vaso en la puerta. En el escenario del alumno, las capturas tras respirar son
+monofásicas válidas, pero la población queda en 0,892 de una siembra nueva (16 semillas, 0,75–1,08, DE 0,10). Sin haber
+respirado, esa puerta da 0,992 en apnea y 0,967 respirando (8 semillas); en la suprahepática del sano, 0,933 tras respirar
+(8 semillas). La causa no está aislada; no se encontró relación con el tamaño del salto del diafragma en 12 ejecuciones que
+cambian a la vez fase y semilla (`pw-population-after-breathing`). El mapa lineal se separa de la deformación exacta junto a la columna
+(`pw-gate-linear-map`), y la corriente gira de golpe en los codos y conserva su radio normalizado en todo el tubo
+(`pw-stream-capsule-joints`). El tejido sobre el que crece la luz espera la visita de la reclasificación
+(`pw-lumen-growth-lag`).
+
+La PF portal respirando se acepta menos, con una exactitud similar a la de main, a cambio de tocar la técnica del operador. Con la
+población nueva, la lectura responde a la puerta que barre la luz y las ramas, no solo a la fisiología. La técnica dejaba la puerta a
+2,4 mm de la bifurcación, donde el mejor ángulo: al respirar cabalgaba tronco y ramas, y en el sano la PF salía en 26–37 % con una verdad de
+20 %, compatible con una envolvente que salta entre sus velocidades (la rama derecha se proyecta ×1,5 mejor sobre el haz; sin aislar). Las
+capturas falsas y las correctas tenían la misma cobertura, señal y composición. Se responde con cuatro piezas:
+
+- Deriva (`measureObservedPortal`, solo traza y ECG): si quitar la deriva dentro del latido cambia la mediana de la PF más que la tolerancia de aceptación (10 puntos, decisión 94) y el nivel de inicio no se repite entre latidos, la captura es `inconsistent`. Sin esa segunda condición, ya exigida por el testigo de deriva, se rechazaban ondas periódicas con un salto en el borde del latido.
+- La puerta pierde el vaso (`portalGateDropout`, supervisor del simulador, como `hepaticGateDropout`): si la sangre portal de la puerta baja de la mitad de su máximo durante una ventana espectral, la captura es `intermittent`. Las capturas se separan solas: en desarrollo ninguna cae entre 0,25 y 0,5 de su máximo.
+- El reparto cambia (`portalBranchShift`, supervisor): si el rango Q95 − Q05 de la fracción del tronco en la sangre portal pasa de 0,15 durante la captura, `inconsistent`. El umbral, la tolerancia de reproducibilidad del QC renal, se registró antes de ver datos. En apnea no pasa de 0,142; en el tronco lejos de la bifurcación es 0. Solo mira el tronco: un intercambio entre dos ramas no lo detecta.
+- Técnica (`bestGateOnVessel`): el tronco portal a ≥ 20 mm de la bifurcación con un ángulo de hasta 60°, en toda selección automática (cadena del alumno, ganchos de la e2e y visor, donde sustituye a la guarda de 6 mm de la decisión 140). Manda el ángulo: en la ventana subcostal de los modelos legacy y de referencia ningún punto lejano baja de 60° (coseno 0,35–0,48) y vale el mejor punto, con la regla del reparto vigilando. **Esto cambia la colocación que el encargo de diseño de las reglas prohibía tocar «para acomodar el resultado», y los 20 mm se eligieron después del fallo que se cuenta abajo**, con el extremo de los 1–2 cm del protocolo en la suprahepática, no con una referencia portal independiente [EXTRAPOLACIÓN PROPIA]. Se justifica porque separa el lugar de adquisición del QC: con la puerta anterior el reparto varía 0,25 y aquí 0, y alejarla no obliga a acertar (esa misma captura sale de 35,9/19,4 a 53,9/19,4, las dos rechazadas). Las colocaciones manuales no tienen prohibición: las cubren las reglas.
+
+Se descartaron, medidos: la variación de composición y la ganancia axial en su diseño original (con la puerta en la bifurcación rechazaban todo lo capturado respirando), la sensibilidad a la geometría congelada (la captura falsa conocida daba 2,7 puntos), la deriva entre inicios de latidos consecutivos (1 de 7 falsas), la deriva menos la mediana de la captura (se le escapa la deriva del mismo signo), la onda promedio por fase del ECG (rechaza casi todo lo que se captura respirando) y rechazar si Vmáx cambia entre latidos más que la pulsación (solo 9–14 de 140 aceptadas respirando, el total en 47,5–50,6 %).
+
+Solo con las dos primeras reglas y la puerta en la bifurcación, cuatro paneles dieron 653 de 666 aceptadas a ≤ 10 puntos y una a más de 15 (37,7 frente a 19,4); pero la CI encontró en el sano, con las semillas de la prueba, una aceptada de 52 frente a 19 que en local no salía. El cálculo es caótico y difiere entre plataformas: las semillas no dan el mismo resultado en Linux x86 y en Mac ARM, y una cola de falsas puede aparecer en una y no en otra. Con registro previo y 280 capturas no usadas para elegir (s41–45; 7 casos, apnea y respiración tranquila, ±20–±80):
+
+| Panel s41–45                    | Aceptadas    | A ≤ 10 puntos | A > 15 | Respirando, aceptadas | Lecturas leves con verdad normal / normales con verdad leve |
+| ------------------------------- | ------------ | ------------- | ------ | --------------------- | ----------------------------------------------------------- |
+| Técnica nueva                   | 169 (60,4 %) | 169 (100 %)   | 0      | 48/140                | 0 / 7                                                       |
+| Puerta manual en la bifurcación | 125 (44,6 %) | 123 (98,4 %)  | 0      | 0/140                 | 0 / 4                                                       |
+| Main                            | 194 (69,3 %) | 194 (100 %)   | 0      | 68/140                | 1 / 12                                                      |
+
+En los tres, en apnea a ±40–±80 todas las capturas son medibles en cada caso, las reglas no rechazan ninguna en apnea y ninguna sale «grave» con verdad < 30. En las capturas respirando que aceptan la técnica nueva y main, el error absoluto mediano es de 2,7 y 2,6 puntos. Respirando quedan en 0 de 20 el sano, la FA, la insuficiencia tricuspídea y la ventilación mecánica (la puerta se sale de la luz con el vaivén), y en 15–18 de 20 la hipertensión abdominal, la cirrosis y el grave. Son un solo panel y una plataforma; no se aisló por qué main se equivocaba menos con su puerta en la bifurcación: su población también cambia con la geometría. En 64 capturas manuales a 5–20 mm de la bifurcación se aceptan 12, todas a ≤ 10 puntos, con un conjunto acotado (`portal-pf-breathing-quality`). Evidencia en `qc-r1/` de la carpeta de evidencia.
+
+La cadena PW cuesta más. El A/B intercalado con main, de tres rondas, cronometra solo `chain.step` a 2600 Hz, sin `setGate`,
+la búsqueda inicial de uniones ni el resto del cuadro (carga ~4). En apnea da ×1,3–1,5 en la interlobar, ×1,8–2,0 en el tronco
+portal y ×2,5–2,9 en la suprahepática; respirando, ×1,3–1,4, ×2,3–3,2 y ×2,6–2,9. En CPU por segundo simulado, el máximo es
+0,25 s en la interlobar, frente a 0,19 s en main. Con la puerta sobre la bifurcación, donde se consulta el reparto, la porta respirando
+llega a ×5,5 y 0,48 s. En el navegador con Metal, antes de la técnica nueva, 75 cuadros/s frente a 83 con PW encendido, sin tareas largas. Ninguna prueba fija ese
+presupuesto: queda medido y declarado. El JavaScript total pasa de 1032,9 a 1044,9 KiB (`sampleVolume.ts`, de 9,4 a ≈ 22 kB
+minificado); con la aprobación del usuario, su presupuesto sube de 1033 a 1045 KiB y los límites por chunk se conservan. Se
+retira `thin-vessel-sample-volume-lag`.
+
+**Verificación.** `pwPopulation.test.ts`: interlobar en apnea, interlobar respirando y el escenario del alumno con cuatro
+semillas en los dos brazos. Fallan con el código anterior: 0,633; 0,535; y en el escenario, 0,69 en apnea, `intermittent`
+y 0,022 tras respirar. Los umbrales del escenario se fijaron con la distribución medida de 16 semillas.
+`pwStreamMotion.test.ts` fija con anatomía sintética el flujo y la respiración a la vez en un tubo recto (densidad por franja a 0,59 de la uniforme con el código anterior), los casquetes que se contraen (0,9999 de fracción sanguínea frente a 0,469) la salida por el reparto de una unión (0,92 con el código anterior), el reparto que cambia con el calibre sin flujo (0,64–0,70, con 60–63 de 320 partículas movidas) la cava aplanada a 2600 Hz (una partícula emitía en el dominio de la cava con arco aún positivo) y una unión real con la geometría fija (3,7 % del peso con la identidad de otro tubo y cruces por flujo tomados por cambios de geometría). `portalMeasure.test.ts` y `hepaticGateVisibility.test.ts`, las tres reglas de calidad; `portalTrunkWindow.test.ts`, la técnica en todos los casos.
+`pwLumenIdentity.test.ts` fija los contraejemplos de las dos revisiones independientes (gpt-6.1-sol). De la primera: la
+suprahepática que crece sobre una puerta de tejido (antes 0,012 de una siembra nueva), el colapso AP de la cava (antes el
+100 % del peso sanguíneo fuera de la luz) y la confluencia portal (antes un 6,3 % del peso sanguíneo aceptado en la rama
+equivocada). De la segunda: la luz que crece y oscila sin detenerse (antes sin sangre, 0 frente a 0,124), la conversión
+que se revierte antes de terminar su rampa (antes 80 dispersores de tejido sonando dentro de la sangre), la cava que se
+aplana con su flujo (antes un 6,7 % del peso sanguíneo fuera de la luz) y la velocidad frente al campo oficial al dilatar
+y al contraer (antes 0,585). Cada grupo falla con la versión anterior a su respuesta y pasa ahora. Con la versión de la
+primera revisión, el check completo fallaba en la cadena del alumno: PF portal del caso grave a 9,06 puntos de la verdad
+(límite 8) y PF portal del sano respirando a ±80 cm/s aceptada en 37,6 frente a 19,4. `examChain` y `examChainScale` pasan
+ahora sin cambiar sus tolerancias. Los fantomas de `pwTransportContinuity`, `pwSamplingDensity` y `pwContinuityAudit` sustituyen
+ahora `classifyMaterial`, por donde pasa también `classifyWorld`, sin cambiar aserciones. Se mantienen el testigo portal
+(289), la IQ idéntica con y sin caché, el transporte analítico de la decisión 264 (su anatomía falsa añade el mapa
+identidad y `classifyMaterial`, sin cambiar aserciones) y las suites de adquisición, renales, venosas y portales. Diseños,
+prototipos, negativos, semillas, revisiones y costes: `vexus-pw-transport-evidence-20261029`.

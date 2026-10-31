@@ -191,6 +191,26 @@ describe('Deriva de la envolvente portal frente al ciclo cardíaco', () => {
     expect(m.trace).toHaveLength(cols.length);
   });
 
+  it('la deriva que explica más que la tolerancia de la PF no se acepta aunque no domine en casi ningún latido', () => {
+    // Revisión r3 de la decisión 294: la porta respirando, con la puerta barriendo la luz. Onda cardíaca pequeña y un vaivén
+    // lento: la PF por latido sale ≈ 30 % siendo la cardíaca ≈ 8 %, y la deriva no llega a dominar en 3 de los 4 latidos.
+    const breathing = (t: number) => 30 + 1.2 * Math.sin((2 * Math.PI * (t - 0.4)) / 0.8) + 7 * Math.sin((2 * Math.PI * t) / 3.2);
+    const m = measureObservedPortal(portalColumns({ top: breathing, snrDb: 40 }), beats, opts)!;
+    expect(m.pulsatilityFraction).toBeGreaterThan(18);
+    expect(m.quality.issue).toBe('inconsistent');
+  });
+
+  it('conserva latidos de amplitud distinta que vuelven a la misma fase: la variabilidad de la FA no es deriva', () => {
+    const amplitude = [4, 11, 7, 13, 5, 9];
+    const top = (t: number) => {
+      const i = Math.max(0, Math.min(5, Math.floor((t - 0.4) / 0.8)));
+      return 30 + amplitude[i] * Math.sin((2 * Math.PI * (t - 0.4)) / 0.8);
+    };
+    const m = measureObservedPortal(portalColumns({ top, snrDb: 40 }), beats, opts)!;
+    expect(m.pulsatilityFraction).toBeGreaterThan(20);
+    expect(m.quality.issue).toBeNull();
+  });
+
   it('conserva un flujo casi constante: el ruido de cuantización no demuestra deriva', () => {
     const m = measureObservedPortal(portalColumns({ top: () => 20, snrDb: 40 }), beats, opts)!;
     expect(m.quality.issue).toBeNull();

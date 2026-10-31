@@ -56,30 +56,29 @@ function truthOf(session: ReturnType<typeof openSession>, m: { measuredBeats: re
   return { truth: measurePhysiologyTruth(session.engine, { fromT: b[0].tR - 1e-6, toT: last.tR + last.rr + 1e-6 }).portalPF, truth7 };
 }
 
-function portalRows(caseIndex: number): Row[] {
+function portalRows(caseIndex: number, resp: RespiratoryPattern): Row[] {
   const base = CASES[caseIndex];
   const rows: Row[] = [];
-  for (const resp of RESPIRATIONS)
-    for (const seed of SEEDS) {
-      const session = openSession(base, resp, seed);
-      const contact = probeAt(session, 'portalTrunk');
-      const best = placeGate(session, contact, ['pvTrunk']);
-      expect(best, `${base.id}: sin tronco portal en la ventana «Porta»`).not.toBeNull();
-      for (const scale of SCALES) {
-        const prfHz = Math.min(prfFromNyquistCms(scale, TR.f0Doppler), maxPrfForDepth(best!.r + 2, 1_540_000));
-        const { captures } = acquire(session, contact, best!, 'portal', { prfHz, seconds: 8.5 });
-        const m = captures.at(-1)?.m ?? null;
-        rows.push({
-          caseId: base.id,
-          resp,
-          seed,
-          scale,
-          pf: m ? m.pulsatilityFraction : Number.NaN,
-          ...truthOf(session, m),
-          issue: m ? m.quality.issue : 'sin medida',
-        });
-      }
+  for (const seed of SEEDS) {
+    const session = openSession(base, resp, seed);
+    const contact = probeAt(session, 'portalTrunk');
+    const best = placeGate(session, contact, ['pvTrunk']);
+    expect(best, `${base.id}: sin tronco portal en la ventana «Porta»`).not.toBeNull();
+    for (const scale of SCALES) {
+      const prfHz = Math.min(prfFromNyquistCms(scale, TR.f0Doppler), maxPrfForDepth(best!.r + 2, 1_540_000));
+      const { captures } = acquire(session, contact, best!, 'portal', { prfHz, seconds: 8.5 });
+      const m = captures.at(-1)?.m ?? null;
+      rows.push({
+        caseId: base.id,
+        resp,
+        seed,
+        scale,
+        pf: m ? m.pulsatilityFraction : Number.NaN,
+        ...truthOf(session, m),
+        issue: m ? m.quality.issue : 'sin medida',
+      });
     }
+  }
   return rows;
 }
 
@@ -93,27 +92,32 @@ const table = (rows: readonly Row[]) =>
 
 describe('PF portal del alumno a las escalas del equipo (decisión 94)', () => {
   const all: Row[] = [];
-  for (const [i, base] of CASES.entries()) {
-    it(`${base.label}: la PF aceptada sigue a la verdad a ±20–±80 cm/s, con y sin apnea`, () => {
-      const rows = portalRows(i);
-      all.push(...rows);
-      const tag = table(rows);
-      const accepted = rows.filter((r) => r.issue === null);
-      // nunca «grave» con una verdad normal (criterio 2 de la misión: el mensaje clínico)
-      expect(
-        accepted.filter((r) => r.truth < 30 && classifyPortal(r.pf) === 'severe'),
-        tag,
-      ).toEqual([]);
-      // cada captura aceptada cerca de la verdad (el 95 % a ≤ 10 puntos lo exige el agregado)
-      expect(
-        accepted.filter((r) => Math.abs(r.pf - r.truth) > 15),
-        tag,
-      ).toEqual([]);
-      // la técnica sirve: en apnea, a ±40–±80, casi todas medibles
-      const apnea = rows.filter((r) => r.resp === 'apnea-expiratory' && r.scale >= 40);
-      expect(apnea.filter((r) => r.issue === null).length / apnea.length, tag).toBeGreaterThanOrEqual(0.8);
-    });
-  }
+  // Apnea y respiración en pruebas aparte: con la población de la decisión 294 la cadena cuesta más y juntas se acercan al límite de
+  // 180 s por prueba en la CI (36–42 s por caso antes, ~4 veces más ahora).
+  for (const [i, base] of CASES.entries())
+    for (const resp of RESPIRATIONS) {
+      it(`${base.label}, ${resp === 'quiet' ? 'respirando' : 'en apnea'}: la PF aceptada sigue a la verdad a ±20–±80 cm/s`, () => {
+        const rows = portalRows(i, resp);
+        all.push(...rows);
+        const tag = table(rows);
+        const accepted = rows.filter((r) => r.issue === null);
+        // nunca «grave» con una verdad normal (criterio 2 de la misión: el mensaje clínico)
+        expect(
+          accepted.filter((r) => r.truth < 30 && classifyPortal(r.pf) === 'severe'),
+          tag,
+        ).toEqual([]);
+        // cada captura aceptada cerca de la verdad (el 95 % a ≤ 10 puntos lo exige el agregado)
+        expect(
+          accepted.filter((r) => Math.abs(r.pf - r.truth) > 15),
+          tag,
+        ).toEqual([]);
+        // la técnica sirve: en apnea, a ±40–±80, casi todas medibles
+        if (resp === 'apnea-expiratory') {
+          const apnea = rows.filter((r) => r.scale >= 40);
+          expect(apnea.filter((r) => r.issue === null).length / apnea.length, tag).toBeGreaterThanOrEqual(0.8);
+        }
+      });
+    }
 
   // Revisión adversarial de la decisión 94: justo por debajo del pico (±10–16 cm/s) el pico se recortaba (PF menor) o se
   // plegaba al otro lado y se leía como inversión (cirrosis, verdad 35 %: PF 171–202 % aceptadas), y con el filtro de pared

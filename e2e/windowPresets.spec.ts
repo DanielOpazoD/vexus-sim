@@ -50,7 +50,7 @@ test('preajustes por ventana: Color renal independiente, PW visible y línea de 
     const s = window.__vexusTest!.sim();
     return { scale: (s.equipment.pw.prfHz * 1540000) / (4 * s.transducer.f0Doppler * 10), baseline: s.pw.baselineShift };
   });
-  expect(hepatic.scale).toBeCloseTo(60);
+  expect(hepatic.scale).toBeCloseTo(40);
   expect(hepatic.baseline).toBe(-0.2);
   expect(errors).toEqual([]);
 });

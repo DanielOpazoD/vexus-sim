@@ -93,11 +93,11 @@ export function buildVesselTree(
     wallTissue: Tissue.VesselWallPortal,
     wallMm,
   });
-  const artery = (id: VesselId, nodes: Array<[Vec3, number]>, refRadius: number, wallMm = 0.6): VesselDef => ({
+  const artery = (id: VesselId, nodes: Array<[Vec3, number]>, refRadius: number, wallMm = 0.6, profileN = 4): VesselDef => ({
     id,
     tube: tube(nodes),
     refRadius,
-    profileN: 4,
+    profileN,
     wallTissue: Tissue.ArteryWall,
     wallMm,
   });
@@ -320,7 +320,7 @@ export function buildVesselTree(
         [[-58, 2, -37], 4.3],
         [[-80, 4, -31], 4],
       ],
-      4.2,
+      4.8,
     ),
     portal(
       'pvRightAnterior',
@@ -353,7 +353,7 @@ export function buildVesselTree(
         [[-12, 10, -40], 3.6],
         [[8, 30, -38], 3.4],
       ],
-      3.5,
+      4.1,
     ),
     portal(
       'pvLeftLateral',
@@ -445,15 +445,18 @@ export function buildVesselTree(
     },
     // Renales: la arteria derecha pasa por detrás de la VCI; la vena izquierda cruza
     // por delante de la aorta (larga) hacia la VCI.
+    // renal principal: perfil más plano que en las arterias finas, la sístole llega casi en bloque (decisión 299) [EXTRAPOLACIÓN PROPIA]
     artery(
       'renalArteryRight',
       [
-        [[12, -26, -62], 2.6],
+        [[12, -26, -62], 3.1],
         [[-12, -29, -67], 2.5],
         [hilumArteryR, 2.4],
         [kw(kR, [0, 6, -4]), 2.2],
       ],
-      2.5,
+      3,
+      0.6,
+      8,
     ),
     // la vena renal se forma en el hilio con las segmentarias: nace en el borde medial del seno con 4 mm de diámetro y se
     // ensancha hasta el hilio (decisión 87; antes, 8 mm desde el centro del seno: una columna negra que cruzaba el contorno)
@@ -471,12 +474,14 @@ export function buildVesselTree(
     artery(
       'renalArteryLeft',
       [
-        [[12, -26, -60], 2.6],
+        [[12, -26, -60], 3.1],
         [[40, -32, -64], 2.5],
         [hilumArteryL, 2.4],
         [kw(kL, [0, 6, 4]), 2.2],
       ],
-      2.5,
+      3,
+      0.6,
+      8,
     ),
     thin(
       'renalVeinLeft',

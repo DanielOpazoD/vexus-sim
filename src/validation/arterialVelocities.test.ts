@@ -62,10 +62,11 @@ describe('arterias del adulto sano frente a valores publicados', () => {
     expect(ri).toBeLessThan(0.63);
   });
 
-  it('renal principal: dentro del rango observado, aunque por encima de las medias', () => {
-    // 10 mL/s por una luz de 2,5 mm de radio no dan 79 ± 8 cm/s (limitación `renal-artery-velocity-high`)
-    expect(psv('renalArteryRight')).toBeGreaterThan(49);
-    expect(psv('renalArteryRight')).toBeLessThan(150);
+  it('renal principal: sistólica y mínimo en el intervalo de los controles', () => {
+    expect(psv('renalArteryRight')).toBeGreaterThan(79.07 - 8.22);
+    expect(psv('renalArteryRight')).toBeLessThan(79.07 + 8.22);
+    expect(low('renalArteryRight')).toBeGreaterThan(29.02 - 4.93);
+    expect(low('renalArteryRight')).toBeLessThan(29.02 + 4.93);
   });
 
   it('el Doppler renal muestra otro pulso que la red, con el mismo caudal medio', () => {
@@ -119,12 +120,16 @@ describe('arterias del adulto sano frente a valores publicados', () => {
     const e = new PhysiologyEngine(base, anatomyScene.vesselAreas());
     const s = e.step();
     let measured = 0;
-    for (const id of ['interlobarArtery1', 'renalArteryRight', 'hepaticArtery'] as const) {
+    for (const [id, axis] of [
+      ['interlobarArtery1', 1.5],
+      ['hepaticArtery', 1.5],
+      ['renalArteryRight', 1.25],
+    ] as const) {
       const nodes = anatomyScene.vesselById.get(id)!.tube.nodes;
       const q = anatomy.classifyMaterial(nodes[1].p, s);
       if (q.vessel !== id) continue;
       const speed = Math.hypot(...q.bloodVelocity!);
-      expect(speed / Math.abs(s.velocities[id])).toBeCloseTo(1.5, 3);
+      expect(speed / Math.abs(s.velocities[id])).toBeCloseTo(axis, 3);
       measured++;
     }
     expect(measured).toBeGreaterThan(0);

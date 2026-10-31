@@ -40,7 +40,7 @@ const TERRITORIES: Territory[] = [
 
 /**
  * Examen de los territorios con la técnica del operador (puerta dentro de la luz con el mejor ángulo, sin mirar la ventana
- * acústica, longitud ≤ 2·bd, porta a ±40 cm/s y otros territorios hasta el límite de la profundidad: PRF ≤ 0,9·c/2d, hasta 6 kHz, como sube el
+ * acústica, longitud ≤ 2·bd, porta y suprahepática a ±40 cm/s y la renal hasta el límite de la profundidad: PRF ≤ 0,9·c/2d, hasta 6 kHz, como sube el
  * operador la escala cuando el flujo se pliega) por la ruta de la aplicación (`support/studentChain.ts`, decisión 93):
  * la puerta de `pwGate`, con la transmisión real, y la captura de «Capturar» tras 8,5 s con la puerta quieta. Hasta la
  * decisión 93 esta prueba usaba una copia de la puerta con la transmisión fija en 0,3 (−10 dB; la real es −29 a −32 dB
@@ -56,7 +56,7 @@ function examine(base: PatientState, respiratoryPattern: RespiratoryPattern = 'a
     expect(best, `${base.id}: ${ter.kind} sin vaso en la ventana ${ter.window}`).not.toBeNull();
     // A portal scale of ±40 cm/s resolves slow flow; the depth ceiling is not a useful portal preset.
     const prfHz = Math.min(
-      ter.kind === 'portal' ? prfFromNyquistCms(40, CONVEX_C35.f0Doppler) : 6000,
+      ter.kind === 'renal' ? 6000 : prfFromNyquistCms(40, CONVEX_C35.f0Doppler),
       Math.floor((0.9 * 1_540_000) / (2 * best!.r)),
     );
     const { captures } = acquire(session, contact, best!, ter.kind, { prfHz, seconds: 8.5, gateMm: Math.min(4, 2 * best!.bd) });
@@ -89,7 +89,7 @@ function hepaticCaptures(base: PatientState, respiratoryPattern: RespiratoryPatt
   const session = openSession(base, respiratoryPattern, 0, seconds + 4);
   const contact = probeAt(session, 'intercostal');
   const best = placeGate(session, contact, ['hvRight'], { acoustic: window, maxDepthMm: 170 })!;
-  const prf = prfHz ?? Math.min(6000, Math.floor((0.9 * 1_540_000) / (2 * best.r)));
+  const prf = prfHz ?? Math.min(prfFromNyquistCms(40, CONVEX_C35.f0Doppler), Math.floor((0.9 * 1_540_000) / (2 * best.r)));
   const t0 = session.engine.clock.t;
   const { captures } = acquire(session, contact, best, 'hepatic', {
     prfHz: prf,
@@ -292,12 +292,14 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
   // Trampa clínica clásica (§21: el espectrograma responde a PRF y aliasing): con la escala baja el
   // pico S del sano rebasa ±Nyquist, reaparece al otro lado y la medición lee una S invertida,
   // «grave». La calidad debe declararlo aliasing; con la escala adecuada, medible y normal.
-  // Medido: PRF 1000–1800 «grave» (antes con el visto bueno a 1000 y 1400); PRF 5000 normal.
+  // Medido, con la S de la decisión 299: PRF 640–900 «grave»; a 680–740 la banda llena el espectro y el plegado no deja hueco, pero las ondas llegan al borde; PRF 2600 normal.
   it('Adulto sano: a PRF baja la VSH se pliega e imita la inversión de S, y la calidad lo declara aliasing', () => {
-    const low = hepaticCaptures(NORMAL_ADULT, 'apnea-expiratory', 9, false, 1400).captures.at(-1)!;
-    expect(low.pattern).toBe('severe');
-    expect(low.issue).toBe('aliasing');
-    const high = hepaticCaptures(NORMAL_ADULT, 'apnea-expiratory', 9, false, 5000).captures.at(-1)!;
+    for (const prf of [700, 740, 850]) {
+      const low = hepaticCaptures(NORMAL_ADULT, 'apnea-expiratory', 9, false, prf).captures.at(-1)!;
+      expect(low.pattern).toBe('severe');
+      expect(low.issue).toBe('aliasing');
+    }
+    const high = hepaticCaptures(NORMAL_ADULT, 'apnea-expiratory', 9, false, 2600).captures.at(-1)!;
     expect(high).toEqual(expect.objectContaining({ pattern: 'normal', issue: null }));
   });
 });

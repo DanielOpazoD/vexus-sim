@@ -163,23 +163,22 @@ export type HepaticVeinId = Extract<VesselId, `hv${string}`>;
 export type PortalVeinId = Extract<VesselId, `pv${string}`>;
 export type RenalVesselId = Extract<VesselId, `renal${string}` | `interlobar${string}`>;
 
-/** Collecting territories; tributaries represent only part of each territory.
- * Their reference-area budget gives 0.85 × parent mean speed, consistent with the
- * existing unresolved peripheral tree. The remainder drains through unrepresented
- * branches. This allocation is provisional (NEEDS_CALIBRATION), not measured anatomy.
- * Preserve the total hepatic outflow, its sign and cardiac/respiratory modulation.
+/**
+ * Velocidad de las suprahepáticas (decisión 299): con todo el caudal hepático de la red en estas luces, Q/A daría una S de 43–51 cm/s, y los
+ * estudios abiertos dan 21–23 en vena derecha y media. Las fracciones ya no suman 1: fijan lo que se lee en el Doppler, no un balance; el caudal hepático
+ * sigue en la red y en la cava. Provisional (NEEDS_CALIBRATION). `S_REVERSAL_FLOOR_CMS` sigue a hvRight. Las tributarias, a 0,85 de la velocidad media de su colectora.
  */
 export function hepaticFlowShares(areas: VesselAreas): Record<HepaticVeinId, number> {
   const branch = (share: number, child: HepaticVeinId, parent: HepaticVeinId) => (share * 0.85 * areas[child]) / areas[parent];
   return {
-    hvRight: 0.45,
-    hvRightAnterior: branch(0.45, 'hvRightAnterior', 'hvRight'),
-    hvRightPosterior: branch(0.45, 'hvRightPosterior', 'hvRight'),
-    hvMiddle: 0.35,
-    hvMiddleTributary: branch(0.35, 'hvMiddleTributary', 'hvMiddle'),
-    hvLeft: 0.2,
-    hvLeftTributary: branch(0.2, 'hvLeftTributary', 'hvLeft'),
-    hvCommonTrunk: 0.55,
+    hvRight: 0.253,
+    hvRightAnterior: branch(0.253, 'hvRightAnterior', 'hvRight'),
+    hvRightPosterior: branch(0.253, 'hvRightPosterior', 'hvRight'),
+    hvMiddle: 0.154,
+    hvMiddleTributary: branch(0.154, 'hvMiddleTributary', 'hvMiddle'),
+    hvLeft: 0.11,
+    hvLeftTributary: branch(0.11, 'hvLeftTributary', 'hvLeft'),
+    hvCommonTrunk: 0.264,
   };
 }
 

@@ -62,8 +62,15 @@ export interface BeatWindows {
 }
 
 /**
+ * Suelo del flujo retrógrado apreciable y de la onda D que orienta la captura: los 2 cm/s originales con la escala de velocidad de la vena derecha
+ * de la decisión 299 (0,253/0,45). En la derecha, la de la verdad, es el mismo caudal retrógrado que antes; en la media y el tronco común, cuya escala
+ * es otra, equivale a algo más (`hepatic-reversal-floor-right-vein`).
+ */
+export const S_REVERSAL_FLOOR_CMS = 1.124;
+
+/**
  * Pico sistólico con signo: si durante la sístole mecánica existe flujo
- * retrógrado apreciable (≤ −2 cm/s y ≥ 50 % del máximo anterógrado) se
+ * retrógrado apreciable (≤ −S_REVERSAL_FLOOR_CMS y ≥ 50 % del máximo anterógrado) se
  * informa como S invertida (valor negativo); si no, el máximo anterógrado.
  * El 50 % (antes 25 %, decisión 5 → 44) distingue la inversión de la onda S de
  * la muesca retrógrada breve de la onda C al inicio de la sístole: con 25 % una
@@ -85,7 +92,7 @@ export function systolicPeak<T extends { t: number }>(samples: readonly T[], w: 
   const at = (f: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.floor(f * (vals.length - 1) + 0.5)))];
   const vmax = at(q);
   const vmin = at(1 - q);
-  if (vmin <= -2 && -vmin >= S_REVERSAL_FRACTION * Math.max(0, vmax)) return vmin;
+  if (vmin <= -S_REVERSAL_FLOOR_CMS && -vmin >= S_REVERSAL_FRACTION * Math.max(0, vmax)) return vmin;
   return vmax;
 }
 

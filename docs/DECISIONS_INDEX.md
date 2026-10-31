@@ -302,3 +302,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [296](DECISIONS.md#L9600) | Balance de la bifurcación portal: la periferia no acelera | vigente |
 | [297](DECISIONS.md#L9622) | Arterias del Doppler frente a valores publicados | vigente |
 | [298](DECISIONS.md#L9646) | Dos auditorías sin cambios de producto: materiales acústicos y Color emulado | vigente |
+| [299](DECISIONS.md#L9656) | Velocidades del sano que aún se apartaban de lo publicado: suprahepáticas, renal principal y ramas portales | vigente |

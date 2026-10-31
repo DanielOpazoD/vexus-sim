@@ -9,7 +9,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     await page.selectOption('#case-select', caseId);
     await page.getByRole('button', { name: 'Apnea espiratoria', exact: true }).click();
     await page.locator('[data-window="hepatorenal"]').click();
-    await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.z + 113) < 1e-8);
+    await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.z + 115.333) < 1e-8);
     const inspect = () =>
       page.evaluate(() => {
         const s = window.__vexusTest!.sim();

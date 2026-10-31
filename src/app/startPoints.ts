@@ -274,9 +274,8 @@ const ABDOMINAL_POSES = {
   // mismo plano mundo de 276 en ese marco, sin buscar vasos ni diagnósticos (285).
   renal: { phi: 3.55, z: -180, yaw: -0.1343310829596154, rock: 0.41613433729447186, tilt: 0.052747181408742835 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
-  // Recheck actual renal transmission after the continuous pressure correction;
-  // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
-  hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.23878365552958994, tilt: -0.3591483268294911 },
+  // Riñón en eje largo con el hígado delante y todo el sector en contacto; la sombra costal cae sobre el hígado (300).
+  hepatorenal: { phi: 2.96, z: -115.333, yaw: -0.008, rock: -0.114, tilt: -0.253 },
   // [EXTRAPOLACIÓN PROPIA] Reborde derecho registrado; rama portal derecha, no tronco (213).
   portalSubcostal: { phi: 2.85, z: -95, yaw: -0.622104, rock: 0.080718, tilt: 0.136272 },
 } as const;

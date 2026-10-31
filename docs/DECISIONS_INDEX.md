@@ -309,3 +309,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [303](DECISIONS.md#L9719) | Pose renal del atlas: el sector en contacto, verificado por la captura completa de la vena | vigente |
 | [304](DECISIONS.md#L9733) | `probeFreeNavigation` en dos pruebas: seis regiones no caben en 360 s con los corredores lentos | vigente |
 | [305](DECISIONS.md#L9747) | Seno renal digitado: los dedos entran entre las pirámides, y una cota para la frontera de la pelvis | vigente |
+| [306](DECISIONS.md#L9768) | Compensación nominal del campo cercano: +3 dB, hasta donde deja la meta de la grasa | vigente |

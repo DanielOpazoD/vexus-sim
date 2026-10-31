@@ -8,7 +8,7 @@ import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { greyOfLevel } from '../ultrasound/greyMap';
-import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB } from '../ultrasound/renderer';
+import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB, nearFieldTgcDb } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { ElevationAnchor, type SpeckleAnchorState } from '../ultrasound/speckleField';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
@@ -75,7 +75,8 @@ function benchOnTwinUncached(id: StartPoint['id'], bo: BenchOpts) {
       );
       const v = Math.min(samples - 1, Math.max(0, Math.round(bm.r / o.dr - 0.5)));
       // cadena de la imagen: ganancia 0, compensación nominal (techo 50 dB), referencia y 70 dB de rango
-      const db = 20 * Math.log10(Math.max(o.env[v * o.nL + u], 1e-7)) + Math.min(50, (TGC * bm.r) / 10) + DISPLAY_REF_DB;
+      const db =
+        20 * Math.log10(Math.max(o.env[v * o.nL + u], 1e-7)) + Math.min(50, (TGC * bm.r) / 10 + nearFieldTgcDb(bm.r)) + DISPLAY_REF_DB;
       gray[y * W + x] = Math.round(255 * greyOfLevel(Math.min(1, Math.max(0, (db + 70) / 70))));
     }
   const sim = {

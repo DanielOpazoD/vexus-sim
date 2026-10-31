@@ -298,3 +298,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [292](DECISIONS.md#L9418) | Frontera única de adquisición para captura PW | vigente |
 | [293](DECISIONS.md#L9436) | La c de la bilis compensa la refracción paraxial frente a ondas a 37 °C | vigente |
 | [294](DECISIONS.md#L9458) | Población PW: la sangre sigue la corriente de su tubo y entra por la cara opuesta | vigente |
+| [295](DECISIONS.md#L9561) | El tejido del volumen de muestra lleva la derivada del mapa, en el instante de cada pulso | vigente |

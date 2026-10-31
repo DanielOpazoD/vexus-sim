@@ -9557,3 +9557,42 @@ ahora `classifyMaterial`, por donde pasa también `classifyWorld`, sin cambiar a
 (289), la IQ idéntica con y sin caché, el transporte analítico de la decisión 264 (su anatomía falsa añade el mapa
 identidad y `classifyMaterial`, sin cambiar aserciones) y las suites de adquisición, renales, venosas y portales. Diseños,
 prototipos, negativos, semillas, revisiones y costes: `vexus-pw-transport-evidence-20261029`.
+
+## 295. El tejido del volumen de muestra lleva la derivada del mapa, en el instante de cada pulso
+
+**Problema.** Con respiración profunda, el espectro de una puerta sin sangre tenía líneas a 250 y 500 Hz (19 y 11 dB sobre el ruido
+en la suprahepática media desde la subcostal) y otras en 100 + 250·k Hz, sobre la banda del flujo venoso lento. Son las columnas
+horizontales que deja el reloj fisiológico de 250 Hz. Una referencia exacta por pulso, con dispersores en un dominio amplio y sin caja
+ni rampas, coincide con el producto a ≤ 3 dB en tejido rígido hasta −60 dB del pico, y en la cadena real las líneas no se van sin
+transmisión variable ni con tejido uniforme: no vienen de la caja, de las rampas, de la transmisión ni de la heterogeneidad. Tienen dos causas en la reconstrucción del movimiento dentro de
+cada llamada a `generate`:
+
+1. La velocidad era `tissueVelocity(g.center)`: un punto del mundo como si fuera material y sin la compresión de la sonda. Allí
+   difiere de la derivada real del mapa un 14–26 %, y el tejido saltaba al empezar cada llamada: un diente de sierra de hasta 18 µm
+   a 250 Hz. El clutter sonaba además a esa velocidad y no a la suya.
+2. El último pulso de cada llamada se fijaba al instante de la muestra fisiológica. A 2600 Hz son 10,4 pulsos por paso de 4 ms: el resto
+   de pulso que queda para el paso siguiente desplazaba la llamada entera hasta 0,8 periodos, hasta 10 µm con el diafragma rápido.
+
+**Decisión.** La velocidad del tejido es la derivada del mapa material → mundo respecto al diafragma, en el punto material del centro de
+la puerta, con la compresión del cuadro quieta, por diferencia finita y con una evaluación más del mapa por llamada; y `PwDopplerChain.step` pasa a
+`generate` el resto de pulso, de modo que la posición de cada pulso se reconstruye en su instante. Es una derivada respiratoria y común a la puerta: no resuelve
+la compresión que cambia, la cizalla dentro de la caja, la jacobiana del mapa sobre el flujo ni la frecuencia que se actualiza cada 8 pulsos, que vienen de antes
+(`pw-phase-kinematics`). El shader de Color sigue con la velocidad sin compresión (`color-tissue-velocity-uncompressed`).
+
+**Consecuencias.** Tercio más rápido de la respiración profunda en la suprahepática media desde la subcostal, sin sangre, dB sobre el
+ruido en la puerta y a 12 mm: 200–300 Hz, de 19,2 y 13,7 a 7,0 y 3,7; 450–650 Hz, de 11,3 y 6,5 a 0,6 y −0,1; 650–1300 Hz, de 7,0 y 3,3 a
+0,1 y 0. Lo que queda decae como la falda de la ventana de Hann en esas puertas. Con respiración tranquila apenas cambia lejos de la línea de base (ya
+estaba a ≤ 1 dB desde 150 Hz en la subcostal), pero el clutter de la línea de base baja en la subcostal (0–25 Hz: de 29,4 a 18,2 dB) porque
+el tejido va a su velocidad, más lenta allí. Se reescribe `respiratory-clutter-masks-slow-flow` con lo medido: la falda ya no llega a
+±450 Hz.
+
+En 280 capturas no usadas (s46–50; 7 casos, apnea y respiración tranquila, ±20–±80; registro previo) cumple los criterios de la PF portal:
+171 aceptadas, todas a ≤ 10 puntos y ninguna a > 15, frente a 173 de la base, también todas. Apnea igual (122 de 140; error pareado 2,15 y 2,17); respirando baja de 51 a 49 de 140
+(las 49 en común: 3,00 y 2,86). Una evaluación más del mapa cuesta 11–16 µs por llamada, unos 3–4 ms de CPU por segundo simulado frente a los ~250 ms de la cadena; el
+A/B intercalado con carga ~15 no resuelve ese tamaño (`cost-ab.jsonl`). El JavaScript total baja 51 B: se compactan `gateToWorld` y el inicio de un cambio de identidad en el mismo archivo.
+
+**Verificación.** `pwTissueTiming.test.ts`: un bloque comprimido suena a la derivada del mapa (antes, un 42 % por encima), tomada en el punto material
+aunque el peso respiratorio varíe (una revisión independiente mostró que evaluarla en el centro del mundo pasaba las otras pruebas);
+con pulsos no enteros por paso, un bloque rígido deja −78,7, −86,0 y −90,8 dB del pico en 300–450, 450–650 y 650–1300 Hz (antes
+−71,4, −76,7 y −80,0); y en la cadena real con respiración profunda, 650–1300 Hz queda a ≤ 1,8 dB del ruido del receptor (antes 3,25). Las
+cuatro fallan con el código anterior. Referencia y mediciones: `vexus-pw-clutter-evidence-20261030`.

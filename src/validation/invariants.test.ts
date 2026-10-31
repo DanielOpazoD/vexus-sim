@@ -167,11 +167,11 @@ describe('Invariantes de la guía §21 sobre la señal de la cadena completa', (
 
   it('un vaso que sale de la puerta pierde la señal y la recupera al volver', () => {
     // Apnea y puerta sobre la VSH; luego desplazada 10 mm al parénquima y de vuelta. Sangre en una
-    // columna: ≥ 2 bins contiguos a suelo + 12 dB con |f| ≥ 150 Hz. Con respiración, el clutter del
-    // tejido que se mueve (60–70 dB sobre el ruido, por encima de un filtro de pared de 25 Hz) llena
-    // la banda del flujo venoso lento y no deja juzgar la sangre en el espectro, como en un equipo
-    // real (limitación `respiratory-clutter-masks-slow-flow`); la coherencia entre respiración y
-    // volumen de muestra se prueba sobre su composición en `sampleVolume.test.ts`.
+    // columna: ≥ 2 bins contiguos a suelo + 12 dB con |f| ≥ 150 Hz. Con respiración profunda, el clutter del
+    // tejido que se mueve (hasta 60 dB sobre el ruido, por encima de un filtro de pared de 25 Hz) cubre
+    // la parte baja de la banda del flujo venoso lento, como en un equipo real (limitación
+    // `respiratory-clutter-masks-slow-flow`); la coherencia entre respiración y volumen de muestra se
+    // prueba sobre su composición en `sampleVolume.test.ts`.
     // Allow caliber to settle before placing a stationary gate; this checks displacement, not startup drift.
     const s = setup({ settleSeconds: 8 });
     const off = s.shifted(10);

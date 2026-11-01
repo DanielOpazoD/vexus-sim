@@ -17,6 +17,8 @@ export interface HudInput {
   dynamicRangeDb: number;
   /** Composición espacial formándose (decisión 58: `compoundActive`, apagada con el color): «CX». */
   compound: boolean;
+  /** Reducción de moteado que actúa en esta imagen (decisión 313): «RM n»; 0 con Color, porque se suspende. */
+  speckleReduction: number;
   /** Armónica tisular (decisión 77): «THI» delante de la frecuencia de la imagen. */
   harmonic: boolean;
   mode: ImagingMode;
@@ -41,7 +43,8 @@ export function hudText(v: HudInput): HudText {
     topRight: [
       `FC ${Math.round(v.heartRateBpm)} lpm · ${v.atrialFibrillation ? 'FA' : 'Sinusal'}`,
       `${(v.depthMm / 10).toFixed(0)} cm · ${v.harmonic ? 'THI ' : ''}${mhz(v.transducerMHz)} MHz · G ${v.gainDb} dB · RD ${v.dynamicRangeDb}` +
-        (v.compound ? ' · CX' : ''),
+        (v.compound ? ' · CX' : '') +
+        (v.speckleReduction ? ` · RM ${v.speckleReduction}` : ''),
     ],
     // en tríplex (decisión 66) las dos líneas: la del color y la del PW; en modo M (decisión 80), su barrido
     bottomRight:

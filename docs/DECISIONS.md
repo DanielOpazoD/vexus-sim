@@ -9848,3 +9848,15 @@ Frontera, con el barrido de la revisión (`recheck/scan.mts`: 10.000 puntos por 
 **Consecuencias.** La lista parte con doce relaciones que no se cumplen. El modelo sigue igual: este cambio solo fija cómo se acepta el trabajo siguiente. Una cifra de una persona no es una norma, y dos personas no describen una población. No es validación clínica.
 
 **Verificación.** Medidas y láminas: `vexus-ct-20261101/audit` y `audit2`, fuera del repositorio. Sin cambios de código; CI completa.
+
+## 312. Pared gástrica fina con cinco capas, sin lóbulos
+
+**Problema.** El propietario, sobre una captura del estómago de la decisión 310: «las paredes del estómago quedaron demasiado exageradas». Ocho lóbulos brillantes de hasta 7,5 mm rodeaban una luz en estrella.
+
+**Decisión.** Pared de 4–6 mm con diez pliegues bajos (`GASTRIC_WALL`) y las capas del tubo digestivo: serosa, muscular hipoecoica hasta 1,2 mm, submucosa ecogénica continua hasta 2,8 ± 0,4 mm, mucosa hipoecoica y una línea ecogénica de 0,6 mm contra la luz. Se conserva el pliegue por posición, y `phaseRate` y `gastricBoundary` se ajustan a la nueva geometría.
+
+**Alternativas descartadas.** Pared de 3–4,5 mm sin la línea interna: la pared casi desaparece y el estómago parece una masa oscura. Pared de 4–6 mm sin la línea: el borde queda poligonal y sin capas visibles. Las tres capturas están en la evidencia.
+
+**Consecuencias.** La luz deja de ser una estrella y el borde se ve fino. La línea interna es un tejido, no un eco de interfaz: no depende de la incidencia, de modo que no se apaga en las caras oblicuas como una real. Grosores y número de pliegues siguen siendo extrapolaciones, y sigue sin haber antro en ayunas (`gastric-single-state`). No es validación clínica.
+
+**Verificación.** `gastricWall.test.ts` exige la pared ≤ 6 mm, pliegues ≤ 2 mm y submucosa continua en toda la vuelta. `e2e/gastricWall.spec.ts` compara CPU y GPU en toda la pared. Metal: `gastricWall`, `smoke` y `abdominalAtlas`, 35 de 35. JS: 1.002.278 B, margen de 67.802 B sobre el límite sin cambios. `vexus-owner-evidence-20261031/tissue`.

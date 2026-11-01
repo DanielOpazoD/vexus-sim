@@ -48,12 +48,29 @@ describe('estómago con algo de líquido (decisión 310)', () => {
       counts.set(c.tissue, (counts.get(c.tissue) ?? 0) + 1);
       if (depth < GASTRIC_WALL.serosaMm) expect(c.tissue).toBe(Tissue.SoftCapsule);
       else if (depth < GASTRIC_WALL.muscularisMm) expect(c.tissue).toBe(Tissue.GutMuscularis);
-      else if (depth < wall) expect(c.tissue).toBe(fold > GASTRIC_WALL.coreAbove ? Tissue.GutSubmucosa : Tissue.Bowel);
+      else if (depth < wall)
+        expect(c.tissue).toBe(
+          depth < GASTRIC_WALL.submucosaMm + GASTRIC_WALL.submucosaFoldMm * fold || wall - depth < GASTRIC_WALL.mucosalLineMm
+            ? Tissue.GutSubmucosa
+            : Tissue.Bowel,
+        );
       else expect(c.tissue).toBe(digestiveGasPlane(p, 1) > 0 ? Tissue.BowelGas : Tissue.GastricContents);
     }
     for (const t of [Tissue.GutMuscularis, Tissue.GutSubmucosa, Tissue.Bowel, Tissue.GastricContents])
       expect(counts.get(t) ?? 0).toBeGreaterThan(50);
     expect(GASTRIC_WALL.muscularisMm).toBeLessThan(GASTRIC_WALL.baseMm);
+  });
+
+  it('la pared no es exagerada: fina, con pliegues bajos y una submucosa continua, no lóbulos brillantes (decisión 312)', () => {
+    const w = GASTRIC_WALL;
+    expect(w.baseMm + w.foldMm).toBeLessThanOrEqual(6);
+    expect(w.foldMm).toBeLessThanOrEqual(2);
+    // En toda la vuelta queda línea de submucosa y queda mucosa bajo ella
+    expect(w.submucosaMm - w.submucosaFoldMm).toBeGreaterThan(w.muscularisMm);
+    expect(w.submucosaMm + w.submucosaFoldMm).toBeLessThan(w.baseMm - w.mucosalLineMm);
+    const band = stomachPoints(3).filter(({ d }) => -d >= w.muscularisMm && -d < w.submucosaMm - w.submucosaFoldMm);
+    expect(band.length).toBeGreaterThan(100);
+    for (const { c } of band) expect(c.tissue).toBe(Tissue.GutSubmucosa);
   });
 
   it('el contenido no es una cavidad anecoica ni una masa: ecos puntuales y dispersos, y atenúa como el líquido', () => {
@@ -145,6 +162,9 @@ describe('estómago con algo de líquido (decisión 310)', () => {
     expect(ABDOMEN_GLSL).toContain(`cos(${w.folds.toFixed(1)}*atan(a.y,a.x)+${w.twistPerMm.toFixed(3)}*m.z)`);
     expect(ABDOMEN_GLSL).not.toContain('atan(c.n.y,c.n.x)');
     expect(ABDOMEN_GLSL).toContain(`${w.baseMm.toFixed(1)}+${w.foldMm.toFixed(1)}*(0.5+0.5*fold)`);
+    expect(ABDOMEN_GLSL).toContain(
+      `depth<${w.submucosaMm.toFixed(2)}+${w.submucosaFoldMm.toFixed(2)}*fold||inner<${w.mucosalLineMm.toFixed(2)}?T_GUT_SUBMUCOSA:T_BOWEL`,
+    );
     expect(ABDOMEN_GLSL).toContain(`depth<${w.serosaMm.toFixed(2)}?T_SOFT_CAPSULE:depth<${w.muscularisMm.toFixed(2)}?T_GUT_MUSCULARIS`);
     expect(ABDOMEN_GLSL).toContain('T_GASTRIC_CONTENTS');
   });

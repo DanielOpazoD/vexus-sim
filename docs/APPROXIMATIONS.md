@@ -108,7 +108,7 @@ Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm
 
 Registro LAS común, anclado al mismo xifoides de la fuente; no escala individual de vísceras. Los contornos de hígado, riñones, páncreas, vesícula, vejiga y tubo digestivo proceden de superficies BodyParts3D; costuras, orificios, contactos y fragmentos de rasterización se tratan explícitamente en el manifiesto. Los tejidos internos no son una segmentación clínica.
 
-Son estimados el bazo (~100 ml en este candidato), propiedades acústicas de páncreas/bazo, cápsulas de 0,35 mm, pared vesical de 2,5 mm y cinco estratos digestivos (2 mm intestino delgado, 2,5 mm colon; el estómago, muscular de 2,6 mm y pliegues de 4–7,5 mm, decisión 310). El gas ocupa parches estáticos no dependientes, sin distribución calibrada ni peristalsis. La vejiga poco llena y la interposición de gas limitan su imagen.
+Son estimados el bazo (~100 ml en este candidato), propiedades acústicas de páncreas/bazo, cápsulas de 0,35 mm, pared vesical de 2,5 mm y cinco estratos digestivos (2 mm intestino delgado, 2,5 mm colon; el estómago, cinco capas en 4–6 mm, decisión 312). El gas ocupa parches estáticos no dependientes, sin distribución calibrada ni peristalsis. La vejiga poco llena y la interposición de gas limitan su imagen.
 
 Los centros/ejes exteriores renales se registran en la fuente; su seno, pirámides y compartimentos internos conservan arquitectura estimada. Psoas/discos y asas móviles se conforman fuera de órganos/apoyos y se documenta la diferencia respecto de la superficie original.
 

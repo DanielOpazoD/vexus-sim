@@ -315,3 +315,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [309](DECISIONS.md#L9804) | El riñón entero en la ventana renal: grosor, interior, vasos y pose | vigente |
 | [310](DECISIONS.md#L9823) | Pared abdominal con textura y estómago con pared plegada | vigente |
 | [311](DECISIONS.md#L9840) | La fidelidad anatómica se mide contra un humano real, no contra un promedio | vigente |
+| [312](DECISIONS.md#L9852) | Pared gástrica fina con cinco capas, sin lóbulos | vigente |

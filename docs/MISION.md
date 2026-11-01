@@ -44,6 +44,7 @@ Cada objetivo dice qué significa, cómo se mide y dónde está hoy.
 3. **Fidelidad anatómica.** Anatomía y ecografía normales según `docs/anatomia/revision-normal.md`. Cada ventana
    VExUS muestra sus estructuras clásicas, y su lista de comprobación es una prueba (`startPoints.test.ts`).
    - La tabla de brechas de la revisión (sección 10) es la lista de pendientes.
+   - Se mide contra un humano real, no contra un promedio: uno o dos TAC y la lista de relaciones básicas de `docs/anatomia/relaciones-tac.md` (decisión 311).
 4. **Fidelidad fisiológica y clínica.** Los patrones de la base de conocimiento y los casos de su matriz. Incluye
    los confusores y los casos trampa de la literatura revisada: presión intraabdominal, insuficiencia tricuspídea,
    ventilación, cirrosis y enfermedad renal. También las intervenciones (bolo, diurético y PEEP) con la respuesta

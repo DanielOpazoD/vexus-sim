@@ -65,10 +65,12 @@ export enum Tissue {
   UnsegmentedSoftTissue = 39,
   /** Non-gaseous colonic contents: estimated particulate suspension, not clear fluid. */
   ColonicContents = 40,
+  /** Gastric lumen: estimated fluid and mucus with sparse bright bubbles, the "starry night" of gastric ultrasound. */
+  GastricContents = 41,
 }
 
 /** Append-only acoustic material identifiers shared by CPU and GPU. */
-export const TISSUE_COUNT = 41;
+export const TISSUE_COUNT = 42;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -117,6 +119,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.BladderWall]: 'T_BLADDER_WALL',
   [Tissue.UnsegmentedSoftTissue]: 'T_UNSEGMENTED',
   [Tissue.ColonicContents]: 'T_COLONIC_CONTENTS',
+  [Tissue.GastricContents]: 'T_GASTRIC_CONTENTS',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -155,13 +158,12 @@ export interface TissueProps {
 export const TISSUES: TissueProps[] = [
   { name: 'aire', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'piel', c: 1600, rho: 1100, alpha1: 0.9, b: 1.05, backscatter: 1.4, gas: false, bone: false },
-  // Pared (decisión 62): la retrodispersión es la del interior del lóbulo de grasa (0,08: con la falda de
-  // los septos y la mezcla en elevación, el interior mostrado queda a 0,52–0,58 del gris del hígado) y del
-  // músculo entre estrías (0,35), hipoecoicos en las referencias; los septos, las estrías y las fascias los añaden
-  // `ultrasound/wallTexture.ts` y las caras de `anatomy/interfaces.ts`. La grasa es la subcutánea y la
-  // preperitoneal (la cara interna de la pared).
-  { name: 'grasa de la pared', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.08, gas: false, bone: false, speckleClump: 0.5 },
-  { name: 'músculo', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
+  // Pared (decisiones 62 y 310): la retrodispersión es la del interior del lóbulo de grasa (0,16) y del músculo entre estrías
+  // (0,42), hipoecoicos en las referencias pero no negros: con 0,08 y 0,35 la pared eran líneas blancas sobre un fondo oscuro.
+  // Los septos, las estrías y las fascias los añaden `ultrasound/wallTexture.ts` y las caras de `anatomy/interfaces.ts`. La grasa
+  // es la subcutánea y la preperitoneal (la cara interna de la pared).
+  { name: 'grasa de la pared', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.16, gas: false, bone: false, speckleClump: 0.5 },
+  { name: 'músculo', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.42, gas: false, bone: false },
   { name: 'hígado', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.0, gas: false, bone: false },
   { name: 'cápsula hepática', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.3, gas: false, bone: false },
   { name: 'sangre', c: 1578, rho: 1050, alpha1: 0.206, b: 1.05, backscatter: 0.008, gas: false, bone: false },
@@ -268,6 +270,19 @@ export const TISSUES: TissueProps[] = [
     gas: false,
     bone: false,
     speckleClump: 1.0,
+  },
+  // Líquido y moco con burbujas: casi anecoico, con ecos puntuales brillantes («cielo estrellado», ASRA 2019), aquí fijos: no se mueven. Atenúa poco, como el
+  // líquido: NEEDS_CALIBRATION, sin medidas de este medio. Un contenido que atenuaba más dejaba una sombra lisa hasta el fondo (decisión 310).
+  {
+    name: 'contenido gástrico (estimado)',
+    c: 1482,
+    rho: 994,
+    alpha1: 0.3,
+    b: 1,
+    backscatter: 0.12,
+    gas: false,
+    bone: false,
+    speckleClump: 3,
   },
 ];
 

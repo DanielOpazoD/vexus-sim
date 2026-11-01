@@ -165,7 +165,7 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
     // A1 lleva las mismas constantes
     const glsl = lumenExcessGlsl('t');
     expect(glsl).toContain(`t == T_BLOOD ? ${lumenExcessPerMm(Tissue.Blood)}`);
-    expect(glsl).toContain(`(t == T_FLUID || t == T_COLONIC_CONTENTS) ? ${lumenExcessPerMm(Tissue.Fluid)}`);
+    expect(glsl).toContain(`(t == T_FLUID || t == T_COLONIC_CONTENTS || t == T_GASTRIC_CONTENTS) ? ${lumenExcessPerMm(Tissue.Fluid)}`);
   });
 
   it('sin luces la ganancia es 1 exacto, también junto a los bordes del sector', () => {

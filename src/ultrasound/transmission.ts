@@ -324,7 +324,9 @@ export function segmentDb(t: Tissue, stepMm: number, fMHz: number): number {
  * no refractan en el modelo (`lumen-refraction-only`). Positivo: la luz es más lenta (lente convergente).
  */
 export function lumenExcessPerMm(t: Tissue): number {
-  return t === Tissue.Blood || t === Tissue.Fluid || t === Tissue.ColonicContents ? TISSUES[Tissue.Liver].c / TISSUES[t].c - 1 : 0;
+  return t === Tissue.Blood || t === Tissue.Fluid || t === Tissue.ColonicContents || t === Tissue.GastricContents
+    ? TISSUES[Tissue.Liver].c / TISSUES[t].c - 1
+    : 0;
 }
 
 /**
@@ -332,7 +334,7 @@ export function lumenExcessPerMm(t: Tissue): number {
  * constantes interpoladas. Necesita los `#define` de los tejidos (`ANATOMY_GLSL`).
  */
 export const lumenExcessGlsl = (t: string): string =>
-  `(${t} == T_BLOOD ? ${glslFloat(lumenExcessPerMm(Tissue.Blood))} : (${t} == T_FLUID || ${t} == T_COLONIC_CONTENTS) ? ${glslFloat(lumenExcessPerMm(Tissue.Fluid))} : 0.0)`;
+  `(${t} == T_BLOOD ? ${glslFloat(lumenExcessPerMm(Tissue.Blood))} : (${t} == T_FLUID || ${t} == T_COLONIC_CONTENTS || ${t} == T_GASTRIC_CONTENTS) ? ${glslFloat(lumenExcessPerMm(Tissue.Fluid))} : 0.0)`;
 /** Transmisión de amplitud ida y vuelta (0–1) correspondiente a `rayAttenuationDb`. */
 export function rayTransmission(tissues: Iterable<Tissue>, stepMm: number, fMHz: number): number {
   return Math.pow(10, -rayAttenuationDb(tissues, stepMm, fMHz) / 20);

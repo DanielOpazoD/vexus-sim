@@ -54,6 +54,8 @@ it('uses the registered colonic lumen only, retaining gas, clear small-bowel flu
         const c = abdomenQuery(p)!;
         // Another registered organ can own an overlapping surface voxel.
         if (![23, 24].includes(c.interface)) continue;
+        // el estómago tiene su propia pared y su contenido (`gastricWall.test.ts`)
+        if (q.label === 1) continue;
         const inner = q.d + digestiveWallMm(q.label);
         if (inner >= 0) {
           expect([Tissue.SoftCapsule, Tissue.GutMuscularis, Tissue.GutSubmucosa, Tissue.Bowel]).toContain(c.tissue);

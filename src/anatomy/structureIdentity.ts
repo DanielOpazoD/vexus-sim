@@ -47,6 +47,7 @@ export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, sce
     ![
       Tissue.Fluid,
       Tissue.ColonicContents,
+      Tissue.GastricContents,
       Tissue.Bowel,
       Tissue.BowelGas,
       Tissue.GutMuscularis,

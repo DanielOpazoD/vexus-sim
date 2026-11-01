@@ -5,7 +5,7 @@ import type { Torso } from '../anatomy/primitives';
 import { wallArc, wallPerimeter } from '../anatomy/organs/wall';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { valueNoise } from '../ultrasound/speckleField';
-import { wallFaceGain, WALL_TEXTURE as T } from '../ultrasound/wallTexture';
+import { WALL_TEXTURE_GLSL, wallFaceGain, WALL_TEXTURE as T } from '../ultrasound/wallTexture';
 
 function expectOriginalInterior(t: Torso) {
   for (let f = FIRST_WALL_INTERFACE; f <= LAST_WALL_INTERFACE; f++)
@@ -13,7 +13,11 @@ function expectOriginalInterior(t: Torso) {
       const p: [number, number, number] = [t.a * Math.sin(angle), t.b * Math.cos(angle) + (t.y0 ?? 0), angle * 19];
       const index = f - FIRST_WALL_INTERFACE;
       const expected = Math.exp(
-        T.faceVariation[index] * (valueNoise([wallArc(p, t) / T.faceVariationMm, p[2] / T.faceVariationMm, (index + 1) * 3.7], 37.3) - 0.5),
+        T.faceVariation[index] *
+          Math.min(
+            valueNoise([wallArc(p, t) / T.faceVariationMm, p[2] / T.faceVariationMm, (index + 1) * 3.7], 37.3) - 0.5,
+            T.faceVariationMax,
+          ),
       );
       expect(wallFaceGain(p, f, t)).toBeCloseTo(expected, 10);
       expect(wallFaceGain(p, f, t)).toBe(wallFaceGain([...p], f, t));
@@ -56,4 +60,9 @@ describe('reflectividad parietal continua alrededor del paciente, 252', () => {
         expect(Math.abs((logGain(-h) - logGain(-2 * h) - logGain(2 * h) + logGain(h)) / h)).toBeLessThan(0.01);
       }
   });
+});
+
+it('la GPU aplica el mismo tope a la variación de las caras: sin él, el pico de una fascia sube 5 dB y se satura (revisión de la decisión 310)', () => {
+  expect(WALL_TEXTURE_GLSL).toContain('min(wallFaceNoise(wallArc(m), m.z, float(face - IF_FIRST_WALL + 1)) - 0.5, WT_FACE_VAR_MAX)');
+  expect(WALL_TEXTURE_GLSL).toContain(`#define WT_FACE_VAR_MAX ${T.faceVariationMax.toFixed(4)}`);
 });

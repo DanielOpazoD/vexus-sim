@@ -42,18 +42,18 @@ import { hash13, valueNoise } from './speckleField';
 export const WALL_TEXTURE = {
   /** Lóbulo de la grasa subcutánea a lo largo de la piel (mm): 5–10 mm (PMC7441131). */
   lobuleMm: 7,
-  /** Estrato (profundidad de un lóbulo, mm): 2–4 mm. */
-  stratumMm: 3.5,
+  /** Estrato (profundidad de un lóbulo, mm): 2–4 mm; con 3,5 los septos se veían como bandas. */
+  stratumMm: 2.4,
   /** Pendiente máxima de los techos de los estratos de una columna (tan 14°). */
   septumTiltMax: 0.25,
   /** Semiespesor gaussiano del septo (mm): 0,2–0,5 mm de espesor a media altura. */
   septumSigmaMm: 0.15,
   /** Retrodispersión del septo fibroso (hígado = 1) [ESTIMADO]. */
-  septumBack: 1.6,
+  septumBack: 3,
   /** Estrías del perimisio: separación media (mm, 1,5–3), semiespesor (mm) y retrodispersión [ESTIMADO]. */
   striationSpacingMm: 2.2,
   striationSigmaMm: 0.15,
-  striationBack: 3.0,
+  striationBack: 3.6,
   /** Irregularidad de la separación: ±15 % con una correlación de 6 mm. */
   striationJitter: 0.3,
   striationJitterMm: 6,
@@ -64,13 +64,15 @@ export const WALL_TEXTURE = {
   orientationFloor: 0.2,
   /**
    * Variación de la reflectividad a lo largo de cada cara de la pared: exp(a·(n − 0,5)) con n un ruido de
-   * valor anclado de correlación `faceVariationMm` (desviación de n ≈ 0,14: a = 3 → ±3,6 dB, a = 5 → ±6 dB):
+   * valor anclado de correlación `faceVariationMm` (desviación de n ≈ 0,14: a = 3 → ±3,6 dB, a = 10 → ±12 dB):
    * rugosidad a la escala del haz, volumen parcial y oblicuidad, anclados (no hierven). Scarpa es la más
-   * irregular (a tramos casi desaparece); con 6 mm y a = 1,5–3 las líneas se veían trazadas con regla (capturas
-   * con GPU, 25-09-2026).
+   * irregular. Tramos brillantes de 1–2 cm con huecos, como las fascias reales; con 4 mm y a = 3–5 eran alambres
+   * continuos (decisión 310, capturas con GPU frente a seis ecografías).
    */
-  faceVariationMm: 4,
-  faceVariation: [4, 5, 4, 4, 4, 3.5, 3] as const,
+  faceVariationMm: 8,
+  faceVariation: [9.6, 12, 9.6, 9.6, 9.6, 8.4, 7.2] as const,
+  /** Tope de n − 0,5: los tramos brillantes llegan a +12 dB como mucho (`PLEURA_WALL_FIELD_BOUND`); hacia abajo la cara puede casi desaparecer. */
+  faceVariationMax: 0.12,
 } as const;
 
 /** Sales del hash de la textura (fijas: la anatomía del paciente no depende de la semilla del moteado). */
@@ -294,7 +296,10 @@ function wallFaceNoise(u: number, z: number, face: number, perimeter: number): n
 export function wallFaceGain(m: Vec3, face: Interface, t: Torso): number {
   if (face < FIRST_WALL_INTERFACE || face > LAST_WALL_INTERFACE) return 1;
   const a = WALL_TEXTURE.faceVariation[face - FIRST_WALL_INTERFACE];
-  return Math.exp(a * (wallFaceNoise(wallArc(m, t), m[2], face - FIRST_WALL_INTERFACE + 1, wallPerimeter(t)) - 0.5));
+  return Math.exp(
+    a *
+      Math.min(wallFaceNoise(wallArc(m, t), m[2], face - FIRST_WALL_INTERFACE + 1, wallPerimeter(t)) - 0.5, WALL_TEXTURE.faceVariationMax),
+  );
 }
 
 /**
@@ -355,6 +360,7 @@ export const WALL_TEXTURE_GLSL = /* glsl */ `
 #define WT_STRIA_MASK1 ${f4(WALL_TEXTURE.striationMask[1])}
 #define WT_ORIENT_FLOOR ${f4(WALL_TEXTURE.orientationFloor)}
 #define WT_FACE_VAR_MM ${f4(WALL_TEXTURE.faceVariationMm)}
+#define WT_FACE_VAR_MAX ${f4(WALL_TEXTURE.faceVariationMax)}
 const float WT_FACE_VAR[${WALL_TEXTURE.faceVariation.length}] = float[${WALL_TEXTURE.faceVariation.length}](${WALL_TEXTURE.faceVariation.map(f4).join(', ')});
 float wallOrientation(vec3 n, vec3 dir) {
   float c = abs(dot(n, dir));
@@ -465,7 +471,7 @@ float wallFaceNoise(float u, float z, float face) {
 // Ganancia del eco de una cara de la pared: variación anclada de su reflectividad a lo largo de la cara
 float wallFaceGain(vec3 m, int face) {
   if (face < IF_FIRST_WALL || face > IF_LAST_WALL) return 1.0;
-  return exp(WT_FACE_VAR[face - IF_FIRST_WALL] * (wallFaceNoise(wallArc(m), m.z, float(face - IF_FIRST_WALL + 1)) - 0.5));
+  return exp(WT_FACE_VAR[face - IF_FIRST_WALL] * min(wallFaceNoise(wallArc(m), m.z, float(face - IF_FIRST_WALL + 1)) - 0.5, WT_FACE_VAR_MAX));
 }
 // Factor de amplitud de la textura de la pared (grasa subcutánea y músculo; 1 en el resto); la incidencia, la del
 // mundo: la normal de la lámina por la jacobiana de la compresión (w, decisión 63)

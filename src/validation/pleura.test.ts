@@ -299,7 +299,7 @@ describe('serie de reverberaciones bajo la pleura: amplitudes frente a los camin
     for (let f = FIRST_WALL_INTERFACE; f <= LAST_WALL_INTERFACE; f++) {
       let pk = 0;
       for (let c = 0.05; c <= 1.0001; c += 0.01) for (let d = -1; d <= 1; d += 0.01) pk = Math.max(pk, interfaceEchoField(f, c, 1, d, k0));
-      peak = Math.max(peak, pk * Math.exp(0.5 * WALL_TEXTURE.faceVariation[f - FIRST_WALL_INTERFACE]));
+      peak = Math.max(peak, pk * Math.exp(WALL_TEXTURE.faceVariationMax * WALL_TEXTURE.faceVariation[f - FIRST_WALL_INTERFACE]));
     }
     expect(PLEURA_WALL_FIELD_BOUND).toBeGreaterThanOrEqual(1.4 * 3 + WALL_COPY_FACE_GAIN_RANGE[1] * peak);
     expect(WALL_COPY_FACE_GAIN).toBeGreaterThanOrEqual(WALL_COPY_FACE_GAIN_RANGE[0]);

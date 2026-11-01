@@ -158,12 +158,12 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
     }
   });
 
-  it('grasa: el interior de los lóbulos, ≤ 0,6 × el gris del hígado; los septos, ≥ 1,5× la mediana de su capa', () => {
+  it('grasa: el interior de los lóbulos, ≤ 0,8 × el gris del hígado (la pared real no es negra entre sus líneas, decisión 310); los septos, ≥ 1,5× la mediana de su capa', () => {
     for (const view of Object.keys(VIEWS) as ViewId[]) {
       const now = run(view, 'wall').m;
       const before = run(view, 'base').m;
       expect(now.fatDb, `${view}: ${tag(now)}`).toBeLessThan(0);
-      expect(now.lobuleGray, `${view}: ${tag(now)}`).toBeLessThanOrEqual(60);
+      expect(now.lobuleGray, `${view}: ${tag(now)}`).toBeLessThanOrEqual(80);
       expect(now.septumDb, `${view}: ${tag(now)}`).toBeGreaterThanOrEqual(RATIO_15_DB);
       // antes: la grasa uniforme a 0,55 (≈ 80 de gris) y sin septos
       expect(before.lobuleGray, view).toBeGreaterThan(70);
@@ -184,8 +184,8 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
       const m = run(view, 'wall', true).m;
       expect(m.septumDb, `${view}: ${tag(m)}`).toBeLessThan(SKIRT_DB);
       expect(m.striationDb, `${view}: ${tag(m)}`).toBeLessThan(SKIRT_DB);
-      // las caras siguen ahí: las líneas de la pared no dependen de la textura
-      expect(m.inside, `${view}: ${tag(m)}`).toBeGreaterThanOrEqual(3);
+      // las caras siguen ahí, con sus huecos (decisión 310): las líneas de la pared no dependen de la textura
+      expect(m.inside, `${view}: ${tag(m)}`).toBeGreaterThanOrEqual(2);
     }
   });
 

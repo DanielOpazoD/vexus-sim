@@ -697,7 +697,7 @@ test('pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, mú
     const tag = `${startPoint}: ${JSON.stringify({ ...w, profileDb: undefined })}`;
     expect(w.profileLines, tag).toBeGreaterThanOrEqual(5);
     expect(w.linesInside, tag).toBeGreaterThanOrEqual(3);
-    expect(w.fatToLiver, tag).toBeLessThan(0.75);
+    expect(w.fatToLiver, tag).toBeLessThan(0.95);
     expect(w.septumDb, tag).toBeGreaterThan(2);
     expect(w.striationDb, tag).toBeGreaterThan(2);
     // las líneas no se blanquean: bajo la pleura y la cortical, que son las más brillantes (W7)

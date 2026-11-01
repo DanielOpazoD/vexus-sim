@@ -187,8 +187,9 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
       expect(d.liver.p50, msg).toBeLessThan(120);
       expect(w.profileLines, msg).toBeGreaterThanOrEqual(5);
       expect(w.linesInside, msg).toBeGreaterThanOrEqual(3);
-      // Antes ≤ 0,60: el propietario la relaja con los +8 dB del campo cercano (decisión 308).
-      expect(w.fatToLiver, msg).toBeLessThanOrEqual(0.72);
+      // ≤ 0,60 hasta la decisión 308 y ≤ 0,72 hasta la 310: la pared real no es negra entre sus líneas (franja 3–25 mm: mediana 0,80–1,65 del hígado).
+      // La grasa sigue por debajo del hígado.
+      expect(w.fatToLiver, msg).toBeLessThanOrEqual(0.92);
       expect(w.septumDb, msg).toBeGreaterThanOrEqual(RATIO_15_DB);
       expect(w.striationDb, msg).toBeGreaterThanOrEqual(RATIO_15_DB);
       if (id === 'flank') {
@@ -234,12 +235,12 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
     expect(before.shadowed, msg).toBe(after.shadowed);
     expect(after.fat.length, msg).toBeGreaterThanOrEqual(60);
     expect(after.liver.length, msg).toBeGreaterThanOrEqual(30);
-    // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor) y cae ≥ 3,5 dB
+    // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor)
     expect(median(after.fat), msg).toBeLessThan(0);
-    expect(median(after.fat), msg).toBeLessThan(median(before.fat) - 3.5);
-    // contra el hígado: la misma línea que con el eco de la 57, a ±1,5 dB, sobre el tejido de alrededor
-    expect(Math.abs(median(after.liver) - median(before.liver)), msg).toBeLessThan(1.5);
+    // contra el hígado la línea sigue, ≥ 2,5 dB por encima de la de la grasa. El brazo sin facetas ya no se compara a ±1,5 dB: ese modelo no está en
+    // el producto, y con las caras de la decisión 310 (tramos de ±12 dB y 8 mm) su mediana depende de qué tramo cae en cada línea
     expect(median(after.liver), msg).toBeGreaterThan(0.5);
+    expect(median(after.liver) - median(after.fat), msg).toBeGreaterThan(2.5);
   });
 
   it('septos y estrías del banco: sin textura, con las caras, < 1,5 dB (no cuentan la falda de las fascias)', () => {

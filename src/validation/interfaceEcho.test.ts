@@ -524,14 +524,14 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     // de frente, en el pico de su perfil, la difusa por muestra queda 21–32 dB bajo la especular en las caras lisas
     // (vasos, cápsula hepática: su nivel en la imagen, en el gemelo, interfaceTwin.test.ts), 11 dB en la cápsula renal
     // (σz 0,06) y es comparable en las fascias y el peritoneo, cuya rugosidad deja ~1 % de energía coherente. La
-    // rugosidad fina la reparte, así que una fascia (σz 0,075) tiene 2–3 veces más difusa que la cápsula por unidad de R_ef
+    // rugosidad fina la reparte, así que una fascia (σz 0,09, decisión 310) tiene 2–3 veces más difusa que la cápsula por unidad de R_ef
     const peak = (id: Interface) => (INTERFACES[id].twoSided ? 0 : IFACE_SHIFT_MM);
     const margin = (id: Interface) => db(facetEchoField(id, 1, 1, peak(id), K0) / diffuseEchoField(id, 1, peak(id), K0));
     for (const id of [Interface.VeinLumen, Interface.IvcLumen, Interface.LiverCapsule])
       expect(margin(id), Interface[id]).toBeGreaterThan(20);
     expect(margin(Interface.RenalCapsule)).toBeGreaterThan(10);
     for (const id of [Interface.DeepFascia, Interface.Transversalis, Interface.Peritoneum])
-      expect(Math.abs(margin(id)), Interface[id]).toBeLessThan(8);
+      expect(Math.abs(margin(id)), Interface[id]).toBeLessThan(9);
     // escala con K como la especular (la GLSL la saca del uniform A)
     expect(diffuseEchoField(Interface.DeepFascia, 1, peak(Interface.DeepFascia), K0, IFACE_K_DB + 6)).toBeCloseTo(
       diffuseEchoField(Interface.DeepFascia, 1, peak(Interface.DeepFascia), K0) * 10 ** (6 / 20),

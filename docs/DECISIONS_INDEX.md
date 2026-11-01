@@ -313,3 +313,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [307](DECISIONS.md#L9782) | Margen de JavaScript: retirar de Three lo que nadie usa, sin subir el límite | vigente |
 | [308](DECISIONS.md#L9794) | Campo cercano a +8 dB, con dos metas relajadas por el propietario | vigente |
 | [309](DECISIONS.md#L9804) | El riñón entero en la ventana renal: grosor, interior, vasos y pose | vigente |
+| [310](DECISIONS.md#L9823) | Pared abdominal con textura y estómago con pared plegada | vigente |

@@ -15,6 +15,12 @@ en `docs/engineering/workspace.md`. No uses un prompt histórico como estado act
 - Aproximación o limitación nueva → `docs/APPROXIMATIONS.md` / `docs/LIMITATIONS.md`
   (las limitaciones con id en `src/validation/limitations.ts`).
 
+## Fidelidad anatómica
+
+El modelo debe mantener las relaciones habituales de un humano real, no parecerse a un promedio (decisión 311). Uno o dos TAC
+bastan: sin paneles ni percentiles. Antes de ajustar imagen o anatomía, compara el mismo plano en el modelo y en el TAC, y
+mira las láminas; una tabla no recoge lo que ahí se ve. La aceptación es la lista de `docs/anatomia/relaciones-tac.md`.
+
 ## Invariantes que se rompen fácil
 
 1. **Anatomía TS = GLSL.** Todo cambio en `src/anatomy/*.ts` que afecte a `classify` va también a

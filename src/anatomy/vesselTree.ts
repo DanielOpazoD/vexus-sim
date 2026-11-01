@@ -2,7 +2,7 @@ import { registerAbdominalVessels } from './abdominalVessels';
 import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import { VESSEL_META, type CaliberLaw, type VesselId } from '../physiology/vessels';
-import { BERTIN_COLUMNS_U, kidneyWorld, type Kidney } from './organs/kidney';
+import { atlasInterior, BERTIN_COLUMNS_U, kidneyWorld, type Kidney } from './organs/kidney';
 import { tubeShapeMaxFactor, type Tube, type TubeShapeClass } from './primitives';
 import { Tissue } from './tissues';
 
@@ -120,24 +120,34 @@ export function buildVesselTree(
   // (decisión 87) se afilan hacia la unión, donde se hacen arcuatas de 1–1,5 mm [EXTRAPOLACIÓN PROPIA: los radios]: el tramo
   // de la columna ya no es una hendidura negra de 2,6 mm hasta la base de las pirámides; la puerta PW de la cadena del
   // alumno queda junto al seno, donde miden lo mismo que antes (el `refRadius`, que da el área y la velocidad, no cambia)
+  // Con el atlas van por la fila que mira a la ventana renal, donde el riñón es más delgado que hacia fuera (decisión 309)
+  // Cada columna lleva su leve giro: no van las tres en el mismo plano [EXTRAPOLACIÓN PROPIA]
+  const kwi = (q: Vec3, u: number): Vec3 => kw(kR, registeredAbdomen ? atlasInterior(q, (0.07 * u) / BERTIN_COLUMNS_U[2]) : q);
+  const reach = (outer: number): number => (registeredAbdomen ? outer * 0.62 : outer);
   const interlobarVein = (id: VesselId, u: number, bow: number, outer: number): VesselDef =>
     thin(
       id,
       [
-        [kw(kR, [u * 1.12 + 0.4 * bow, outer, 1.8]), 0.7],
-        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, 1.8]), 1.4],
-        [kw(kR, [u, -6, 1.8]), 1.95],
+        [kwi([u * 1.12 + 0.4 * bow, reach(outer), 1.8], u), registeredAbdomen ? 0.9 : 0.7],
+        [kwi([u * 1.05 + bow, (reach(outer) - 6) / 2, 1.8], u), registeredAbdomen ? 1.7 : 1.4],
+        [kwi([u, -6, 1.8], u), registeredAbdomen ? 2.1 : 1.95],
       ],
       1.7,
       0.4,
     );
+  // Con el atlas la arteria va junto a la vena, en el mismo plano de la ventana y a 5,5 mm entre ejes a lo largo del riñón, hacia el
+  // lado libre de su columna, con el calibre de una interlobar: a 3,6 mm sus paredes se solapaban y a ±80 cm/s una vena monofásica
+  // salía bifásica, y fuera del plano la adquisición pareada no encontraba puerta (decisión 309). El `refRadius` no cambia: ni área
+  // ni velocidad.
+  const arteryAlong = (u: number): number => (registeredAbdomen ? (u < BERTIN_COLUMNS_U[1] ? -5.5 : 5.5) : 0);
+  const arterySide = registeredAbdomen ? 2.6 : -1.8;
   const interlobarArtery = (id: VesselId, u: number, bow: number, outer: number): VesselDef =>
     artery(
       id,
       [
-        [kw(kR, [u, -6, -1.8]), 1.35],
-        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, -1.8]), 1.0],
-        [kw(kR, [u * 1.12 + 0.4 * bow, outer, -1.8]), 0.5],
+        [kwi([u + arteryAlong(u), -6, arterySide], u), registeredAbdomen ? 1.6 : 1.35],
+        [kwi([u * 1.05 + bow + arteryAlong(u), (reach(outer) - 6) / 2, arterySide], u), registeredAbdomen ? 1.3 : 1.0],
+        [kwi([u * 1.12 + 0.4 * bow + arteryAlong(u), reach(outer), arterySide], u), registeredAbdomen ? 0.7 : 0.5],
       ],
       1.15,
       0.4,

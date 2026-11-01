@@ -143,11 +143,14 @@ vec2 hepaticDomeValue(vec2 p){
 }
 // Labels are categorical metadata;  nearest texel, never interpolated.
 // Distance uses WebGL2 RG16F linear filtering of the same source lattice; categorical labels stay nearest.
+const vec3 ATLAS_LO[${ABDOMINAL_FIELDS.length}]=vec3[](${ABDOMINAL_FIELDS.map((f) => `vec3(${f.originMm.map((v) => v.toFixed(3)).join(',')})`).join(',')});
+const vec3 ATLAS_DIM[${ABDOMINAL_FIELDS.length}]=vec3[](${ABDOMINAL_FIELDS.map((f) => `vec3(${f.dimensions.map((v) => v.toFixed(1)).join(',')})`).join(',')});
+const vec3 ATLAS_OFF[${ABDOMINAL_FIELDS.length}]=vec3[](${ABDOMINAL_FIELDS.map((f) => `vec3(${f.offset.map((v) => v.toFixed(1)).join(',')})`).join(',')});
+// Tablas y no una cadena de if: cada consulta con campo variable expandía sus once ramas, y con las del riñón (decisión 309)
+// el proceso GPU moría con SwiftShader al compilar la clasificación.
 vec2 abdominalAtlasValue(vec3 p, int k){
-  if(uAbdominalAtlasEnabled==0)return vec2(16.0,0.0); 
-  vec3 lo,dim,off; 
-  ${ABDOMINAL_FIELDS.map((f, i) => `${i ? 'else ' : ''}if(k==${i}){lo=vec3(${f.originMm.map((v) => v.toFixed(3)).join(',')}); dim=vec3(${f.dimensions.map((v) => v.toFixed(1)).join(',')}); off=vec3(${f.offset.map((v) => v.toFixed(1)).join(',')}); }`).join('\n')}
-  else return vec2(16.0,0.0); 
+  if(uAbdominalAtlasEnabled==0||k<0||k>=${ABDOMINAL_FIELDS.length})return vec2(16.0,0.0); 
+  vec3 lo=ATLAS_LO[k],dim=ATLAS_DIM[k],off=ATLAS_OFF[k]; 
   vec3 q=(p-lo)/1.5; 
   if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,dim-1.0)))return vec2(16.0,0.0); 
   // Normalized texel-center coordinates; linear filtering stays inside the selected brick.

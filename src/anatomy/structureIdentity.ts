@@ -1,4 +1,5 @@
 import { abdominalAtlasSdf, abdominalAtlasValue } from './abdominalAtlas';
+import { kidneyLocal, kidneyOuterSdf } from './organs/kidney';
 import { Interface } from './interfaces';
 import { Tissue } from './tissues';
 import type { Vec3 } from '../core/vec3';
@@ -38,8 +39,8 @@ export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, sce
   if (!scene.hasAbdominalAtlas) return 0;
   if (tissue === Tissue.Blood) {
     if (abdominalAtlasSdf(p, 4) < 0) return 1;
-    if (abdominalAtlasSdf(p, 5) < 0) return 2;
-    if (abdominalAtlasSdf(p, 6) < 0) return 3;
+    if (kidneyOuterSdf(kidneyLocal(p, scene.kidneyRight), scene.kidneyRight) < 0) return 2;
+    if (kidneyOuterSdf(kidneyLocal(p, scene.kidneyLeft), scene.kidneyLeft) < 0) return 3;
     return 0;
   }
   if (

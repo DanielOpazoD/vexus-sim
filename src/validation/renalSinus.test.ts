@@ -8,6 +8,13 @@ import {
   PYRAMIDS,
   SINUS_FINGER,
   SINUS_FINGERS,
+  SINUS_FINGERS_ATLAS,
+  interiorPoint,
+  atlasDepthScale,
+  MEDULLA_MIN_DEPTH_MM,
+  sdRoundCone,
+  ATLAS_KIDNEY_SINUS,
+  PYRAMIDS_ATLAS,
   kidneyOuterSdf,
   kidneyQuery,
   kidneyWorld,
@@ -21,7 +28,8 @@ import { Tissue } from '../anatomy/tissues';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { startPointsFor } from '../app/startPoints';
 import { CASES } from '../cases';
-import type { Vec3 } from '../core/vec3';
+import { add, cross, normalize, scale, sub, type Vec3 } from '../core/vec3';
+import type { VesselId } from '../physiology/vessels';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 
 const PATIENT = { ...CASES.find((c) => c.id === 'normal-adult')!, respiratoryPattern: 'apnea-expiratory' as const };
@@ -78,33 +86,69 @@ function sinusSolidity(k: Kidney, view: 'renal' | 'hepatorenal', scene: AnatomyS
 
 describe('seno digitado y médula del riñón (decisión 305)', () => {
   it('crecer las pirámides deja ≥ 2 mm de columna entre vecinas; solo se funden las compuestas de los polos', () => {
-    const lateralPoles = new Set(['0-13', '3-12']);
-    for (let i = 0; i < PYRAMIDS.length; i++)
-      for (let j = i + 1; j < PYRAMIDS.length; j++) {
-        if (lateralPoles.has(`${i}-${j}`)) continue;
-        const [a, b] = [PYRAMIDS[i], PYRAMIDS[j]];
-        const gap = Math.hypot(a.base[0] - b.base[0], a.base[1] - b.base[1], a.base[2] - b.base[2]) - a.baseR - b.baseR;
-        expect(gap, `${i}-${j}`).toBeGreaterThanOrEqual(1.95);
-      }
+    for (const pyramids of [PYRAMIDS, PYRAMIDS_ATLAS]) {
+      const n = pyramids.length;
+      // las dos últimas son las de los polos, que se funden con la última de la fila que mira a ellos
+      const lateralPoles = new Set([`0-${n - 1}`, `3-${n - 2}`]);
+      for (let i = 0; i < n; i++)
+        for (let j = i + 1; j < n; j++) {
+          if (lateralPoles.has(`${i}-${j}`)) continue;
+          const [a, b] = [pyramids[i], pyramids[j]];
+          const gap = Math.hypot(a.base[0] - b.base[0], a.base[1] - b.base[1], a.base[2] - b.base[2]) - a.baseR - b.baseR;
+          expect(gap, `${i}-${j}`).toBeGreaterThanOrEqual(1.95);
+        }
+    }
+  });
+
+  it('con el atlas, el riñón izquierdo lee el interior en espejo: delante es delante en los dos (decisión 309)', () => {
+    loadAtlas();
+    const scene = new AnatomyScene(PATIENT);
+    const left = scene.kidneyLeft;
+    expect(left.w[1]).toBeLessThan(0);
+    expect(interiorPoint([1, 2, 3], left)).toEqual([1, 2, -3]);
+    expect(interiorPoint([1, 2, 3], scene.kidneyRight)).toEqual([1, 2, 3]);
+    let medulla = 0;
+    let mirroredDiffers = 0;
+    for (let u = -48; u <= 48; u += 3)
+      for (let v = -26; v <= 26; v += 3)
+        for (let w = -21; w <= 21; w += 3) {
+          const q: Vec3 = [u, v, w];
+          const h = kidneyQuery(kidneyWorld(q, left), left);
+          if (h.dOuter >= 0 || h.region === 'sinus' || h.region === 'pelvis' || h.region === 'arcuate') continue;
+          const inCone = (t: Vec3) => PYRAMIDS_ATLAS.some((p) => sdRoundCone(t, p.apex, p.base, p.apexR, p.baseR) < 0);
+          // Solo se contrastan los puntos claros: bajo la unión corticomedular y lejos del borde de un cono
+          if (-h.dOuter / atlasDepthScale(q) < MEDULLA_MIN_DEPTH_MM + 1) continue;
+          const mirrored = inCone([u, v, -w]);
+          expect(h.region === 'medulla', `${u},${v},${w}`).toBe(mirrored);
+          if (h.region === 'medulla') medulla++;
+          if (mirrored !== inCone(q)) mirroredDiffers++;
+        }
+    expect(medulla).toBeGreaterThan(50);
+    expect(mirroredDiffers).toBeGreaterThan(50);
+    // La GLSL hace lo mismo
+    expect(KIDNEY_GLSL).toContain('uKidW[k].y < 0.0 ? vec3(q.xy, -q.z) : q');
   });
 
   it('los dedos nacen pegados al seno, no cruzan la cápsula en ningún tramo y sus puntas quedan a ≥ 5 mm, sin atlas y con él', () => {
-    const check = () => {
+    const check = (fingers: typeof SINUS_FINGERS, sinus: typeof KIDNEY_SINUS, mirror: boolean) => {
       const scene = new AnatomyScene(PATIENT);
-      for (const k of [scene.kidneyRight, scene.kidneyLeft])
-        for (const f of SINUS_FINGERS) {
-          expect(-kidneyOuterSdf(f.b, k) - SINUS_FINGER.radiusMm).toBeGreaterThanOrEqual(5);
-          expect(sdEllipsoidLocal([f.a[0], f.a[1] - KIDNEY_SINUS.offsetV, f.a[2]], KIDNEY_SINUS.radii)).toBeLessThan(SINUS_FINGER.radiusMm);
+      for (const k of [scene.kidneyRight, scene.kidneyLeft]) {
+        const local = (q: Vec3): Vec3 => (mirror && k.w[1] < 0 ? [q[0], q[1], -q[2]] : q);
+        // los tres últimos del atlas son solo del derecho
+        for (const f of mirror && k.w[1] < 0 ? fingers.slice(0, -3) : fingers) {
+          expect(-kidneyOuterSdf(local(f.b), k) - SINUS_FINGER.radiusMm).toBeGreaterThanOrEqual(5);
+          expect(sdEllipsoidLocal([f.a[0], f.a[1] - sinus.offsetV, f.a[2]], sinus.radii)).toBeLessThan(SINUS_FINGER.radiusMm);
           for (let t = 0; t <= 1; t += 0.05) {
             const q: Vec3 = [0, 1, 2].map((i) => f.a[i] + (f.b[i] - f.a[i]) * t) as Vec3;
-            expect(-kidneyOuterSdf(q, k) - SINUS_FINGER.radiusMm).toBeGreaterThan(0);
+            expect(-kidneyOuterSdf(local(q), k) - SINUS_FINGER.radiusMm).toBeGreaterThan(0);
           }
         }
+      }
     };
     setAbdominalAtlas();
-    check();
+    check(SINUS_FINGERS, KIDNEY_SINUS, false);
     loadAtlas();
-    check();
+    check(SINUS_FINGERS_ATLAS, ATLAS_KIDNEY_SINUS, true);
   });
 
   it('con el atlas, la médula es ≥ 4 % del parénquima en los dos riñones (2,6 y 3,2 % antes; 35 % en RM, no alcanzable en este contorno)', () => {
@@ -187,6 +231,36 @@ describe('seno digitado y médula del riñón (decisión 305)', () => {
     scan(atlas, atlas.kidneyLeft, [[[20, 4, 0], Tissue.RenalSinus, 5.963]]);
   });
 
+  it('con el atlas, ninguna interlobar atraviesa la médula: van por las columnas de Bertin, ni el eje ni la luz (decisión 309)', () => {
+    loadAtlas();
+    const scene = new AnatomyScene(PATIENT);
+    const k = scene.kidneyRight;
+    for (const kind of ['Vein', 'Artery'])
+      for (const n of [1, 2, 3]) {
+        const id = `interlobar${kind}${n}` as VesselId;
+        const nodes = scene.vesselById.get(id)!.tube.nodes;
+        let inMedulla = 0;
+        for (let i = 0; i + 1 < nodes.length; i++) {
+          const a = nodes[i];
+          const b = nodes[i + 1];
+          const d = normalize(sub(b.p, a.p));
+          const e1 = normalize(Math.abs(d[0]) < 0.8 ? cross(d, [1, 0, 0]) : cross(d, [0, 1, 0]));
+          const e2 = cross(d, e1);
+          for (let t = 0; t <= 40; t++) {
+            const f = t / 40;
+            const c = add(a.p, scale(sub(b.p, a.p), f));
+            const r = a.r + f * (b.r - a.r);
+            if (kidneyQuery(c, k).region === 'medulla') inMedulla++;
+            for (let j = 0; j < 8; j++) {
+              const th = (j * Math.PI) / 4;
+              const q = add(c, add(scale(e1, r * Math.cos(th)), scale(e2, r * Math.sin(th))));
+              if (kidneyQuery(q, k).region === 'medulla') inMedulla++;
+            }
+          }
+        }
+        expect(inMedulla, id).toBe(0);
+      }
+  });
   it('la GLSL aplica las mismas fronteras que TS', () => {
     expect(KIDNEY_GLSL).toContain('float lp = (length(vec3(q.x, q.y - uKidSinus[k].w - PELVIS.w, q.z) / PELVIS.xyz) - 1.0) * PELVIS.z;');
     expect(KIDNEY_GLSL).toContain('inner = min(min(-dSinus, -dOuter), lp); return 2;');

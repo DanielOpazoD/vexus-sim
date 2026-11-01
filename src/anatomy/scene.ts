@@ -36,6 +36,7 @@ import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderGradient, gallbladderS
 import {
   KIDNEY_RADII,
   KIDNEY_SINUS,
+  ATLAS_KIDNEY_SINUS,
   PERIRENAL,
   RENAL_CAPSULE_MM,
   hilumChannelSdf,
@@ -62,7 +63,14 @@ import {
 } from './organs/liverLigaments';
 import { domeFloor, heartFloor, heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
-import { RENAL_FASCIA_MM, RENAL_ATLAS_GRADIENT_EPS_MM } from './organs/kidney';
+import {
+  RENAL_FASCIA_MM,
+  RENAL_ATLAS_GRADIENT_EPS_MM,
+  atlasKidneyOuter,
+  atlasKidneyOuterGradient,
+  perirenalFromOuter,
+  nearestKidney,
+} from './organs/kidney';
 import { retroperitoneum } from './organs/retroperitoneum';
 import { sternumSd, STERNUM } from './organs/sternum';
 import {
@@ -353,7 +361,7 @@ export class AnatomyScene {
       center: [-72, -38 + this.spineReferenceOffset, -78],
       radii: KIDNEY_RADII,
       ...bR,
-      sinusRadii: KIDNEY_SINUS.radii,
+      sinusRadii: this.hasAbdominalAtlas ? ATLAS_KIDNEY_SINUS.radii : KIDNEY_SINUS.radii,
       sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
@@ -362,7 +370,7 @@ export class AnatomyScene {
       center: [78, -36 + this.spineReferenceOffset, -70],
       radii: KIDNEY_RADII,
       ...bL,
-      sinusRadii: KIDNEY_SINUS.radii,
+      sinusRadii: this.hasAbdominalAtlas ? ATLAS_KIDNEY_SINUS.radii : KIDNEY_SINUS.radii,
       sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
@@ -852,14 +860,23 @@ export class AnatomyScene {
       const frame = spineFaceFrame(m, this.spine);
       return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), frame.curvature), axis: frame.axis };
     }
-    return this.numericGradient(
-      m,
-      (p) => this.faceSdf(p, caliber, geometry)!,
-      0,
-      this.hasAbdominalAtlas && (geometry === 'perirenalOuter' || geometry === 'kidneyOuter')
-        ? RENAL_ATLAS_GRADIENT_EPS_MM
-        : FACE_GRADIENT_EPS_MM,
-    );
+    if (this.hasAbdominalAtlas && (geometry === 'kidneyOuter' || geometry === 'perirenalOuter')) {
+      // Como la GPU: el gradiente del término que manda, y la grasa con el contorno en primer orden (decisión 309)
+      const k = nearestKidney(m, this.kidneyRight, this.kidneyLeft);
+      const g = atlasKidneyOuterGradient(m, k);
+      if (geometry === 'kidneyOuter') {
+        const norm = Math.hypot(g[0], g[1], g[2]);
+        return norm > 0 ? { normal: scale(g, 1 / norm), norm, curvature: 0 } : { normal: [0, 1, 0], norm: 1, curvature: 0 };
+      }
+      const d0 = atlasKidneyOuter(m, k);
+      return this.numericGradient(
+        m,
+        (p) => perirenalFromOuter(d0 + g[0] * (p[0] - m[0]) + g[1] * (p[1] - m[1]) + g[2] * (p[2] - m[2]), kidneyLocal(p, k), k),
+        0,
+        RENAL_ATLAS_GRADIENT_EPS_MM,
+      );
+    }
+    return this.numericGradient(m, (p) => this.faceSdf(p, caliber, geometry)!, 0);
   }
 
   /** Gradiente por diferencias centrales de paso `FACE_GRADIENT_EPS_MM` (el de la GPU) de una distancia. */

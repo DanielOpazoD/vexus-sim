@@ -119,10 +119,10 @@ test('subcostal portal window restores its own depth after the intrahepatic wind
   expect(Math.max(...result.hits.map((p) => p.r)) - Math.min(...result.hits.map((p) => p.r))).toBeGreaterThan(8);
   expect(result.errors).toEqual([]);
   expect(errors).toEqual([]);
-  // Each examination restores its own preset (renal atlas 160 mm, decision 274).
+  // Each examination restores its own preset (renal atlas 140 mm, decision 309).
   for (const [id, depth] of [
-    ['renal', '160'],
-    ['hepatorenal', '160'],
+    ['renal', '140'],
+    ['hepatorenal', '140'],
     ['subxiphoid', '180'],
   ]) {
     await page.locator(`[data-window="${id}"]`).click();

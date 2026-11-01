@@ -90,16 +90,16 @@ it.each([NORMAL_ADULT, SEVERE_CONGESTION])('conserva el plano renal de partida a
   const scene = new AnatomyScene(patient),
     sp = startPointsFor(scene.torso).find((p) => p.id === 'renal')!,
     k = probeContact({ ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
-  // Planos mundo de la pose de la decisión 303. Un cambio de la piel o del marco cutáneo no debe moverlos sin decidirlo.
+  // Planos mundo de la pose de la decisión 309. Un cambio de la piel o del marco cutáneo no debe moverlos sin decidirlo.
   const reference =
     patient.id === 'normal-adult'
       ? {
-          elevation: [0.6059727480169843, -0.7895595953910546, 0.09691580875511759],
-          face: [-112.2452956560258, -71.15828387659501, -175.2414690188642],
+          elevation: [-0.799462852913061, -0.6004412779967372, 0.018149889524583133],
+          face: [-109.96819841621442, 41.721508069914556, -143.2820502976219],
         }
       : {
-          elevation: [0.6057244219046982, -0.7897647019383035, 0.0967969022258532],
-          face: [-113.1125460125747, -71.62580825011196, -175.2757290168087],
+          elevation: [-0.8007312962182247, -0.5986792144289582, 0.020312298427497988],
+          face: [-110.40198913154647, 41.56781741780862, -143.39879124884686],
         };
   // 0,01 mm y norma 1e-4: registro numérico del plano, no exactitud clínica.
   expect(Math.hypot(...k.frame.elevation.map((v, i) => v - reference.elevation[i]))).toBeLessThan(1e-4);

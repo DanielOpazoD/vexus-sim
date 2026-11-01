@@ -268,8 +268,9 @@ const ABDOMINAL_POSES = {
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
   portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
-  // [EXTRAPOLACIÓN PROPIA] Acceso posterolateral con el sector en contacto, verificado por la captura completa de la vena interlobar (303).
-  renal: { phi: 3.626, z: -171.944, yaw: 0.107, rock: 0.01, tilt: 0.051 },
+  // [EXTRAPOLACIÓN PROPIA] Línea axilar anterior: el riñón entero, con su eje largo en el plano y el hígado arriba a la izquierda, sin costilla delante ni
+  // pérdida de contacto. Verificado por la captura completa de la vena interlobar (309).
+  renal: { phi: 2.627, z: -142.6, yaw: -0.006, rock: 0.089, tilt: -0.363 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Riñón en eje largo con el hígado delante y todo el sector en contacto; la sombra costal cae sobre el hígado (300).
   hepatorenal: { phi: 2.96, z: -115.333, yaw: -0.008, rock: -0.114, tilt: -0.253 },
@@ -289,7 +290,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
           : sp.id === 'portalTrunk'
             ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
             : sp.id === 'renal'
-              ? 'Riñón derecho desde flanco posterior. Afina el eje largo y distingue vena y arteria interlobares. Color inicial ±15 cm/s y PW ±40 cm/s; ajusta cada escala a la señal.'
+              ? 'Riñón derecho entero en eje largo, desde la línea axilar anterior. Afina el eje largo y distingue vena y arteria interlobares. Color inicial ±15 cm/s y PW ±40 cm/s; ajusta cada escala a la señal.'
               : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */

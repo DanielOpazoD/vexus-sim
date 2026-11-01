@@ -6,6 +6,7 @@ import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { setAbdominalAtlas, abdominalAtlasSdf, abdominalAtlasValue } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
+import { atlasKidneyOuter } from '../anatomy/organs/kidney';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
@@ -145,6 +146,10 @@ describe('registered abdomen: actual shipped acoustic data', () => {
     expect(digest(bytes)).toBe(ABDOMINAL_SURFACE.sha256Raw);
     expect(bytes.byteLength).toBe(ABDOMINAL_SURFACE.rawBytes);
     const vertices = new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+    // Los riñones se extraen del contorno que usa la física, no del campo sin estirar (decisión 309)
+    const { kidneyRight, kidneyLeft } = new AnatomyScene(NORMAL_ADULT);
+    const contour = (p: [number, number, number], k: number) =>
+      k === 5 ? atlasKidneyOuter(p, kidneyRight) : k === 6 ? atlasKidneyOuter(p, kidneyLeft) : abdominalAtlasSdf(p, k);
     for (const [k, surface] of ABDOMINAL_SURFACE.fields.entries()) {
       expect(surface.name).toBe(ABDOMINAL_FIELDS[k].name);
       expect(surface.count).toBeGreaterThan(1000);
@@ -152,7 +157,7 @@ describe('registered abdomen: actual shipped acoustic data', () => {
         const offset = surface.offset + 3 * i;
         const p: [number, number, number] = [vertices[offset], vertices[offset + 1], vertices[offset + 2]];
         expect(p.every(Number.isFinite)).toBe(true);
-        expect(Math.abs(abdominalAtlasSdf(p, k)), surface.name).toBeLessThan(0.001);
+        expect(Math.abs(contour(p, k)), surface.name).toBeLessThan(0.001);
       }
     }
   });

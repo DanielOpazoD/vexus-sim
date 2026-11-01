@@ -49,8 +49,9 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
     exports: kidney,
     glsl: kidney.KIDNEY_GLSL,
     gpuOnly: {
-      kidneyOuter:
-        'normal del elipsoide de la clasificación (el eco de interfaz usa el gradiente del contorno, `faceGradient`); TS no usa normales',
+      kidneyOuter: 'contorno sin atlas y su normal, para la impresión renal del hígado; TS no usa normales',
+      kidneyOuterNormal:
+        'normal de la clasificación (el eco de interfaz usa el gradiente del contorno, `faceGradient`); TS no usa normales',
     },
   },
   { id: 'liverLigaments', exports: liverLigaments, glsl: liverLigaments.LIVER_LIGAMENTS_GLSL },

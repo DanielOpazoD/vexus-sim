@@ -741,10 +741,10 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     int region = kidneyQuery(m, k, inner, dOuter);
     inner *= 0.75;
     float fat = perirenalThicknessMm(kidneyLocal(m, k), k);
-    float dFat=uAbdominalAtlasEnabled!=0?perirenalOuterSdf(kidneyLocal(m,k),k):dOuter-fat;
+    float dFat=uAbdominalAtlasEnabled!=0?perirenalFromOuter(dOuter,m,kidneyLocal(m,k),k):dOuter-fat;
     if (dFat < dPeri) { dPeri = dFat; periThin = fat <= PERI.z; }
     vec3 kn;
-    if (dOuter < 0.0 || dFat < 0.0) kidneyOuter(m, k, kn);
+    if (dOuter < 0.0 || dFat < 0.0) kn = kidneyOuterNormal(m, k);
     if (dOuter < 0.0) {
       // 4: los vasos arcuatos (decisión 87), pared arterial sin luz
       c.tissue = region == 4 ? T_ARTERYWALL : (region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX)));
@@ -887,7 +887,6 @@ float liverInner(vec3 m) {
 // Contorno externo del riñón más cercano (el menor dOuter, como faceSdf('kidneyOuter') de TS):
 // gradiente por diferencias centrales en su marco local, devuelto en el mundo
 vec3 kidneyOuterGradient(vec3 m) {
-  if(uAbdominalAtlasEnabled!=0){int k=abdominalAtlasSdf(m,5)<abdominalAtlasSdf(m,6)?5:6;return abdominalAtlasGradient(m,k)*(2.0*FACE_GRAD_EPS);}
   vec3 q0 = kidneyLocal(m, 0);
   vec3 q1 = kidneyLocal(m, 1);
   int k = kidneyOuterSdf(q0, uKidR[0]) <= kidneyOuterSdf(q1, uKidR[1]) ? 0 : 1;
@@ -900,17 +899,38 @@ vec3 kidneyOuterGradient(vec3 m) {
   return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
 }
 
+float perirenalFirstOrder(vec3 p, vec3 m, float d0, vec3 g0, int k) {
+  return perirenalFromOuter(d0+dot(g0,p-m),p,kidneyLocal(p,k),k);
+}
+// La cara renal con atlas (faceGradient de TS, decisión 309): el gradiente del término que manda en el contorno y, para la
+// grasa, el contorno en primer orden. Sin diferencias centrales del contorno: el JIT de SwiftShader expande cada llamada, y
+// con ellas el primer cuadro perdía el contexto en CI.
+vec3 renalAtlasFaceGradient(vec3 m, bool fat) {
+  int k=distance(m,uKidC[0])<=distance(m,uKidC[1])?0:1;
+  vec3 g0=atlasKidneyOuterGradient(m,k);
+  if(!fat)return (2.0*FACE_GRAD_EPS)*g0;
+  float d0=atlasKidneyOuter(m,k);
+  float e=${RENAL_ATLAS_GRADIENT_EPS_MM};
+  vec2 t=vec2(e,0.0);
+  return (FACE_GRAD_EPS/e) * vec3(perirenalFirstOrder(m+t.xyy,m,d0,g0,k)-perirenalFirstOrder(m-t.xyy,m,d0,g0,k),
+              perirenalFirstOrder(m+t.yxy,m,d0,g0,k)-perirenalFirstOrder(m-t.yxy,m,d0,g0,k),
+              perirenalFirstOrder(m+t.yyx,m,d0,g0,k)-perirenalFirstOrder(m-t.yyx,m,d0,g0,k));
+}
+float perirenalLegacy(vec3 p, int k) {
+  vec3 q=kidneyLocal(p,k);
+  return kidneyOuterSdf(q,uKidR[k])-perirenalThicknessMm(q,k);
+}
+
 // Cara externa de la grasa perirrenal más cercana (el menor perirenalOuterSdf, como faceSdf('perirenalOuter') de TS):
 // la superficie es el contorno menos el grosor local, no el contorno: su propio gradiente por diferencias centrales en
 // el marco local, devuelto en el mundo (antes, el del contorno renal: 9° de error en el p90 y 15,9° en el máximo)
 vec3 perirenalOuterGradient(vec3 m) {
-  int k = perirenalOuterSdf(kidneyLocal(m,0), 0) <= perirenalOuterSdf(kidneyLocal(m,1), 1) ? 0 : 1;
   // Use material-world axes, as CPU faceSdf: rotated differences disagree at voxel/clipping seams.
-  float eps = uAbdominalAtlasEnabled != 0 ? ${RENAL_ATLAS_GRADIENT_EPS_MM} : FACE_GRAD_EPS;
-  vec2 h = vec2(eps, 0.0);
-  return (FACE_GRAD_EPS/eps) * vec3(perirenalOuterSdf(kidneyLocal(m+h.xyy,k),k)-perirenalOuterSdf(kidneyLocal(m-h.xyy,k),k),
-              perirenalOuterSdf(kidneyLocal(m+h.yxy,k),k)-perirenalOuterSdf(kidneyLocal(m-h.yxy,k),k),
-              perirenalOuterSdf(kidneyLocal(m+h.yyx,k),k)-perirenalOuterSdf(kidneyLocal(m-h.yyx,k),k));
+  int k = perirenalLegacy(m,0) <= perirenalLegacy(m,1) ? 0 : 1;
+  vec2 h = vec2(FACE_GRAD_EPS, 0.0);
+  return vec3(perirenalLegacy(m+h.xyy,k)-perirenalLegacy(m-h.xyy,k),
+              perirenalLegacy(m+h.yxy,k)-perirenalLegacy(m-h.yxy,k),
+              perirenalLegacy(m+h.yyx,k)-perirenalLegacy(m-h.yyx,k));
 }
 
 // Distancia de la cúpula sin su normal (el gradiente numérico de faceGradient; la vesícula tiene su sobrecarga
@@ -936,6 +956,8 @@ vec4 faceGradient(Cls c, vec3 m) {
     ${centralFaceGradientGlsl('spineBodySd', axisGradient)}
   } else if (c.tissue == T_CAPSULE) {
     ${centralFaceGradientGlsl('liverInner', axisGradient)}
+  } else if (uAbdominalAtlasEnabled != 0 && (c.iface == IF_PERIRENAL || c.iface == IF_RENAL_FASCIA || c.iface == IF_RENAL_CAPSULE || c.tissue == T_PERIRENAL)) {
+    g = renalAtlasFaceGradient(m, c.iface == IF_PERIRENAL || c.iface == IF_RENAL_FASCIA);
   } else if (c.iface == IF_PERIRENAL || c.iface == IF_RENAL_FASCIA) {
     g = perirenalOuterGradient(m);
   } else if (c.iface == IF_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {

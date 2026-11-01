@@ -38,6 +38,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
               blood = 0,
               nt = 0,
               nb = 0,
+              partial = 0,
+              partialPower = 0,
               nonfinite = 0;
             for (let i = 0; i < data.length; i += 4) {
               if (!Number.isFinite(data[i]) || !Number.isFinite(data[i + 1])) nonfinite++;
@@ -49,6 +51,10 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
                 blood += data[i + 1];
                 nb++;
               }
+              if (data[i + 2] > 0) {
+                partialPower += data[i + 1];
+                partial++;
+              }
             }
             rows.push({
               phase,
@@ -58,6 +64,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
               actualT: s.sample.t,
               tissuePower: tissue / nt,
               bloodPower: blood / Math.max(1, nb),
+              partial,
+              partialPower: partialPower / Math.max(1, partial),
               nt,
               nb,
               nonfinite,
@@ -82,7 +90,10 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         expect(r.actualT).toBe(r.t);
         expect(r.nonfinite).toBe(0);
         expect(r.nt).toBeGreaterThan(100);
-        expect(r.nb).toBeGreaterThan(0);
+        // Con la respiración, en la ventana renal puede no haber ninguna celda de Color entera en sangre (decisión 309); sí la hay parcial
+        if (id === 'portal') expect(r.nb).toBeGreaterThan(0);
+        expect(r.partial).toBeGreaterThan(0);
+        if (r.cutoff === 20) expect(r.partialPower).toBeGreaterThan(0);
       }
       await info.attach(`${id}-paired-filter.json`, {
         body: JSON.stringify(observations.map(({ image: _image, ...r }) => r)),
@@ -91,11 +102,11 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       // Contrato causal: misma pose/fase, sólo cambia el corte. El campo aleatorio
       // está fijado por fase; las medias no pretenden calibración clínica.
       const moving = observations.filter((r) => r.cutoff === 20 && Math.abs(r.velocity) > 1 && r.tissuePower > 1e-3);
-      expect(moving.length).toBeGreaterThan(0);
+      // Desde la ventana renal de la decisión 309 el riñón se mueve casi perpendicular al haz: apenas hay destello de tejido que comparar
+      if (id === 'portal') expect(moving.length).toBeGreaterThan(0);
       for (const low of moving) {
         const high = observations.find((r) => r.phase === low.phase && r.cutoff === 200)!;
         expect(high.tissuePower).toBeLessThan(low.tissuePower / 2);
-        expect(low.bloodPower).toBeGreaterThan(0);
       }
     }
     expect(errors).toEqual([]);

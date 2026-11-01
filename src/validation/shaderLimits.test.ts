@@ -110,6 +110,24 @@ const callsIn = (g: Map<string, string>, code: string, self?: string): string[] 
 function inlinedCopies(g: Map<string, string>, fn: string, target: string): number {
   return callsIn(g, g.get(fn)!, fn).reduce((n, c) => n + (c === target ? 1 : 0) + inlinedCopies(g, c, target), 0);
 }
+/** Tamaño de `fn` con todas sus llamadas expandidas, en tokens: lo que compila el JIT de SwiftShader. Las sobrecargas cuentan como la última. */
+function expandedTokens(g: Map<string, string>, fn: string, memo = new Map<string, number>()): number {
+  const known = memo.get(fn);
+  if (known !== undefined) return known;
+  const body = g.get(fn)!;
+  const tokens = callsIn(g, body, fn).reduce((n, c) => n + expandedTokens(g, c, memo), (body.match(/\w+|[^\s\w]/g) ?? []).length);
+  memo.set(fn, tokens);
+  return tokens;
+}
+/** Ramas de `fn` con todas sus llamadas expandidas (`if`, `for` y `?`): el número de bloques del programa que compila SwiftShader. */
+function expandedBranches(g: Map<string, string>, fn: string, memo = new Map<string, number>()): number {
+  const known = memo.get(fn);
+  if (known !== undefined) return known;
+  const body = g.get(fn)!;
+  const branches = callsIn(g, body, fn).reduce((n, c) => n + expandedBranches(g, c, memo), (body.match(/\b(?:if|for)\b|\?/g) ?? []).length);
+  memo.set(fn, branches);
+  return branches;
+}
 /** ¿Llega el código a `target` por alguna cadena de llamadas? */
 function reaches(g: Map<string, string>, code: string, target: string, seen = new Set<string>()): boolean {
   return callsIn(g, code).some((c) => c === target || (!seen.has(c) && (seen.add(c), reaches(g, g.get(c)!, target, seen))));
@@ -409,6 +427,28 @@ describe('Límites del shader con margen para crecer', () => {
   // (LLVM) de SwiftShader crece con el código inlineado y se dispara con código pesado dentro de un bucle. La
   // decisión 61 metió faceGradient (6–8 distancias, ~67 kB) en el bucle de las muestras del medio de B: el
   // primer dibujo de B pasó de 6 s a 128 s y el vigilante de la GPU de Chrome perdía el contexto al arrancar.
+  // Los programas con anatomía tienen un techo con SwiftShader: la primera versión de la decisión 309 los hacía crecer un 2–14 %
+  // y el proceso GPU moría al compilar la clasificación, en CI y con Chromium x64 bajo Rosetta. Es un fallo tardío y caro: esta
+  // guarda lo adelanta. Cotas [tokens, ramas]: 10 % sobre el tamaño con el que CI completa. Para subirlas, mide antes el primer
+  // cuadro en CI (`.validation/triplex-startup.jsonl`).
+  it('ningún programa con anatomía crece al expandirse sin medir su primer cuadro en SwiftShader', () => {
+    const limits: Record<string, [number, number]> = {
+      FRAG_RAWFIELD: [1_385_000, 11_060],
+      FRAG_RAWFIELD_ECHO: [577_000, 4_640],
+      FRAG_RAWFIELD_CLASS: [455_000, 3_830],
+      FRAG_RAWFIELD_ELEVATION: [455_000, 3_830],
+      FRAG_RAWFIELD_GRADIENT: [351_000, 2_760],
+      FRAG_TRANS_HITS: [513_000, 4_470],
+      FRAG_TRANS_HITS_GRID: [252_000, 2_210],
+      FRAG_COLOR: [248_000, 2_160],
+    };
+    const sources = PASSES as unknown as Record<string, string>;
+    for (const [name, [tokens, branches]] of Object.entries(limits)) {
+      const graph = glslCallGraph(sources[name]);
+      expect(expandedTokens(graph, 'main'), name).toBeLessThanOrEqual(tokens);
+      expect(expandedBranches(graph, 'main'), name).toBeLessThanOrEqual(branches);
+    }
+  });
   // Estas cotas son las de main a9520b8 (A0 2 copias de classify, A1 1, B 3, color, consulta y mapa 1).
   it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {
     const budget: Record<string, number> = {

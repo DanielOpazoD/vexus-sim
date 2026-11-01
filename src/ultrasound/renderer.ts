@@ -87,6 +87,7 @@ import {
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
+  FRAG_SPECKLE,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
   FRAG_QUERY_CLASS,
@@ -115,6 +116,8 @@ export interface BModeSettings {
   tgcDb: readonly number[]; // 8 bandas
   dynamicRangeDb: number;
   persistence: number; // 0–0.8
+  /** Reducción de moteado del equipo (decisión 313): 0 apagada, 1 media, 2 alta. Solo en la presentación del modo B; se suspende con Color. */
+  speckleReduction: 0 | 1 | 2;
   /**
    * Composición espacial (decisión 58): tres miradas (0, ±θ) intercaladas, una por cuadro, promediadas
    * en lineal. Solo se forma con el color apagado (`compoundActive`).
@@ -158,6 +161,7 @@ export const DEFAULT_BMODE: BModeSettings = {
   // preajuste abdominal (decisión 53): 70 dB, como el equipo moderno de referencia
   dynamicRangeDb: 70,
   persistence: 0.35,
+  speckleReduction: 0,
   compound: true,
   // La física calibrada de las pruebas es la del fundamental; la aplicación arranca en armónica
   // (decisión 77, `main.ts`), como un equipo abdominal moderno, salvo en la e2e.
@@ -207,6 +211,16 @@ export function nominalTgcDbPerCm(fMHz: number): number {
  * en 0,73–0,97, casi siempre dentro de lo real, con dos metas de la decisión 62 relajadas por el propietario (decisión 308). Gemelo del término de `displayGrey`.
  */
 export const nearFieldTgcDb = (r: number): number => 8 * Math.max(0, 1 - r / 60);
+
+/**
+ * Niveles de la reducción de moteado: paso lateral de los nueve toques (mm), sigma de rango (dB) y mezcla con la entrada. El soporte gaussiano es de dos pasos. Estimados frente a
+ * imágenes reales [EXTRAPOLACIÓN PROPIA]: no reproducen el SRI ni el XRES de ningún fabricante (decisión 313).
+ */
+export const SPECKLE_LEVELS: readonly (readonly [number, number, number])[] = [
+  [0, 0, 0],
+  [0.2, 6, 0.6],
+  [0.3, 8, 0.85],
+];
 
 /** Margen del sector en el lienzo de imagen (px); el corte usa el mismo módulo con su propio margen. */
 export const DISPLAY_MARGIN_PX = 8;
@@ -384,6 +398,7 @@ export class UltrasoundRenderer {
   private pColor: GLProgram;
   private pColorFilter: GLProgram;
   private pScan: GLProgram;
+  private pSpeckle: GLProgram;
   private pPersist: GLProgram;
   private pBlit: GLProgram;
   private pMap: GLProgram;
@@ -418,11 +433,14 @@ export class UltrasoundRenderer {
    */
   private readonly tEnvLooks: RenderTarget[];
   private tEnv: RenderTarget;
+  private tBLog: RenderTarget;
   private tColor: RenderTarget;
   private tColorRaw: RenderTarget;
   private tScan: RenderTarget | null = null;
   private tPersist: [RenderTarget, RenderTarget] | null = null;
   private persistIndex = 0;
+  /** Nivel de moteado que hay en la historia de la persistencia: al cambiar, arranca con el cuadro nuevo (decisión 313). */
+  private persistSpeckle = 0;
   /**
    * Destinos de prueba de `PassRepeat`, dos por pasada. Solo existen si se ha pedido medir con
    * repeticiones (`frameCostMs`); `dispose` los libera.
@@ -574,6 +592,7 @@ export class UltrasoundRenderer {
           color: FRAG_COLOR,
           colorFilter: COLOR_FILTER_GLSL,
           scanconvert: FRAG_SCANCONVERT,
+          speckle: FRAG_SPECKLE,
           persist: FRAG_PERSIST,
           blit: FRAG_BLIT,
           tissuemap: FRAG_TISSUEMAP,
@@ -594,6 +613,7 @@ export class UltrasoundRenderer {
     this.pColor = p.color;
     this.pColorFilter = p.colorFilter;
     this.pScan = p.scanconvert;
+    this.pSpeckle = p.speckle;
     this.pPersist = p.persist;
     this.pBlit = p.blit;
     this.pMap = p.tissuemap;
@@ -642,6 +662,7 @@ export class UltrasoundRenderer {
     const f1n = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.NEAREST };
     this.tEnvLooks = profile.compound.order.map(() => createTarget(gl, LINES, FINE_DEPTH, [f1n]));
     this.tEnv = createTarget(gl, LINES, FINE_DEPTH, [f1]);
+    this.tBLog = createTarget(gl, LINES, FINE_DEPTH, [{ internal: gl.R16F, format: gl.RED, type: gl.HALF_FLOAT, filter: gl.LINEAR }]);
     this.tColor = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tColorRaw = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
@@ -724,6 +745,7 @@ export class UltrasoundRenderer {
       this.pColor,
       this.pColorFilter,
       this.pScan,
+      this.pSpeckle,
       this.pPersist,
       this.pBlit,
       this.pMap,
@@ -748,6 +770,7 @@ export class UltrasoundRenderer {
       this.tAxial,
       ...this.tEnvLooks,
       this.tEnv,
+      this.tBLog,
       this.tColor,
       this.tColorRaw,
       this.tMap,
@@ -1272,7 +1295,9 @@ export class UltrasoundRenderer {
         const slot = this.cine.slot(j);
         this.blitLayer(this.cineEnv!, slot, this.tEnv, false);
         if (f.colorFrame) this.blitLayer(this.cineColor!, slot, this.tColor, false);
-        if (j > first) {
+        // antes de la mezcla: R escribe su propio destino
+        this.speckleReduction(f.bmode, f.color, this.profile.geometry);
+        if (j > first && f.bmode.speckleReduction === this.cine.at(j - 1).bmode.speckleReduction) {
           gl.enable(gl.BLEND);
           gl.blendColor(0, 0, 0, 1 - f.bmode.persistence ** Math.max(1, f.n - this.cine.at(j - 1).n));
           gl.blendFuncSeparate(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA, gl.ONE, gl.ZERO);
@@ -1361,6 +1386,7 @@ export class UltrasoundRenderer {
     compound: () => this.tEnv,
     color: () => this.tColorRaw,
     colorFilter: () => this.tColor,
+    speckleReduction: () => this.tBLog,
     scanConvert: () => this.tScan!,
     // tras la pasada, `persistIndex` ya apunta a la historia recién escrita
     persistence: () => this.tPersist![this.persistIndex],
@@ -1426,6 +1452,7 @@ export class UltrasoundRenderer {
     compound: (inputs) => this.passCompound(inputs),
     color: (inputs) => this.passColor(inputs),
     colorFilter: (inputs) => this.passColorFilter(inputs),
+    speckleReduction: (inputs) => this.speckleReduction(inputs.bmode, inputs.color, inputs.transducer),
     scanConvert: (inputs) => this.passScanConvert(inputs),
     persistence: (inputs) => this.passPersistence(inputs),
     present: () => this.passPresent(),
@@ -1811,6 +1838,20 @@ export class UltrasoundRenderer {
     drawFullscreen(this.gl);
   }
 
+  // R — reducción de moteado de la presentación, sobre la envolvente que hay en `tEnv`
+  private speckleReduction(b: BModeSettings, c: ColorSettings, tr: Transducer): void {
+    if (!b.speckleReduction || c.enabled) return;
+    const p = this.pSpeckle;
+    bindTarget(this.gl, this.tBLog);
+    p.use();
+    p.tex('uEnv', 0, this.tEnv.textures[0]);
+    p.f('uDepth', b.depthMm);
+    p.f('uCurvR', tr.curvatureRadius);
+    p.f('uHalfSector', tr.halfSector);
+    p.v3('uSpeckle', SPECKLE_LEVELS[b.speckleReduction]);
+    drawFullscreen(this.gl);
+  }
+
   // G — conversión de barrido + mapa de grises + superposición del color
   private passScanConvert(inputs: FrameInputs): void {
     this.scanConvert(inputs.bmode, inputs.color, this.lastColorFrame, inputs.transducer);
@@ -1829,6 +1870,8 @@ export class UltrasoundRenderer {
     p.use();
     p.tex('uEnv', 0, this.tEnv.textures[0]);
     p.tex('uColor', 1, this.tColor.textures[0]);
+    p.tex('uBLog', 2, this.tBLog.textures[0]);
+    p.i('uSpeckleOn', b.speckleReduction && !c.enabled ? 1 : 0);
     p.v2('uCanvas', W, H);
     p.v2('uApex', apexX, apexY);
     p.f('uScale', scale);
@@ -1867,7 +1910,9 @@ export class UltrasoundRenderer {
     this.pPersist.use();
     this.pPersist.tex('uCur', 0, this.tScan!.textures[0]);
     this.pPersist.tex('uPrev', 1, prev.textures[0]);
-    this.pPersist.f('uPersist', inputs.bmode.persistence);
+    const sameLevel = inputs.bmode.speckleReduction === this.persistSpeckle;
+    this.persistSpeckle = inputs.bmode.speckleReduction;
+    this.pPersist.f('uPersist', sameLevel ? inputs.bmode.persistence : 0);
     drawFullscreen(gl);
     this.persistIndex = 1 - this.persistIndex;
   }

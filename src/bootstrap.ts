@@ -122,6 +122,8 @@ export async function start(): Promise<void> {
       const first = startPointsFor(sim().scene.torso)[0];
       sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
       dispatch({ type: 'harmonic', enabled: true });
+      // Como un equipo abdominal moderno; la e2e física sigue en 0 y prueba el filtro aparte (decisión 313)
+      dispatch({ type: 'bmode', patch: { speckleReduction: 1 } });
     }
     const banner = new Banner(sectorWrap);
 
@@ -547,6 +549,7 @@ export async function start(): Promise<void> {
         gainDb: s.bmode.gainDb,
         dynamicRangeDb: s.bmode.dynamicRangeDb,
         compound: compoundActive(s.bmode, s.color),
+        speckleReduction: s.color.enabled ? 0 : s.bmode.speckleReduction,
         harmonic: s.bmode.harmonic,
         mode: store.get().mode,
         color: { prfHz: s.color.prfHz, wallFilterHz: s.color.wallFilterHz, frameHz: s.colorTiming.frameHz },

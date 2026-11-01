@@ -21,6 +21,7 @@ export type Resource =
   | 'env'
   | 'colorRaw'
   | 'color'
+  | 'bLog'
   | 'scan'
   | 'persist'
   | 'screen';
@@ -36,6 +37,7 @@ export type PassId =
   | 'compound'
   | 'color'
   | 'colorFilter'
+  | 'speckleReduction'
   | 'scanConvert'
   | 'persistence'
   | 'present';
@@ -77,7 +79,9 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   { id: 'compound', label: 'K', reads: ['envLooks', 'transHits'], writes: 'env', cadence: 'frame' },
   { id: 'color', label: 'F', reads: ['scene', 'transPrefix'], writes: 'colorRaw', cadence: 'color' },
   { id: 'colorFilter', label: 'F1', reads: ['colorRaw'], writes: 'color', cadence: 'color' },
-  { id: 'scanConvert', label: 'G', reads: ['env', 'color'], writes: 'scan', cadence: 'frame' },
+  // R: procesado de presentación del modo B (decisión 313). Lee la envolvente y nunca la escribe; su salida solo la lee G
+  { id: 'speckleReduction', label: 'R', reads: ['env'], writes: 'bLog', cadence: 'frame' },
+  { id: 'scanConvert', label: 'G', reads: ['env', 'color', 'bLog'], writes: 'scan', cadence: 'frame' },
   { id: 'persistence', label: 'P', reads: ['scan', 'persist'], writes: 'persist', cadence: 'frame' },
   { id: 'present', label: 'S', reads: ['persist'], writes: 'screen', cadence: 'frame' },
 ];

@@ -264,7 +264,9 @@ function realRig() {
 }
 
 describe('repeatPass en el renderizador real (WebGL falso)', () => {
-  const perFrame = FRAME_PASSES.filter((p) => p.cadence === 'frame').length;
+  // R no dibuja con su nivel a 0, el de estas pruebas (decisión 313)
+  const framePasses = FRAME_PASSES.filter((p) => p.cadence === 'frame' && p.id !== 'speckleReduction');
+  const perFrame = framePasses.length;
 
   it('sin repetición, reutiliza solo A0/A1 estáticos y conserva los demás dibujos y destinos', () => {
     const { sim, draws, attachments } = realRig();
@@ -290,7 +292,7 @@ describe('repeatPass en el renderizador real (WebGL falso)', () => {
       const base = draws.splice(0);
       sim.render();
       draws.length = 0;
-      const idx = FRAME_PASSES.filter((p) => p.cadence === 'frame').findIndex((p) => p.id === pass);
+      const idx = framePasses.findIndex((p) => p.id === pass);
       const own = base[idx];
       binds.length = 0;
       sim.render({ repeat: { pass, times: 3 } });
@@ -318,6 +320,29 @@ describe('repeatPass en el renderizador real (WebGL falso)', () => {
       const lastRepeatBind = binds.lastIndexOf(repeats[2].fbo);
       expect(binds[lastRepeatBind + 1]).toBe(own.fbo);
     });
+
+  it('la reducción de moteado añade su pasada solo con nivel > 0 y sin Color, y su salida va a un destino propio', () => {
+    const { sim, draws, attachments } = realRig();
+    sim.render();
+    draws.length = 0;
+    sim.render();
+    const off = draws.splice(0);
+    sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, speckleReduction: 1 } };
+    sim.render();
+    const on = draws.splice(0);
+    expect(on.length).toBe(off.length + 1);
+    const own = on.filter((d) => !off.some((o) => o.program === d.program));
+    expect(own.length).toBe(1);
+    // su destino no es ninguno de los del cuadro: tampoco el de la envolvente
+    expect(off.some((d) => d.fbo === own[0].fbo)).toBe(false);
+    expect(attachments.has(own[0].fbo!)).toBe(true);
+    sim.equipment = {
+      ...sim.equipment,
+      color: { ...sim.equipment.color, enabled: true },
+    };
+    sim.render();
+    expect(draws.some((d) => d.program === own[0].program)).toBe(false);
+  });
 
   it('dispose libera los destinos de prueba', () => {
     const { sim, draws, deleted } = realRig();

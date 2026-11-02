@@ -33,8 +33,12 @@ describe('Registro de casos y metadatos de vasos (Fase 1)', () => {
     for (const id of VESSEL_IDS) {
       const m = VESSEL_META[id];
       expect(m.kind).toBe(/Artery|aorta|celiac|^sma$|^ima$/.test(id) ? 'artery' : 'vein');
-      if (m.caliber !== 'fixed') expect(m.kind).toBe('vein');
+      // Decisión 313: solo la aorta usa una ley arterial dinámica; las ramas siguen fijas.
+      if (m.caliber === 'arterial') expect(id).toBe('aorta');
+      else if (m.caliber !== 'fixed') expect(m.kind).toBe('vein');
+      if (m.kind === 'artery' && id !== 'aorta') expect(m.caliber).toBe('fixed');
     }
+    expect(VESSEL_META.aorta.caliber).toBe('arterial');
     expect(VESSEL_META.ivcSupra.caliber).toBe('ivc');
     expect(VESSEL_META.hvCommonTrunk.caliber).toBe('hepaticVein');
     expect(VESSEL_META.pvLeftMedial.caliber).toBe('portal');

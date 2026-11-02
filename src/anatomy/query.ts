@@ -68,6 +68,8 @@ export class AnatomyQuery {
             return s.hvRadiusScale;
           case 'portal':
             return s.pvRadiusScale;
+          case 'arterial':
+            return s.aortaRadiusScale;
           case 'fixed':
             return 1;
         }

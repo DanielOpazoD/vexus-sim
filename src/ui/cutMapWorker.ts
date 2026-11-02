@@ -30,7 +30,7 @@ export interface CutMapRequest {
   compression: ProbeCompression | null;
   depthMm: number;
   /** Subconjunto de la muestra fisiológica que la clasificación necesita. */
-  sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'ivcSupra' | 'hvRadiusScale' | 'pvRadiusScale' | 'velocities'>;
+  sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'ivcSupra' | 'hvRadiusScale' | 'pvRadiusScale' | 'aortaRadiusScale' | 'velocities'>;
   width: number;
   height: number;
 }

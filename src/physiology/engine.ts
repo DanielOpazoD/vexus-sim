@@ -1,3 +1,4 @@
+import { arterialCaliberAt, AORTA_MECHANICS } from './arterialCaliber';
 import { SimulationClock } from '../core/clock';
 import { supraIvcAreaMm2, supraIvcSection } from './supraIvc';
 import { Circulation, circulationBaseline, type AppliedIntervention, type Intervention } from './circulation';
@@ -44,6 +45,8 @@ export interface PhysiologySample {
   /** Escala de radio de las suprahepáticas respecto al basal (≥ 0,5). */
   hvRadiusScale: number;
   pvRadiusScale: number;
+  /** Radio aórtico respecto a la referencia diastólica (decisión 314). */
+  aortaRadiusScale: number;
   /** Velocidad media espacial u = Q/A por vaso, mm/s, sentido fisiológico positivo. */
   velocities: Record<VesselId, number>;
 }
@@ -183,17 +186,6 @@ export class PhysiologyEngine {
     return v;
   }
 
-  /** Factor pulsátil arterial ∈ ≈[−0,35, 1], centrado en media ≈ 0. */
-  private arterialPulse(t: number): number {
-    let v = -0.3;
-    for (const b of this.rhythm.beatsAround(t)) {
-      const s = Math.sqrt(b.rr / 0.8);
-      const tau = t - b.tR;
-      v += gauss(tau - 0.12 * s, 0.06 * s) + 0.4 * gauss(tau - 0.3 * s, 0.09 * s);
-    }
-    return v;
-  }
-
   /**
    * Intervención docente (decisión 79) desde el instante actual: bolo o diurético (volumen estresado, con la
    * cinética acelerada de `circulation.ts`) o PEEP. Devuelve lo aplicado (los líquidos se recortan al límite
@@ -218,11 +210,12 @@ export class PhysiologyEngine {
     const resp = this.respiratory.sample(t);
     const plExp = this.respiratory.pleuralAtEndExpiration();
     const pRa = this.rightAtrium.pressure(t, resp.pleuralMmHg, plExp);
-    const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg, loop.arterialMeanMmHg);
+    const arterial = arterialCaliberAt({ t, beats: this.rhythm.beatsAround(t), mechanics: AORTA_MECHANICS });
+    const out = this.network.step(this.clock.dt, arterial.pulse, pRa, resp.abdominalMmHg, loop.arterialMeanMmHg);
     this.ivcWallAreaMm2 += (out.ivcAreaMm2 - this.ivcWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
     const supraArea = supraIvcAreaMm2(out.pJunction - resp.pleuralMmHg);
     this.ivcSupraWallAreaMm2 += (supraArea - this.ivcSupraWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
-    const next = this.sampleFrom(out, t, resp, pRa);
+    const next = this.sampleFrom(out, t, resp, pRa, arterial);
     // Guardia NaN: un estado no finito se detiene aquí, con los campos culpables, en vez
     // de viajar en silencio a la GPU, al espectro y a la medición.
     const bad = nonFiniteFields(next);
@@ -241,7 +234,13 @@ export class PhysiologyEngine {
     return n;
   }
 
-  private sampleFrom(out: NetworkOutputs, t: number, resp?: RespiratorySample, pRa?: number): PhysiologySample {
+  private sampleFrom(
+    out: NetworkOutputs,
+    t: number,
+    resp?: RespiratorySample,
+    pRa?: number,
+    arterial = arterialCaliberAt({ t, beats: this.rhythm.beatsAround(t), mechanics: AORTA_MECHANICS }),
+  ): PhysiologySample {
     const r = resp ?? this.respiratory.sample(t);
     const plExp = this.respiratory.pleuralAtEndExpiration();
     const p = pRa ?? this.rightAtrium.pressure(t, r.pleuralMmHg, plExp);
@@ -260,7 +259,7 @@ export class PhysiologyEngine {
     const velocities = {} as Record<VesselId, number>;
     const qHv = out.qHepaticVein;
     const qPv = out.qPortal;
-    const pulse = this.arterialPulse(t);
+    const { pulse, radiusScale: aortaRadiusScale } = arterial;
     // Caudal descendente ilustrativo (no forma parte de VExUS): sistólica ≈ 100 cm/s (Baumgartner 1999: 102 ± 18,5), media por debajo del
     // gasto y por encima de sus ramas, y en diástole el caudal de las ramas que siguen llenándose (decisión 297).
     const qAorta = 80 + 190 * pulse;
@@ -304,6 +303,7 @@ export class PhysiologyEngine {
           break;
         case 'aorta':
           q = qAorta;
+          areaScale = aortaRadiusScale ** 2;
           break;
         // Ramas viscerales (decisiones 69 y 297, ilustrativas): el celíaco reparte la esplénica ≈ 0,3 L/min, la gástrica izquierda y la hepática
         // común, que alimenta a la propia y a la gastroduodenal, con el pulso de baja resistencia de la hepática; AMS en ayunas ≈ 0,25 L/min con
@@ -405,6 +405,7 @@ export class PhysiologyEngine {
       ivcSupra: supraIvcSection(this.ivcSupraWallAreaMm2),
       hvRadiusScale,
       pvRadiusScale,
+      aortaRadiusScale,
       velocities,
     };
   }

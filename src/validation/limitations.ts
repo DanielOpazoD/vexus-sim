@@ -84,7 +84,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'schematic-static-heart',
   'mediastinal-mirror-normal-approx',
   'vertebra-continuous-geometry',
-  'aorta-fixed-caliber',
+  'aorta-wall-velocity-not-in-doppler',
   'side-plane-skips-tubes',
   'interface-echo-scope',
   'interface-echo-two-scale',

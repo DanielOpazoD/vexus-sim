@@ -38,7 +38,9 @@ describe('arterias del adulto sano frente a valores publicados', () => {
       const cms = s.velocities[id] / 10;
       v.max = Math.max(v.max, cms);
       v.min = Math.min(v.min, cms);
-      v.sum += cms;
+      // Caudal con el área del instante: la aorta ya no tiene calibre fijo (decisión 314).
+      const areaScale = id === 'aorta' ? s.aortaRadiusScale ** 2 : 1;
+      v.sum += (cms * areas[id] * areaScale) / 100;
     }
     sumNetwork += s.qRenalArtery / 2;
     sumShown += (s.velocities.renalArteryRight * areas.renalArteryRight) / 1000;
@@ -50,7 +52,7 @@ describe('arterias del adulto sano frente a valores publicados', () => {
   };
   const psv = (id: VesselId) => seen.get(id)!.max * center(id);
   const low = (id: VesselId) => seen.get(id)!.min * center(id);
-  const meanFlow = (id: VesselId) => ((seen.get(id)!.sum / steps) * areas[id]) / 100;
+  const meanFlow = (id: VesselId) => seen.get(id)!.sum / steps;
 
   it('interlobar: sistólica, mínimo e IR en el intervalo de los controles', () => {
     expect(psv('interlobarArtery1')).toBeGreaterThan(30.11 - 5.18);

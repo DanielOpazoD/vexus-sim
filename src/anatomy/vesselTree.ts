@@ -585,7 +585,7 @@ export function wallThicknessMm(def: Pick<VesselDef, 'wallTissue' | 'wallMm'>, l
  * 1,15). Las ramas se generan una vez para todos los casos, así que su contención se comprueba
  * con el calibre más dilatado, con margen.
  */
-export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein: 1.8, portal: 1.2, ivc: 1, fixed: 1 };
+export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein: 1.8, portal: 1.2, ivc: 1, arterial: 1.2, fixed: 1 };
 
 /**
  * Mayor saliente de la luz de una rama de `parent` sobre su radio lineal con la escala de radio `sMax` (decisión 90): el de

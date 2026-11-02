@@ -24,7 +24,7 @@ export const HEPATIC_JUNCTIONS = [
   ['pvLeftMedial', 'pvLeft', 0],
 ] as const satisfies readonly (readonly [VesselId, VesselId, 0 | -1])[];
 
-export type Junction = (typeof HEPATIC_JUNCTIONS)[number];
+export type Junction = readonly [VesselId, VesselId, 0 | -1];
 
 /** Usa la misma ley de calibre y sección de la escena, incluidas forma orgánica y elipse de la cava. */
 function effectiveTube(v: VesselDef, caliber: VesselCaliber): Tube {

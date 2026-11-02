@@ -317,3 +317,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [311](DECISIONS.md#L9840) | La fidelidad anatómica se mide contra un humano real, no contra un promedio | vigente |
 | [312](DECISIONS.md#L9852) | Pared gástrica fina con cinco capas, sin lóbulos | vigente |
 | [313](DECISIONS.md#L9864) | Reducción de moteado del equipo | vigente |
+| [314](DECISIONS.md#L9888) | Pulsación aórtica compartida por fisiología, luz e imagen | vigente |

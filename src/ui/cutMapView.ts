@@ -344,6 +344,7 @@ export class CutMapView {
         y = b[key] ?? b.ivc;
       if (Math.abs(x.dApMm - y.dApMm) > 0.5 || Math.abs(x.dLatMm - y.dLatMm) > 0.5) return false;
     }
+    if (Math.abs(a.aortaRadiusScale - b.aortaRadiusScale) * 20 > 0.5) return false;
     return Math.abs(a.hvRadiusScale - b.hvRadiusScale) * 40 <= 0.5 && Math.abs(a.pvRadiusScale - b.pvRadiusScale) * 40 <= 0.5;
   }
 

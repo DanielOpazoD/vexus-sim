@@ -84,7 +84,7 @@ export type VesselSystem =
   | 'interlobarVein';
 
 /** Qué escala de calibre dicta la fisiología a este vaso (`VesselCaliber.radiusScale`). */
-export type CaliberLaw = 'ivc' | 'hepaticVein' | 'portal' | 'fixed';
+export type CaliberLaw = 'ivc' | 'hepaticVein' | 'portal' | 'arterial' | 'fixed';
 
 export interface VesselMeta {
   system: VesselSystem;
@@ -95,7 +95,16 @@ export interface VesselMeta {
 const meta = (system: VesselSystem): VesselMeta => ({
   system,
   kind: system === 'aorta' || system.endsWith('Artery') || system === 'hepaticArtery' ? 'artery' : 'vein',
-  caliber: system === 'ivc' ? 'ivc' : system === 'hepaticVein' ? 'hepaticVein' : system === 'portal' ? 'portal' : 'fixed',
+  caliber:
+    system === 'ivc'
+      ? 'ivc'
+      : system === 'hepaticVein'
+        ? 'hepaticVein'
+        : system === 'portal'
+          ? 'portal'
+          : system === 'aorta'
+            ? 'arterial'
+            : 'fixed',
 });
 
 /**

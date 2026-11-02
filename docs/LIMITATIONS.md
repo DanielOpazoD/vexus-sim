@@ -125,10 +125,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   reflejando con la de la cúpula.
 - **Columna segmentada con arco posterior provisional** (`vertebra-continuous-geometry`, identificador histórico; decisiones 103 y 108): los cuerpos tienen sección elíptica y segmentación craneocaudal con discos intervertebrales. La cortical de cuerpos y platillos depende de la incidencia y su normal deriva del mismo campo CPU/GLSL. El arco posterior sigue siendo una caja continua sin canal, pedículos ni apófisis anatómicas individualizadas; aporta oclusión pero no eco cortical propio. La separación retrohepática usa una envolvente continua para no transmitir los surcos discales al hígado. Dimensiones, rugosidad y respuesta acústica siguen estimadas; no están calibradas contra clips vertebrales. La sombra conserva el modelo óseo opaco previo (100 dB de entrada), sin corteza/esponjosa ni señales RF intravertebrales. No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea.
 
-- **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
-  (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
-  distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
-  sus ramas y el Doppler.
+- **La velocidad radial de pared aórtica no entra en Doppler** (`aorta-wall-velocity-not-in-doppler`, decisión 314): la luz pulsa en B/M y su área corrige la velocidad axial por Q/A, pero `tissueVelocity` conserva solo la respiración. No hay Doppler tisular radial ni clutter por esa expansión. Las ramas arteriales mantienen calibre fijo. La amplitud nominal de 1,6 mm sobre 20 mm es una extrapolación propia, no una calibración clínica. El navegador 3D tampoco late: es un mapa espacial.
 - **El índice de resistencia arterial es fijo** (`fixed-arterial-resistive-index`): el pulso arterial
   es multiplicativo y el mismo en todos los casos, así que el IR renal (0,60 en el Doppler, 0,53 en la red; decisión 297) y el hepático
   (0,63) no cambian entre casos; además el pulso sube 130–170 ms antes de la R: la última muestra antes de la R no es el mínimo del ciclo y da un IR menor. Medir el IR hoy no

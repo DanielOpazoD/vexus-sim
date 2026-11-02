@@ -348,3 +348,12 @@ son los mismos elipsoides estáticos: sin contracción, valvas, respuesta de tam
 fuera del tubo cava. El criterio de cinco rayos/20 mm es instrumental para esta ventana, no un rango clínico.
 Registro TAC único por persona, con residuos RMS 14,4/27,3 mm; los hitos manuales son regiones, no un ostio ni una
 segmentación de AD. La revisión B y las pruebas numéricas no validan transferencia docente o equivalencia clínica.
+
+### Pared cava única: ensayo no promovido (316)
+
+La producción conserva el filtro de área de 0,2 s de la decisión 73 y la separación
+entre luz y almacenamiento. El ensayo implícito con un volumen supra explícito y
+viscosidad de cava anterior ovina de Zócalo 2008 no conserva la respiración sana ni
+todos los patrones renales. No se trasladan esos coeficientes a una VCI humana como
+si estuvieran calibrados. La formulación, protocolo, negativos y frontera están en
+[el informe del ensayo](fidelity/ivc-wall-frontier.md); no sustituye la decisión 73.

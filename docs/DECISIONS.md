@@ -10011,3 +10011,33 @@ pulmón o gas mediante un espía del clasificador, conservando hígado, barrera 
 y dejan 0 mm despejados; son negativos sintéticos, no TAC ni cambios del producto. El control marginal distingue
 dos rayos con 30 mm de anchura y diez rayos de una franja de 1 mm: ambos se rechazan con los mínimos originales
 de cinco rayos/20 mm. Se refuerza detección; no se sustituye un resultado adverso por una tolerancia mayor.
+
+## 316. Pared cava única: frontera medida y ensayo rechazado [Estado: ensayo no promovido]
+
+**Contexto.** El propietario acepta cambios concordantes con la realidad, sin forzar un fenotipo.
+La decisión 73 separa área visible y almacenamiento: tres contratos nuevos fallan primero en
+`27b6cf1`. Se registra el protocolo antes de medir y se ensaya una pared única con almacenamiento
+supra explícito, sin cambios por caso/grado ni del contorno auricular.
+**Opciones.** Conservar el filtro visual mantiene una limitación conocida. Promover el modelo
+implícito exige preservar respiración, caudales, patrones y cadena. Reajustar por caso o ampliar
+el tope de 1,5 mm para obtener verde se descarta.
+**Decisión.** No promover el ensayo. Backward Euler une volumen, presión viscosa, luz y Q/A;
+ηD de cava anterior ovina de Zócalo 2008 (53,20±7,87 kPa·s/m, ex vivo) se convierte a ηA(A),
+con las leyes elásticas previas y longitud supra estimada común de 50 mm. La combinación es
+extrapolada, no calibración humana. Los tres valores fijados fallan respiración sana:
+15,866/14,745/13,762 %, frente a >20 %. El medio cambia patrones renales y trampas.
+Se conserva la producción, la decisión 73 y `ivc-wall-lag-not-in-network` en ambos registros.
+Dos contratos rápidos `it.fails` de la discrepancia basal quedan en `ivcWallStorage.test.ts`.
+**Consecuencias.** Ningún cambio del JS fisiológico ni del shader. Se conserva el tope histórico
+y la cadena; las capturas pesadas quedan como evidencia local Metal, fuera de CI. El ensayo
+reproducible y sus negativos permanecen externos; [informe y fuentes](fidelity/ivc-wall-frontier.md).
+El paso completo observado sube 11,275→13,598 µs (cinco repeticiones alternadas, carga ajena);
+JS experimental 982,2→983,7 KiB, bajo el techo intacto de 1045 KiB. No es validación clínica.
+**Verificación.** Ensayo: almacenamiento/masa/Q/A pasan (residuo de volumen ≤4,50·10⁻¹⁰ mL/paso);
+el lote focal da 22 pases/7 fallos y no se acepta. Se conservan los contraejemplos y el fallo
+respiratorio, con los extremos corregidos por una errata de conversión documentada. Las
+trazas de los cuatro casos en apnea/respiración y los 32 originales B/M por variante se abren
+antes de citarlos. El informe externo registra el cierre sobre producción restaurada y el SHA;
+ninguna CI remota o revisión ajena se atribuye a esta entrega local.
+El check local completo pasa. Metal da 7/8: M atlas supera ±5 pp por 0,031 pp;
+aislado pasa (error 2,382 pp), sin convertir el lote original en aprobación.

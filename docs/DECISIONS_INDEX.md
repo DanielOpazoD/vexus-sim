@@ -319,3 +319,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [313](DECISIONS.md#L9864) | Reducción de moteado del equipo | vigente |
 | [314](DECISIONS.md#L9888) | Pulsación aórtica compartida por fisiología, luz e imagen | vigente |
 | [315](DECISIONS.md#L9902) | La VCI llega a una aurícula visible por el hígado, con atlas cargados | vigente |
+| [316](DECISIONS.md#L10015) | Pared cava única: frontera medida y ensayo rechazado | ensayo no promovido |

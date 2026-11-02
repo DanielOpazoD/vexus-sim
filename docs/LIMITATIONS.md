@@ -71,6 +71,9 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
+  El ensayo de área única de la decisión 316 no se promueve: falla respiración sana
+  y patrones renales. `ivcWallStorage.test.ts` conserva dos negativos rápidos de esta
+  separación; no acredita una corrección. Véase [la frontera medida](fidelity/ivc-wall-frontier.md).
 - **Segmento intestinal representativo y estático en legacy** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
   de todo el tubo digestivo; sin duodeno o colon individualizados o mesenterio vascularizado; pliegues estimados, sin
   peristalsis o desplazamiento de gas/líquido. Contracción radial local estimada, sin aplanamiento anisótropo ni conservación de volumen. Pared y reflectividad por capas estimadas, pendientes de comparación

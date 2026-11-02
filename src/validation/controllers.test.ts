@@ -24,6 +24,7 @@ describe('HUD', () => {
     gainDb: 0,
     dynamicRangeDb: 60,
     compound: false,
+    speckleReduction: 0,
     harmonic: false,
     mode: 'B',
     color: { prfHz: 2000, wallFilterHz: 60, frameHz: 8.2 },
@@ -41,6 +42,11 @@ describe('HUD', () => {
     expect(p.topLeft[0]).toBe('Adulto sano · congelada');
     expect(p.topRight[0]).toContain('FA');
     expect(p.chip).toBe('Puerta 9.5 cm · 50 mm/s');
+  });
+  it('reducción de moteado (decisión 313): «RM n» en la línea de la imagen solo si actúa', () => {
+    expect(hudText(base).topRight[1]).not.toContain('RM');
+    expect(hudText({ ...base, speckleReduction: 2 }).topRight[1]).toBe('18 cm · 3,5 MHz · G 0 dB · RD 60 · RM 2');
+    expect(hudText({ ...base, compound: true, speckleReduction: 1 }).topRight[1]).toMatch(/ · CX · RM 1$/);
   });
   it('tríplex (decisión 66): las líneas del color y del PW, y el chip con las dos', () => {
     const t = hudText({ ...base, mode: 'triplex' });

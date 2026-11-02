@@ -1582,20 +1582,63 @@ float tgcAt(float r) {
   float f = x - float(i);
   return mix(uTgc[i], uTgc[i + 1], f);
 }
-float displayGrey(float env, float r) {
+float displayDb(float envDb, float r) {
   // TGC nominal, con su campo cercano (nearFieldTgcDb), + TGC del usuario: amplifican ecos y ruido por igual (E.2/E.4).
   float comp = min(uTgcCapDb, tgcAt(r) + uNominalTgcDbPerCm * (r / 10.0) + 8.0 * max(0.0, 1.0 - r / 60.0));
-  float db = 20.0 * (log(max(env, 1e-7)) / 2.302585093) + uGainDb + comp + uRefDb;
+  float db = envDb + uGainDb + comp + uRefDb;
   float y = clamp((db + uDynRange) / uDynRange, 0.0, 1.0);
   // Mapa «clínico»: expansión exponencial del extremo brillante (la desviación
   // del gris crece con el nivel en imágenes reales; EchoTwin decisión 90).
   return (exp(y * log(1.0 + uGreyCurve)) - 1.0) / uGreyCurve;
+}
+float displayGrey(float env, float r) { return displayDb(20.0 * (log(max(env, 1e-7)) / 2.302585093), r); }
+`;
+
+/**
+ * Pasada R (decisión 313): reducción de moteado del equipo. Bilateral lateral en dB, sobre la rejilla polar y en mm: no depende del lienzo y no mira
+ * el eje axial, que el pulso ya resuelve. La barrera `b` (el mayor salto desde el centro, de dentro afuera) impide promediar a través de una línea
+ * brillante o de un borde. Escribe un recurso propio: no toca la envolvente que leen la física, las medidas ni el Doppler.
+ */
+export const FRAG_SPECKLE = /* glsl */ `${SHADER_HEADER_GLSL}
+uniform sampler2D uEnv;
+uniform float uDepth;
+uniform float uCurvR;
+uniform float uHalfSector;
+uniform vec3 uSpeckle; // paso (mm), sigma de rango (dB), mezcla
+out vec4 oColor;
+float tapDb(float line, int row, ivec2 size) {
+  float x = clamp(line, 0.0, float(size.x - 1));
+  int i = int(floor(x));
+  float a = texelFetch(uEnv, ivec2(i, row), 0).r;
+  float b = texelFetch(uEnv, ivec2(min(i + 1, size.x - 1), row), 0).r;
+  return mix(20.0 * log(max(a, 1e-7)), 20.0 * log(max(b, 1e-7)), fract(x)) / 2.302585093;
+}
+void main() {
+  ivec2 size = textureSize(uEnv, 0);
+  ivec2 ij = ivec2(gl_FragCoord.xy);
+  float center = tapDb(float(ij.x), ij.y, size);
+  float r = (float(ij.y) + 0.5) * uDepth / float(size.y);
+  float stepLine = uSpeckle.x * float(size.x) / (2.0 * uHalfSector * (uCurvR + r));
+  float total = center, weight = 1.0;
+  for (int side = -1; side <= 1; side += 2) {
+    float b = 0.0;
+    for (int k = 1; k <= 4; k++) {
+      float v = tapDb(float(ij.x) + float(side * k) * stepLine, ij.y, size);
+      b = max(b, abs(v - center));
+      float w = exp(-0.125 * float(k * k) - 0.5 * (b * b) / (uSpeckle.y * uSpeckle.y));
+      total += w * v;
+      weight += w;
+    }
+  }
+  oColor = vec4(mix(center, total / weight, uSpeckle.z), 0.0, 0.0, 1.0);
 }
 `;
 
 /** Pasada G: conversión de barrido + mapeo de grises + superposición de color. */
 export const FRAG_SCANCONVERT = /* glsl */ `${SHADER_HEADER_GLSL}
 uniform sampler2D uEnv;
+uniform sampler2D uBLog;
+uniform int uSpeckleOn;
 uniform highp sampler2D uColor;
 uniform vec2 uCanvas;      // px
 uniform vec2 uApex;        // px: centro de curvatura en pantalla
@@ -1620,7 +1663,8 @@ void main() {
   float r = rho - uCurvR;
   if (r < 0.0 || r > uDepth || abs(theta) > uHalfSector) { oColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
   vec2 uv = vec2((theta + uHalfSector) / (2.0 * uHalfSector), r / uDepth);
-  float g = displayGrey(texture(uEnv, uv).r, r);
+  // Con Color la rama R no se calcula: la prioridad del color sigue mirando el gris de la envolvente
+  float g = uSpeckleOn == 1 ? displayDb(texture(uBLog, uv).r, r) : displayGrey(texture(uEnv, uv).r, r);
   vec3 col = vec3(g);
   if (uColorOn == 1 && theta >= uBox.x && theta <= uBox.y && r >= uBox.z && r <= uBox.w) {
     vec2 cuv = vec2((theta - uBox.x) / (uBox.y - uBox.x), (r - uBox.z) / (uBox.w - uBox.z));

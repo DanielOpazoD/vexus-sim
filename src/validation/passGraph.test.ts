@@ -12,6 +12,7 @@ import {
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
+  FRAG_SPECKLE,
   FRAG_TRANS_HITS,
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_PREFIX_STEERED,
@@ -21,9 +22,9 @@ import {
 } from '../ultrasound/shaders/passes.glsl';
 
 describe('grafo de pasadas del renderer', () => {
-  it('la tabla del renderer es un grafo válido: A → B → C → D → K → (F) → G → persistencia → pantalla', () => {
+  it('la tabla del renderer es un grafo válido: A → B → C → D → K → (F) → R → G → persistencia → pantalla', () => {
     expect(passGraphErrors(FRAME_PASSES)).toEqual([]);
-    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D K F F1 G P S');
+    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D K F F1 R G P S');
   });
 
   const without = (id: string) => FRAME_PASSES.filter((p) => p.id !== id);
@@ -244,7 +245,8 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks', uHits2: 'transHits' } },
   color: { srcs: [FRAG_COLOR], samplers: { uBodyCoefficients: 'scene', uTubeGrid: 'scene', uTransDoppler: 'transPrefix' } },
   colorFilter: { srcs: [COLOR_FILTER_GLSL], samplers: { uRawColor: 'colorRaw' } },
-  scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color' } },
+  speckleReduction: { srcs: [FRAG_SPECKLE], samplers: { uEnv: 'env' } },
+  scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color', uBLog: 'bLog' } },
   persistence: { srcs: [FRAG_PERSIST], samplers: { uCur: 'scan', uPrev: 'persist' } },
   present: { srcs: [FRAG_BLIT], samplers: { uTex: 'persist' } },
 };

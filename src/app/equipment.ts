@@ -100,6 +100,7 @@ export function normalizeEquipment(e: EquipmentSettings, ctx: EquipmentContext):
     gainDb: clamp(e.bmode.gainDb, L.gainDb.min, L.gainDb.max),
     dynamicRangeDb: clamp(e.bmode.dynamicRangeDb, L.dynamicRangeDb.min, L.dynamicRangeDb.max),
     persistence: clamp(e.bmode.persistence, L.persistence.min, L.persistence.max),
+    speckleReduction: e.bmode.speckleReduction === 2 ? 2 : e.bmode.speckleReduction === 1 ? 1 : 0,
     tgcDb: e.bmode.tgcDb.map((v) => clamp(v, L.tgcDb.min, L.tgcDb.max)),
   };
   // Caja de color: dentro del sector y de la profundidad, con un tamaño mínimo

@@ -9860,3 +9860,27 @@ Frontera, con el barrido de la revisión (`recheck/scan.mts`: 10.000 puntos por 
 **Consecuencias.** La luz deja de ser una estrella y el borde se ve fino. La línea interna es un tejido, no un eco de interfaz: no depende de la incidencia, de modo que no se apaga en las caras oblicuas como una real. Grosores y número de pliegues siguen siendo extrapolaciones, y sigue sin haber antro en ayunas (`gastric-single-state`). No es validación clínica.
 
 **Verificación.** `gastricWall.test.ts` exige la pared ≤ 6 mm, pliegues ≤ 2 mm y submucosa continua en toda la vuelta. `e2e/gastricWall.spec.ts` compara CPU y GPU en toda la pared. Metal: `gastricWall`, `smoke` y `abdominalAtlas`, 35 de 35. JS: 1.002.278 B, margen de 67.802 B sobre el límite sin cambios. `vexus-owner-evidence-20261031/tissue`.
+
+## 313. Reducción de moteado del equipo
+
+**Contexto.** El propietario pidió el filtro de reducción de moteado de un equipo moderno, que las decisiones 52 y 84 descartaban por cosmético. Se añade procesado de presentación, sin modificar la adquisición. Las guardas de detalle registradas en el diseño eran ensanche ≤ 0,15 mm, pico ≥ 90 % y contraste ≥ 95 %.
+
+**Decisión.** Bilateral en log de la envolvente, en la rejilla polar y en mm (`FRAG_SPECKLE`). Nueve toques laterales con barrera de rango; escribe `bLog` (R16F), que solo lee G. `SPECKLE_LEVELS`: paso 0,2/0,3 mm, sigma 6/8 dB y mezcla 0,6/0,85 [EXTRAPOLACIÓN PROPIA]. La envolvente no cambia. Color suspende R; PW, modo M y las lecturas físicas no la consumen. La aplicación usa nivel 1 y `?e2e` físico nivel 0. El mando sigue en Imagen → Avanzado. «RM n» usa el nivel y el Color adquiridos del cuadro presentado, también congelado y en cine. No reproduce SRI ni XRES de ningún fabricante.
+
+La persistencia compara el nivel **efectivo** (0 con Color): cambiar un mando suspendido no la reinicia, y activar o suspender R descarta la historia incompatible. Cada cuadro guarda además la época de persistencia, de modo que un 0→2→0 entre dos guardados no vuelve a mezclar la historia anterior al reproducir. Pedir repeticiones de `speckleReduction` inactiva lanza un error antes de dibujar.
+
+**Metas cambiadas, con aprobación del propietario (01-11-2026).** Ninguna forma ensayada cumple a la vez las guardas de detalle y el beneficio: con ellas, la mejora de SNR queda en +0,8/+2,4 % y la imagen casi no cambia. Viendo las láminas, el propietario eligió el filtro con efecto. Las guardas pasan a ser por nivel, lo medido redondeado hacia el lado permisivo: nivel 1, ensanche ≤ 0,22 mm, pico ≥ 88 % y contraste ≥ 95 %; nivel 2, ≤ 0,41 mm, ≥ 79 % y ≥ 90 %. El nivel 1 tampoco llega al +5 % de SNR del diseño. Queda aquí para que pueda revertirse.
+
+**Alternativas descartadas.** Filtro débil bajo las guardas: invisible, y falla la prueba de beneficio lateral. Recorte simétrico, protección de picos con dos vecinos y protección guiada en axial (tres formas, nueve ajustes): ninguna cumple, y la mejor pierde el 80 % de una línea oblicua a 45°. Difusión de Perona–Malik en log: ensancha +0,623 mm y retiene 85 % de contraste en un prototipo sobre malla de 0,05 mm, no comparable de forma causal. Filtrar tras G dependería del lienzo; tras P acoplaría el resultado a la historia. Los +0,13 mm y 96 % citados al inicio eran de ese prototipo y se retiran como cifras del producto.
+
+**Consecuencias medidas.** ANGLE Metal Apple M4, atlas/THI, 1440×1000, apnea, t = 30 s, seis cuadros, pares 0/1/2 de la misma envolvente, G sin persistencia. Cuatro ROI de hígado (subxifoidea, intercostal, subcostal y portal) con `acf.py`: mediana de las cuatro.
+
+| Nivel | Ganancia de SNR frente a 0 | Lateral/axial del grano | Aumento 10–90 del escalón | Pico retenido | Contraste del vaso retenido |
+| ----- | -------------------------: | ----------------------: | ------------------------: | ------------: | --------------------------: |
+| 0     |                          — |                   1,865 |                         — |             — |                           — |
+| 1     |                   +4,544 % |                   2,065 |                 +0,217 mm |      88,374 % |                    95,642 % |
+| 2     |                  +11,231 % |                   2,295 |                 +0,403 mm |      79,411 % |                    90,137 % |
+
+Detalle: banco pos-PSF 192×1024 a 80 mm, paso lateral 0,866 mm, FWHM lateral 1,5 mm, escalón de −12 dB, vaso de 3 mm a −18 dB y líneas de 0,3 y 0,6 mm a +15 dB, peor caso de tres fases. Las líneas finas y los bordes pierden definición de forma medible, sobre todo en el nivel 2. R aislada, p50 en Metal: 0,04/0,13 ms; no acredita el coste total del cuadro ni 60 fps. La textura ocupa 393.216 B.
+
+**Verificación.** `e2e/speckleReduction.spec.ts` fija el banco por nivel y las reproducciones de Color, de 0→2→0 con congelado y redimensionado, y del HUD con el control real. `frameCost.test.ts` rechaza R inactiva. Las regresiones de la revisión fallaron antes de corregirse. Metal: `speckleReduction`, `smoke` y `venousAcquisition`, 37 de 39 con la máquina cargada; las dos que fallaron, por el aviso de corte y por un plazo de 15 s, pasan al repetirlas solas. JS: 1.004.778 B, margen de 65.302 B sobre el límite sin cambios. No es validación clínica. Diseño, revisión y láminas: `vexus-owner-evidence-20261031/speckle-design` y `speckle/fix-r2`.

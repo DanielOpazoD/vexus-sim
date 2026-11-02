@@ -70,6 +70,19 @@ export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
       format: (v) => v.toFixed(2),
     }),
   );
+  // Reducción de moteado (decisión 313): procesado del equipo, solo en la presentación del modo B
+  ctx.track(
+    slider(sec, {
+      label: 'Reducción de moteado',
+      min: 0,
+      max: 2,
+      step: 1,
+      get: () => s().bmode.speckleReduction,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { speckleReduction: v === 2 ? 2 : v === 1 ? 1 : 0 } }),
+      format: (v) => ['No', 'Media', 'Alta'][v],
+    }),
+  );
+  note(sec, 'Procesado del equipo: suaviza el moteado sin tocar la adquisición. Se suspende con Color; PW y M no lo usan.');
   // Composición espacial (decisión 58): el conmutador; con el color encendido no se forma
   ctx.track(
     button(

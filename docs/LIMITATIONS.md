@@ -114,6 +114,11 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   vertical) el suelo no es una distancia. El tórax del modelo es poco profundo (106 mm de la cara anterior de la vértebra a
   la pared anterior): el VD toca la pared anterior y la AI, la aorta, sin grasa entre ellos; el VD basal y la AI quedan en el
   límite inferior de la ASE.
+  Con atlas, la decisión 315 registra el conjunto 2 mm anterior y 25 mm caudal, curvando la cava con sus nodos
+  existentes y conservando `heartFloor`. El apoyo y el acceso transhepático se comprueban en centro y cuatro poses
+  vecinas sano/grave; no cubren todo el ciclo respiratorio ni todas las posiciones posibles. No hay máscara independiente
+  de AD/ostio en los TAC y no se valida su volumen verdadero. La cúpula fuente y el hígado no se reconstruyen;
+  persiste la aproximación estática, la sombra de estructuras posteriores y la falta de dilatación auricular por caso.
 - **El espejo del pulmón junto al mediastino tiene una normal aproximada** (`mediastinal-mirror-normal-approx`, decisión 85):
   donde el haz llega al pulmón desde el mediastino (detrás de la aorta en la epigástrica abanicada, detrás de la AD en la
   subxifoidea) la pasada A refleja en el cruce exacto (decisión 57) con la normal del elipsoide de la cámara más cercana o de

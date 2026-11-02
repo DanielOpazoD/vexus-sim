@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { tubeQuery } from '../src/anatomy/primitives';
+import { Tissue } from '../src/anatomy/tissues';
 import { bootWithoutErrors, budget, windowAcquired } from './support';
 
 for (const caseId of ['normal-adult', 'severe-congestion'])
@@ -21,6 +23,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         [-40, -25],
         [-45, 10],
         [-25, 20],
+        [-35, 30],
       ]) {
         let hi = 30,
           lo: number | undefined;
@@ -51,6 +54,15 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       const gpu = s.gpuQuery(new Float32Array(world), a.frame, true, { normals: true });
       return {
         points,
+        cava: (['ivcInfra', 'ivcSupra'] as const).map((id) => {
+          const def = s.scene.vesselById.get(id)!,
+            cal = s.anatomy.caliberFor(a.sample);
+          return {
+            ...def.tube,
+            apScale: id === 'ivcSupra' ? (cal.ivcSupraApScale ?? cal.ivcApScale) : cal.ivcApScale,
+            nodes: def.tube.nodes.map((n) => ({ p: n.p, r: n.r * cal.radiusScale(id) })),
+          };
+        }),
         cpu,
         gpu: Array.from(gpu.tissue),
         normals: Array.from(gpu.normal ?? []),
@@ -60,9 +72,17 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     await info.attach('hepatic-contact.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
     await page.screenshot({ path: info.outputPath('hepatic-contact.png') });
     expect(result.gpu).toEqual(result.cpu);
-    expect(result.points.filter((p) => p.dz === -3 && p.tissue === 4).length).toBeGreaterThanOrEqual(3);
-    expect(result.points.filter((p) => p.dz === 1 && p.tissue === 9).length).toBe(5);
-    expect(result.points.filter((p) => p.dz === 6 && [10, 30, 31, 6].includes(p.tissue)).length).toBe(5);
+    // 314: cinco columnas fuera del paso cava, con el mismo contrato estricto.
+    // Conservamos también la columna antigua: ahora puede ser el hiato venoso,
+    // como confirma la consulta independiente de los tubos con el calibre adquirido.
+    const roofPoints = result.points.filter((p) => p.m[0] !== -25);
+    expect(roofPoints.filter((p) => p.dz === -3 && p.tissue === 4).length).toBeGreaterThanOrEqual(3);
+    expect(roofPoints.filter((p) => p.dz === 1 && p.tissue === 9).length).toBe(5);
+    expect(roofPoints.filter((p) => p.dz === 6 && [10, 30, 31, 6].includes(p.tissue)).length).toBe(5);
+    const passage = result.points.find((p) => p.m[0] === -25 && p.dz === 1)!;
+    const inCava = Math.min(...result.cava.map((t) => tubeQuery(passage.m, t).d)) < 0;
+    expect(passage.tissue).toBe(Number(inCava ? Tissue.Blood : Tissue.Diaphragm));
+    if (inCava) expect(['ivcInfra', 'ivcSupra']).toContain(passage.vessel);
     expect(result.normals.every(Number.isFinite)).toBe(true);
     expect(result.errors).toEqual([]);
     expect(errors).toEqual([]);

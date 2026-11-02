@@ -337,3 +337,14 @@ El cierre parabólico no erosivo del perfil estimado usa el espesor parietal y u
 ### Continuidad parietal y pedículo hepatobiliar (285)
 
 La compresión interpola sus controles con B-spline cúbica; conserva las restricciones radiales del modelo, pero no añade biomecánica ni movimiento por disparo. La transición axial estimada de apposición abarca −175…−115 mm. El pedículo usa conectores estimados anclados a porta y vesícula fuente, con unión de luces cístico-vesiculares y separación de paredes arteriales, portales y biliares. No representa todas las variantes ni un árbol biliar completo. La vesícula conserva la segmentación de este adulto y una pared estimada de 1,8 mm; sin ayuno ni distensión adaptados al caso. **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**.
+
+### Unión cavoauricular estática con atlas (314)
+
+**[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION.** Curso con 8 segmentos infra y 4 supra, guiado por hitos regionales
+de s0028 y las raíces suprahepáticas existentes. La traslación conjunta [0,2,−25] mm aproxima el apoyo del esquema
+cardíaco sobre la cúpula registrada; no trasplanta una AD segmentada ni reconstruye el hígado. La cúpula y su contacto
+hepático se conservan y se comprueban con el mismo suelo de pendiente acotada. Las cuatro cavidades y sus tabiques
+son los mismos elipsoides estáticos: sin contracción, valvas, respuesta de tamaño a congestión ni flujo intracavitario
+fuera del tubo cava. El criterio de cinco rayos/20 mm es instrumental para esta ventana, no un rango clínico.
+Registro TAC único por persona, con residuos RMS 14,4/27,3 mm; los hitos manuales son regiones, no un ostio ni una
+segmentación de AD. La revisión B y las pruebas numéricas no validan transferencia docente o equivalencia clínica.

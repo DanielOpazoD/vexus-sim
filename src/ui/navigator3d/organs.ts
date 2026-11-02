@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
-import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
+import { domeFloor, heartOuterSdf, heartShift } from '../../anatomy/organs/heart';
 import { diaphragmSurfaceZ } from '../../anatomy/primitives';
 import { diaphragmRim } from '../../anatomy/diaphragmRim';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
@@ -169,6 +169,22 @@ export function buildKidneyMesh(k: Kidney): THREE.Mesh {
   );
 }
 
+/** Epicardio del mismo campo anatómico que la imagen. */
+export function buildHeartMesh(a: AnatomyScene): THREE.Mesh {
+  // Registrar el dominio, no trasladar otra vez la malla: el SDF ya está registrado.
+  // Margen para las capas que MarchingCubes no emite; 140/48 < 130/44 mm por voxel.
+  const shift = heartShift();
+  const lo: Vec3 = [-55 + shift[0], -25 + shift[1], shift[2]];
+  const hi: Vec3 = [85 + shift[0], 85 + shift[1], 125 + shift[2]];
+  return meshFromSdf(
+    (p) => heartOuterSdf(p, domeFloor(p, a.diaphragm, a.torso)),
+    lo,
+    hi,
+    48,
+    new THREE.MeshStandardMaterial({ color: 0xb04848, roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false }),
+  );
+}
+
 export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   if (!a.hasAbdominalAtlas) {
@@ -259,14 +275,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     40,
     new THREE.MeshStandardMaterial({ color: 0x3fb08f, roughness: 0.5, transparent: true, opacity: 0.85 }),
   );
-  // Corazón (decisión 85): el epicardio recortado por la cúpula, con la MISMA distancia que la imagen
-  const heart = meshFromSdf(
-    (p) => heartOuterSdf(p, domeFloor(p, a.diaphragm, a.torso)),
-    [-50, -20, 5],
-    [80, 80, 122],
-    44,
-    new THREE.MeshStandardMaterial({ color: 0xb04848, roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false }),
-  );
+  const heart = buildHeartMesh(a);
   if (!a.hasAbdominalAtlas) g.add(gb);
   g.add(heart);
   // Riñones: judía con hilio por marching cubes sobre el MISMO SDF; seno como elipsoide interior

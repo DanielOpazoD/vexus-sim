@@ -18,16 +18,26 @@ const AXES: Partial<Record<VesselId, readonly Vec3[]>> = {
     [7.1, 4.5, -170],
     [5.9, 2.6, -210],
   ],
+  // 315: curva retrohepática y ascenso anterocraneal a la AD. Las raíces
+  // RHV (−14) y tronco común (−3), y el nivel renal, son anclas de borde.
+  // Curso estimado con hitos s0028; no trasplante de un eje de otra persona.
   ivcInfra: [
     [-8.7, -4.1, -210],
     [-11.5, -3.1, -130],
-    [-14, -5.4, -70],
-    [-14.3, -5.7, -64],
-    [-15.1, -5.8, -40],
+    [-14, -15, -70],
+    [-15.1, -14, -40],
     [-15.1, -5.7, -14],
-    [-15.1, -5.6, 15],
-    [-15.1, -5.6, 25],
-    [-15, -5, 35],
+    [-15.1, -5.7, -3],
+    [-15, -2, 5],
+    [-15, 3, 10],
+    [-15, 8, 15],
+  ],
+  ivcSupra: [
+    [-15, 8, 15],
+    [-16, 12, 20],
+    [-18, 15, 25],
+    [-20, 18, 30],
+    [-22, 20, 35],
   ],
   // Source section centroids: FJ2416 right and FJ2415 left hepatic veins,
   // same LAS registration as the liver. Selected proximal courses and their
@@ -270,7 +280,15 @@ export function registerAbdominalVessels(vessels: VesselDef[], ducts: DuctDef[])
       const old = v.tube.nodes;
       v.tube = {
         ...v.tube,
-        nodes: points.map((p, i) => ({ p: [...p], r: old[Math.round((i * (old.length - 1)) / (points.length - 1))].r })),
+        nodes: points.map((p, i) => ({
+          p: [...p],
+          // Reubicar nodos no debe trasladar la cintura al ostio RHV:
+          // r=9,3 en −40; r=10 desde la raíz en −14 (mismos calibres).
+          r:
+            v.id === 'ivcInfra'
+              ? [9.5, 9.5, 9.75, 9.3, 10, 10, 10, 10, 10][i]
+              : old[Math.round((i * (old.length - 1)) / (points.length - 1))].r,
+        })),
       };
     }
   }
@@ -279,7 +297,6 @@ export function registerAbdominalVessels(vessels: VesselDef[], ducts: DuctDef[])
     if (!v) throw new Error('Missing registered parent ' + id);
     return v;
   };
-  byId('ivcSupra').tube.nodes[0].p = [-15, -5, 35];
   // Parent origins follow the source renal level; local hilar/sinus nodes already follow each kidney.
   for (const [id, points] of [
     [

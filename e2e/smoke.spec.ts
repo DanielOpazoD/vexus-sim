@@ -1448,282 +1448,303 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
   expect(errors).toEqual([]);
 });
 
-test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia con la respiración y el colapso medido coincide con la verdad', async ({
-  page,
-}) => {
-  budget(360_000);
-  // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  const errors = await bootWithoutErrors(page);
-  // La sesión arranca con respiración apagada; este ejercicio evalúa un ciclo respiratorio adquirido.
-  await page.getByRole('button', { name: 'Activar respiración', exact: true }).click();
-  // una mirada: con SwiftShader (≤ 4 cuadros por segundo) la composición espacial promedia 0,75 s de cuadros y
-  // suaviza la anchura de la banda (con GPU real, 50 ms)
-  await page.evaluate(() => {
-    window.__vexusTest!.setCompound(false);
-    window.__vexusTest!.goToStartPoint('subxiphoid');
-  });
-  await page.locator('#mode-m').click();
-  await expect(page.locator('#mode-m')).toHaveClass(/active/);
-  await expect(page.locator('#mmode')).toBeVisible();
-  // barrido a 25 mm/s (≥ 2 ciclos respiratorios en la franja) y 13 cm de profundidad (la VCI, a 10–11 cm, más grande)
-  await page.getByRole('button', { name: '25', exact: true }).click();
-  for (let k = 0; k < 5; k++) await page.keyboard.press('[');
-  await withinFrames(page, 2, 'HUD con 13 cm', contains(page, '#hud-tr', '13 cm'));
-  // la línea M donde la pone el operador (VExUS): a través de la VCI 2 cm por debajo de la desembocadura de las
-  // suprahepáticas (z material 35 mm → 15 mm), según la anatomía de CPU. La más perpendicular del tramo (3,5 cm por
-  // debajo) sobrestima el colapso ~6 puntos: el eco especular de la pared de enfrente, máximo de frente, se come
-  // 1–1,5 mm de la luz (decisión 80, `m-mode-lumen-blooming`)
-  const line = await page.evaluate((blood) => {
-    const s = window.__vexusTest!.sim();
-    const tr = s.transducer;
-    const fr = s.frame;
-    let best: { theta: number; r0: number; r1: number; dz: number } | null = null;
-    for (let i = 0; i < tr.lines; i++) {
-      const theta = -tr.halfSector + (2 * tr.halfSector * i) / (tr.lines - 1);
-      const d = [0, 1, 2].map((k) => fr.axial[k] * Math.cos(theta) + fr.lateral[k] * Math.sin(theta));
-      const n = Math.hypot(d[0], d[1], d[2]);
-      let r0 = -1;
-      let r1 = -1;
-      let z = 0;
-      for (let r = 60; r < s.bmode.depthMm - 5; r += 0.5) {
-        const R = tr.curvatureRadius + r;
-        const q = s.anatomy.classifyWorld(
-          [fr.curvatureCenter[0] + (d[0] / n) * R, fr.curvatureCenter[1] + (d[1] / n) * R, fr.curvatureCenter[2] + (d[2] / n) * R],
-          s.sample,
-        );
-        if ((q.vessel === 'ivcInfra' || q.vessel === 'ivcSupra') && q.tissue === blood) {
-          if (r0 < 0) r0 = r;
-          r1 = r;
-          z = q.material[2];
-        } else if (r0 >= 0) break;
-      }
-      if (r0 >= 0 && (!best || Math.abs(z - 15) < best.dz)) best = { theta, r0, r1, dz: Math.abs(z - 15) };
-    }
-    if (!best) return null;
-    // el punto de la imagen donde el alumno haría clic (píxeles de la ventana)
-    const p = s.renderer.beamToPixel(best.theta, (best.r0 + best.r1) / 2, tr);
-    const c = document.getElementById('gl') as HTMLCanvasElement;
-    const rect = c.getBoundingClientRect();
-    return { ...best, x: rect.left + (p.x * rect.width) / c.width, y: rect.top + (p.y * rect.height) / c.height };
-  }, Tissue.Blood);
-  expect(line, 'ninguna línea cruza la VCI').not.toBeNull();
-  expect(line!.dz, JSON.stringify(line)).toBeLessThan(3);
-  // un clic sobre la imagen coloca la línea M, como la puerta del PW
-  await page.mouse.click(line!.x, line!.y);
-  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBeCloseTo(line!.theta, 2);
-  // Un drag iniciado antes de congelar no puede mover la guía sobre una adquisición congelada.
-  const heldTheta = await page.evaluate(() => window.__vexusTest!.sim().mmode.theta);
-  await page.mouse.move(line!.x, line!.y);
-  await page.mouse.down();
-  await page.keyboard.press(' ');
-  await withinFrames(page, 2, 'FREEZE durante drag M', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || 'aún no congelado');
-  await page.mouse.move(line!.x + 50, line!.y);
-  expect(await page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBe(heldTheta);
-  await page.mouse.up();
-  await page.keyboard.press(' ');
-  // la franja cubre un ciclo respiratorio y medio (14/min: 4,3 s; con SwiftShader, ≤ 0,25 s por cuadro): se mide sobre
-  // lo que cubre, y la verdad en el mismo intervalo
-  const sv = await page.evaluate(() => (document.getElementById('mmode') as HTMLCanvasElement).clientWidth / (25 * 3.2));
-  const span = () =>
-    page.evaluate(() => {
-      const m = window.__vexusTest!.sim().renderer.mStrip;
-      return m.count > 1 ? m.time(m.count - 1) - m.time(0) : 0;
+for (const abdomen of ['legacy', 'atlas'] as const)
+  test(`modo M (decisión 80, ${abdomen}): línea M sobre la VCI subxifoidea; su banda cambia con la respiración y el colapso medido coincide con la verdad`, async ({
+    page,
+  }) => {
+    budget(360_000);
+    // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    const errors = await bootWithoutErrors(page, `?e2e=1&abdomen=${abdomen}`);
+    // La sesión arranca con respiración apagada; este ejercicio evalúa un ciclo respiratorio adquirido.
+    await page.getByRole('button', { name: 'Activar respiración', exact: true }).click();
+    // una mirada: con SwiftShader (≤ 4 cuadros por segundo) la composición espacial promedia 0,75 s de cuadros y
+    // suaviza la anchura de la banda (con GPU real, 50 ms)
+    await page.evaluate(() => {
+      window.__vexusTest!.setCompound(false);
+      window.__vexusTest!.goToStartPoint('subxiphoid');
     });
-  await withinSimSeconds(page, 10, 'la franja M cubre más de 7 s', async () => {
-    const x = await span();
-    return x > 7 || `${x.toFixed(2)} s en la franja`;
-  });
-  await page.keyboard.press(' ');
-  await withinFrames(page, 2, 'FREEZE', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || (await textOf(page, '#live-chip')));
-  // la luz de la VCI en la franja que se ve (el lienzo #mmode), en el centro del tramo de cada columna: el núcleo oscuro
-  // (la racha más larga de grises < 50 cerca de la luz) y sus bordes donde el gris cruza la mitad entre la luz y el pico
-  // de la pared (en 3 mm), interpolados: donde el operador pone los calibres, de borde interno a borde interno
-  const band = await page.evaluate(
-    ({ r0, r1, sv }) => {
+    await page.locator('#mode-m').click();
+    await expect(page.locator('#mode-m')).toHaveClass(/active/);
+    await expect(page.locator('#mmode')).toBeVisible();
+    // Barrido a 25 mm/s; legacy usa 13 cm y atlas conserva su profundidad nominal de 18 cm.
+    await page.getByRole('button', { name: '25', exact: true }).click();
+    if (abdomen === 'legacy') for (let k = 0; k < 5; k++) await page.keyboard.press('[');
+    await withinFrames(page, 2, 'profundidad adquirida', contains(page, '#hud-tr', abdomen === 'legacy' ? '13 cm' : '18 cm'));
+    // la línea M donde la pone el operador (VExUS): a través de la VCI 2 cm por debajo de la desembocadura de las
+    // suprahepáticas (legacy: z35 → 15; atlas: z−3 → −23), según la anatomía de CPU. La más perpendicular del tramo (3,5 cm por
+    // debajo) sobrestima el colapso ~6 puntos: el eco especular de la pared de enfrente, máximo de frente, se come
+    // 1–1,5 mm de la luz (decisión 80, `m-mode-lumen-blooming`)
+    const line = await page.evaluate((blood) => {
       const s = window.__vexusTest!.sim();
-      const m = s.renderer.mStrip;
-      const tR = s.physiology.clock.t;
-      const cv = document.getElementById('mmode') as HTMLCanvasElement;
-      const [W, H, depth] = [cv.width, cv.height, m.depthMm];
-      const img = cv.getContext('2d')!.getImageData(0, 0, W, H).data;
-      const k0 = Math.max(0, Math.floor(((r0 - 12) / depth) * H));
-      const k1 = Math.min(H - 1, Math.ceil(((r1 + 12) / depth) * H));
-      const w3 = Math.round((3 / depth) * H);
-      const samples = s.physiology.samples;
-      const out: { t: number; x: number; top: number; bottom: number; dAp: number }[] = [];
-      // la primera columna cubre un intervalo desconocido: desde la segunda; lejos de la escala del borde derecho
-      for (let i = 1; i < m.count; i++) {
-        const t = m.time(i);
-        const x = Math.floor(((m.time(i - 1) + t) / 2 - (tR - sv)) * (W / sv));
-        if (t > tR || x < 0 || x >= W - 45) continue;
-        const g = Array.from({ length: H }, (_, y) => img[(y * W + x) * 4]);
-        let best = [0, -1];
-        let start = -1;
-        for (let k = k0; k <= k1 + 1; k++) {
-          const dark = k <= k1 && g[k] < 50;
-          if (dark && start < 0) start = k;
-          if (!dark && start >= 0) {
-            if (k - start > best[1] - best[0] + 1) best = [start, k - 1];
-            start = -1;
-          }
+      const tr = s.transducer;
+      const fr = s.frame;
+      // Atlas: 20 mm caudal al tronco común (z −3). El modelo legado conserva z15.
+      const targetZ = s.scene.hasAbdominalAtlas ? -23 : 15;
+      let best: { theta: number; r0: number; r1: number; dz: number } | null = null;
+      for (let i = 0; i < tr.lines; i++) {
+        const theta = -tr.halfSector + (2 * tr.halfSector * i) / (tr.lines - 1);
+        const d = [0, 1, 2].map((k) => fr.axial[k] * Math.cos(theta) + fr.lateral[k] * Math.sin(theta));
+        const n = Math.hypot(d[0], d[1], d[2]);
+        let r0 = -1;
+        let r1 = -1;
+        let z = 0;
+        for (let r = 60; r < s.bmode.depthMm - 5; r += 0.5) {
+          const R = tr.curvatureRadius + r;
+          const q = s.anatomy.classifyWorld(
+            [fr.curvatureCenter[0] + (d[0] / n) * R, fr.curvatureCenter[1] + (d[1] / n) * R, fr.curvatureCenter[2] + (d[2] / n) * R],
+            s.sample,
+          );
+          if ((q.vessel === 'ivcInfra' || q.vessel === 'ivcSupra') && q.tissue === blood) {
+            if (r0 < 0) r0 = r;
+            r1 = r;
+            z = q.material[2];
+          } else if (r0 >= 0) break;
         }
-        const run = g.slice(best[0], best[1] + 1).sort((a, b) => a - b);
-        const lumen = run[Math.floor(run.length / 2)];
-        const edges = [-1, 1].map((dir) => {
-          const from = dir < 0 ? best[0] : best[1];
-          let peak = 0;
-          for (let j = 1; j <= w3; j++) peak = Math.max(peak, g[from + dir * j]);
-          const mid = (lumen + peak) / 2;
-          for (let j = 0; j < w3; j++) {
-            const a = g[from + dir * j];
-            const b = g[from + dir * (j + 1)];
-            if (a < mid && b >= mid) return from + dir * (j + (mid - a) / (b - a));
-          }
-          return from;
-        });
-        let near = samples[0];
-        for (const q of samples) if (Math.abs(q.t - t) < Math.abs(near.t - t)) near = q;
-        // píxel y → profundidad de su centro, (y + ½)/H
-        out.push({ t, x, top: ((edges[0] + 0.5) / H) * depth, bottom: ((edges[1] + 0.5) / H) * depth, dAp: near.ivc.dApMm });
+        if (r0 >= 0 && (!best || Math.abs(z - targetZ) < best.dz)) best = { theta, r0, r1, dz: Math.abs(z - targetZ) };
       }
-      const tL = out[0].t;
-      let max = -Infinity;
-      let min = Infinity;
-      for (const q of samples)
-        if (q.t >= tL && q.t <= tR) {
-          max = Math.max(max, q.ivc.dApMm);
-          min = Math.min(min, q.ivc.dApMm);
+      if (!best) return null;
+      // el punto de la imagen donde el alumno haría clic (píxeles de la ventana)
+      const p = s.renderer.beamToPixel(best.theta, (best.r0 + best.r1) / 2, tr);
+      const c = document.getElementById('gl') as HTMLCanvasElement;
+      const rect = c.getBoundingClientRect();
+      const handle = s.renderer.beamToPixel(s.mmode.theta, (best.r0 + best.r1) / 2, tr);
+      return {
+        ...best,
+        x: rect.left + (p.x * rect.width) / c.width,
+        y: rect.top + (p.y * rect.height) / c.height,
+        handleX: rect.left + (handle.x * rect.width) / c.width,
+        handleY: rect.top + (handle.y * rect.height) / c.height,
+      };
+    }, Tissue.Blood);
+    expect(line, 'ninguna línea cruza la VCI').not.toBeNull();
+    expect(line!.dz, JSON.stringify(line)).toBeLessThan(3);
+    // Atlas: la VCI queda junto al asa M; se arrastra desde ella. Un clic dentro de los 10 px del asa
+    // inicia el arrastre y no recoloca la línea sin pointermove. Legacy conserva el ejercicio de clic.
+    if (abdomen === 'atlas') {
+      await page.mouse.move(line!.handleX, line!.handleY);
+      await page.mouse.down();
+      await page.mouse.move(line!.x, line!.y);
+      await page.mouse.up();
+    } else await page.mouse.click(line!.x, line!.y);
+    await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBeCloseTo(line!.theta, 2);
+    // Un drag iniciado antes de congelar no puede mover la guía sobre una adquisición congelada.
+    const heldTheta = await page.evaluate(() => window.__vexusTest!.sim().mmode.theta);
+    await page.mouse.move(line!.x, line!.y);
+    await page.mouse.down();
+    await page.keyboard.press(' ');
+    await withinFrames(page, 2, 'FREEZE durante drag M', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || 'aún no congelado');
+    await page.mouse.move(line!.x + 50, line!.y);
+    expect(await page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBe(heldTheta);
+    await page.mouse.up();
+    await page.keyboard.press(' ');
+    // la franja cubre un ciclo respiratorio y medio (14/min: 4,3 s; con SwiftShader, ≤ 0,25 s por cuadro): se mide sobre
+    // lo que cubre, y la verdad en el mismo intervalo
+    const sv = await page.evaluate(() => (document.getElementById('mmode') as HTMLCanvasElement).clientWidth / (25 * 3.2));
+    const span = () =>
+      page.evaluate(() => {
+        const m = window.__vexusTest!.sim().renderer.mStrip;
+        return m.count > 1 ? m.time(m.count - 1) - m.time(0) : 0;
+      });
+    await withinSimSeconds(page, 10, 'la franja M cubre más de 7 s', async () => {
+      const x = await span();
+      return x > 7 || `${x.toFixed(2)} s en la franja`;
+    });
+    await page.keyboard.press(' ');
+    await withinFrames(
+      page,
+      2,
+      'FREEZE',
+      async () => (await textOf(page, '#live-chip')) === 'FREEZE' || (await textOf(page, '#live-chip')),
+    );
+    // la luz de la VCI en la franja que se ve (el lienzo #mmode), en el centro del tramo de cada columna: el núcleo oscuro
+    // (la racha más larga de grises < 50 cerca de la luz) y sus bordes donde el gris cruza la mitad entre la luz y el pico
+    // de la pared (en 3 mm), interpolados: donde el operador pone los calibres, de borde interno a borde interno
+    const band = await page.evaluate(
+      ({ r0, r1, sv }) => {
+        const s = window.__vexusTest!.sim();
+        const m = s.renderer.mStrip;
+        const tR = s.physiology.clock.t;
+        const cv = document.getElementById('mmode') as HTMLCanvasElement;
+        const [W, H, depth] = [cv.width, cv.height, m.depthMm];
+        const img = cv.getContext('2d')!.getImageData(0, 0, W, H).data;
+        const k0 = Math.max(0, Math.floor(((r0 - 12) / depth) * H));
+        const k1 = Math.min(H - 1, Math.ceil(((r1 + 12) / depth) * H));
+        const w3 = Math.round((3 / depth) * H);
+        const samples = s.physiology.samples;
+        const out: { t: number; x: number; top: number; bottom: number; dAp: number }[] = [];
+        // la primera columna cubre un intervalo desconocido: desde la segunda; lejos de la escala del borde derecho
+        for (let i = 1; i < m.count; i++) {
+          const t = m.time(i);
+          const x = Math.floor(((m.time(i - 1) + t) / 2 - (tR - sv)) * (W / sv));
+          if (t > tR || x < 0 || x >= W - 45) continue;
+          const g = Array.from({ length: H }, (_, y) => img[(y * W + x) * 4]);
+          let best = [0, -1];
+          let start = -1;
+          for (let k = k0; k <= k1 + 1; k++) {
+            const dark = k <= k1 && g[k] < 50;
+            if (dark && start < 0) start = k;
+            if (!dark && start >= 0) {
+              if (k - start > best[1] - best[0] + 1) best = [start, k - 1];
+              start = -1;
+            }
+          }
+          const run = g.slice(best[0], best[1] + 1).sort((a, b) => a - b);
+          const lumen = run[Math.floor(run.length / 2)];
+          const edges = [-1, 1].map((dir) => {
+            const from = dir < 0 ? best[0] : best[1];
+            let peak = 0;
+            for (let j = 1; j <= w3; j++) peak = Math.max(peak, g[from + dir * j]);
+            const mid = (lumen + peak) / 2;
+            for (let j = 0; j < w3; j++) {
+              const a = g[from + dir * j];
+              const b = g[from + dir * (j + 1)];
+              if (a < mid && b >= mid) return from + dir * (j + (mid - a) / (b - a));
+            }
+            return from;
+          });
+          let near = samples[0];
+          for (const q of samples) if (Math.abs(q.t - t) < Math.abs(near.t - t)) near = q;
+          // píxel y → profundidad de su centro, (y + ½)/H
+          out.push({ t, x, top: ((edges[0] + 0.5) / H) * depth, bottom: ((edges[1] + 0.5) / H) * depth, dAp: near.ivc.dApMm });
         }
-      return { out, truth: { max, min, ci: (100 * (max - min)) / max }, tR, depth };
-    },
-    { r0: line!.r0, r1: line!.r1, sv },
-  );
-  const w = band.out.map((c) => c.bottom - c.top);
-  const d = band.out.map((c) => c.dAp);
-  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
-  const [mw, md] = [mean(w), mean(d)];
-  const corr =
-    w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
-    Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
-  // Dónde pone el operador los calibres: en el máximo y el mínimo de la ENVOLVENTE de la banda, no en una columna suelta.
-  // Cada columna de la franja es un cuadro, así que cuántas hay en 7 s depende de los fps (27 en el corredor, cientos con
-  // GPU real) y los extremos de columnas sueltas son extremos del ruido: en CI la anchura de una columna se aparta
-  // ±0,35–0,5 mm de la recta que la une a la verdad (anchura = 0,73–0,77 × dAp − 0,5–1,0 mm; una llegó a 1,96), y la
-  // colapsabilidad de las dos columnas extremas salió 32,5–38,2 % frente a 30,4 de la verdad en cuatro ejecuciones.
-  // La envolvente es la media de los bordes en ±0,3 s de simulación alrededor de cada columna (≈ 3 columnas en el
-  // corredor; ±7 % del ciclo respiratorio de 4,3 s, que apenas achata el máximo y el mínimo), independiente de los fps:
-  // sobre esas cuatro ejecuciones da 28,3–30,8 %. (La mediana de las tres rebajaba el máximo: 26,3–31,1.) Las cotas
-  // (±5 puntos de la verdad, aquí y con los calibres) no cambian.
-  const HALF_WINDOW_S = 0.3;
-  const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
-  const t0 = band.out[0].t;
-  const tEnd = band.out[band.out.length - 1].t;
-  const around = (i: number) => band.out.filter((c) => Math.abs(c.t - band.out[i].t) <= HALF_WINDOW_S);
-  const env = band.out.map((_, i) => {
-    const win = around(i);
-    const top = mean(win.map((c) => c.top));
-    const bottom = mean(win.map((c) => c.bottom));
-    return { top, bottom, width: bottom - top, columns: win.length };
-  });
-  // solo columnas con la ventana entera dentro de la franja
-  const inner = band.out.map((_, i) => i).filter((i) => band.out[i].t - HALF_WINDOW_S >= t0 && band.out[i].t + HALF_WINDOW_S <= tEnd);
-  const iMax = inner.reduce((best, i) => (env[i].width > env[best].width ? i : best), inner[0]);
-  const iMin = inner.reduce((best, i) => (env[i].width < env[best].width ? i : best), inner[0]);
-  const ciBand = (100 * (env[iMax].width - env[iMin].width)) / env[iMax].width;
-  // Lo que la envolvente deja de ver, columna a columna: el ruido de cada columna respecto a la recta que une su anchura
-  // con la verdad (en CI, mediana del desvío absoluto 0,24–0,35 mm; techo 0,6). Una columna mal escrita o con el borde
-  // saltando por el moteado de la pared lo sube.
-  const slope = w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) / d.reduce((a, x) => a + (x - md) ** 2, 0);
-  const residual = median(w.map((x, i) => Math.abs(x - (mw + slope * (d[i] - md)))));
-  // informativo: la verdad con la misma envolvente (sus extremos en ±0,3 s) — en CI la banda la supera en 3–5 puntos
-  // (la anchura de la banda es ~0,73 × dAp − 0,7 mm, ver el informe del PR); la cota sigue siendo la verdad continua
-  const dEnv = band.out.map((_, i) => mean(around(i).map((c) => c.dAp)));
-  const jMax = inner.reduce((best, i) => (dEnv[i] > dEnv[best] ? i : best), inner[0]);
-  const jMin = inner.reduce((best, i) => (dEnv[i] < dEnv[best] ? i : best), inner[0]);
-  const ciTruthEnv = (100 * (dEnv[jMax] - dEnv[jMin])) / dEnv[jMax];
-  // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
-  const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];
-  const wOf = (hi: boolean) => mean(w.filter((_, i) => d[i] > dMed === hi));
-  const tag = JSON.stringify({
-    n: w.length,
-    corr,
-    ciBand,
-    ciTruthEnv,
-    residual,
-    slope,
-    truth: band.truth,
-    wMax: env[iMax],
-    wMin: env[iMin],
-    wExp: wOf(true),
-    wIns: wOf(false),
-    line,
-  });
-  test.info().annotations.push({ type: 'modo M', description: tag });
-  test.info().annotations.push({
-    type: 'modo M: t, anchura, dAp',
-    description: JSON.stringify(band.out.map((c, i) => [c.t, w[i], d[i]].map((v) => +v.toFixed(2)))),
-  });
-  // la banda es la VCI en todas las columnas y su anchura sigue a la respiración (el diámetro AP de la verdad)
-  expect(w.length, tag).toBeGreaterThan(12);
-  expect(Math.min(...w), tag).toBeGreaterThan(5);
-  expect(Math.max(...w), tag).toBeLessThan(25);
-  expect(env[iMax].width - env[iMin].width, tag).toBeGreaterThan(2);
-  expect(env[iMax].columns, tag).toBeGreaterThanOrEqual(2);
-  expect(env[iMin].columns, tag).toBeGreaterThanOrEqual(2);
-  expect(wOf(true) - wOf(false), tag).toBeGreaterThan(1);
-  expect(corr, tag).toBeGreaterThan(0.6);
-  expect(residual, tag).toBeLessThan(0.6);
-  expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
-  // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
-  // y en la más estrecha, con clics enteros accesibles al alumno. Su incertidumbre de resolución es visible.
-  await page.getByRole('tab', { name: 'Medir' }).click();
-  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
-  const box = (await page.locator('#mmode').boundingBox())!;
-  const clicked: number[] = [];
-  const pixels: number[] = [];
-  for (const i of [iMax, iMin]) {
-    const c = band.out[i];
-    // el lienzo tiene densidad 1: su píxel x es el de la ventana
-    const x = Math.round(box.x + c.x + 0.5);
-    for (const r of [env[i].top, env[i].bottom]) {
-      // El segundo extremo tiene peor resolución: verifica que no se pierden sus metadatos al fijar t.
-      await page.locator('#mmode').evaluate((el, h) => (el.style.height = `${h}px`), clicked.length % 2 ? box.height / 2 : box.height);
-      const pointBox = (await page.locator('#mmode').boundingBox())!;
-      const y = Math.round(pointBox.y + (r / band.depth) * pointBox.height);
-      clicked.push(((y - pointBox.y) / pointBox.height) * band.depth);
-      pixels.push(band.depth / pointBox.height);
-      await page.mouse.click(x, y);
+        const tL = out[0].t;
+        let max = -Infinity;
+        let min = Infinity;
+        for (const q of samples)
+          if (q.t >= tL && q.t <= tR) {
+            max = Math.max(max, q.ivc.dApMm);
+            min = Math.min(min, q.ivc.dApMm);
+          }
+        return { out, truth: { max, min, ci: (100 * (max - min)) / max }, tR, depth };
+      },
+      { r0: line!.r0, r1: line!.r1, sv },
+    );
+    const w = band.out.map((c) => c.bottom - c.top);
+    const d = band.out.map((c) => c.dAp);
+    const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+    const [mw, md] = [mean(w), mean(d)];
+    const corr =
+      w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
+      Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
+    // Dónde pone el operador los calibres: en el máximo y el mínimo de la ENVOLVENTE de la banda, no en una columna suelta.
+    // Cada columna de la franja es un cuadro, así que cuántas hay en 7 s depende de los fps (27 en el corredor, cientos con
+    // GPU real) y los extremos de columnas sueltas son extremos del ruido: en CI la anchura de una columna se aparta
+    // ±0,35–0,5 mm de la recta que la une a la verdad (anchura = 0,73–0,77 × dAp − 0,5–1,0 mm; una llegó a 1,96), y la
+    // colapsabilidad de las dos columnas extremas salió 32,5–38,2 % frente a 30,4 de la verdad en cuatro ejecuciones.
+    // La envolvente es la media de los bordes en ±0,3 s de simulación alrededor de cada columna (≈ 3 columnas en el
+    // corredor; ±7 % del ciclo respiratorio de 4,3 s, que apenas achata el máximo y el mínimo), independiente de los fps:
+    // sobre esas cuatro ejecuciones da 28,3–30,8 %. (La mediana de las tres rebajaba el máximo: 26,3–31,1.) Las cotas
+    // (±5 puntos de la verdad, aquí y con los calibres) no cambian.
+    const HALF_WINDOW_S = 0.3;
+    const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+    const t0 = band.out[0].t;
+    const tEnd = band.out[band.out.length - 1].t;
+    const around = (i: number) => band.out.filter((c) => Math.abs(c.t - band.out[i].t) <= HALF_WINDOW_S);
+    const env = band.out.map((_, i) => {
+      const win = around(i);
+      const top = mean(win.map((c) => c.top));
+      const bottom = mean(win.map((c) => c.bottom));
+      return { top, bottom, width: bottom - top, columns: win.length };
+    });
+    // solo columnas con la ventana entera dentro de la franja
+    const inner = band.out.map((_, i) => i).filter((i) => band.out[i].t - HALF_WINDOW_S >= t0 && band.out[i].t + HALF_WINDOW_S <= tEnd);
+    const iMax = inner.reduce((best, i) => (env[i].width > env[best].width ? i : best), inner[0]);
+    const iMin = inner.reduce((best, i) => (env[i].width < env[best].width ? i : best), inner[0]);
+    const ciBand = (100 * (env[iMax].width - env[iMin].width)) / env[iMax].width;
+    // Lo que la envolvente deja de ver, columna a columna: el ruido de cada columna respecto a la recta que une su anchura
+    // con la verdad (en CI, mediana del desvío absoluto 0,24–0,35 mm; techo 0,6). Una columna mal escrita o con el borde
+    // saltando por el moteado de la pared lo sube.
+    const slope = w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) / d.reduce((a, x) => a + (x - md) ** 2, 0);
+    const residual = median(w.map((x, i) => Math.abs(x - (mw + slope * (d[i] - md)))));
+    // informativo: la verdad con la misma envolvente (sus extremos en ±0,3 s) — en CI la banda la supera en 3–5 puntos
+    // (la anchura de la banda es ~0,73 × dAp − 0,7 mm, ver el informe del PR); la cota sigue siendo la verdad continua
+    const dEnv = band.out.map((_, i) => mean(around(i).map((c) => c.dAp)));
+    const jMax = inner.reduce((best, i) => (dEnv[i] > dEnv[best] ? i : best), inner[0]);
+    const jMin = inner.reduce((best, i) => (dEnv[i] < dEnv[best] ? i : best), inner[0]);
+    const ciTruthEnv = (100 * (dEnv[jMax] - dEnv[jMin])) / dEnv[jMax];
+    // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
+    const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];
+    const wOf = (hi: boolean) => mean(w.filter((_, i) => d[i] > dMed === hi));
+    const tag = JSON.stringify({
+      n: w.length,
+      corr,
+      ciBand,
+      ciTruthEnv,
+      residual,
+      slope,
+      truth: band.truth,
+      wMax: env[iMax],
+      wMin: env[iMin],
+      wExp: wOf(true),
+      wIns: wOf(false),
+      line,
+    });
+    test.info().annotations.push({ type: 'modo M', description: tag });
+    test.info().annotations.push({
+      type: 'modo M: t, anchura, dAp',
+      description: JSON.stringify(band.out.map((c, i) => [c.t, w[i], d[i]].map((v) => +v.toFixed(2)))),
+    });
+    // la banda es la VCI en todas las columnas y su anchura sigue a la respiración (el diámetro AP de la verdad)
+    expect(w.length, tag).toBeGreaterThan(12);
+    expect(Math.min(...w), tag).toBeGreaterThan(5);
+    expect(Math.max(...w), tag).toBeLessThan(25);
+    expect(env[iMax].width - env[iMin].width, tag).toBeGreaterThan(2);
+    expect(env[iMax].columns, tag).toBeGreaterThanOrEqual(2);
+    expect(env[iMin].columns, tag).toBeGreaterThanOrEqual(2);
+    expect(wOf(true) - wOf(false), tag).toBeGreaterThan(1);
+    expect(corr, tag).toBeGreaterThan(0.6);
+    expect(residual, tag).toBeLessThan(0.6);
+    expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
+    // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
+    // y en la más estrecha, con clics enteros accesibles al alumno. Su incertidumbre de resolución es visible.
+    await page.getByRole('tab', { name: 'Medir' }).click();
+    await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+    const box = (await page.locator('#mmode').boundingBox())!;
+    const clicked: number[] = [];
+    const pixels: number[] = [];
+    for (const i of [iMax, iMin]) {
+      const c = band.out[i];
+      // el lienzo tiene densidad 1: su píxel x es el de la ventana
+      const x = Math.round(box.x + c.x + 0.5);
+      for (const r of [env[i].top, env[i].bottom]) {
+        // El segundo extremo tiene peor resolución: verifica que no se pierden sus metadatos al fijar t.
+        await page.locator('#mmode').evaluate((el, h) => (el.style.height = `${h}px`), clicked.length % 2 ? box.height / 2 : box.height);
+        const pointBox = (await page.locator('#mmode').boundingBox())!;
+        const y = Math.round(pointBox.y + (r / band.depth) * pointBox.height);
+        clicked.push(((y - pointBox.y) / pointBox.height) * band.depth);
+        pixels.push(band.depth / pointBox.height);
+        await page.mouse.click(x, y);
+      }
     }
-  }
-  const result = page.locator('.result');
-  await expect(result).toContainText(/VCI modo M: máx \d+,\d · mín \d+,\d mm → colapso \d+ %/);
-  const ci = Number(/colapso (\d+) %/.exec((await result.textContent()) ?? '')![1]);
-  // Separar calibración UI, redondeo de presentación y error físico. La tolerancia física sigue en ±5 puntos.
-  const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
-  const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
-  expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
-  const interval = /Resolución: ([\d,]+)–([\d,]+) %/.exec((await result.textContent()) ?? '')!;
-  expect(interval, 'La incertidumbre de los clics debe ser visible al alumno').not.toBeNull();
-  const [lo, hi] = [Number(interval[1].replace(',', '.')), Number(interval[2].replace(',', '.'))];
-  const pixel = Math.max(...pixels);
-  const max = Math.max(d1, d2);
-  const min = Math.min(d1, d2);
-  expect(lo).toBeCloseTo(Math.max(0, (100 * (max - pixel - min - pixel)) / (max - pixel)), 1);
-  expect(hi).toBeCloseTo((100 * (max + pixel - Math.max(0, min - pixel))) / (max + pixel), 1);
-  // ±0,05 exclusivamente por mostrar el intervalo con un decimal. La banda mantiene su gate físico ±5 arriba.
-  expect(ciBand).toBeGreaterThanOrEqual(lo - 0.05);
-  expect(ciBand).toBeLessThanOrEqual(hi + 0.05);
-  expect(Math.max(lo - band.truth.ci, band.truth.ci - hi, 0), tag).toBeLessThanOrEqual(5);
-  await test.info().attach('VCI M: resolución distinta por extremo', { body: await page.screenshot(), contentType: 'image/png' });
-  // Un calibre de un píxel a baja altura CSS supera el mínimo de 1 mm, pero no resuelve colapso.
-  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
-  await page.locator('#mmode').evaluate((el) => (el.style.height = '80px'));
-  const smallBox = (await page.locator('#mmode').boundingBox())!;
-  for (const dx of [40, 80]) {
-    for (const dy of [40, 41]) await page.mouse.click(Math.round(smallBox.x + dx), Math.round(smallBox.y + dy));
-  }
-  await expect(result).toContainText('Resolución: 0,0–100,0 %');
-  await expect(result).not.toContainText('NaN');
-  expect(errors).toEqual([]);
-});
+    const result = page.locator('.result');
+    await expect(result).toContainText(/VCI modo M: máx \d+,\d · mín \d+,\d mm → colapso \d+ %/);
+    const ci = Number(/colapso (\d+) %/.exec((await result.textContent()) ?? '')![1]);
+    // Separar calibración UI, redondeo de presentación y error físico. La tolerancia física sigue en ±5 puntos.
+    const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
+    const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
+    expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
+    const interval = /Resolución: ([\d,]+)–([\d,]+) %/.exec((await result.textContent()) ?? '')!;
+    expect(interval, 'La incertidumbre de los clics debe ser visible al alumno').not.toBeNull();
+    const [lo, hi] = [Number(interval[1].replace(',', '.')), Number(interval[2].replace(',', '.'))];
+    const pixel = Math.max(...pixels);
+    const max = Math.max(d1, d2);
+    const min = Math.min(d1, d2);
+    expect(lo).toBeCloseTo(Math.max(0, (100 * (max - pixel - min - pixel)) / (max - pixel)), 1);
+    expect(hi).toBeCloseTo((100 * (max + pixel - Math.max(0, min - pixel))) / (max + pixel), 1);
+    // ±0,05 exclusivamente por mostrar el intervalo con un decimal. La banda mantiene su gate físico ±5 arriba.
+    expect(ciBand).toBeGreaterThanOrEqual(lo - 0.05);
+    expect(ciBand).toBeLessThanOrEqual(hi + 0.05);
+    expect(Math.max(lo - band.truth.ci, band.truth.ci - hi, 0), tag).toBeLessThanOrEqual(5);
+    await test.info().attach('VCI M: resolución distinta por extremo', { body: await page.screenshot(), contentType: 'image/png' });
+    // Un calibre de un píxel a baja altura CSS supera el mínimo de 1 mm, pero no resuelve colapso.
+    await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+    await page.locator('#mmode').evaluate((el) => (el.style.height = '80px'));
+    const smallBox = (await page.locator('#mmode').boundingBox())!;
+    for (const dx of [40, 80]) {
+      for (const dy of [40, 41]) await page.mouse.click(Math.round(smallBox.x + dx), Math.round(smallBox.y + dy));
+    }
+    await expect(result).toContainText('Resolución: 0,0–100,0 %');
+    await expect(result).not.toContainText('NaN');
+    expect(errors).toEqual([]);
+  });

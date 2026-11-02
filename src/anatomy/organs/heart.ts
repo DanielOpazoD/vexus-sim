@@ -1,6 +1,7 @@
 import type { Vec3 } from '../../core/vec3';
 import { sdDiaphragmSlope, sdEllipsoidLocal, smoothMin, type Diaphragm, type Torso } from '../primitives';
 import { Tissue } from '../tissues';
+import { abdominalAtlas } from '../abdominalAtlas';
 
 /**
  * Corazón y mediastino (decisión 85) como módulo de órgano (decisión 46). Por encima de la cúpula (`sdDiaphragm` < 0) no
@@ -20,7 +21,7 @@ import { Tissue } from '../tissues';
  * - Mediastino: 5 mm de grasa alrededor del saco, 15 mm más junto a la cúpula alrededor de los ventrículos (la grasa de los
  *   ángulos cardiofrénicos), unida de forma suave a la columna del mediastino posterior (aorta torácica, esófago y ácigos,
  *   que no se modelan aparte) desde la cúpula.
- * - La VCI cruza el diafragma por el hiato de la cava (z 53, T8) y entra en el suelo de la AD (`ivcAtrium`).
+ * - La VCI entra en el suelo de la AD (`ivcAtrium`); atlas y alternativa conservan sus propios registros estáticos (315).
  *
  * Cifras [ESTIMADO] sobre valores publicados de un adulto (ASE/EACVI 2015: AD ≤ 53 × 44 mm; VD basal 25–41 mm y pared libre
  * 3–5 mm; VI telediastólico 42–58 mm con pared de 6–10 mm; AI 27–40 mm AP), con la geometría de un esquema de elipsoides
@@ -83,9 +84,31 @@ export const MEDIASTINUM = {
   padMm: 15,
   padHeightMm: 20,
   column: { x: 6, y: -18, ax: 27, ay: 16, top: 130 },
-  /** Esfera que contiene el corazón y el mediastino (el tejido que no es pulmón llega a 90,3 mm de su centro): fuera, pulmón. */
-  bound: { c: [22, 16, 60] as Vec3, r: 94 },
+  /** Cota de ambas posiciones del saco y columna posterior fija (315):
+   * unión de la esfera original y su traslación; radio 94 + |shift|/2 < 108.
+   * Es sólo descarte, no una envolvente de tejido añadido.
+   */
+  bound: { c: [22, 22, 47.5] as Vec3, r: 108 },
 } as const;
+
+/** Registro estático del conjunto, no de una cámara aislada (315).
+ * Hitos regionales s0028: transición cava-corazón z≈12, suelo anterior z≈−3.
+ * R1: retirar 10 mm del avance anterior evita VD–esternón; +2 conserva
+ * la luz del eje cava existente. El espacio retroesternal de s0028 no se homologa
+ * exactamente con este corazón esquemático (máscara heart sin VD separado).
+ * Traslada VI/VD/AD/AI, tabiques, saco y envolvente juntos; no cambia tamaños.
+ * [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION: no hay máscara de AD separada.
+ */
+export const HEART_ATLAS_SHIFT: Vec3 = [0, 2, -25];
+/** Misma traslación estática que heartShift en GLSL, según el atlas cargado. */
+export function heartShift(): Vec3 {
+  return abdominalAtlas ? HEART_ATLAS_SHIFT : [0, 0, 0];
+}
+function registeredHeartPoint(m: Vec3): Vec3 {
+  if (!abdominalAtlas) return m;
+  const shift = heartShift();
+  return [m[0] - shift[0], m[1] - shift[1], m[2] - shift[2]];
+}
 
 const W = HEART_WALLS;
 const CAV = HEART_CAVITIES;
@@ -111,6 +134,7 @@ export function domeFloor(m: Vec3, d: Diaphragm, torso: Torso): number {
 
 /** Coordenadas de un punto en el marco de los ventrículos. */
 export function heartFrame(m: Vec3): Vec3 {
+  m = registeredHeartPoint(m);
   const d: Vec3 = [m[0] - HEART_ORIGIN[0], m[1] - HEART_ORIGIN[1], m[2] - HEART_ORIGIN[2]];
   const a = HEART_AXES;
   return [
@@ -122,6 +146,7 @@ export function heartFrame(m: Vec3): Vec3 {
 
 /** Coordenadas de un punto en el marco de la AD (su centro, inclinada `RA_TILT` en el plano sagital). */
 export function raFrame(m: Vec3): Vec3 {
+  m = registeredHeartPoint(m);
   const [c, s] = RA_TILT;
   const y = m[1] - CAV.ra.c[1];
   const z = m[2] - CAV.ra.c[2];
@@ -133,10 +158,13 @@ export function raSdf(m: Vec3): number {
   return sdEllipsoidLocal(raFrame(m), CAV.ra.r);
 }
 
-/** Inferior crossing of the existing tilted RA at this XY, without moving its geometry.
+/** Inferior crossing of the statically registered tilted RA at this XY.
  * Outside its projection, the lowest pole bounds the approach; no atrial opening is invented.
  */
 export function raInferiorZ(x: number, y: number): number {
+  const shift = heartShift();
+  x -= shift[0];
+  y -= shift[1];
   const [c, s] = RA_TILT,
     [rx, ry, rz] = CAV.ra.r,
     dx = x - CAV.ra.c[0],
@@ -145,7 +173,7 @@ export function raInferiorZ(x: number, y: number): number {
     b = 2 * dy * c * s * (1 / (rz * rz) - 1 / (ry * ry)),
     cc = (dx * dx) / (rx * rx) + dy * dy * ((c * c) / (ry * ry) + (s * s) / (rz * rz)) - 1,
     discriminant = b * b - 4 * a * cc;
-  return CAV.ra.c[2] + (discriminant >= 0 ? (-b - Math.sqrt(discriminant)) / (2 * a) : -Math.hypot(ry * s, rz * c));
+  return shift[2] + CAV.ra.c[2] + (discriminant >= 0 ? (-b - Math.sqrt(discriminant)) / (2 * a) : -Math.hypot(ry * s, rz * c));
 }
 
 /**
@@ -157,7 +185,7 @@ export function raInferiorZ(x: number, y: number): number {
 export function ivcAtrium(m: Vec3, floor: number): { cavity: number; outside: boolean; cut: number } {
   const ra = heartChambers(m)[2];
   const cavity = Math.max(ra, floor + W.pericardium + W.ra);
-  const approach = Math.min(raInferiorZ(m[0], m[1]), RA_APPROACH_TOP_Z) - m[2];
+  const approach = Math.min(raInferiorZ(m[0], m[1]), RA_APPROACH_TOP_Z + heartShift()[2]) - m[2];
   // A diaphragm below the inherited atrium must not delete the intervening cava.
   // Above the actual atrial entry, the original septal/outer exclusion remains.
   return {
@@ -175,7 +203,8 @@ export function heartChambers(m: Vec3): [number, number, number, number] {
   const q = heartFrame(m);
   const lv = sdEllipsoidLocal(q, CAV.lv.r);
   const rv = Math.max(sdEllipsoidLocal([q[0] - CAV.rv.c[0], q[1] - CAV.rv.c[1], q[2] - CAV.rv.c[2]], CAV.rv.r), W.ivs - lv);
-  const la = sdEllipsoidLocal([m[0] - CAV.la.c[0], m[1] - CAV.la.c[1], m[2] - CAV.la.c[2]], CAV.la.r);
+  const a = registeredHeartPoint(m);
+  const la = sdEllipsoidLocal([a[0] - CAV.la.c[0], a[1] - CAV.la.c[1], a[2] - CAV.la.c[2]], CAV.la.r);
   const ra = Math.max(raSdf(m), Math.max(W.ias - la, W.avs - lv));
   return [lv, rv, ra, la];
 }
@@ -262,8 +291,9 @@ export const HEART_GLSL = /* glsl */ `
 const vec3 HV[${V3.length}] = vec3[${V3.length}](${V3.map(vec).join(',')});
 const vec4 HW[${V4.length}] = vec4[${V4.length}](${V4.map(vec).join(',')});
 const mat3 HB = mat3(HV[1], HV[2], HV[3]);
-vec3 heartFrame(vec3 m) { return (m - HV[0]) * HB; }
-vec3 raFrame(vec3 m) { vec3 d = m - HV[7]; return vec3(d.x, d.y * HW[5].z - d.z * HW[5].w, d.y * HW[5].w + d.z * HW[5].z); }
+vec3 heartShift() { return uAbdominalAtlasEnabled!=0 ? ${vec(HEART_ATLAS_SHIFT)} : vec3(0.0); }
+vec3 heartFrame(vec3 m) { return (m - heartShift() - HV[0]) * HB; }
+vec3 raFrame(vec3 m) { vec3 d = m - heartShift() - HV[7]; return vec3(d.x, d.y * HW[5].z - d.z * HW[5].w, d.y * HW[5].w + d.z * HW[5].z); }
 float raSdf(vec3 m) { return sdEllipsoidLocal(raFrame(m), HV[8]); }
 // normal del epicardio: la del elipsoide de la cámara más cercana (e: epicardio de cada una; VI y VD del marco al tronco; la
 // AD, con la inversa de la rotación de raFrame)
@@ -271,30 +301,30 @@ vec3 epiNormal(vec3 m, vec4 e, float epi) {
   vec3 q = heartFrame(m);
   vec3 g = raFrame(m) / (HV[8] * HV[8]);
   return normalize(epi == e.x ? HB * (q / (HV[4] * HV[4])) : epi == e.y ? HB * ((q - HV[5]) / (HV[6] * HV[6]))
-    : epi == e.z ? vec3(g.x, g.y * HW[5].z + g.z * HW[5].w, g.z * HW[5].z - g.y * HW[5].w) : (m - HV[9]) / (HV[10] * HV[10]));
+    : epi == e.z ? vec3(g.x, g.y * HW[5].z + g.z * HW[5].w, g.z * HW[5].z - g.y * HW[5].w) : (m - heartShift() - HV[9]) / (HV[10] * HV[10]));
 }
 vec4 heartChambers(vec3 m) {
   vec3 q = heartFrame(m);
   float lv = sdEllipsoidLocal(q, HV[4]);
-  float la = sdEllipsoidLocal(m - HV[9], HV[10]);
+  float la = sdEllipsoidLocal(m - heartShift() - HV[9], HV[10]);
   return vec4(lv, max(sdEllipsoidLocal(q - HV[5], HV[6]), HW[1].x - lv), max(raSdf(m), max(HW[1].y - la, HW[1].z - lv)), la);
 }
 // (cavidad de la AD tallada y recortada por el suelo hF, fuera de ella a más de IVC_ORIFICE_MM sobre él (1/0), cota de sus
 // fronteras)
 float raInferiorZ(vec2 p) {
-  vec2 d=p-HV[7].xy;
+  vec2 d=p-heartShift().xy-HV[7].xy;
   vec3 r=HV[8];
   float c=HW[5].z,s=HW[5].w;
   float a=s*s/(r.y*r.y)+c*c/(r.z*r.z);
   float b=2.0*d.y*c*s*(1.0/(r.z*r.z)-1.0/(r.y*r.y));
   float cc=d.x*d.x/(r.x*r.x)+d.y*d.y*(c*c/(r.y*r.y)+s*s/(r.z*r.z))-1.0;
   float disc=b*b-4.0*a*cc;
-  return HV[7].z+(disc>=0.0?(-b-sqrt(disc))/(2.0*a):-length(vec2(r.y*s,r.z*c)));
+  return heartShift().z+HV[7].z+(disc>=0.0?(-b-sqrt(disc))/(2.0*a):-length(vec2(r.y*s,r.z*c)));
 }
 vec3 ivcAtrium(vec3 m, float hF) {
   float ra = heartChambers(m).z;
   float cavity = max(ra, hF + HW[1].w + HW[0].z);
-  float approach=min(raInferiorZ(m.xy),${RA_APPROACH_TOP_Z.toFixed(8)})-m.z;
+  float approach=min(raInferiorZ(m.xy),${RA_APPROACH_TOP_Z.toFixed(8)}+heartShift().z)-m.z;
   return vec3(cavity, ra >= 0.0 && hF < -HW[5].y && approach < 0.0 ? 1.0 : 0.0, min(cavity, max(max(-ra, hF + HW[5].y),approach)));
 }
 int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {

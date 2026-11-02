@@ -257,9 +257,9 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
           : sp.hint,
 }));
 const ABDOMINAL_POSES = {
-  // Intrahepatic IVC in long axis, rather than aiming the whole face at its
-  // thoracic end. Offline compressed rays; fixed organs and real costal field.
-  subxiphoid: { phi: 1.6, z: -40, yaw: -0.02516291680704072, rock: 0.001621690619853046, tilt: -0.0641956706912719 },
+  // 315: encuadre tras reconciliar cava y bloque cardíaco; cara caudal para
+  // alcanzar AD por el hígado, con margen angular en poses vecinas.
+  subxiphoid: { phi: 1.6, z: -60, yaw: -0.02516291680704072, rock: 0.3, tilt: -0.1 },
   // Transverse hepatic window above the bowel-gas barrier, without relocating any organ.
   // The previous caudal plane hid both posterior vessels; contract and native trials precede this adjustment.
   epigastric: { phi: 1.55, z: -35, yaw: -Math.PI / 2, rock: 0, tilt: 0.15 },

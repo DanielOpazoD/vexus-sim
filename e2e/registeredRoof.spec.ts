@@ -29,8 +29,9 @@ test('techo registrado y vecinos mantienen tejidos, interfaces y normales CPU/GP
           }
           points.push([x + dx, y, (lo + hi) / 2]);
         }
-    // Actual cava centerline witnesses rejected by the first roof candidate.
-    points.push([-15.1, -5.6166666667, 10.1666666667], [-15, -5, 35], [-15, -5, 43]);
+    // 314: los tres testigos siguen el eje revisado, sin cambiar el contrato
+    // sangre/sin tapa. Los puntos antiguos a z35/43 ya no son el eje cava.
+    points.push([-15.1, -5.7, -3], [-15, 8, 15], [-18, 15, 25]);
     return points;
   });
   const { rows } = await page.evaluate((points) => window.__vexusTest!.corticalSamples(points), points);

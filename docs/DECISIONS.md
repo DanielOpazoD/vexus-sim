@@ -9898,3 +9898,116 @@ Detalle: banco pos-PSF 192×1024 a 80 mm, paso lateral 0,866 mm, FWHM lateral 1,
 **Verificación.** `aortaPulse.test.ts` nace rojo en la base. Mutaciones reales de escala fija, inversión, pulso en R, doble retraso y Q/A discordante dan exit 1; candidato pasa FA, dt 0,004/0,002 y congelado. `arterialVelocities.test.ts` recupera caudal con el área instantánea aórtica; sus intervalos no cambian. `aortaGeometry.test.ts` añade capacidad atlas, esfera y continuidad; `aortaPulse.spec.ts` exige en los extremos, normal y grave, identidad TS/GPU exacta y error de velocidad <1e-3. Las láminas de imagen y la exportación de un RR completo se usaron como evidencia en Metal y no entran en CI: en SwiftShader superan los 5 min por caso. En los puntos medios de segmentos de Metal: cero discrepancias y máximo 6,32e-5. Los nodos de tangente no única y la superficie exterior exacta dieron negativos de redondeo en el arnés inicial: se conservan en el informe, sin relajar gates existentes. Láminas abiertas, PNG originales, secuencias de cine con tiempos originales, hashes de programas y logs: `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/aorta/report.md`. El informe distingue verificaciones locales, fallos y trabajo pendiente; no acredita CI protegida ni aceptación clínica.
 
 **Revisión.** Una revisión independiente halló que el latido redibujaba la vista 3D aun con sus vasos ocultos, de ≈0,07 a 5,5–5,7 ms por adquisición en modo alumno, y el flujo `navigator-respiration` falló porque la imagen 3D ya no volvía exacta a su estado inicial. **El navegador 3D queda sin latido:** es un mapa espacial, 1,6 mm no se distinguen en él y no compensa su coste. No halló defectos en física, geometría ni grado. También confirmó que la renal derecha cruza ≈14,3 mm de vértebra en la base, sin relación con este cambio.
+
+## 315. La VCI llega a una aurícula visible por el hígado, con atlas cargados
+
+**Contexto.** El propietario señala que no ve la unión VCI–AD. La auditoría vascular y los cortes de s0028/s0440 muestran
+una cava curva que llega al corazón sobre el hígado; el modelo conserva un eje casi recto y el corazón alto. Sobre
+`7d7776c`, el contrato nuevo con ambos atlas y contacto da 0 rayos contiguos y 0 mm de AD despejada en sano/grave. El candidato da 8–11 rayos y 27,73–34,73 mm en las diez poses, frente a mínimos de 5/20 fijados antes.
+Sirve a los objetivos 2, 3, 5 y 8 de la misión.
+
+**Opciones.** Cambiar sólo la pose descubre una franja y conserva el desacople. Un túnel de tejido para quitar pulmón,
+un agujero en la cúpula o una AD movida sola no corrigen las relaciones. Reconstruir corazón/hígado completos excede este bloque.
+Se conserva la cúpula fuente: no necesita una abertura nueva al trasladar el conjunto y comprobar su apoyo medial.
+
+**Decisión.** `abdominalVessels.ts` reubica los 9 nodos infra y los 5 supra, sin añadir tubos/nodos; las raíces RHV y
+tronco común (z −14/−3) son restricciones. Conserva los radios por hito (9,3 mm en −40; 10 mm desde −14),
+refRadius, pulsación, perfiles y fisiología. `heart.ts` registra el conjunto VI/VD/AD/AI, tabiques, pericardio y grasa
+cardiofrénica con una traslación [0,2,−25] mm tras la corrección R1 (antes [0,12,−25]) sólo con atlas; la columna posterior permanece junto a la columna.
+La esfera de descarte contiene ambas posiciones; no es tejido nuevo. TS y GLSL comparten el ajuste, sin uniforms/samplers nuevos.
+Se conserva `heartFloor` y el recorte del tubo dentro de AD. La pose abdominal `subxiphoid` se calibra después:
+φ 1,6, z −60, yaw −0,0251629168, rock 0,3, tilt −0,1 rad. No se modifican las otras tarjetas.
+
+**Consecuencias.** Se reconoce una cava que curva y se ensancha hacia el bulbo auricular en B Metal normal/grave;
+las cuatro vecinas ±0,035 rad se juzgan junto al mismo plano TAC. No hay segmentación independiente de AD u ostio,
+ni latido, valvas o dilatación auricular dependiente del caso: se conserva `schematic-static-heart`. El ensayo de
+traslación −35 mm se descarta porque recorta el VI a unos 31 mL; con el registro R1 [0,2,−25], la misma rejilla da
+48,01/44,42/44,63/31,46 mL en VI/VD/AD/AI, frente a 51,25/47,28/41,88/31,70 antes de R1. No son volúmenes humanos homologados.
+La excursión AP retrohepática pasa de 2,7 a 11,9 mm; tras R1 la entrada AD en el eje queda a z≈20,35,
+7,03 mm sobre el techo local≈13,32 (antes del bloque, unos 44 mm de separación). El JS completo tras R1 mide 1.002.298 B
+frente a 1.070.080 B; antes de R1 eran 1.002.194 B. RAWFIELD_CLASS expande 414.175 tokens/3.503 ramas, frente a techos 455.000/3.830.
+El runtime continúa en 128/128 tubos y 367/640 nodos: no tiene margen de tubos; el guardián histórico del 80 % sin atlas
+no demuestra margen cargado. No se amplía ningún presupuesto, capacidad, resolución, tolerancia ni plazo.
+Evolución explícita de los testigos fijos del techo y extensión M con atlas en `CONTRIBUTING.md`.
+
+**Verificación.** `ivcAtriumWindow.test.ts` falla primero en la base y exige, con atlas, centro y cuatro vecinos
+para sano y grave: ≥5 rayos contiguos, ≥10 mm hepáticos antes de diafragma/pericardio, ≥8 mm de AD, sin gas/pulmón/hueso
+anterior, anchura ≥20 mm y margen angular ≥5°. Los negativos cargados de pulmón/gas conservan hígado y AD detrás,
+pero rechazan los 97 rayos; los marginales separan poca anchura y pocos rayos. Son contrafactuales sintéticos.
+Comprueba capacidad,
+raíces, luz abierta, volúmenes, ausencia de cortinas/colisiones y puertas PW materiales fijas.
+`ivcAtrium.spec.ts` conserva la pose central en B real y la paridad volumétrica local; las poses vecinas y otras ventanas en imagen son evidencia en Metal, fuera de CI, porque en SwiftShader agotan el plazo; `smoke.spec.ts` añade M/CI con atlas manteniendo
+las cotas del legado. Se ejecutan los gates de la entrega y se conservan salidas, backend real, programas expandidos
+y láminas en `vexus-owner-evidence-20261031/ivc-atrium/report.md`; una ejecución incompleta no es aprobación.
+En el cierre local anterior a R1, Metal aprueba 22 pruebas afectadas y ambos M/CI. La suite lenta completa conserva tres timeouts;
+dos pasan aislados y ventilación mecánica repite el timeout. SwiftShader x64 da 6/22 aprobadas y dos M fallidos:
+ocho avisos del corte de 3 s, cinco arranques y tres plazos de prueba en el lote, más aviso del corte en M legacy y
+plazo en M atlas. Sus tres controles de equivalencia sí aprueban; el atlas grave aprueba aislado (201 s), mientras
+el B aislado agota el arranque de 180 s. No se declara cierre global ni se atribuye una discrepancia anatómica a esos
+timeouts. Los plazos y límites originales permanecen; los recibos distinguen aserciones y fallos de ejecución.
+Sólo commits locales por encargo, sin publicación ni CI protegida; no es validación clínica.
+
+**Corrección R1 (revisión de `34a208a`).** El avance anterior de 12 mm introducía VD dentro del esternón:
+0,592 mL en X 0…35/Y 60…85/Z 15…50 mm a paso 0,5, frente a 0,0005 mL tangenciales en la base.
+El control de cavidades a >4 mm no lo detectaba. Antes de cambiar se registra el criterio de no empeorar esa base
+y fallan dos regresiones: 1.312 muestras interiores VD >1 mm/hueso >0,5 mm y malla con mínimo +9,43 mm.
+Se retira 10 mm del avance del conjunto; no se recorta contra hueso ni se altera clasificación. La opción +0 anterior
+no conserva dos muestras de luz del eje cava; +2 conserva el eje completo y deja 0 muestras de colisión, incluida la
+franja de 0–4 mm. En z=35,5/x=17,5, la separación AP cavidad–esternón es 6,40 mm y epicardio VD–esternón 1,80 mm.
+La lámina s0028 muestra unos 10,5 mm entre el contorno cardíaco conjunto y el esternón a x=5–10/z=35,5;
+no tiene esternón en x=17,5 en ese plano ni máscara VD separada. La resolución fuente es 1,5 mm;
+la relación básica de separación se recupera, su distancia individual no se reproduce exactamente.
+
+`buildHeartMesh` registra el dominio usando `heartShift`, sin una segunda traslación de la geometría. Añade margen
+para las capas no emitidas por MarchingCubes: cubo 140 mm/48 muestras (2,917 mm, antes 130/44=2,955 mm).
+La malla real pasa de mínimo +9,43 a −3,30 mm y de 118 a 0 bordes abiertos. El mínimo −5,35 mm del experimento de
+revisión corresponde al registro anterior, no al corazón corregido. No se pierde resolución espacial.
+La pose se reevalúa al final y se conserva: las diez poses dan 8–11 rayos y 27,73–34,73 mm, con mínimos y negativos intactos.
+Láminas y recibos nuevos en `vexus-owner-evidence-20261031/ivc-atrium/fix-r1/report.md`.
+La suite lenta y SwiftShader completos quedan para CI por encargo; no se atribuye su aceptación a los controles locales.
+
+**Recibo local R1.** Código `12fb54d`: formato completo, lint, tipos, 249 archivos rápidos (1.770 aprobadas y tres fallos
+esperados históricos), 25 controles focales y calibración aprobados; siete grados 0/3/1/0/2/1/3 sin cambios. Metal Apple M4:
+9/9 de `equivalence`, `ivcAtrium`, `hepaticContact` y `registeredRoof`, sin reintentos ni omisiones. Los 36 programas/variantes
+mantienen exactamente tokens/ramas; límites intactos. JS +104 B, margen 67.782 B. No se declara CI protegida completa.
+La búsqueda refinada sobre el mismo eje sitúa la entrada en z17,77/techo12,70/separación5,07 mm antes de R1 y
+z20,35/techo13,32/separación7,03 mm después; los 18,1/5,3 anteriores procedían del barrido discreto.
+En toda la rejilla R1, el epicardio VD mantiene distancia positiva mínima 1,487 mm al esternón. El campo pericárdico
+conserva una tangencia de −0,0127 mm (base −5,610), declarada sin excluirla ni añadir una tolerancia.
+Las láminas B antes/después, diez poses y otras tres ventanas se regeneran y abren; persiste el bulbo y la sombra posterior.
+El cierre documental posterior no cambia código ni pruebas respecto de `12fb54d`; el SHA final se fija en el informe externo.
+
+**Evolución de pruebas.** `hepaticContact.spec.ts` pasa de 15 a 18 puntos: conserva el testigo [−25;20;techo+1] y añade una columna
+[−35;30] para mantener cinco columnas de diafragma fuera de la cava. En grave, el tubo revisado intersecta
+el testigo antiguo (distancia del campo cava −0,20 mm a 2 s) y devuelve sangre (6), no diafragma (9).
+Ese punto se contrasta ahora con la luz tubular al calibre adquirido y se exige sangre/identidad cava cuando
+la atraviesa; no se oculta ni elimina. En las cinco columnas no vasculares siguen exigiéndose exactamente
+cinco muestras de diafragma a +1 mm, y en las 18 muestras hay igualdad exacta CPU/GPU. El negativo del techo,
+los límites físicos, las tolerancias y los plazos permanecen. No se interpreta un hiato cava como un agujero
+arbitrario de cúpula.
+
+`registeredRoof.spec.ts` conserva las 120 muestras de techo, sus controles negativos de cúpula y las tolerancias
+originales (0,02 mm, normal 0,99, gradiente 0,01). Sustituye sólo tres testigos de eje cava: los anteriores
+[−15,1;−5,6167;10,1667], [−15;−5;35], [−15;−5;43] fijaban un tubo recto heredado; tras el cambio, uno atraviesa
+miocardio (30), no sangre (6). Los nuevos [−15,1;−5,7;−3], [−15;8;15], [−18;15;25] exigen la misma sangre CPU/GPU
+en el eje curvado. No se acepta sangre en la coordenada antigua para perpetuar ese eje. El barrido independiente
+de todo el eje a 0,5 mm y el negativo con atlas de la base mantienen la detección de una tapa/discontinuidad.
+
+El ejercicio M/CI de `smoke.spec.ts` conserva íntegramente el caso legacy y añade atlas. Su punto se define 20 mm
+caudal al tronco común (z −23, antes z15 en legacy) y se usa la profundidad nominal atlas de 18 cm; legacy conserva
+13 cm. La textura M sigue con 512 filas y las mismas cotas: CI físico ±5 puntos, residuo <0,6 mm, calibradores/UI
+con su incertidumbre visible. No se relajan aserciones o plazos; se amplía cobertura a la anatomía realmente cargada.
+En el atlas, la línea elegida queda a menos de los 10 px del asa M: el clic inicia arrastre y no recoloca sin
+`pointermove` (falló con θ esperado −0,02175 rad y observado 0, también en aislamiento). El ejercicio añadido
+arrastra desde la guía actual al punto anatómico; legacy conserva el clic. No se cambia la interacción del producto
+ni la tolerancia angular de 0,005 rad. Se conserva la evidencia de ambos fallos.
+Las puertas PW fijas se verifican con población real; transmisión 1 sólo en el aislamiento de identidad, y la
+transmisión acústica real permanece exigida por `abdominalAcquisition.test.ts`. Los errores del arnés inicial
+(marco material enviado como mundo y omitir tubos fuera del plano) se corrigen con `toWorld` y `allTubes`, conservando
+igualdad exacta de tejido a >1 mm de interfaces. El informe declara coste, fallos y resultados finales.
+
+El contrato pasa de seis a ocho pruebas con dos contrafactuales cargados: se sustituye sólo la piel de entrada por
+pulmón o gas mediante un espía del clasificador, conservando hígado, barrera y cuerda AD. Ambos bloquean los 97 rayos
+y dejan 0 mm despejados; son negativos sintéticos, no TAC ni cambios del producto. El control marginal distingue
+dos rayos con 30 mm de anchura y diez rayos de una franja de 1 mm: ambos se rechazan con los mínimos originales
+de cinco rayos/20 mm. Se refuerza detección; no se sustituye un resultado adverso por una tolerancia mayor.

@@ -1,10 +1,69 @@
 # Migración a s0028: cierre P0 y lector directo B
 
 Objetivos 3, 7 y 8 de la misión: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente, decisión 317 provisional (02-11-2026): P0 prepara la primera PR; se acepta B y se abre P1 condicionada a capacidad real.**
+**Estado vigente (02-11-2026): P0 fusionada, B aceptado por la decisión 317; ensayo P1 detenido por coste de su lector (318), sin integración de producto.**
 Las menciones históricas a «316 provisional» corresponden al ensayo anterior; la 316 vigente de main trata la pared cava y se conserva íntegra.
-Esta PR no modifica runtime, cargador, shaders del producto ni activos. Los TAC permanecen fuera de Git.
+Las entregas P0 y del ensayo P1 no modifican runtime, cargador, shaders del producto ni activos. Los TAC permanecen fuera de Git.
 Los dictámenes de P0–P0e al final son historial anterior a las nuevas decisiones, con sus negativos íntegros.
+
+## Ensayo P1 detenido en el lector (318, 02-11-2026)
+
+**P1 no pasa la parada.** El ensayo previo a la carga de producto selecciona el sampler
+abdominal o torácico por descriptor, conserva los ocho nodos óseos, distancia R/etiqueta
+nearest G, gas bit128 y profundidad R en el atlas abdominal. Su expansión estática excede
+los ocho techos vigentes. Se detiene antes de instalar selector, activos, escena o Worker.
+La app y sus programas actuales conservan exactamente su fuente; no hay candidato activable.
+
+Este resultado rechaza **este lector genérico de dos rutas**, no demuestra que B sea
+imposible ni invalida la prueba de coste P0: aquélla usaba cuatro consultas históricas y
+alias explícitos. Este ensayo tampoco es un clasificador funcional de veinte campos:
+psoas y discos sin fuente se devuelven desconocidos, sin alias a autóctono o sacro.
+El gas conserva ocupación nearest; su distancia continua sigue pendiente.
+
+Se usan literalmente los helpers y límites de `shaderLimits.test.ts`, sin editarlo.
+Cada celda de coste muestra tokens/ramas; 179 slots y 16 samplers permanecen intactos.
+
+| Programa           | Actual           | Ensayo B rechazado | Techo            | Samplers | Slots |
+| ------------------ | ---------------- | ------------------ | ---------------- | -------: | ----: |
+| RAWFIELD           | 1.260.863/10.108 | 1.770.910/14.870   | 1.385.000/11.060 |       10 |   136 |
+| RAWFIELD_ECHO      | 525.694/4.239    | 763.658/6.421      | 577.000/4.640    |       16 |   137 |
+| RAWFIELD_CLASS     | 414.230/3.503    | 632.999/5.485      | 455.000/3.830    |       10 |   136 |
+| RAWFIELD_ELEVATION | 414.370/3.505    | 633.139/5.487      | 455.000/3.830    |       15 |   137 |
+| RAWFIELD_GRADIENT  | 318.190/2.501    | 404.171/3.375      | 351.000/2.760    |       15 |   138 |
+| TRANS_HITS         | 468.025/4.104    | 723.634/6.479      | 513.000/4.470    |        6 |   101 |
+| TRANS_HITS_GRID    | 230.028/2.030    | 360.722/3.227      | 252.000/2.210    |       11 |   102 |
+| COLOR              | 226.512/1.987    | 360.823/3.201      | 248.000/2.160    |        7 |   110 |
+
+La duplicación del cuerpo alcanzable al seleccionar sampler, incluida la ruta de precisión,
+explica el crecimiento del grafo. Es una medida estática, sin optimización del compilador
+ni prueba de JIT. Especializar por atlas en los puntos de llamada es una alternativa por
+ensayar en otra ronda; aquí no se relajan cotas ni se instala el lector rechazado.
+
+Reproducción del negativo (salida nueva externa existente; devuelve **1** al exceder cotas):
+
+```sh
+./tools/workspace/run.sh node --import tsx tools/anatomy/s0028-p1-cost.ts /ruta/B /ruta/evidencia-nueva
+```
+
+`tools/anatomy/s0028-p1-reader.ts` vive sólo en herramientas y pruebas; no se importa desde
+el producto. El contrato sintético `s0028P1Reader.test.ts` exige el rechazo y comprueba que
+los ocho programas actuales siguen bajo sus cotas. No agrega una E2E ficticia a CI.
+
+Se reabrieron los cuatro gzip de B del cierre, verificando hashes RAW y transporte y la
+igualdad de ambos atlas con P0e. Archivos + manifiesto actual suman **14.808.415 B en disco**;
+no es descarga HTTP del build. El manifiesto de esa carpeta mide 34.521 B, 609 B menos que
+la cifra histórica de este documento; el original no se sobrescribe. Contabilidad de esa
+carpeta: 139.913.241/60.413.664 B, márgenes 7.769/0 B; **no es pico del navegador**.
+
+Quedan sin medir primer cuadro Metal/SwiftShader, heap principal/Worker/GPU y transitorios,
+paridad de producto y diez láminas. No hay láminas nuevas abiertas. P1 sigue pendiente de
+carga cancelable/excluyente, identidad, rechazo de corrupción y procedencia, techo del
+cargador exclusivo de B, clasificador mínimo y prueba ligera en CI. P2 conserva piel,
+pared/esqueleto y contacto; no se adelanta. Se conserva la estimación anterior P1→corte
+196–336 h + 12–24 h del propietario, sin reestimación del lector ni espera de CI.
+
+[Protocolo, negativos, fuentes completas y recibo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
+Sin validación clínica.
 
 ## Qué se acepta y qué no acredita P0
 

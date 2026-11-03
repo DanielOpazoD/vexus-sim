@@ -685,3 +685,10 @@ B exige texturas 189×256×685 y 193×139×552, por encima del mínimo 256. El n
 en navegador/SwiftShader y se detiene si no caben. El microshader y los ocho costes estáticos
 no prueban esa capacidad ni paridad del clasificador. La descarga de cada fase, incluidas
 anotaciones gzip reales, debe mantenerse ≤19.510.002 B. No es validación clínica.
+
+El ensayo P1 de la decisión 318 incumple los ocho techos con un lector genérico de dos
+rutas y queda sólo como herramienta de diagnóstico. No se instala selector ni paquete,
+no se cambia el techo del cargador, y no hay primer cuadro, pico observado, paridad ni
+láminas nuevas del producto. Este rechazo no prueba imposibilidad de B; los negativos de
+P0 y la fuente se conservan. P1 debe resolver el lector dentro de los mismos límites antes
+de acreditar sus fases pendientes. No añade un identificador de limitación del producto.

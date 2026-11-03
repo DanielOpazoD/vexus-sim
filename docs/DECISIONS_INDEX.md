@@ -321,3 +321,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [315](DECISIONS.md#L9902) | La VCI llega a una aurícula visible por el hígado, con atlas cargados | vigente |
 | [316](DECISIONS.md#L10015) | Pared cava única: frontera medida y ensayo rechazado | ensayo no promovido |
 | [317](DECISIONS.md#L10045) | Migrar s0028 por fases y abrir P1 con el lector directo B | vigente |
+| [318](DECISIONS.md#L10061) | Detener el ensayo P1 al exceder los ocho techos con el lector genérico B | vigente |

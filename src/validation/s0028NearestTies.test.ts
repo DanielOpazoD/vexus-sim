@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
 import ties from './fixtures/s0028-nearest-ties.json';
+import admission from './fixtures/s0028-boundary-admission.json';
 import { S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { HALF } from '../anatomy/halfFloat';
 import { sourceLabel } from '../anatomy/sourceVolume';
@@ -40,5 +41,30 @@ it('explica los siete empates del lector real y lung crudo sin omitir ninguna et
         expect(probe.cpu).toEqual(probe.gpu.slice(0, 3));
       }
     }
+  }
+});
+
+it('explica la admisión distinta en la cara inferior del bloque hepático, siempre fuera del órgano', () => {
+  // Medido en SwiftShader real (revisión de #328): 18 testigos con distancia 16 en CPU y GPU y
+  // etiqueta 0/1. El origen del bloque no es representable en Float32: la CPU queda a ~1e-6 vóxel
+  // fuera y rechaza; la GPU redondea q a 0 y admite el nodo de borde, que está en el recorte +16.
+  expect(admission).toHaveLength(18);
+  const bytes = new Uint8Array(gunzipSync(readFileSync('src/anatomy/s0028/abdominal-direct.gzip.bin')));
+  const atlas = new Uint16Array(bytes.buffer);
+  const [w, h] = B.abdominal.textureDimensions;
+  for (const witness of admission) {
+    const f = B.fields.find((f) => f.name === witness.name);
+    if (f?.asset !== 'abdominal') throw new Error('Campo del testigo ausente');
+    const p: Vec3 = [witness.point[0], witness.point[1], witness.point[2]];
+    const q = p.map((x, axis) => (x - f.originMm[axis]) / f.pitchMm);
+    const gpuQ = p.map((x, axis) => Math.fround(Math.fround(x - Math.fround(f.originMm[axis])) / f.pitchMm));
+    expect(q.some((v) => v < 0 && v > -0.00001)).toBe(true);
+    expect(gpuQ.every((v) => v >= 0)).toBe(true);
+    expect(sourceLabel(atlas, p, f, B.abdominal.textureDimensions) % 128).toBe(witness.cpu.label);
+    const at = gpuQ.map(Math.round);
+    const texel = 2 * (at[0] + f.offset[0] + w * (at[1] + f.offset[1] + h * (at[2] + f.offset[2])));
+    expect(HALF[atlas[texel + 1]] % 128).toBe(witness.gpu.label);
+    expect(HALF[atlas[texel]]).toBe(16);
+    expect([witness.cpu.d, witness.gpu.d]).toEqual([16, 16]);
   }
 });

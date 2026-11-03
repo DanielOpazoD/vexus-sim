@@ -10101,6 +10101,14 @@ Los ocho programas por persona caben, tórax conserva 0 B de margen. Paridad de 
 CPU/Worker exacta; siete empates reales nearest (+1 lung crudo) explicados por índices
 double/Float32, fixture/negativo conservados, 16 perturbaciones ±0,001 mm coincidentes.
 No se afirma igualdad categórica exacta en empates ni se descartan por distancia +16 mm.
+**Revisión de #328 (03-11-2026).** Segunda clase discreta medida en SwiftShader real: en la
+cara inferior del bloque hepático el origen no es representable en Float32; la CPU queda a
+~1e-6 vóxel fuera y rechaza (etiqueta 0), la GPU redondea q a 0 y admite el nodo de borde
+(etiqueta 1). 18/18 testigos con distancia 16 en ambos lados, fuera del órgano; cubierto en
+`s0028NearestTies.test.ts`. No se demostró cambio visible de tejido. Deriva respiratoria 3D:
+las mallas comparten la `Float32Array` con la fuente y el cambio de caso soltaba la respiración
+sin volver al reposo (8 → 16 → 24 mm); `release()` restaura antes de soltar, con prueba roja
+conservada en `s0028Memory.test.ts`. Sin coste de memoria.
 Diez láminas abiertas con ID, poses/pared actuales provisionales P2–P8; renal focal, sombras
 costales y apoyo lateral requieren revisión anatómica posterior. Sin validación clínica.
 

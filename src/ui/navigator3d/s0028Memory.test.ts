@@ -5,6 +5,7 @@ import { AnatomyScene } from '../../anatomy/scene';
 import { NORMAL_ADULT } from '../../cases';
 import { buildOrgans } from './organs';
 import { buildSkeleton } from './body';
+import { bindRespiratoryMotion } from './respiratoryMotion';
 import { s0028Surfaces } from '../s0028Surfaces';
 
 vi.mock('../s0028Surfaces', () => ({
@@ -38,5 +39,30 @@ it('conserva los triángulos y su iluminación plana sin duplicarlos en normales
     expect(mesh.material.flatShading).toBe(true);
     geometry.dispose();
     mesh.material.dispose();
+  }
+});
+
+it('al cambiar de caso con respiración activa devuelve la fuente compartida a su reposo exacto', () => {
+  installAnatomyBundle(S0028_BUNDLE);
+  const scene = new AnatomyScene(NORMAL_ADULT);
+  const source = s0028Surfaces.find((f) => f.name === 'liver')?.positions;
+  if (!source) throw new Error('Falta la superficie hepática');
+  const rest = source.slice();
+  // Cada vuelta es un cambio de caso: el 3D nuevo reutiliza la misma fuente y no debe heredar
+  // el desplazamiento de la respiración anterior (antes acumulaba 8 → 16 → 24 mm).
+  for (let change = 0; change < 3; change++) {
+    const organs = buildOrgans(scene);
+    const breathing = bindRespiratoryMotion([organs], () => 1);
+    breathing.apply(8);
+    expect(source).not.toEqual(rest);
+    breathing.release();
+    expect(source).toEqual(rest);
+    expect(() => breathing.apply(8)).toThrow();
+    for (const mesh of organs.children)
+      if (mesh instanceof Mesh) {
+        const geometry: unknown = mesh.geometry;
+        if (geometry instanceof BufferGeometry) geometry.dispose();
+        if (mesh.material instanceof MeshStandardMaterial) mesh.material.dispose();
+      }
   }
 });

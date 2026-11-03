@@ -160,6 +160,7 @@ export class Navigator3D {
   setAnatomy(anatomy: AnatomyScene): void {
     if (anatomy === this.anatomy) return;
     this.anatomy = anatomy;
+    this.respiratoryMotion?.release();
     this.respiratoryMotion = null;
     for (const g of [this.skin, this.skeleton, this.organs, this.vessels, this.windows]) {
       this.world.remove(g);
@@ -183,6 +184,7 @@ export class Navigator3D {
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
     window.removeEventListener('pointercancel', this.onUp);
+    this.respiratoryMotion?.release();
     this.respiratoryMotion = null;
     this.renderer.dispose();
     this.renderer.domElement.remove();

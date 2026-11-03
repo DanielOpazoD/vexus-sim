@@ -6,7 +6,10 @@ import { CM } from './common';
 /** Rest-space weights for the same respiratory field as anatomy. Roots use LAS centimetres.
  * Does not model probe compression. Construct lazily: OFF needs no vertex work or allocation.
  */
-export function bindRespiratoryMotion(roots: THREE.Group[], weightAt: (m: Vec3) => number): { apply: (mm: number) => void } {
+export function bindRespiratoryMotion(
+  roots: THREE.Group[],
+  weightAt: (m: Vec3) => number,
+): { apply: (mm: number) => void; release: () => void } {
   const meshes: Array<{
     geometry: THREE.BufferGeometry;
     rest: Float32Array;
@@ -61,9 +64,11 @@ export function bindRespiratoryMotion(roots: THREE.Group[], weightAt: (m: Vec3) 
       }
     });
   }
-  let lastMm = 0;
-  return {
-    apply(mm) {
+  let lastMm = 0,
+    released = false;
+  const binding = {
+    apply(mm: number) {
+      if (released) throw new Error('Respiración 3D ya liberada');
       if (!Number.isFinite(mm)) throw new Error('Desplazamiento respiratorio 3D inválido');
       if (mm === lastMm) return;
       lastMm = mm;
@@ -90,5 +95,13 @@ export function bindRespiratoryMotion(roots: THREE.Group[], weightAt: (m: Vec3) 
         if (mm !== 0) label.object.position.addScaledVector(label.direction, mm * label.weight);
       }
     },
+    /** Vuelve al reposo exacto antes de soltar los buffers: las mallas s0028 comparten su
+     * Float32Array con la fuente y el siguiente caso la reutiliza como reposo. */
+    release() {
+      if (released) return;
+      binding.apply(0);
+      released = true;
+    },
   };
+  return binding;
 }

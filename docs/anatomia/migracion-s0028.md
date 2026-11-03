@@ -83,6 +83,10 @@ Los **7 desacuerdos categóricos reales** (+1 lung crudo) quedan explicados por 
 double/Float32 justo en mitad de celda: índices vecinos registrados, no campos perdidos.
 Las 16 perturbaciones diagonales ±0,001 mm concuerdan. Se conserva fixture/test negativo;
 no se omiten etiquetas por distancia +16 ni se afirma igualdad exacta en esos empates.
+La revisión de #328 añadió una segunda clase: admisión distinta en la cara inferior del bloque
+hepático (origen no representable en Float32; CPU rechaza a ~1e-6 vóxel, GPU admite el nodo de
+borde). 18 testigos en SwiftShader real, todos con distancia 16 y fuera del órgano; cubiertos en
+`s0028NearestTies.test.ts`. No se demostró cambio visible de tejido.
 No es equivalencia anatómica del clasificador completo futuro.
 
 `s0028DepthConsumers.test.ts` recorre signo/magnitud, gradiente ±1,5 mm, muestras de

@@ -322,3 +322,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [316](DECISIONS.md#L10015) | Pared cava única: frontera medida y ensayo rechazado | ensayo no promovido |
 | [317](DECISIONS.md#L10045) | Migrar s0028 por fases y abrir P1 con el lector directo B | vigente |
 | [318](DECISIONS.md#L10061) | Cargar P1 s0028 con mallas exactas y capacidad medida | vigente |
+| [319](DECISIONS.md#L10129) | Compactar las mallas s0028 con deltas sin perder geometría | vigente |

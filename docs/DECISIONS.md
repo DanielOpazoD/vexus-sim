@@ -10125,3 +10125,50 @@ en [evidencia P1](evidence/s0028-p1/README.md). [Migración](anatomia/migracion-
 recoge todos los costes y límites. Una sola decisión 318: historial r3 y enmiendas A1–A17
 con negativos conservados. Sin delegación/revisión ajena, push, PR, stash, gh, CI remota
 ni cambios al puerto 5174; commits sólo locales.
+
+## 319. Compactar las mallas s0028 con deltas sin perder geometría
+
+**Contexto.** P1 fusionada (318, #328) deja sólo 515.919 B bajo 25.000.000 B de descarga
+anatómica. Antes de medir se fijan error máximo euclídeo por vértice ≤0,01 mm, normal ≤0,1°,
+cero volteos en todos los triángulos, ahorro gzip ≥4.000.000 B, JS añadido ≤12.000 B,
+memoria sin aumento/Metal Σ ≤2 GB y primer cuadro ≤base+150 ms.
+
+**Opciones.** XOR de bits probado: 5.973.906 B gzip, no alcanza el ahorro; cuantización y
+WASM se descartan por innecesarios frente a la ruta exacta de 381 B netos de JS.
+
+**Decisión.** `indexed-delta32-v1`: diferencias módulo 2³² de los bits Float32 por eje/campo
+e índices delta zigzag32, conservando layout, orden y todos los triángulos. Generador offline
+desde los atlas P0, gzip 9; descodificación in-place del buffer verificado. CT/marco/LAS/mm,
+inventario, hash del bundle y hashes gzip/raw/expandidos se conservan; se añade SHA del
+buffer descodificado, idéntico al P1. No cambia estructuras, resolución, acústica, shaders,
+materiales, normales GPU ni presupuestos.
+
+**Consecuencias.** 19 campos, 890.828 vértices y 1.781.772 triángulos orientados idénticos
+bit a bit: máximo de posición 0 mm, normal 0°, volteos 0; no se omiten caras. CPU y GPU de
+mallas permanecen 32.071.200 B cada una, sin otra copia del decoder. Mallas gzip
+**9.672.026→5.340.216 B** (−4.331.810 B); HTTP anatómico completo
+**24.484.081→20.152.271 B**, margen P2–P8 **4.847.729 B**. Aún 642.269 B sobre la
+preferencia 19.510.002 B, dentro del tope autorizado. JS del build local
+**1.027.432→1.027.813 B** (+381 B), margen **42.267 B**; la cifra histórica de P1
+1.027.141 B no es la base fresca medida aquí.
+
+Cinco pares alternados Metal M4/24 GiB, producción/perfiles limpios, carga registrada:
+primer cuadro mediano **2,433→2,411 s**, rangos 2,424–2,455/2,404–2,415 s. No empeora
+150 ms; los 1,27 s históricos no se reprodujeron ni en la base actual. Pico muestreado
+Σ todos renderer + GPU **1,687–1,694→1,682–1,685 GB** (medianas 1,688→1,684 GB),
+sin contextos perdidos/errores. La instrumentación de asignaciones confirma CPU/GPU vivas
+idénticas; los pares instrumentados y su fluctuación de footprint también se conservan.
+No es un máximo continuo ni una promesa de aceleración/soporte universal.
+
+SwiftShader x64/Rosetta: `s0028Load` y humo ligero 2/2, cero reintentos, primer cuadro
+s0028 60,491 s <BOOT_MS CI 180 s. Metal afectadas 5/5. Sin casos E2E nuevos ni capturas
+pesadas en CI; los contratos del codec son rápidos y la reextracción conserva su plazo.
+
+**Verificación.** Prueba roja de descarga primero, luego hashes P1 expandidos/global,
+negativos de integridad y consumidores de órganos/esqueleto/respiración. Dos regeneraciones
+independientes dan el mismo gzip y metadatos byte a byte desde atlas versionados. Tres pares
+de láminas 3D abiertos, ID visible y región 3D idéntica píxel a píxel. Formato, índice, lint,
+tipos, suites seriales/Python/build/check, calibración y E2E Metal/SwiftShader se registran
+en [evidencia 319](evidence/s0028-mesh/README.md); la CI remota sigue pendiente.
+Revisar propiedad exclusiva/descodificación única del buffer y aritmética entera del formato.
+Sin delegación, push, PR, stash ni gh. No es validación clínica ni aceptación P2–P8.

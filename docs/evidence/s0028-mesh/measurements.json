@@ -1,0 +1,786 @@
+{
+  "base": "117e1cae08bc21b1c2a88b405c3cc74b9457da47",
+  "branch": "feat/s0028-mesh-20261103",
+  "scope": "local verification; not protected CI or clinical validation",
+  "limitsFixedBeforeMeasurement": {
+    "positionMm": 0.01,
+    "normalDeg": 0.1,
+    "flips": 0,
+    "gzipSavingBytes": 4000000,
+    "addedJsBytes": 12000,
+    "metalPeakBytes": 2000000000,
+    "firstFrameRegressionMs": 150
+  },
+  "budget": {
+    "jsBefore": 1027432,
+    "jsAfter": 1027813,
+    "jsAdded": 381,
+    "jsLimit": 1070080,
+    "jsHeadroom": 42267,
+    "meshBefore": 9672026,
+    "meshAfter": 5340216,
+    "saved": 4331810,
+    "anatomyBefore": 24484081,
+    "anatomyAfter": 20152271,
+    "downloadHeadroom": 4847729
+  },
+  "geometry": {
+    "format": "indexed-delta32-v1",
+    "sha256DecodedRaw": "a9b82a42b4e7eeac653b4ddd5459828e60508fd69fb925630a0dca20bbae5642",
+    "byteIdentical": true,
+    "decodeMs": 33.005042,
+    "positionLimitMm": 0.01,
+    "normalLimitDeg": 0.1,
+    "residentCpuBytes": 32071200,
+    "residentGpuBytes": 32071200,
+    "rows": [
+      {
+        "name": "liver",
+        "vertices": 59130,
+        "triangles": 118260,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742765144922062
+      },
+      {
+        "name": "spleen",
+        "vertices": 8450,
+        "triangles": 16892,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742769274458237
+      },
+      {
+        "name": "pancreas",
+        "vertices": 10144,
+        "triangles": 20284,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742767209694635
+      },
+      {
+        "name": "kidneyRight",
+        "vertices": 10354,
+        "triangles": 20704,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742769274458237
+      },
+      {
+        "name": "kidneyLeft",
+        "vertices": 10590,
+        "triangles": 21176,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742769274458237
+      },
+      {
+        "name": "gallbladder",
+        "vertices": 1104,
+        "triangles": 2204,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742785792574934
+      },
+      {
+        "name": "bladder",
+        "vertices": 5420,
+        "triangles": 10836,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742768242079116
+      },
+      {
+        "name": "digestiveTract",
+        "vertices": 165466,
+        "triangles": 331048,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742752756355543
+      },
+      {
+        "name": "posteriorMuscle",
+        "vertices": 115294,
+        "triangles": 230572,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.974271972019216
+      },
+      {
+        "name": "lumbarSacralBone",
+        "vertices": 102862,
+        "triangles": 205784,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742752756355543
+      },
+      {
+        "name": "aorta",
+        "vertices": 18568,
+        "triangles": 37132,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742752756355543
+      },
+      {
+        "name": "inferior_vena_cava",
+        "vertices": 9256,
+        "triangles": 18508,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742773403986099
+      },
+      {
+        "name": "portal_vein_and_splenic_vein",
+        "vertices": 5106,
+        "triangles": 10204,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742769274458237
+      },
+      {
+        "name": "renalCysts",
+        "vertices": 102,
+        "triangles": 200,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742785792574934
+      },
+      {
+        "name": "sacrum",
+        "vertices": 21772,
+        "triangles": 43580,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742769274458237
+      },
+      {
+        "name": "thoracicBone",
+        "vertices": 155472,
+        "triangles": 310984,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742703202131473
+      },
+      {
+        "name": "cartilage",
+        "vertices": 23510,
+        "triangles": 46936,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.974271972019216
+      },
+      {
+        "name": "lung",
+        "vertices": 137954,
+        "triangles": 275904,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742703202131473
+      },
+      {
+        "name": "heart",
+        "vertices": 30274,
+        "triangles": 60564,
+        "positionMaxMm": 0,
+        "normalMaxDeg": 0,
+        "flips": 0,
+        "degenerate": 0,
+        "nearlyDegenerate": 0,
+        "minNormalLength": 0.9742765144931251
+      }
+    ]
+  },
+  "metadata": {
+    "person": "s0028",
+    "frameId": "s0028-audit-las-v1",
+    "revision": "s0028-p0e-P0c-direct-v1",
+    "units": "mm",
+    "format": "indexed-delta32-v1",
+    "sourceBundleSha256": "38718c34539a7d9e31ea69b96baec1c9fa3bfa95dd5860208995c64bb6b7551f",
+    "rawBytes": 32071200,
+    "gzipBytes": 5340216,
+    "sha256Raw": "e6f329c2be879f18d2af8ea34383baa1d8d17501e5a0cfdcde4a0c817bc2dfd0",
+    "sha256Gzip": "10c45ed5a468d0a53e96aac8f426923abbbd735b9a0eb1618317639bfee97406",
+    "sha256DecodedRaw": "a9b82a42b4e7eeac653b4ddd5459828e60508fd69fb925630a0dca20bbae5642",
+    "fields": [
+      {
+        "name": "liver",
+        "asset": "abdominal",
+        "positionOffset": 0,
+        "vertexCount": 59130,
+        "indexOffset": 709560,
+        "indexCount": 354780,
+        "expandedSha256": "638b5792f7e608077b1301f41239f8220c8939a731c0892a2cf8b50c69089835"
+      },
+      {
+        "name": "spleen",
+        "asset": "abdominal",
+        "positionOffset": 2128680,
+        "vertexCount": 8450,
+        "indexOffset": 2230080,
+        "indexCount": 50676,
+        "expandedSha256": "0e6b510cefa5a77b17c4d8696c1ad0199a6e54f5624732d1d7009323be689519"
+      },
+      {
+        "name": "pancreas",
+        "asset": "abdominal",
+        "positionOffset": 2432784,
+        "vertexCount": 10144,
+        "indexOffset": 2554512,
+        "indexCount": 60852,
+        "expandedSha256": "0e25cf5257f73d3ca5b85b75b778ce584315ac3f575d871a9dad06e9cd11eff1"
+      },
+      {
+        "name": "kidneyRight",
+        "asset": "abdominal",
+        "positionOffset": 2797920,
+        "vertexCount": 10354,
+        "indexOffset": 2922168,
+        "indexCount": 62112,
+        "expandedSha256": "af7c17d1574c0070abb97db47f0eba1c00c634527b2ab98eca72e481b49f9634"
+      },
+      {
+        "name": "kidneyLeft",
+        "asset": "abdominal",
+        "positionOffset": 3170616,
+        "vertexCount": 10590,
+        "indexOffset": 3297696,
+        "indexCount": 63528,
+        "expandedSha256": "2face25d6a5ba4288d94dbdaec91006212d438b8755339cd13a371c43c676176"
+      },
+      {
+        "name": "gallbladder",
+        "asset": "abdominal",
+        "positionOffset": 3551808,
+        "vertexCount": 1104,
+        "indexOffset": 3565056,
+        "indexCount": 6612,
+        "expandedSha256": "42c95cbf0f7740c20f8febd1de0ea5f419231402139d54deac824b71c660c9e2"
+      },
+      {
+        "name": "bladder",
+        "asset": "abdominal",
+        "positionOffset": 3591504,
+        "vertexCount": 5420,
+        "indexOffset": 3656544,
+        "indexCount": 32508,
+        "expandedSha256": "aebd4ae1aa3352ec13cbc7c76e70743b2c583c1f9919e41737de1c2b535424c6"
+      },
+      {
+        "name": "digestiveTract",
+        "asset": "abdominal",
+        "positionOffset": 3786576,
+        "vertexCount": 165466,
+        "indexOffset": 5772168,
+        "indexCount": 993144,
+        "expandedSha256": "6831df226472e1a76f0f7a0b82209893e11a4312e8329f474769ed9c2061517a"
+      },
+      {
+        "name": "posteriorMuscle",
+        "asset": "abdominal",
+        "positionOffset": 9744744,
+        "vertexCount": 115294,
+        "indexOffset": 11128272,
+        "indexCount": 691716,
+        "expandedSha256": "372f211fc41580ce69f876833d4e13753308eda25c0f032cefe01dfd79eeb5fb"
+      },
+      {
+        "name": "lumbarSacralBone",
+        "asset": "abdominal",
+        "positionOffset": 13895136,
+        "vertexCount": 102862,
+        "indexOffset": 15129480,
+        "indexCount": 617352,
+        "expandedSha256": "319e462ce587aa9930ce548890be887e0d37e0f404adae86a64f23cdd2d3e207"
+      },
+      {
+        "name": "aorta",
+        "asset": "abdominal",
+        "positionOffset": 17598888,
+        "vertexCount": 18568,
+        "indexOffset": 17821704,
+        "indexCount": 111396,
+        "expandedSha256": "05efe767c5fc88855ac958665519feb633f07b1074fff5d248275ff0f02c3d46"
+      },
+      {
+        "name": "inferior_vena_cava",
+        "asset": "abdominal",
+        "positionOffset": 18267288,
+        "vertexCount": 9256,
+        "indexOffset": 18378360,
+        "indexCount": 55524,
+        "expandedSha256": "fdcf3a5d50f9095955534af5fa06b930dc20a6e06c0824d5cb44968511f69172"
+      },
+      {
+        "name": "portal_vein_and_splenic_vein",
+        "asset": "abdominal",
+        "positionOffset": 18600456,
+        "vertexCount": 5106,
+        "indexOffset": 18661728,
+        "indexCount": 30612,
+        "expandedSha256": "be47d25ee5d02b554b4aa337644f818d521bbfd592a51ab8be09b9bc74c45097"
+      },
+      {
+        "name": "renalCysts",
+        "asset": "abdominal",
+        "positionOffset": 18784176,
+        "vertexCount": 102,
+        "indexOffset": 18785400,
+        "indexCount": 600,
+        "expandedSha256": "440ebcb390030442021f51922465d9c12af520552864786b2d176c5736d11bce"
+      },
+      {
+        "name": "sacrum",
+        "asset": "abdominal",
+        "positionOffset": 18787800,
+        "vertexCount": 21772,
+        "indexOffset": 19049064,
+        "indexCount": 130740,
+        "expandedSha256": "5b501f0437b65bd78d5041943257963130db39b691cf902b6855d227c8ee6d04"
+      },
+      {
+        "name": "thoracicBone",
+        "asset": "thoracic",
+        "positionOffset": 19572024,
+        "vertexCount": 155472,
+        "indexOffset": 21437688,
+        "indexCount": 932952,
+        "expandedSha256": "1b879b70e3c1f05784444d580db44b6c735a05fc5d9454e3ed9b47c27a3673cf"
+      },
+      {
+        "name": "cartilage",
+        "asset": "thoracic",
+        "positionOffset": 25169496,
+        "vertexCount": 23510,
+        "indexOffset": 25451616,
+        "indexCount": 140808,
+        "expandedSha256": "b4e4cfdc5b5a7ca2b2f8730cafe88afd8c7ecb0b393d903fef2db21ba8ea5ca6"
+      },
+      {
+        "name": "lung",
+        "asset": "thoracic",
+        "positionOffset": 26014848,
+        "vertexCount": 137954,
+        "indexOffset": 27670296,
+        "indexCount": 827712,
+        "expandedSha256": "6667538a480f22a4d55ff7b7322c1ceea1700f39d5e645979916e6d9490bc616"
+      },
+      {
+        "name": "heart",
+        "asset": "thoracic",
+        "positionOffset": 30981144,
+        "vertexCount": 30274,
+        "indexOffset": 31344432,
+        "indexCount": 181692,
+        "expandedSha256": "a7c17f521129f9a07291c95c94859737e75f955a7b863da3a79e9f32d664f687"
+      }
+    ]
+  },
+  "metal": [
+    {
+      "phase": "clean-before",
+      "rep": 1,
+      "firstFrame": 2454.600000023842,
+      "navReady": 2374.400000035763,
+      "peakBytes": 1687359616,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-before",
+      "rep": 2,
+      "firstFrame": 2423.600000023842,
+      "navReady": 2360.600000023842,
+      "peakBytes": 1693913288,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-before",
+      "rep": 3,
+      "firstFrame": 2426.100000023842,
+      "navReady": 2365.7000000476837,
+      "peakBytes": 1687326920,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-before",
+      "rep": 4,
+      "firstFrame": 2446.7000000476837,
+      "navReady": 2380.100000023842,
+      "peakBytes": 1687654600,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-before",
+      "rep": 5,
+      "firstFrame": 2433,
+      "navReady": 2369.5,
+      "peakBytes": 1690472528,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-after",
+      "rep": 1,
+      "firstFrame": 2412.199999988079,
+      "navReady": 2348.199999988079,
+      "peakBytes": 1683919000,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-after",
+      "rep": 2,
+      "firstFrame": 2410.600000023842,
+      "navReady": 2348.5,
+      "peakBytes": 1684541544,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-after",
+      "rep": 3,
+      "firstFrame": 2410.300000011921,
+      "navReady": 2346.300000011921,
+      "peakBytes": 1682460800,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-after",
+      "rep": 4,
+      "firstFrame": 2403.800000011921,
+      "navReady": 2340.099999964237,
+      "peakBytes": 1683132568,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    },
+    {
+      "phase": "clean-after",
+      "rep": 5,
+      "firstFrame": 2414.7000000476837,
+      "navReady": 2351.600000023842,
+      "peakBytes": 1685114984,
+      "status": "rendered",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "lost": false,
+        "person": "s0028"
+      }
+    }
+  ],
+  "stats": {
+    "clean-before": {
+      "firstFrame": {
+        "median": 2433,
+        "min": 2423.600000023842,
+        "max": 2454.600000023842
+      },
+      "peakBytes": {
+        "median": 1687654600,
+        "min": 1687326920,
+        "max": 1693913288
+      }
+    },
+    "clean-after": {
+      "firstFrame": {
+        "median": 2410.600000023842,
+        "min": 2403.800000011921,
+        "max": 2414.7000000476837
+      },
+      "peakBytes": {
+        "median": 1683919000,
+        "min": 1682460800,
+        "max": 1685114984
+      }
+    }
+  },
+  "http": {
+    "timestamp": "2026-11-03T21:20:42.976Z",
+    "rows": [
+      {
+        "file": "abdominal-direct.gzip-BiQlVOtV.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 8567375,
+        "httpBodyBytes": 8567375,
+        "sha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd"
+      },
+      {
+        "file": "thoracic-direct.gzip-Cb4MJvZn.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 5252011,
+        "httpBodyBytes": 5252011,
+        "sha256": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d"
+      },
+      {
+        "file": "annotation-capacity.gzip-DPGfQmsC.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 6999,
+        "httpBodyBytes": 6999,
+        "sha256": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836"
+      },
+      {
+        "file": "skin-polar.gzip-DbyAGry5.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 947509,
+        "httpBodyBytes": 947509,
+        "sha256": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e"
+      },
+      {
+        "file": "candidate-manifest-Bsla_Bui.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 34521,
+        "httpBodyBytes": 34521,
+        "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+      },
+      {
+        "file": "abdominal-body-CUZ10dBo.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 3640,
+        "httpBodyBytes": 3640,
+        "sha256": "47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323"
+      },
+      {
+        "file": "surfaces.gzip-BaK463kT.bin",
+        "status": 200,
+        "contentEncoding": null,
+        "contentLength": 5340216,
+        "httpBodyBytes": 5340216,
+        "sha256": "10c45ed5a468d0a53e96aac8f426923abbbd735b9a0eb1618317639bfee97406"
+      }
+    ],
+    "totalHttpBodyBytes": 20152271,
+    "limitBytes": 25000000,
+    "jsBytes": 1027813
+  },
+  "plates": [
+    {
+      "view": "oblicua-anterior",
+      "opened": true,
+      "canvasRegion": [40, 90, 1240, 850],
+      "pixelIdentical": true
+    },
+    {
+      "view": "lateral",
+      "opened": true,
+      "canvasRegion": [40, 90, 1240, 850],
+      "pixelIdentical": true
+    },
+    {
+      "view": "posterior",
+      "opened": true,
+      "canvasRegion": [40, 90, 1240, 850],
+      "pixelIdentical": true
+    }
+  ],
+  "e2e": [
+    {
+      "backend": "e2e-metal",
+      "test": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+      "status": "passed",
+      "durationMs": 4258,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=1&abdomen=s0028",
+          "completed": true,
+          "firstGpuFrameMs": 2508.400000035763
+        }
+      ]
+    },
+    {
+      "backend": "e2e-metal",
+      "test": "arranca, renderiza cuadros y no emite errores",
+      "status": "passed",
+      "durationMs": 3249,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=1&abdomen=legacy",
+          "completed": true,
+          "firstGpuFrameMs": 2658.2000000476837
+        }
+      ]
+    },
+    {
+      "backend": "e2e-metal",
+      "test": "cambia de caso y el HUD lo refleja",
+      "status": "passed",
+      "durationMs": 8071,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=1&abdomen=legacy",
+          "completed": true,
+          "firstGpuFrameMs": 2862.100000023842
+        }
+      ]
+    },
+    {
+      "backend": "e2e-metal",
+      "test": "initializes both real WebGL contexts before acquisition and retains the 3D view on case change",
+      "status": "passed",
+      "durationMs": 6777,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=app&abdomen=atlas",
+          "completed": true,
+          "firstGpuFrameMs": 3079.699999988079
+        }
+      ]
+    },
+    {
+      "backend": "e2e-metal",
+      "test": "a partial GPU submission drains before releasing its page turn and recovers the requested pose",
+      "status": "passed",
+      "durationMs": 3787,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=app&abdomen=atlas",
+          "completed": true,
+          "firstGpuFrameMs": 3203.800000011921
+        }
+      ]
+    },
+    {
+      "backend": "e2e-x64",
+      "test": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+      "status": "passed",
+      "durationMs": 98644,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=1&abdomen=s0028",
+          "completed": true,
+          "firstGpuFrameMs": 60490.80000001192
+        }
+      ]
+    },
+    {
+      "backend": "e2e-x64",
+      "test": "arranca, renderiza cuadros y no emite errores",
+      "status": "passed",
+      "durationMs": 91484,
+      "retry": 0,
+      "boot": [
+        {
+          "query": "?e2e=1&abdomen=legacy",
+          "completed": true,
+          "firstGpuFrameMs": 80666.39999997616
+        }
+      ]
+    }
+  ]
+}

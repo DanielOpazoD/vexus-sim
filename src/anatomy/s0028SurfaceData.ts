@@ -4,12 +4,13 @@ export const S0028_SURFACE = {
   frameId: 's0028-audit-las-v1',
   revision: 's0028-p0e-P0c-direct-v1',
   units: 'mm',
-  format: 'indexed-f32-u32-v1',
+  format: 'indexed-delta32-v1',
   sourceBundleSha256: '38718c34539a7d9e31ea69b96baec1c9fa3bfa95dd5860208995c64bb6b7551f',
   rawBytes: 32071200,
-  gzipBytes: 9672026,
-  sha256Raw: 'a9b82a42b4e7eeac653b4ddd5459828e60508fd69fb925630a0dca20bbae5642',
-  sha256Gzip: 'e4a0ad55352559880358ced125b308b79ac0ccf347f01ee01a07bfb4bd110252',
+  gzipBytes: 5340216,
+  sha256Raw: 'e6f329c2be879f18d2af8ea34383baa1d8d17501e5a0cfdcde4a0c817bc2dfd0',
+  sha256Gzip: '10c45ed5a468d0a53e96aac8f426923abbbd735b9a0eb1618317639bfee97406',
+  sha256DecodedRaw: 'a9b82a42b4e7eeac653b4ddd5459828e60508fd69fb925630a0dca20bbae5642',
   fields: [
     {
       name: 'liver',

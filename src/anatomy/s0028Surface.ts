@@ -25,7 +25,7 @@ export async function verifySurfaceProvenance(
     meta.frameId !== B.frameId ||
     meta.revision !== B.revision ||
     meta.units !== 'mm' ||
-    meta.format !== 'indexed-f32-u32-v1' ||
+    meta.format !== 'indexed-delta32-v1' ||
     meta.sourceBundleSha256 !== (await sha256(new TextEncoder().encode(JSON.stringify(B)))) ||
     meta.fields.length !== B.fields.length ||
     meta.fields.some((f, i) => f.name !== B.fields[i].name || f.asset !== B.fields[i].asset)
@@ -34,10 +34,30 @@ export async function verifySurfaceProvenance(
 }
 export function indexedSurfaces(raw: ArrayBuffer): IndexedSourceSurface[] {
   if (raw.byteLength !== M.rawBytes) throw new Error('Superficies s0028 incompletas');
-  return M.fields.map((f) => ({
-    name: f.name,
-    asset: f.asset,
-    positions: new Float32Array(raw, f.positionOffset, f.vertexCount * 3),
-    indices: new Uint32Array(raw, f.indexOffset, f.indexCount),
-  }));
+  // El buffer verificado es exclusivo del cargador: se transforma una sola vez, in-place.
+  // Deltas de bits por eje, no de valores Float32: conserva hasta los triángulos casi degenerados.
+  return M.fields.map((f) => {
+    const bits = new Uint32Array(raw, f.positionOffset, f.vertexCount * 3);
+    for (let axis = 0; axis < 3; axis++) {
+      let previous = 0;
+      for (let i = axis; i < bits.length; i += 3) {
+        previous = (previous + bits[i]) >>> 0;
+        bits[i] = previous;
+      }
+    }
+    const indices = new Uint32Array(raw, f.indexOffset, f.indexCount);
+    let previous = 0;
+    for (let i = 0; i < indices.length; i++) {
+      const zigzag = indices[i];
+      previous += (zigzag >>> 1) ^ -(zigzag & 1);
+      if (previous < 0 || previous >= f.vertexCount) throw new Error('Superficies s0028: índice fuera de malla');
+      indices[i] = previous;
+    }
+    return {
+      name: f.name,
+      asset: f.asset,
+      positions: new Float32Array(raw, f.positionOffset, f.vertexCount * 3),
+      indices,
+    };
+  });
 }

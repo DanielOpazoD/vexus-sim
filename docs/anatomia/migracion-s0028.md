@@ -1,13 +1,45 @@
-# Migración a s0028: cierre P0 y candidato P1
+# Migración a s0028: P1 y compactación de mallas
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 r4c candidato local (318).**
+**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## Compactación de descarga tras P1 (319)
+
+La codificación vigente es `indexed-delta32-v1`: delta de bits Float32 por eje/campo e
+índices zigzag32, gzip 9. Descifra una vez en el buffer verificado de 32.071.200 B, sin copia
+adicional. No cuantiza: los 890.828 vértices y 1.781.772 triángulos conservan exactamente
+los bits y el orden de P1; mismos órganos/esqueleto, sombreado plano y normales GPU.
+Cotas previas ≤0,01 mm/0,1°/0 volteos; medido 0 mm/0°/0. SHA del buffer descodificado y
+hashes expandidos P1 conservados; dos regeneraciones desde atlas versionados son idénticas.
+
+| Magnitud                             |          P1 de referencia |          Compactación 319 |
+| ------------------------------------ | ------------------------: | ------------------------: |
+| Mallas gzip                          |               9.672.026 B |               5.340.216 B |
+| HTTP anatómico total                 |              24.484.081 B |              20.152.271 B |
+| Margen hasta 25.000.000 B            |                 515.919 B |               4.847.729 B |
+| Mallas residentes CPU / GPU          | 32.071.200 / 32.071.200 B | 32.071.200 / 32.071.200 B |
+| JS build local                       |               1.027.432 B |               1.027.813 B |
+| Margen JS                            |                  42.648 B |                  42.267 B |
+| Primer cuadro Metal, mediana 5 pares |                   2,433 s |                   2,411 s |
+| Pico Σ renderer + GPU Metal          |            1,687–1,694 GB |            1,682–1,685 GB |
+
+La descarga aún excede 642.269 B la preferencia 19.510.002 B; no cambia el máximo autorizado
+ni los techos CPU/texturas/shaders. Los 1,27 s históricos de 318 no se reproducen en la base
+117e1ca fresca; la comparación contemporánea sí cumple ≤+150 ms y 2 GB, sin errores ni pérdida
+de contexto. No se atribuye aceleración universal ni máximo continuo. XOR probado se rechaza
+por ahorro insuficiente; cuantización/WASM no necesarios.
+
+[Mediciones, contratos y cierre 319](../evidence/s0028-mesh/README.md),
+[seis láminas 3D abiertas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/plates/)
+con ID de formato visible, misma cámara/luz/capas y región 3D idéntica píxel a píxel.
+Pared/poses y aceptación anatómica P2–P8 siguen pendientes; no es validación clínica.
+Las cifras de la sección siguiente documentan históricamente P1 antes de esta compactación.
 
 ## P1 r4c: mallas exactas, memoria y arranque (318)
 

@@ -1,0 +1,408 @@
+{
+  "scope": "local acceptance only; no remote CI or clinical validation",
+  "testedCheckoutHead": "117e1cae08bc21b1c2a88b405c3cc74b9457da47",
+  "testedImplementationFingerprint": "c4324303a1b421a7274a2fb8de74dcadcfea079d58770e5e727df6ac0f31d8b7",
+  "validation": {
+    "core": {
+      "files": 291,
+      "tests": 2023,
+      "success": true
+    },
+    "matrix": {
+      "files": 7,
+      "tests": 80,
+      "success": true
+    }
+  },
+  "python": {
+    "suites": 14,
+    "tests": 118,
+    "exitCode": 0
+  },
+  "e2e": {
+    "metal": 5,
+    "swiftshaderX64": 2,
+    "failed": 0,
+    "flaky": 0,
+    "retries": 0
+  },
+  "checkSeconds": 2723.754896958999,
+  "matrixSeconds": 1138.84,
+  "checkExitCode": 0,
+  "matrixRepeatNeeded": false,
+  "ciRemote": "pending; no push or PR authorized",
+  "commands": [
+    {
+      "label": "green",
+      "args": [
+        "npx",
+        "vitest",
+        "run",
+        "src/validation/s0028Precomputed.test.ts",
+        "src/ui/navigator3d/s0028Memory.test.ts",
+        "--maxWorkers=1"
+      ],
+      "exitCode": 0,
+      "seconds": 1.7071162500069477
+    },
+    {
+      "label": "geometry",
+      "args": ["node", "--import", "tsx", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/geometry.mts"],
+      "exitCode": 0,
+      "seconds": 1.0588504579500295
+    },
+    {
+      "label": "generate-2",
+      "args": ["node", "--import", "tsx", "tools/anatomy/build-s0028-surfaces.ts"],
+      "exitCode": 0,
+      "seconds": 20.242268416972365
+    },
+    {
+      "label": "source",
+      "args": ["env", "VITEST_TIER=all", "npx", "vitest", "run", "src/validation/s0028SurfaceSource.test.ts", "--maxWorkers=1"],
+      "exitCode": 0,
+      "seconds": 15.59097095899051
+    },
+    {
+      "label": "after-build",
+      "args": ["npm", "run", "build"],
+      "exitCode": 0,
+      "seconds": 8.62881245801691
+    },
+    {
+      "label": "measure-before-1",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "before",
+        "metal",
+        "s0028",
+        "1"
+      ],
+      "exitCode": 0,
+      "seconds": 21.229852749966085
+    },
+    {
+      "label": "measure-after-1",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "after",
+        "metal",
+        "s0028",
+        "1"
+      ],
+      "exitCode": 0,
+      "seconds": 20.770057999994606
+    },
+    {
+      "label": "measure-before-2",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "before",
+        "metal",
+        "s0028",
+        "2"
+      ],
+      "exitCode": 0,
+      "seconds": 20.74178587499773
+    },
+    {
+      "label": "measure-after-2",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "after",
+        "metal",
+        "s0028",
+        "2"
+      ],
+      "exitCode": 0,
+      "seconds": 20.721780791995116
+    },
+    {
+      "label": "measure-before-3",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "before",
+        "metal",
+        "s0028",
+        "3"
+      ],
+      "exitCode": 0,
+      "seconds": 20.747442582971416
+    },
+    {
+      "label": "measure-after-3",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
+        "after",
+        "metal",
+        "s0028",
+        "3"
+      ],
+      "exitCode": 0,
+      "seconds": 20.73287895799149
+    },
+    {
+      "label": "measure-clean-before-1",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-before",
+        "metal",
+        "s0028",
+        "1"
+      ],
+      "exitCode": 0,
+      "seconds": 19.16900200000964
+    },
+    {
+      "label": "measure-clean-after-1",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-after",
+        "metal",
+        "s0028",
+        "1"
+      ],
+      "exitCode": 0,
+      "seconds": 19.282019292004406
+    },
+    {
+      "label": "measure-clean-before-2",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-before",
+        "metal",
+        "s0028",
+        "2"
+      ],
+      "exitCode": 0,
+      "seconds": 19.120468999957666
+    },
+    {
+      "label": "measure-clean-after-2",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-after",
+        "metal",
+        "s0028",
+        "2"
+      ],
+      "exitCode": 0,
+      "seconds": 19.417175584007055
+    },
+    {
+      "label": "measure-clean-before-3",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-before",
+        "metal",
+        "s0028",
+        "3"
+      ],
+      "exitCode": 0,
+      "seconds": 19.17662774998462
+    },
+    {
+      "label": "measure-clean-after-3",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-after",
+        "metal",
+        "s0028",
+        "3"
+      ],
+      "exitCode": 0,
+      "seconds": 19.235729667008854
+    },
+    {
+      "label": "http",
+      "args": ["node", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/http.mjs"],
+      "exitCode": 0,
+      "seconds": 0.1983182500116527
+    },
+    {
+      "label": "plates",
+      "args": ["node", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/plates.mjs"],
+      "exitCode": 0,
+      "seconds": 7.802689208008815
+    },
+    {
+      "label": "measure-clean-before-4",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-before",
+        "metal",
+        "s0028",
+        "4"
+      ],
+      "exitCode": 0,
+      "seconds": 19.063453499984462
+    },
+    {
+      "label": "measure-clean-after-4",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-after",
+        "metal",
+        "s0028",
+        "4"
+      ],
+      "exitCode": 0,
+      "seconds": 19.1228616249864
+    },
+    {
+      "label": "measure-clean-before-5",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-before",
+        "metal",
+        "s0028",
+        "5"
+      ],
+      "exitCode": 0,
+      "seconds": 19.1330862500472
+    },
+    {
+      "label": "measure-clean-after-5",
+      "args": [
+        "node",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
+        "clean-after",
+        "metal",
+        "s0028",
+        "5"
+      ],
+      "exitCode": 0,
+      "seconds": 19.24951020797016
+    },
+    {
+      "label": "e2e-metal-command",
+      "args": [
+        "npm",
+        "run",
+        "workspace:e2e",
+        "--",
+        "--backend",
+        "metal",
+        "--out",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/e2e-metal",
+        "--",
+        "e2e/s0028Load.spec.ts",
+        "e2e/startupContexts.spec.ts",
+        "e2e/smoke.spec.ts",
+        "--grep",
+        "s0028 carga|initializes both|a partial GPU|arranca, renderiza|cambia de caso"
+      ],
+      "exitCode": 0,
+      "seconds": 37.439027499989606
+    },
+    {
+      "label": "e2e-x64-command",
+      "args": [
+        "npx",
+        "playwright",
+        "test",
+        "--config",
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/x64.config.mts",
+        "e2e/s0028Load.spec.ts",
+        "e2e/smoke.spec.ts",
+        "--grep",
+        "s0028 carga|arranca, renderiza"
+      ],
+      "exitCode": 0,
+      "seconds": 200.6265100829769
+    },
+    {
+      "label": "format-edited",
+      "args": [
+        "npx",
+        "prettier",
+        "--write",
+        "docs/DECISIONS.md",
+        "docs/anatomia/migracion-s0028.md",
+        "docs/evidence/s0028-mesh/README.md",
+        "docs/evidence/s0028-mesh/measurements.json"
+      ],
+      "exitCode": 0,
+      "seconds": 2.5250501250266097
+    },
+    {
+      "label": "docs-index",
+      "args": ["npm", "run", "docs:index"],
+      "exitCode": 0,
+      "seconds": 0.3822692499961704
+    },
+    {
+      "label": "format-check",
+      "args": ["npx", "prettier", "--check", "."],
+      "exitCode": 0,
+      "seconds": 13.896293250028975
+    },
+    {
+      "label": "docs-index-check",
+      "args": ["node", "--import", "tsx", "tools/docs/decisions-index.ts", "--check"],
+      "exitCode": 0,
+      "seconds": 0.12981512496480718
+    },
+    {
+      "label": "lint",
+      "args": ["npm", "run", "lint"],
+      "exitCode": 0,
+      "seconds": 22.717267207975965
+    },
+    {
+      "label": "types",
+      "args": ["npm", "run", "typecheck"],
+      "exitCode": 0,
+      "seconds": 6.267805917013902
+    },
+    {
+      "label": "fast",
+      "args": ["npm", "test", "--", "--maxWorkers=1"],
+      "exitCode": 0,
+      "seconds": 287.618327541044
+    },
+    {
+      "label": "python-all",
+      "args": [
+        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0b/.venv-cgal/bin/python",
+        "-I",
+        "tools/anatomy/run-tests.py"
+      ],
+      "exitCode": 0,
+      "seconds": 8.250126792001538
+    },
+    {
+      "label": "build-final",
+      "args": ["npm", "run", "build"],
+      "exitCode": 0,
+      "seconds": 8.5487182920333
+    },
+    {
+      "label": "calibrate",
+      "args": ["npm", "run", "calibrate"],
+      "exitCode": 0,
+      "seconds": 1.1849165830062702
+    },
+    {
+      "label": "check",
+      "args": ["env", "VEXUS_VALIDATION_MODE=serial", "VITEST_MAX_WORKERS=1", "npm", "run", "check"],
+      "exitCode": 0,
+      "seconds": 2723.754896958999
+    }
+  ]
+}

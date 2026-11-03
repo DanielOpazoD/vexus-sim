@@ -1,4 +1,4 @@
-/** Offline only: index the unchanged native-lattice marching-cubes stream, bit for bit. */
+/** Offline only: index and delta-encode the native marching-cubes stream, without losing a bit. */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
@@ -62,18 +62,39 @@ for (const bytes of arrays) {
   raw.set(bytes, at);
   at += bytes.length;
 }
+const sha256DecodedRaw = hash(raw);
+for (const f of fields) {
+  const positions = new Uint32Array(raw.buffer, f.positionOffset, f.vertexCount * 3);
+  for (let axis = 0; axis < 3; axis++) {
+    let previous = 0;
+    for (let i = axis; i < positions.length; i += 3) {
+      const next = positions[i];
+      positions[i] = (next - previous) >>> 0;
+      previous = next;
+    }
+  }
+  const indices = new Uint32Array(raw.buffer, f.indexOffset, f.indexCount);
+  let previous = 0;
+  for (let i = 0; i < indices.length; i++) {
+    const next = indices[i],
+      delta = next - previous;
+    indices[i] = (delta << 1) ^ (delta >> 31);
+    previous = next;
+  }
+}
 const gzip = gzipSync(raw, { level: 9 });
 const meta = {
   person: B.person,
   frameId: B.frameId,
   revision: B.revision,
   units: 'mm',
-  format: 'indexed-f32-u32-v1',
+  format: 'indexed-delta32-v1',
   sourceBundleSha256: hash(new TextEncoder().encode(JSON.stringify(B))),
   rawBytes: raw.length,
   gzipBytes: gzip.length,
   sha256Raw: hash(raw),
   sha256Gzip: hash(gzip),
+  sha256DecodedRaw,
   fields,
 };
 writeFileSync('src/anatomy/s0028/surfaces.gzip.bin', gzip);

@@ -670,9 +670,9 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 - `probe-contact-plane-estimated` (184): el marco rígido de una sonda sobre el perfil registrado usa cuerdas de la misma piel a ±medio espesor elevacional (6,5 mm para el convexo actual), en vez de la normal puntual discontinua de la tabla. La distancia de presión usa un gradiente estimado a ±1 mm sobre esa misma piel para evitar otro salto al cruzar celdas; se conserva la tolerancia de 0,05 mm del solver. No es un ajuste biomecánico de toda la huella ni una superficie cutánea nueva. Piel, espesor y gradientes físicos permanecen compartidos. Se verifican nudos y barridos finos; no se certifica cualquier maniobra ni una frecuencia universal de cuadros. La apposición hepática inferomedial conserva huecos estimados de hasta 9,01 mm en el dominio ampliado auditado; no se declara resuelta por el cambio de marco. Véase `anatomy/vexus-window-acceptance.md`.
 - `hepatobiliary-connectors-estimated` (285): relación del pedículo y conexión cística estimadas sobre un adulto registrado; sin variantes completas, distensión o ayuno vesicular por caso. La pared de 1,8 mm no es una medición individual. Suavidad de compresión y transición parietal verificadas en poses muestreadas, sin certificación de todas las maniobras ni nueva biomecánica. Véase también `APPROXIMATIONS.md`, decisión 285.
 
-## Candidato s0028 offline (317 provisional)
+## Candidato experimental s0028 (317/318)
 
-P0 prepara herramientas, sin instalar una segunda anatomía; P1 r2 añade un candidato experimental local y se detiene por memoria. Los identificadores
+P0 prepara herramientas; P1 añade un candidato experimental local y r3 mantiene la parada por memoria. Los identificadores
 de limitación del producto permanecen vigentes. [Migración s0028](anatomia/migracion-s0028.md)
 distingue lo observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y
 ramas no anotadas no se aprueban por disponer de reserva de bytes. Piel verificada sólo en D
@@ -686,14 +686,23 @@ en navegador/SwiftShader y se detiene si no caben. El microshader y los ocho cos
 no prueban esa capacidad ni paridad del clasificador. La descarga de cada fase, incluidas
 anotaciones gzip reales, debe mantenerse ≤19.510.002 B. No es validación clínica.
 
-El ensayo P1 r2 de la decisión 318 pasa los ocho shaders especializados de ambas personas,
-pero no pasa memoria: footprint físico observado de página/Worker+GPU **1.120.588.568 B >1 GB**
-en Chromium x64/Rosetta, antes de aceptar el primer cuadro SwiftShader. JS y HTTP reales
-caben; no son prueba de uso razonable en PC actual de 8–16 GB con integrada. Hay una ruta
-experimental explícita, sin cambio del default; no está aceptada ni se declara fusionable.
-Las tres copias y transitorios permanecen: compartir una copia de atlas ahorraría nominalmente
-191.806.176 B, sin implementación ni ahorro real acreditado. El tórax conserva 0 B de margen.
-Paridad CPU/GPU/Worker, primer cuadro SwiftShader, pico total aceptado y diez láminas quedan
-pendientes **de P1**. Metal produjo un cuadro, no validación anatómica/clínica. El clasificador
-mínimo y las aproximaciones heredadas se detallan en [migración](anatomia/migracion-s0028.md).
-El genérico r1 rechazado y los errores de arnés conservan sus negativos externos.
+La ronda P1 r3 de 318 mantiene los ocho shaders por persona dentro de sus límites y aplica
+dos reducciones: normales planas derivadas en GPU sólo en s0028 y subida RG16F por vistas
+Z en ambas personas. No cambia campos, texeles, precisión, anatomía ni poses. JS cabe con
+45.830 B de margen; eso no acredita memoria razonable. Tres arranques Metal finales dan
+1.415–1.425 MB de pico actual y 1.740–1.755 MB s0028; x64 supera ampliamente 1 GB en ambas.
+Pico muestreado/ventana estable y contadores vitales del kernel se distinguen; no es medición continua ni
+certificación de todos los PC Chrome/Edge de 8–16 GB. Carga/cachés y negativos permanecen.
+
+**No pasa el objetivo P1 ≤800 MB ni el techo total ≤1 GB.** Dos copias CPU de atlas
+siguen necesarias para consultas síncronas en página/Worker. No hay aislamiento de origen
+cruzado ni hosting con COOP/COEP acreditado; no se depende de SAB. El ahorro nominal de
+una copia no se presenta como ahorro real ni solución suficiente. El tórax conserva 0 B
+de margen. La referencia actual también necesita una dieta de toda la app.
+
+Cuadros x64 observados, capturas abiertas o 19 hashes idénticos de un ensayo de mallas no
+acreditan paridad CPU/GPU/Worker ni cobertura de profundidad/contacto. Memoria aceptada,
+paridad, consumidores y diez láminas con ID siguen pendientes **de P1**. El intento de dos
+pasadas fue retirado, conservando su negativo; sólo se mantienen mejoras medidas de recursos.
+Clasificador mínimo y pared/poses provisionales en [migración](anatomia/migracion-s0028.md).
+[Informe, SHA, cierre y desviaciones r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md). Sin cambio del default ni validación clínica.

@@ -358,7 +358,7 @@ todos los patrones renales. No se trasladan esos coeficientes a una VCI humana c
 si estuvieran calibrados. La formulación, protocolo, negativos y frontera están en
 [el informe del ensayo](fidelity/ivc-wall-frontier.md); no sustituye la decisión 73.
 
-### s0028: candidato offline B y dominio de fidelidad (317 provisional)
+### s0028: paquete B y candidato experimental (317/318)
 
 Una persona, registro rígido único, sin HU→brillo ni etiquetas exteriores→histología. La piel
 se deriva del componente corporal mayor >−400 HU por corte, con huecos rellenos y brazos
@@ -376,13 +376,18 @@ Gas conserva ocupación/etiqueta nearest, no SDF continuo. La capacidad de anota
 (5.671.296 B RAW, ~7 KB gzip) es U: cada llenado mide descarga real de nuevo frente a 19.510.002 B.
 P0 no tenía runtime/activos nuevos. El ensayo local P1 y su parada se describen a continuación. [Evidencia y puertas](anatomia/migracion-s0028.md).
 
-P1 r2 (318) integra sólo un candidato local explícito: ambos lectores GLSL viajan en JS,
-pero TS elige uno antes de compilar. Pasa shaders; se rechaza por footprint físico SwiftShader
-1.120.588.568 B >1 GB. Clasificador mínimo heredado, categorías B explícitas y gas nearest,
-sin SDF de gas; la distancia binaria provisional no es una frontera anatómica fina. Psoas y
-discos sin fuente son desconocidos; no hay alias ni cúpulas auxiliares del donante anterior.
-Poses, pared/capas, interiores renal/cardíaco y vasos son provisionales P2–P7. Las superficies
-B se extraen del cero nativo por bloques en Worker, sin demostrar paridad completa. La captura
-Metal abierta no acredita las diez ventanas ni aceptación anatómica. Se conserva el negativo
-genérico r1 en [migración](anatomia/migracion-s0028.md). Sin optimización de copias después del
-negativo, sin cambio de default ni validación clínica.
+P1 r3 (318) conserva sólo el candidato local explícito y el lector especializado, con los
+campos/precisión fuente intactos. Deriva normales planas del mismo triángulo en GPU y sube
+RG16F por vistas Z sin cambiar texeles. No cambia poses, pared/capas ni vasos. Clasificador
+mínimo heredado, categorías B y gas nearest sin SDF continuo; psoas/discos sin fuente
+permanecen desconocidos, sin alias ni cúpulas auxiliares del donante anterior. Interiores
+renal/cardíaco y vasos siguen provisionales P2–P7. Las superficies B vienen del cero nativo,
+sin acreditar paridad completa CPU/GPU/Worker. El ensayo de dos pasadas se retiró por no
+ahorrar pico y demorar arranque; sus 19 hashes idénticos y negativos quedan conservados.
+
+La memoria real sigue rechazada: también la anatomía actual excede 800 MB y 1 GB. Mantiene
+dos copias CPU; no usa SAB ni promete ahorro a partir de restar bytes nominales. Footprint,
+heap y recursos GPU se informan por separado, sin doble suma. Capturas de arranque abiertas
+no son diez láminas con ID ni aprobación anatómica. [Informe r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md) y
+[migración](anatomia/migracion-s0028.md) conservan paradas, cifras y pruebas. Sin cambio de
+default ni validación clínica.

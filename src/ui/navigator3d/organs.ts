@@ -192,11 +192,12 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     for (const f of s0028Surfaces.filter((f) => !['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
-      geometry.computeVertexNormals();
+      // El stream no indexado ya tenía normales por cara: Three las deriva del mismo triángulo en GPU.
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({
           color: f.name === 'liver' ? 0x995d49 : 0xcda08b,
+          flatShading: true,
           roughness: 0.8,
           transparent: true,
           opacity: 0.6,

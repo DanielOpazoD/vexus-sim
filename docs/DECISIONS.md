@@ -10058,37 +10058,41 @@ Piel exacta en el sentido del contrato muestreado p95 ≤1,5 mm/máximo ≤3 mm 
 
 **Verificación.** Los ocho programas completos de coste B P0e pasan estáticamente; RAWFIELD 1.212.601/9.763 tokens/ramas y ECHO 505.781/4.091, máximo 16 samplers y 101–138 slots. El microshader SwiftShader dibujó ambos atlas con GL=0; no acredita JIT/arranque completo. Los contratos sintéticos comprueban procedencia, campos perdidos/corruptos, categorías, gas, colocación de profundidad, periodicidad, desconocidos y descarga real con un negativo de anotación llena. El coste B se ejecuta también con descriptores sintéticos en la CI general. Evidencia, archivos archivados, reproducción y códigos locales del cierre se enlazan desde el documento de migración; ninguna CI remota o revisión por otro agente se atribuye a esta entrega.
 
-## 318. Especializar P1 por persona y detenerlo por memoria física superior a 1 GB
+## 318. Medir memoria real y mantener P1 detenido tras la dieta
 
-**Contexto.** Objetivos 3/7/8; decisión del propietario del 03-11-2026: programa de una sola
-persona elegido por TS antes de escena/Worker/renderer, PC actual de 8–16 GB con integrada,
-criterio de trabajo ≤1 GB app completa, aviso >800 MB y techos de textura de 317 intactos.
-Lector genérico r1 rechazado: RAWFIELD 1.770.910/14.870 > 1.385.000/11.060; [negativo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
+**Contexto.** Objetivos 3/7/8. El propietario fija pico total de renderer/página/Worker +
+GPU ≤1.000.000.000 B y objetivo P1 ≤800.000.000 B, para PC actuales de 8–16 GB con integrada.
+La muestra r2 de 1.120.588.568 B no era pico exhaustivo ni tenía referencia de la anatomía actual.
+Genérico r1 rechazado: RAWFIELD 1.770.910/14.870 >1.385.000/11.060; [negativo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
 
-**Opciones.** Selección dinámica de sampler por consulta duplica rutas alcanzables. Se ensaya
-especialización TS por persona y atlas; no se relajan shaders, samplers, JS, plazos ni resolución.
-Compartir una de las copias CPU/Worker se propone tras medir, sin implementarlo en este ensayo.
+**Opciones.** Eliminar normales duplicadas del stream no indexado s0028, acotar staging de
+subida común y revisar propiedad CPU. Sin aislamiento de origen cruzado ni hosting con esas
+cabeceras acreditado (release sólo empaqueta ZIP), no se depende de SharedArrayBuffer.
+Dos pasadas/máscara para superficies conservan los 19 hashes, pero no ahorran pico observado
+y empeoran el arranque: ensayo retirado, con código, pruebas y negativos externos conservados.
 
-**Decisión.** `personShader` genera sólo el lector elegido. Actual conserva fuente/tokens/ramas;
-s0028 pasa 8/8: RAWFIELD 1.088.852/8.891 y COLOR 217.286/1.912, máximo 16 samplers y 138 slots.
-La guarda mide ambas variantes con helpers/techos originales y detecta regresiones de cada una.
-Selector/bundle congelado, identidad explícita, carga exclusiva/cancelable y hash/procedencia
-entran sólo como candidato local `abdomen=s0028`. Se usan B y techos exclusivos al cargar, con
-margen torácico 0 B. Superficies nativas por bloques en Worker; clasificación mínima declarada,
-sin convertir los 19 campos almacenados en anatomía completa ni recuperar alias sin fuente.
+**Decisión.** Derivar las normales planas de los mismos triángulos s0028 en GPU, retirando
+64.143.792 B CPU; en los buffers GPU efectivamente subidos se observan 63.753.696 B menos. Crear RG16F inmutable del mismo tamaño y
+subir vistas Z de ≤4 MiB por llamada en ambas anatomías. No cambiar texeles, campos, pitch,
+precisión ósea, poses, pared ni física. Mantener dos copias CPU de atlas: página y Worker hacen
+consultas síncronas; propiedad única permanente exige rediseñar adquisición, no detachar una
+copia que sigue siendo necesaria. El candidato continúa sólo por `?abdomen=s0028`.
 
-**Consecuencias.** Metal confirma su primer cuadro GPU a 28.765 ms; descarga HTTP real 14.812.055/19.510.002 B.
-JS final 1.024.012/1.070.080 B, margen 46.068 B. **P1 se detiene**:
-SwiftShader x64/Rosetta alcanza footprint físico observado **1.120.588.568 B > 1 GB** para
-página/Worker y GPU, antes de aceptar su primer cuadro. CDP+texturas no captó toda la memoria
-nativa; ese subtotal no acredita el criterio. Compartir una copia de atlas tendría un ahorro
-nominal de 191.806.176 B, sujeto a nueva medición. No se aplica ajuste tras el negativo.
-No se activa por defecto ni se declara fusionable/aceptado. Paridad completa, diez láminas,
-pico aceptado y primer cuadro SwiftShader quedan pendientes de P1. P2 conserva su alcance.
+**Consecuencias.** La referencia ya excede el objetivo: Metal antes 1.480–1.505 MB y después
+1.415–1.425 MB; s0028 pasa de 1.953–1.971 MB a 1.740–1.755 MB en las tres pasadas principales.
+Son MB decimales de footprint con memoria compartida descontada; sumar procesos da una cota
+más alta. SwiftShader x64/Rosetta también excede ampliamente 1 GB, en ambas personas.
+**P1 sigue rechazado por memoria**, incluso antes de paridad/consumidores/diez láminas.
+Primer cuadro Metal final s0028 20,04–20,19 s; x64 alcanza cuadro en las tres pasadas finales,
+pero no acredita uso razonable de memoria. La carga y las repeticiones se conservan; no se
+convierte la comparación temporal en aceleración causal ni validación de otros PC.
 
-**Verificación.** Pruebas previas fallidas, 16 fuentes completas, mutaciones de ambas variantes,
-HTTP real, captura Metal abierta, muestra física original y parada explícita del navegador propio.
-La primera estimación Metal subcontaba RG32F: negativo y enmienda conservados. Códigos reales
-de cierre/E2E, SHA y diferencias del árbol medido están en [ronda 2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r2/report.md).
-Una sola decisión 318 reescrita; r1 permanece en una línea y su evidencia externa. Sin revisión
-ajena, CI remota, push, PR, stash ni escrituras gh. No es validación clínica.
+**Verificación.** Negativos previos de normales y transferencia, pruebas verdes del candidato,
+matrices seriales de tres lanzamientos por persona/backend, repeticiones por interferencia,
+footprint externo por proceso y categorías nativas, heap/backing CDP y recursos lógicos GPU
+sin doble suma. Ocho programas por variante y límites originales intactos; JS 1.024.250 B,
+margen 45.830 B. HTTP y cierre completo con sus códigos, SHA, procedencia y desviaciones en
+[informe r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md). Los intervalos muestreados no son pico continuo; los contadores vitales del kernel (otra contabilidad)
+se conservan separados. Capturas de arranque abiertas no sustituyen diez láminas con
+ID ni paridad del candidato. Una sola decisión 318; sin revisión ajena, CI remota, push, PR,
+stash ni escrituras gh. No es validación clínica.

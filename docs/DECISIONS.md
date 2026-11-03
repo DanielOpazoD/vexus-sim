@@ -10172,3 +10172,44 @@ tipos, suites seriales/Python/build/check, calibración y E2E Metal/SwiftShader 
 en [evidencia 319](evidence/s0028-mesh/README.md); la CI remota sigue pendiente.
 Revisar propiedad exclusiva/descodificación única del buffer y aritmética entera del formato.
 Sin delegación, push, PR, stash ni gh. No es validación clínica ni aceptación P2–P8.
+
+## 320. Preparar el contrato de pared s0028 y conservar la frontera de anotación P2 [Estado: pendiente de revisión del propietario]
+
+**Contexto.** Ronda 1 de P2, sólo fuente/contrato y anotación antes de runtime. Base
+`d5a8fc0`, apilada sobre #329 (319), sin fusionar. El diseño previo recomienda piel/EDT
+común y fronteras regionales en la reserva existente; rechaza la interpolación desde diez
+anclas por invasión y falta de pertenencia. Se fija protocolo antes de medir y se registran
+carga y modo de bajo consumo. Objetivos 3, 7 y 8; no es validación clínica.
+
+**Opciones.** No se instalan anillo fijo, volúmenes nuevos ni fronteras interpoladas desde
+las diez ventanas. No se identifica músculo/fascia por HU ni se recortan órganos para
+ocultar invasiones. Las bandas no separables y las identidades no demostradas permanecen U.
+
+**Decisión.** Borrador pendiente del propietario. `s0028-wall.py` exporta y reabre un
+candidato externo con procedencia por valor, tres fronteras y región codificadas en
+16 tiles RG16F con halos, dentro de la reserva P1. `s0028-wall_test.py`, `s0028-case.json`
+y `s0028-capacity.py` fijan identidad, unidades, ausencia, orden, no solapamiento y +0 B
+para atlas/reserva RAW/tórax. `s0028-wall-cost.ts` estima el lector sobre ocho fuentes P1
+con helpers/techos literales de `shaderLimits.test.ts`; no hay cableado de producto.
+
+**Consecuencias.** El paso 1 queda implementado; el paso 2 **no queda completado**.
+363 perfiles/nueve pares: 15→116 sin banda identificable y salto 9→1,6667 mm en el soporte
+restante, sin afirmar mejora de continuidad. Sólo 364/92.672 celdas con geometría local D;
+identidad alba→vaina→oblicuos→intercostales aún U. Quedan 62 píxeles de conflicto visceral
+visibles en diez planos de 2,25 mm²/píxel; no son un volumen. Posterior abierto U/P3,
+intercostal bloqueada P8. Piel E 1,5 mm; fascias/peritoneo E/U; Scarpa 0,4 y 35/35/30 E.
+
+El paquete parcial externo mide 20.157.056 B (+4.785 B frente a 319), payload 757.844 B,
+metadatos 1.919 B; atlas/reserva RAW/tórax +0 B. No predice la descarga de una anotación
+completa. Ocho estimaciones bajo techo, máximo 16 samplers/138 slots, sin nuevos samplers;
+clasificador regional/JIT/pico Metal pendientes. Referencia de 319 ≈1,68 GB y techo 2 GB,
+sin medición GPU nueva en esta ronda. Default, estructuras, resolución y poses intactos.
+
+**Verificación.** Rojo inicial antes de implementar; ocho contratos Python nuevos
+con mutaciones de persona/affine/unidades, U→O, fronteras, ausencia→cero, halo/campo ajeno,
++1 B torácico y exportación reabierta. Dos TS comprueban los ocho programas y negativos
+sampler 17/uniforms. Los 363 perfiles del diseño se reproducen exactamente; negativo de
+las diez anclas recalculado sigue fallando (700 píxeles). Treinta y una imágenes abiertas,
+ID y lista sí/no del propietario aún sin completar. Cierre serial, evidencias y pendientes
+en [P2 ronda 1](evidence/s0028-p2/README.md). Los pasos 3–4 quedan detenidos hasta resolver
+la anotación y revisión humana. Sin delegación, push, PR, stash, gh ni puerto 5174.

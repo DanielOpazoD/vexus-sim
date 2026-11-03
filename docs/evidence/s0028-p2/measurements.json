@@ -1,0 +1,500 @@
+{
+  "base": "d5a8fc0",
+  "annotationId": "s0028-P2-R1-adjacent-CT-draft-v1",
+  "ownerReview": "pending",
+  "annotationComplete": false,
+  "runtimeInstalled": false,
+  "continuity": {
+    "method": "adjacent-ct-traces",
+    "profiles": 363,
+    "missingBands": 116,
+    "unknownRegions": 363,
+    "maxAdjacentBoundaryJumpMm": 1.6666666666666714,
+    "baselineMissingBands": 15,
+    "baselineMaxJumpMm": 9.0,
+    "surfaceKnownGeometryCells": 364,
+    "surfaceTotalCells": 92672,
+    "warning": "Más U al rechazar costilla y contactos ambiguos. Saltos menores con menor soporte NO prueban mejor continuidad."
+  },
+  "pairs": [
+    {
+      "id": "P2-R1-TRACE-00",
+      "pair": ["subxiphoid", "epigastric"],
+      "profiles": 19,
+      "unknownIntervals": [[8, 12, "banda medial tenue, espesor/identidad no identificables en tres vecinos"]],
+      "missingBands": 5,
+      "maxAdjacentBoundaryJumpMm": 0.6666666666666714,
+      "regionProvenance": "U",
+      "regionHypothesis": "alba→vaina",
+      "baselineMissingBands": 5,
+      "baselineMaxJumpMm": 1.5
+    },
+    {
+      "id": "P2-R1-TRACE-01",
+      "pair": ["epigastric", "subcostal"],
+      "profiles": 56,
+      "unknownIntervals": [
+        [7, 13, "continuidad medial/alba-vaina no resuelta"],
+        [24, 26, "borde interno sin banda separable"]
+      ],
+      "missingBands": 10,
+      "maxAdjacentBoundaryJumpMm": 1.6666666666666714,
+      "regionProvenance": "U",
+      "regionHypothesis": "alba→vaina→oblicuos",
+      "baselineMissingBands": 10,
+      "baselineMaxJumpMm": 6.0
+    },
+    {
+      "id": "P2-R1-TRACE-02",
+      "pair": ["subcostal", "portalSubcostal"],
+      "profiles": 87,
+      "unknownIntervals": [[23, 60, "contacto pared-hígado: límite interno no separable; no recortar órgano"]],
+      "missingBands": 38,
+      "maxAdjacentBoundaryJumpMm": 0.5,
+      "regionProvenance": "U",
+      "regionHypothesis": "vaina→oblicuos",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 3.75
+    },
+    {
+      "id": "P2-R1-TRACE-03",
+      "pair": ["portalSubcostal", "renal"],
+      "profiles": 40,
+      "unknownIntervals": [[2, 13, "contacto hepático: borde interno confundible con cápsula, requiere trazado experto"]],
+      "missingBands": 12,
+      "maxAdjacentBoundaryJumpMm": 0.75,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 3.0
+    },
+    {
+      "id": "P2-R1-TRACE-04",
+      "pair": ["renal", "hepatorenal"],
+      "profiles": 39,
+      "unknownIntervals": [],
+      "missingBands": 0,
+      "maxAdjacentBoundaryJumpMm": 0.75,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 1.5
+    },
+    {
+      "id": "P2-R1-TRACE-05",
+      "pair": ["hepatorenal", "flank"],
+      "profiles": 32,
+      "unknownIntervals": [[7, 14, "costilla ocupa la banda; no identificar hueso como músculo"]],
+      "missingBands": 8,
+      "maxAdjacentBoundaryJumpMm": 0.6666666666666679,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 4.5
+    },
+    {
+      "id": "P2-R1-TRACE-06",
+      "pair": ["flank", "portalTrunk"],
+      "profiles": 8,
+      "unknownIntervals": [],
+      "missingBands": 0,
+      "maxAdjacentBoundaryJumpMm": 1.0,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 0.75
+    },
+    {
+      "id": "P2-R1-TRACE-07",
+      "pair": ["portalTrunk", "portal"],
+      "profiles": 28,
+      "unknownIntervals": [
+        [9, 16, "costilla, no banda intercostal demostrada"],
+        [25, 27, "nuevo cruce costal"]
+      ],
+      "missingBands": 11,
+      "maxAdjacentBoundaryJumpMm": 1.0,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos→intercostales",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 9.0
+    },
+    {
+      "id": "P2-R1-TRACE-08",
+      "pair": ["portal", "intercostal"],
+      "profiles": 54,
+      "unknownIntervals": [
+        [0, 17, "costilla/cartílago y transición extracostal sin identidad intercostal"],
+        [40, 53, "costilla y base pulmonar, no banda identificada"]
+      ],
+      "missingBands": 32,
+      "maxAdjacentBoundaryJumpMm": 0.3333333333333357,
+      "regionProvenance": "U",
+      "regionHypothesis": "oblicuos→intercostales",
+      "baselineMissingBands": 0,
+      "baselineMaxJumpMm": 8.25
+    }
+  ],
+  "budget": {
+    "files": [
+      {
+        "file": "abdominal-direct.gzip.bin",
+        "path": "src/anatomy/s0028/abdominal-direct.gzip.bin",
+        "bytes": 8567375,
+        "sha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd"
+      },
+      {
+        "file": "annotation-capacity.gzip.bin",
+        "path": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2/package/annotation-capacity.gzip.bin",
+        "bytes": 9944,
+        "sha256": "e3d0add695dec43547f9eb4faea901bf1a1c9f8e14856cafb6ad1d7b680640c4"
+      },
+      {
+        "file": "candidate-manifest.bin",
+        "path": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2/package/candidate-manifest.bin",
+        "bytes": 36361,
+        "sha256": "af07cf6d8330153ce307281b3a115442457aed88ba728cedd14f339cb0bac0f0"
+      },
+      {
+        "file": "skin-polar.gzip.bin",
+        "path": "src/anatomy/s0028/skin-polar.gzip.bin",
+        "bytes": 947509,
+        "sha256": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e"
+      },
+      {
+        "file": "surfaces.gzip.bin",
+        "path": "src/anatomy/s0028/surfaces.gzip.bin",
+        "bytes": 5340216,
+        "sha256": "10c45ed5a468d0a53e96aac8f426923abbbd735b9a0eb1618317639bfee97406"
+      },
+      {
+        "file": "thoracic-direct.gzip.bin",
+        "path": "src/anatomy/s0028/thoracic-direct.gzip.bin",
+        "bytes": 5252011,
+        "sha256": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d"
+      },
+      {
+        "file": "abdominal-body.bin",
+        "path": "src/anatomy/abdominal-body.bin",
+        "bytes": 3640,
+        "sha256": "47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323"
+      }
+    ],
+    "baselineDownloadBytes": 20152271,
+    "candidateDownloadBytes": 20157056,
+    "incrementBytes": 4785,
+    "gzipCapacityBytes": 9944,
+    "payloadBytes": 757844,
+    "metadataBytes": 1919,
+    "metadataDeltaBytes": 1840,
+    "atlasIncrementBytes": 0,
+    "rawReservationIncrementBytes": 0,
+    "thoracicIncrementBytes": 0,
+    "additionalTemporaryBudgetBytes": 16000000,
+    "peakMetalMeasured": false,
+    "offlineOnly": true,
+    "ownerReview": "pending",
+    "globalAnatomyAnnotated": false
+  },
+  "shaders": {
+    "guardSha256": "24680cf590e3b19b50adb4e3ef206dc21fc922d56eb122d31119842ea9bffb5f",
+    "helpersSha256": "fa237f88a25933a1dea260a5abe49b8b8dc6fa6880a508ff6620be5a3ce211e1",
+    "rows": [
+      {
+        "name": "FRAG_RAWFIELD",
+        "tokenLimit": 1385000,
+        "branchLimit": 11060,
+        "current": {
+          "tokens": 1088852,
+          "branches": 8891,
+          "slots": 136,
+          "samplers": 10,
+          "sourceSha256": "ee3ec05c851fe6bc933b8c73f15eb8da58c1931ccbe8377fa44f22b0a6f6fe49",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 1183460,
+          "branches": 8956,
+          "slots": 136,
+          "samplers": 10,
+          "sourceSha256": "e7da0b2988c9290f8ac4bda87ca916e2861e185362a81cb7ca20d714d179f0b8",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_RAWFIELD_ECHO",
+        "tokenLimit": 577000,
+        "branchLimit": 4640,
+        "current": {
+          "tokens": 468745,
+          "branches": 3831,
+          "slots": 137,
+          "samplers": 16,
+          "sourceSha256": "564879ae2db17e95cceacdf74d35712857a0bf2ebe78e376a8322a6383799291",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 516201,
+          "branches": 3861,
+          "slots": 137,
+          "samplers": 16,
+          "sourceSha256": "e84876a347aeec3809c85815cb6c68cf4b9d9b9ccbacb0beefaedfee34cfa4a2",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_RAWFIELD_CLASS",
+        "tokenLimit": 455000,
+        "branchLimit": 3830,
+        "current": {
+          "tokens": 393378,
+          "branches": 3350,
+          "slots": 136,
+          "samplers": 10,
+          "sourceSha256": "17af5e5b7b4bdadc2109f4f06fb85c6ccecc53bf6d5d239f183d809568f94747",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 423774,
+          "branches": 3370,
+          "slots": 136,
+          "samplers": 10,
+          "sourceSha256": "33be2f2a8ab09ec8bc510437b1b4cc84c81ae8713a30b9c53dbb35b4036f3b79",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_RAWFIELD_ELEVATION",
+        "tokenLimit": 455000,
+        "branchLimit": 3830,
+        "current": {
+          "tokens": 393518,
+          "branches": 3352,
+          "slots": 137,
+          "samplers": 15,
+          "sourceSha256": "1cd75b038cbc4b085ffe21f652c435816518a1728c742f3805ce22ff2501f96a",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 423914,
+          "branches": 3372,
+          "slots": 137,
+          "samplers": 15,
+          "sourceSha256": "aed3dbce0e2726d908e6f88d3d40996ba0738524b15cd5230b78e48417b649f8",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_RAWFIELD_GRADIENT",
+        "tokenLimit": 351000,
+        "branchLimit": 2760,
+        "current": {
+          "tokens": 266644,
+          "branches": 2178,
+          "slots": 138,
+          "samplers": 15,
+          "sourceSha256": "e8e9f92b274f9029fa64f775891f24c4bc44aa5b63350dc172111185d52ed7ba",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 298780,
+          "branches": 2201,
+          "slots": 138,
+          "samplers": 15,
+          "sourceSha256": "06156cd9462b3d6c484361aef127f8216385956928409b93085b79259a40b5ef",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_TRANS_HITS",
+        "tokenLimit": 513000,
+        "branchLimit": 4470,
+        "current": {
+          "tokens": 435506,
+          "branches": 3893,
+          "slots": 101,
+          "samplers": 6,
+          "sourceSha256": "fcd0816016aca177ea905ef7dc211f50f8f3984a5efd06e5af1679382919b38e",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 479482,
+          "branches": 3921,
+          "slots": 101,
+          "samplers": 6,
+          "sourceSha256": "d73cecd8da15e8bca360db823db9e8bb30a8788e2d341c53b5fd8032554a947f",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_TRANS_HITS_GRID",
+        "tokenLimit": 252000,
+        "branchLimit": 2210,
+        "current": {
+          "tokens": 217185,
+          "branches": 1938,
+          "slots": 102,
+          "samplers": 11,
+          "sourceSha256": "6d710fe44c42d0fe3f4b88c524c65d173e9775f8aabc37be2a3a5c3a6c938abb",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 234307,
+          "branches": 1949,
+          "slots": 102,
+          "samplers": 11,
+          "sourceSha256": "a1dcdb40075bff4329b0b07defb90287602083294e735c64de1fb648c6ca824d",
+          "pass": true
+        }
+      },
+      {
+        "name": "FRAG_COLOR",
+        "tokenLimit": 248000,
+        "branchLimit": 2160,
+        "current": {
+          "tokens": 217286,
+          "branches": 1912,
+          "slots": 110,
+          "samplers": 7,
+          "sourceSha256": "b702dc3321e9cc7f92264e10b632f9a94444dd23ba6049075c323cb3a797632d",
+          "pass": true
+        },
+        "specialized": {
+          "tokens": 229542,
+          "branches": 1920,
+          "slots": 110,
+          "samplers": 7,
+          "sourceSha256": "155800f0b9c3bfd80f3d0939eeaf71a45a5dcbd7b968c8fd5a45c21e2aae4a45",
+          "pass": true
+        }
+      }
+    ],
+    "allPass": true,
+    "method": "P1 current source + offline wall reader; literal shaderLimits helpers and ceilings",
+    "scope": "static estimate of representation and legacy wall query replacement; no runtime/JIT, complete regional classifier or normal/contact proof",
+    "runtimeInstalled": false
+  },
+  "planes": [
+    {
+      "id": "subxiphoid",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 100,
+      "doubt": "Alba/vaina U; hueco medial sin banda identificable. No inferir fascia desde HU."
+    },
+    {
+      "id": "epigastric",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 70,
+      "doubt": "Transición alba→vaina sin resolver; la grasa y el estómago se conservan."
+    },
+    {
+      "id": "intercostal",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 650,
+      "doubt": "Identidad intercostal U. Ventana bloqueada P8; costilla y pulmón conservados."
+    },
+    {
+      "id": "subcostal",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 384,
+      "doubt": "Borde interno próximo al hígado: hay tramos U, sin recortar hígado."
+    },
+    {
+      "id": "flank",
+      "wallVisceraPixels": 19,
+      "geometrySupportPixels": 1083,
+      "doubt": "Complejo lateral D, identidades individuales U; posterior P3 abierto."
+    },
+    {
+      "id": "portal",
+      "wallVisceraPixels": 32,
+      "geometrySupportPixels": 843,
+      "doubt": "Cruce costal y pertenencia U; no confundir costilla con banda muscular."
+    },
+    {
+      "id": "portalTrunk",
+      "wallVisceraPixels": 2,
+      "geometrySupportPixels": 991,
+      "doubt": "Identidad U; pared parcial. No elegir otra rama ni mover la pose."
+    },
+    {
+      "id": "renal",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 447,
+      "doubt": "Pared lateral parcial; músculo/compartimento posterior U/P3, sin anillo."
+    },
+    {
+      "id": "hepatorenal",
+      "wallVisceraPixels": 0,
+      "geometrySupportPixels": 301,
+      "doubt": "Cápsula hepática y pared requieren reconciliación; grasa renal no se rellena."
+    },
+    {
+      "id": "portalSubcostal",
+      "wallVisceraPixels": 9,
+      "geometrySupportPixels": 622,
+      "doubt": "Contacto pared-hígado U en parte del recorrido. Reborde sin despejar obstáculos."
+    }
+  ],
+  "negativeTenAnchors": {
+    "method": "ten-anchor-interpolation",
+    "rows": [
+      {
+        "id": "subxiphoid",
+        "wallVisceraPixels": 0,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "epigastric",
+        "wallVisceraPixels": 4,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "intercostal",
+        "wallVisceraPixels": 13,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "subcostal",
+        "wallVisceraPixels": 0,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "flank",
+        "wallVisceraPixels": 136,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "portal",
+        "wallVisceraPixels": 76,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "portalTrunk",
+        "wallVisceraPixels": 134,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "renal",
+        "wallVisceraPixels": 27,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "hepatorenal",
+        "wallVisceraPixels": 147,
+        "pixelAreaMm2": 2.25
+      },
+      {
+        "id": "portalSubcostal",
+        "wallVisceraPixels": 163,
+        "pixelAreaMm2": 2.25
+      }
+    ],
+    "collisions": 700,
+    "missingBands": 15,
+    "unknownRegions": 363,
+    "expected": "REJECT",
+    "observed": "REJECT: diez anclas no prueban continuidad ni identidad"
+  },
+  "validation": "See external checks.json; focal Python 8 and TS 2 passed; final gate run recorded after final local commit."
+}

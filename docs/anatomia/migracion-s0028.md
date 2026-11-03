@@ -1,13 +1,40 @@
-# Migración a s0028: P1 y compactación de mallas
+# Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319).**
+**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 ronda 1 preparatoria incompleta (320, pendiente de revisión del propietario).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## P2 ronda 1: contrato offline y frontera de anotación (320)
+
+**Pendiente de revisión del propietario; anotación continua no completada.** Sólo pasos 1–2.
+Nuevos exportador y contratos `s0028-wall.py` / `s0028-wall_test.py`, presupuesto en
+`s0028-capacity.py` y contrato de procedencia en `s0028-case.json`. El manifiesto P1 se
+amplía sólo en una copia candidata externa; los activos y lectores del producto no cambian.
+
+El barrido inicial reproduce 363 perfiles/nueve pares, 15 sin banda y salto máximo 9 mm.
+El borrador revisado en cortes vecinos conserva **116 sin banda**, identidad regional U,
+y máximo 1,6667 mm **sólo en el soporte restante**. No mejora ni cierra continuidad:
+se excluyen costillas y contactos ambiguos que el detector llamaba banda. Geometría local
+D en 364/92.672 celdas, resto U. Quedan **62 píxeles de conflicto visceral** visibles,
+sin recortar órganos; el negativo de diez anclas continúa rechazado (700 píxeles en los
+mismos diez planos). Posterior U/P3 y ventana intercostal bloqueada/P8.
+
+Copia parcial comprimida/reabierta: **20.157.056 B, +4.785 B** respecto de 20.152.271 B;
+payload 757.844 B dentro de la reserva de pared, metadatos 1.919 B; atlas/reserva RAW/tórax
+**+0 B**. No es descarga HTTP ni coste de una anotación completa. Ocho estimaciones sobre
+P1 vigente pasan techos literales de `shaderLimits.test.ts`, samplers 6–16/slots 101–138,
+sin sampler nuevo. Clasificador regional, JIT, contacto y pico Metal no se prueban ni cablean.
+
+Piel E 1,5 mm; fronteras gruesas D, identidades U; subcapas finas E/U. Scarpa 0,4 y reparto
+35/35/30 sólo E. Diez láminas, ortogonales, perfiles y trazados vecinos abiertos, con ID y
+lista sí/no pendiente. Fuente, dudas, costes y reproducción en [evidencia P2](../evidence/s0028-p2/README.md).
+La siguiente ronda debe reconciliar trazado/pertenencia y someterlo al propietario antes
+de los pasos 3–4; un presupuesto verde no sustituye ese requisito.
 
 ## Compactación de descarga tras P1 (319)
 

@@ -323,3 +323,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [317](DECISIONS.md#L10045) | Migrar s0028 por fases y abrir P1 con el lector directo B | vigente |
 | [318](DECISIONS.md#L10061) | Cargar P1 s0028 con mallas exactas y capacidad medida | vigente |
 | [319](DECISIONS.md#L10129) | Compactar las mallas s0028 con deltas sin perder geometría | vigente |
+| [320](DECISIONS.md#L10176) | Preparar el contrato de pared s0028 y conservar la frontera de anotación P2 | pendiente de revisión del propietario |

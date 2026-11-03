@@ -112,7 +112,9 @@ class SourceContract(unittest.TestCase):
         out=self.root/'candidate';out.mkdir()
         independent=self.root/'independent';independent.mkdir()
         inventory=lib.inventory(self.root,self.manifest,independent)
-        inventory['originLASmm']=[-10.5,0.,0.]
+        origin = nib.affines.apply_affine(np.array(self.manifest['rasToLASmm']),
+            nib.affines.apply_affine(self.affine, [7, 0, 0])).tolist()
+        inventory['originLASmm']=origin
         lib.save(out/'inventory.json',inventory)
         rows=[]
         for name,asset in [('a','abdominal'),('b','thoracic')]:
@@ -122,7 +124,7 @@ class SourceContract(unittest.TestCase):
             compressed=gzip.compress(raw,mtime=0)
             (out/(name+'.gzip.bin')).write_bytes(compressed)
             rows.append({'name':name,'asset':asset,'status':'source','dimensions':[8,8,8],
-                         'originMm':[-10.5,0.,0.],'rawBytes':len(raw),'occupiedVoxels':27,
+                         'originMm':list(origin),'rawBytes':len(raw),'occupiedVoxels':27,
                          'labelValues':[0,1],'sourceLabels':{'1':name},'sha256Raw':hashlib.sha256(raw).hexdigest()})
         lib.save(out/'fields.json',{'fields':rows})
         return out
@@ -148,6 +150,55 @@ class SourceContract(unittest.TestCase):
         identity=lib.physical_id(self.manifest)
         self.manifest['rasToLASmm'][0][3]=1.5
         self.assertNotEqual(identity,lib.physical_id(self.manifest))
+
+    def test_verified_frame_uses_ct_affine_and_manifest_translation(self):
+        self.affine[:3, 3] = [12., -18., 24.]
+        self.manifest['affineRASmm'] = self.affine.tolist()
+        self.write('ct.nii.gz', np.zeros(self.a.shape, np.int16))
+        self.manifest['ctSha256'] = sha(self.root/'ct.nii.gz')
+        for name in ['a', 'b']:
+            self.write('segmentations/'+name+'.nii.gz', self.a)
+            self.manifest['masks'][name]['sha256'] = sha(self.root/'segmentations'/f'{name}.nii.gz')
+        self.manifest['rasToLASmm'][0][3] = 3.
+        self.manifest['rasToLASmm'][1][3] = 6.
+        self.manifest['rasToLASmm'][2][3] = -9.
+        out = self.candidate_fixture()
+        lib.verify_exports(out, self.manifest, self.root)
+        self.assertEqual(json.loads((out/'inventory.json').read_text())['originLASmm'], [-19.5, -12., 15.])
+
+    def test_translated_twenty_fields_and_inventory_fail_against_ct_frame(self):
+        out = self.candidate_fixture()
+        metadata = json.loads((out/'fields.json').read_text())
+        template = metadata['fields'][0]
+        metadata['fields'] = []
+        self.manifest['fieldGroups'] = []
+        for i in range(20):
+            name = f'field{i}'
+            metadata['fields'].append({**template, 'name': name, 'originMm': list(template['originMm'])})
+            self.manifest['fieldGroups'].append({'name': name, 'masks': ['a']})
+            (out/(name+'.gzip.bin')).write_bytes((out/'a.gzip.bin').read_bytes())
+        lib.save(out/'fields.json', metadata)
+        independent = out.parent/'independent/inventory.json'
+        original = json.loads(independent.read_text())
+        original['physicalFrameSha256'] = lib.physical_id(self.manifest)
+        lib.save(independent, original)
+        body, _ = lib.trunk_mask(np.zeros(self.a.shape, np.int16))
+        np.savez_compressed(out/'body-source.npz', body=body, origin=np.array([-10.5, 0., 0.]))
+        lib.verify_exports(out, self.manifest, self.root)
+        report = json.loads((out/'export-verification.json').read_text())
+        self.assertTrue(report['derivedBodyVerifiedAgainstCT'])
+        self.assertEqual(report['physicalFrameSha256'], lib.physical_id(self.manifest))
+        metadata = json.loads((out/'fields.json').read_text())
+        for row in metadata['fields']:
+            row['originMm'][0] += 100
+        inventory = json.loads((out/'inventory.json').read_text())
+        inventory['originLASmm'][0] += 100
+        lib.save(out/'fields.json', metadata)
+        lib.save(out/'inventory.json', inventory)
+        (out/'export-verification.json').unlink()
+        with self.assertRaisesRegex(ValueError, 'marco|Geometría'):
+            lib.verify_exports(out, self.manifest, self.root)
+        self.assertFalse((out/'export-verification.json').exists())
 
 
 if __name__ == '__main__':

@@ -48,6 +48,16 @@ def consumed_stats(error):
             'maxMm': float(error.max()), 'pass': bool(np.quantile(error, .95) <= 1.5 and error.max() <= 3)}
 
 
+def depth_axes(body, origin):
+    zi = np.flatnonzero((origin[2]+np.arange(body.shape[2])*1.5 >= Z_DOMAIN[0]) &
+                        (origin[2]+np.arange(body.shape[2])*1.5 <= Z_DOMAIN[1]))
+    occupied = np.argwhere(np.any(body[:, :, zi], axis=2))
+    lo = np.r_[occupied.min(0)-8, int(np.floor((Z_DOMAIN[0]-6-origin[2])/1.5))]
+    hi = np.r_[occupied.max(0)+8, int(np.ceil((Z_DOMAIN[1]+6-origin[2])/1.5))]
+    lo = (lo//2)*2; hi = ((hi+1)//2)*2
+    return [np.arange(a, b+1, 2) for a, b in zip(lo, hi)], zi
+
+
 def run(source, model, out):
     import matplotlib
     matplotlib.use('Agg')
@@ -135,15 +145,9 @@ def run(source, model, out):
     exterior = ndi.distance_transform_edt(~body).astype(np.float32)*1.5-.75
     native[~body] = exterior[~body]
     del exterior
-    zi = np.flatnonzero((origin[2]+np.arange(body.shape[2])*1.5 >= Z_DOMAIN[0]) &
-                        (origin[2]+np.arange(body.shape[2])*1.5 <= Z_DOMAIN[1]))
-    occupied = np.argwhere(np.any(body[:, :, zi], axis=2))
-    lo = np.r_[occupied.min(0)-8, int(np.floor((Z_DOMAIN[0]-6-origin[2])/1.5))]
-    hi = np.r_[occupied.max(0)+8, int(np.ceil((Z_DOMAIN[1]+6-origin[2])/1.5))]
-    lo = (lo//2)*2; hi = ((hi+1)//2)*2
-    axes = [np.arange(a, b+1, 2) for a, b in zip(lo, hi)]
+    axes, zi = depth_axes(body, origin)
     sdf = native[np.ix_(*[np.clip(a, 0, body.shape[i]-1) for i, a in enumerate(axes)])].astype('<f2')
-    sdf_origin = origin+lo*1.5
+    sdf_origin = origin+np.array([a[0] for a in axes])*1.5
     # Hardware GL XYZ requiere almacenamiento ZYX.
     sdf_raw = np.ascontiguousarray(sdf.transpose(2, 1, 0)).tobytes()
     sdf_file = out/'body-depth.gzip.bin'; sdf_file.write_bytes(gzip.compress(sdf_raw, compresslevel=9, mtime=0))

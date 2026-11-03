@@ -135,13 +135,25 @@ externa. No ejecutar sobre las carpetas históricas de evidencia:
 ./tools/workspace/run.sh "$PY" -I tools/anatomy/s0028-capacity.py --out "$E/capacity"
 ./tools/workspace/run.sh "$PY" -I tools/anatomy/s0028-p0e-package.py --source "$E/source" --original "$E/direct" --domain "$E/domain" --capacity-dir "$E/capacity" --out "$E/B"
 ./tools/workspace/run.sh node --import tsx tools/anatomy/s0028-direct-cost.ts "$E/B"
-./tools/workspace/run.sh "$PY" -I tools/anatomy/run-tests.py
+./tools/workspace/run.sh "$PY" -I tools/anatomy/run-tests.py tools/anatomy/s0028-source_test.py tools/anatomy/s0028-direct_test.py tools/anatomy/s0028-p0e_test.py
 ```
 
 Los nuevos contratos Python de fuente/directo/P0e corren en `renal-reference.yml` con fixtures
 sintéticos, sin CT, CGAL, C++ ni red durante las pruebas. Los contratos TS de fuente y coste B
 entran en la CI general. El workflow conserva Node porque el contrato vascular previo ejecuta TS.
 Los checks locales no acreditan una CI remota; el cierre no publica ni abre PR.
+
+Tras la revisión de PR327, los contratos sintéticos rechazan trasladar 100 mm los veinte
+campos junto al inventario, auxiliares de otro hash corporal o marco y atlas con 1 MiB RAW
+añadido o hashes RAW/gzip alterados. La verificación de origen usa el affine del TAC y la
+transformación del manifiesto; piel y EDT se contrastan con `body-source.npz` verificado.
+`s0028-p0e-package.py` exige `--source` también al empaquetar sin `--original`, reabre ambos
+atlas y contabiliza sus tamaños RAW reales. La reproducción desde TAC conserva los dos
+hashes de atlas, el manifiesto byte por byte y las cifras de cierre de la tabla anterior.
+El descubrimiento Python global falla sin CGAL en `diaphragm_source_repair_test.py`,
+`diaphragm_relationships_test.py` y `posterior_source_test.py`; las tres pasan en el entorno
+local con CGAL. Las dos primeras corren en `thoracic-source.yml`, que instala su versión
+fijada con Python 3.12. `posterior_source_test.py` no aparece en los workflows actuales.
 
 ## Fuente y cobertura de los 42 tejidos
 

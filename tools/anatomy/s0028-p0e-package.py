@@ -4,6 +4,7 @@ import gzip
 import importlib.util
 import itertools
 import json
+import math
 from pathlib import Path
 import shutil
 
@@ -12,6 +13,9 @@ import numpy as np
 SPEC = importlib.util.spec_from_file_location('direct', Path(__file__).with_name('s0028-direct.py'))
 lib = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(lib)
+SPEC = importlib.util.spec_from_file_location('domain', Path(__file__).with_name('s0028-p0e-domain.py'))
+domain_lib = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(domain_lib)
 
 
 RESIDENT_LIMITS = {'abdominal': 139921010, 'thoracic': 60413664}
@@ -42,6 +46,46 @@ def depth_hole(dimensions, fields, depth_dimensions):
     return [dimensions[0], dimensions[1], d], [x,y,z]
 
 
+def reopen_blob(folder, descriptor, dimensions, bytes_per_node, label):
+    if not dimensions or any(type(d) is not int or d <= 0 for d in dimensions):
+        raise ValueError(label+' dimensiones inválidas')
+    compressed = (folder/descriptor['file']).read_bytes()
+    raw = gzip.decompress(compressed)
+    if len(raw) != math.prod(dimensions)*bytes_per_node or len(raw) != descriptor.get('rawBytes') or len(compressed) != descriptor.get('gzipBytes'):
+        raise ValueError(label+' tamaño RAW/gzip distinto de dimensiones/formato')
+    if lib.sha(raw) != descriptor.get('sha256Raw') or lib.sha(compressed) != descriptor.get('sha256Gzip'):
+        raise ValueError(label+' hash RAW/gzip distinto')
+    return raw
+
+
+def verify_domain(source, domain):
+    metadata = json.loads((source/'fields.json').read_text())
+    body_sha = lib.sha((source/'body-source.npz').read_bytes())
+    if body_sha != metadata['bodySourceSha256']:
+        raise ValueError('Auxiliares: procedencia corporal fuente alterada')
+    with np.load(source/'body-source.npz') as body_data:
+        body, origin = body_data['body'], body_data['origin']
+    skin = json.loads((domain/'skin.json').read_text())['descriptor']
+    depth = json.loads((domain/'depth.json').read_text())['descriptor']
+    for descriptor in [skin, depth]:
+        if descriptor.get('sourceBodySha256') != body_sha:
+            raise ValueError('Auxiliar de otra procedencia corporal')
+    levels = np.count_nonzero(origin[2]+np.arange(body.shape[2])*1.5 <= 120)
+    axes, _ = domain_lib.depth_axes(body, origin)
+    skin_frame = {'format': 'RG16F XY, global periodic polar phi',
+                  'dimensions': [domain_lib.RAYS, (int(levels)-1)*2+1],
+                  'pitchZMm': domain_lib.SKIN_STEP, 'originZMm': float(origin[2]), 'phiRange': [0, 2*np.pi]}
+    depth_frame = {'format': 'R16F signed EDT, negative inside; 3mm hardware linear',
+                   'dimensions': [len(a) for a in axes], 'pitchMm': 3.,
+                   'originMm': (origin+np.array([a[0] for a in axes])*1.5).tolist()}
+    for descriptor, expected in [(skin, skin_frame), (depth, depth_frame)]:
+        if any(descriptor.get(k) != v for k, v in expected.items()):
+            raise ValueError('Auxiliar de otro marco físico corporal')
+    skin_raw = reopen_blob(domain, skin, skin['dimensions'], 4, 'Piel')
+    depth_raw = reopen_blob(domain, depth, depth['dimensions'], 2, 'Profundidad')
+    return skin, depth, skin_raw, depth_raw
+
+
 def direct(source, original, domain, out):
     out.mkdir(parents=True, exist_ok=True)
     original_pack = json.loads((original/'packing.json').read_text())
@@ -53,10 +97,7 @@ def direct(source, original, domain, out):
     if metadata['physicalFrameSha256'] != original_pack['sourcePhysicalFrameSha256']:
         raise ValueError('Packing de otro marco físico')
     fields['digestiveTract'] = lib.encode_gas(fields['digestiveTract'], fields['digestiveGas'])
-    depth_meta = json.loads((domain/'depth.json').read_text())['descriptor']
-    depth_raw = gzip.decompress((domain/depth_meta['file']).read_bytes())
-    if lib.sha(depth_raw) != depth_meta['sha256Raw']:
-        raise ValueError('Profundidad alterada')
+    _, depth_meta, _, depth_raw = verify_domain(source, domain)
     depth = np.frombuffer(depth_raw, '<f2').reshape(depth_meta['dimensions'][::-1])
     assets = []
     for a in original_pack['assets']:
@@ -95,12 +136,21 @@ def direct(source, original, domain, out):
               'gasNearestBitExact':True,'gasSdfStored':False,'runtimeInstalled':False,'clinicalValidation':False})
 
 
-def package(out, domain, capacity_dir):
+def package(out, domain, capacity_dir, source):
     packing=json.loads((out/'packing.json').read_text())
     if sorted(a['name'] for a in packing['assets']) != ['abdominal', 'thoracic']:
         raise ValueError('Se requieren ambos atlas B una sola vez')
-    skin=json.loads((domain/'skin.json').read_text())['descriptor']
-    depth=json.loads((domain/'depth.json').read_text())['descriptor']
+    source_frame = json.loads((source/'fields.json').read_text())['physicalFrameSha256']
+    if packing['sourcePhysicalFrameSha256'] != source_frame:
+        raise ValueError('Packing de otro marco físico fuente')
+    skin, depth, skin_raw, _ = verify_domain(source, domain)
+    atlas_sizes = {}
+    for a in packing['assets']:
+        if len(a['textureDimensions']) != 3:
+            raise ValueError('Atlas dimensiones inválidas')
+        raw = reopen_blob(out, a, a['textureDimensions'], 4, 'Atlas '+a['name'])
+        atlas_sizes[a['name']] = len(raw)
+        del raw
     capacity=json.loads((capacity_dir/'capacity.json').read_text())
     capacity_raw = (capacity_dir/'annotation-capacity.bin').read_bytes()
     if len(capacity_raw) != capacity['rawBytes'] or lib.sha(capacity_raw) != capacity['sha256']:
@@ -124,11 +174,12 @@ def package(out, domain, capacity_dir):
     memory=[]
     for a in packing['assets']:
         abd=a['name']=='abdominal'
-        extras=skin['rawBytes']+manifest_bytes+tables if abd else 0
-        counted=a['rawBytes']+capacity[a['name']+'Bytes']+extras
+        extras=len(skin_raw)+manifest_bytes+tables if abd else 0
+        texture_bytes = atlas_sizes[a['name']]
+        counted=texture_bytes+capacity[a['name']+'Bytes']+extras
         limit=RESIDENT_LIMITS[a['name']]
-        memory.append({'name':a['name'],'textureBytes':a['rawBytes'],'textureDimensions':a['textureDimensions'],
-                       'capacityBytes':capacity[a['name']+'Bytes'],'skinCPUBytes':skin['rawBytes'] if abd else 0,
+        memory.append({'name':a['name'],'textureBytes':texture_bytes,'textureDimensions':a['textureDimensions'],
+                       'capacityBytes':capacity[a['name']+'Bytes'],'skinCPUBytes':len(skin_raw) if abd else 0,
                        'manifestAndDescriptorsBytes':manifest_bytes+tables if abd else 0,'depthBytesIncludedInTexture':a['depthBytesInAtlas'],
                        'residentAccountedBytes':counted,'limitBytes':limit,'marginBytes':limit-counted,
                        'authorizedBLimitBytes':limit})
@@ -145,7 +196,7 @@ def package(out, domain, capacity_dir):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ['out','domain','capacity-dir']:p.add_argument('--'+name,type=Path,required=True)
-    p.add_argument('--source',type=Path);p.add_argument('--original',type=Path)
+    p.add_argument('--source',type=Path,required=True);p.add_argument('--original',type=Path)
     a=p.parse_args()
     if a.original:direct(a.source,a.original,a.domain,a.out)
-    package(a.out,a.domain,a.capacity_dir)
+    package(a.out,a.domain,a.capacity_dir,a.source)

@@ -261,7 +261,12 @@ def verify_exports(out, manifest, case_dir):
     original = json.loads((out.parent/'independent/inventory.json').read_text())
     if digest(Path(case_dir)/'ct.nii.gz') != manifest['ctSha256']:
         raise ValueError('TAC distinto al verificar exports')
-    geometry(nib.load(Path(case_dir)/'ct.nii.gz'),manifest,'CT')
+    image = nib.load(Path(case_dir)/'ct.nii.gz')
+    geometry(image,manifest,'CT')
+    source_origin = nib.affines.apply_affine(np.array(manifest['rasToLASmm']),
+        nib.affines.apply_affine(image.affine, [image.shape[0]-1, 0, 0]))
+    if not np.array_equal(inv['originLASmm'], source_origin):
+        raise ValueError('Inventario candidato de otro marco físico TAC')
     for name,spec in manifest['masks'].items():
         if original['masks'][name]['sha256'] != spec['sha256']:
             raise ValueError('Inventario fuente de otro hash')
@@ -272,10 +277,8 @@ def verify_exports(out, manifest, case_dir):
     body_verified = False
     if (out/'body-source.npz').exists():
         stored = np.load(out/'body-source.npz')
-        image = nib.load(Path(case_dir)/'ct.nii.gz')
         rebuilt,_ = trunk_mask(np.asarray(image.dataobj)[::-1])
-        expected_origin = nib.affines.apply_affine(np.array(manifest['rasToLASmm']),nib.affines.apply_affine(image.affine,[image.shape[0]-1,0,0]))
-        if not np.array_equal(stored['body'],rebuilt) or not np.array_equal(stored['origin'],expected_origin):
+        if not np.array_equal(stored['body'],rebuilt) or not np.array_equal(stored['origin'],source_origin):
             raise ValueError('Piel fuente no deriva del mismo TAC/marco')
         body_verified = True
     groups = {g['name']:g for g in manifest['fieldGroups']}
@@ -299,7 +302,7 @@ def verify_exports(out, manifest, case_dir):
             if r['sourceLabels'] != expected:
                 raise ValueError('Identidad categórica cambiada: '+r['name'])
             grid = f.reshape(*r['dimensions'][::-1],2).transpose(2,1,0,3)
-            base = np.array(inv['originLASmm'])
+            base = source_origin
             for label, name in expected.items():
                 stats = original['masks'][name]
                 binary = gzip.decompress((out.parent/'independent/masks'/(name+'.u8.gz')).read_bytes())

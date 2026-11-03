@@ -32,6 +32,13 @@ def require_mesh_capacity(plan, vertices, triangles):
         raise ValueError('Anotación excede capacidad')
 
 
+def require_wall_budget(payload_bytes, metadata_bytes, atlas_increment, raw_increment, thoracic_increment):
+    if (payload_bytes < 0 or payload_bytes > capacity_plan(344)['wall']['bytes'] or
+            not 0 <= metadata_bytes <= 4096 or atlas_increment != 0 or
+            raw_increment != 0 or thoracic_increment != 0):
+        raise ValueError('presupuesto P2: reserva pared/metadatos; atlas/RAW/tórax +0 B')
+
+
 def materialize_capacity(out, rows):
     plan = capacity_plan(rows)
     offset, parts = 4096, []

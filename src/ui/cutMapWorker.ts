@@ -1,4 +1,3 @@
-import { sourceSurface } from '../anatomy/sourceSurface';
 import {
   anatomyBundle,
   installAnatomyBundle,
@@ -96,31 +95,10 @@ let vesselIndex = new Map<string, number>();
 const post = (m: CutMapResponse | CutMapError | CutMapProgress, transfer: Transferable[] = []) =>
   (self as unknown as Worker).postMessage(m, transfer);
 
-self.onmessage = async (
-  ev: MessageEvent<CutMapInit | CutMapRequest | { type: 'surfaces'; abdominalField: Uint16Array; thoracicField: Uint16Array }>,
-) => {
+self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
   const msg = ev.data;
   const current = ++revision;
   try {
-    if (msg.type === 'surfaces') {
-      installAnatomyBundle(S0028_BUNDLE);
-      setAbdominalAtlas(msg.abdominalField);
-      setThoracicAtlas(msg.thoracicField);
-      const surfaces = [];
-      for (const field of S0028_BUNDLE.fields)
-        surfaces.push(
-          await sourceSurface(
-            field.asset === 'abdominal' ? msg.abdominalField : msg.thoracicField,
-            field,
-            field.asset === 'abdominal' ? S0028_BUNDLE.abdominal.textureDimensions : S0028_BUNDLE.thoracic.textureDimensions,
-          ),
-        );
-      (self as unknown as Worker).postMessage(
-        { type: 'surfaces', surfaces },
-        surfaces.map((s) => s.positions.buffer),
-      );
-      return;
-    }
     if (msg.type !== 'map') {
       if (msg.type === 'patient' && msg.identity.person !== anatomyBundle.person) throw new Error('Worker de otra persona');
       if (msg.type === 'init')

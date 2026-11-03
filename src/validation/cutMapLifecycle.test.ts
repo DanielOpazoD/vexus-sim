@@ -51,6 +51,34 @@ function fixture(onMapReady?: () => void) {
   return { view, sim, workers, report, canvas };
 }
 
+it('presenta y recibe mapas con GPU pendiente sin contar sus ticks como cuadros del watchdog', () => {
+  const { view, sim, workers, report } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  // Reproducción x64: tras el primer cuadro JS, la GPU tarda varios segundos;
+  // bootstrap sigue presentando el mismo adquirido en cada RAF. El Worker frío
+  // aún está inicializando. No son 13 cuadros de adquisición sin progreso.
+  for (let i = 1; i <= 240; i++) view.draw(sim, 1000 + i * 16, 8, false);
+  expect(workers[0].terminate).not.toHaveBeenCalled();
+  expect(report).not.toHaveBeenCalled();
+  const response = { type: 'map', id: request.id };
+  workers[0].onmessage({ data: response });
+  expect(view.lastMap?.map).toBe(response);
+  view.dispose();
+});
+
+it('sigue detectando un Worker colgado tras 3 s de cuadros normales, también congelado', () => {
+  const { view, sim, workers, report } = fixture();
+  view.draw(sim, 1000);
+  // El frame adquirido no cambia (congelado), pero el bucle normal sigue activo.
+  for (let i = 1; i <= 12; i++) view.draw(sim, 1000 + i * 250);
+  expect(workers[0].terminate).not.toHaveBeenCalled();
+  view.draw(sim, 4250);
+  expect(workers[0].terminate).toHaveBeenCalledOnce();
+  expect(report).toHaveBeenCalledWith('corte', expect.any(Error));
+  view.dispose();
+});
+
 it('notifies presentation only for an accepted map, after publishing its acquired inputs', () => {
   const ready = vi.fn(() => {
     expect(view.lastMap?.map).toBe(response);

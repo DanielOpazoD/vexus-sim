@@ -1,0 +1,617 @@
+{
+  "scope": "Local instrumented M4/24 GiB; Metal arm64 and SwiftShader x64/Rosetta. Not CI or clinical validation.",
+  "gate": "Metal simultaneous sum of every renderer + GPU footprint <= 2000000000 B; Swift first accepted frame <=180000 ms and no context loss; no Swift memory cap.",
+  "runs": [
+    {
+      "run": "r4c-metal-current-1",
+      "timingsMs": {
+        "hash": 73.39999997615814,
+        "body": 45.200000047683716,
+        "upload": 19.100000023841858,
+        "compileLinkStatus": 65.30000001192093,
+        "drawCPU": 0,
+        "decompress": 196.4000000357628,
+        "navigatorSurface": 90.60000002384186,
+        "surfaces": null,
+        "gpuFence": 28.19999998807907,
+        "firstFrame": 1641.3999999761581,
+        "httpActive": 34.135009765625,
+        "httpSpan": 429.521484375
+      },
+      "sumPeak": 1447317584,
+      "uniqueAtSumPeak": 1412632656,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42149,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 724060560,
+          "auxiliary": {
+            "phys_footprint_peak": 728222096,
+            "phys_footprint": 723945872
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42147,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 723257024,
+          "auxiliary": {
+            "phys_footprint_peak": 726664872,
+            "phys_footprint": 723289792
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1440641140.0,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [570, 593],
+      "kernelLifetimePeaks": {
+        "42147": 726664872,
+        "42149": 728222096
+      },
+      "loadFirst": "10:27  up 3 days, 21:13, 1 user, load averages: 1.90 2.03 2.02\n",
+      "loadLast": "10:27  up 3 days, 21:13, 1 user, load averages: 1.93 2.03 2.02\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "current",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-metal-current-2",
+      "timingsMs": {
+        "hash": 69.39999997615814,
+        "body": 44.0,
+        "upload": 17.400000035762787,
+        "compileLinkStatus": 59.30000001192093,
+        "drawCPU": 0,
+        "decompress": 197.50000005960464,
+        "navigatorSurface": 87.80000001192093,
+        "surfaces": null,
+        "gpuFence": 23.80000001192093,
+        "firstFrame": 1548.1000000238419,
+        "httpActive": 20.025146484375,
+        "httpSpan": 387.89306640625
+      },
+      "sumPeak": 1458213208,
+      "uniqueAtSumPeak": 1423462744,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42819,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 730958464,
+          "auxiliary": {
+            "phys_footprint_peak": 733760128,
+            "phys_footprint": 730778240
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42817,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 727254744,
+          "auxiliary": {
+            "phys_footprint_peak": 754550416,
+            "phys_footprint": 727287512
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1451553100.0,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [571, 595],
+      "kernelLifetimePeaks": {
+        "42819": 733760128,
+        "42817": 754550416
+      },
+      "loadFirst": "10:28  up 3 days, 21:13, 1 user, load averages: 1.89 2.01 2.01\n",
+      "loadLast": "10:28  up 3 days, 21:14, 1 user, load averages: 1.94 2.02 2.02\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "current",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-metal-current-3",
+      "timingsMs": {
+        "hash": 69.40000003576279,
+        "body": 43.999999940395355,
+        "upload": 19.0,
+        "compileLinkStatus": 60.30000001192093,
+        "drawCPU": 0,
+        "decompress": 198.69999998807907,
+        "navigatorSurface": 88.80000001192093,
+        "surfaces": null,
+        "gpuFence": 33.19999998807907,
+        "firstFrame": 1549.6000000238419,
+        "httpActive": 21.5380859375,
+        "httpSpan": 390.22216796875
+      },
+      "sumPeak": 1459523880,
+      "uniqueAtSumPeak": 1424904488,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43420,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 733891128,
+          "auxiliary": {
+            "phys_footprint_peak": 733858360,
+            "phys_footprint": 733841976
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43418,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 725632752,
+          "auxiliary": {
+            "phys_footprint_peak": 748553920,
+            "phys_footprint": 725665520
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1447276816.0,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [571, 593],
+      "kernelLifetimePeaks": {
+        "43420": 735087160,
+        "43418": 748553920
+      },
+      "loadFirst": "10:28  up 3 days, 21:14, 1 user, load averages: 2.52 2.15 2.06\n",
+      "loadLast": "10:29  up 3 days, 21:14, 1 user, load averages: 2.18 2.09 2.04\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "current",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-metal-s0028-1",
+      "timingsMs": {
+        "hash": 95.39999997615814,
+        "body": 34.3999999165535,
+        "upload": 32.200000047683716,
+        "compileLinkStatus": 57.80000001192093,
+        "drawCPU": 0,
+        "decompress": 147.69999998807907,
+        "navigatorSurface": 0.7000000476837158,
+        "surfaces": 74.40000003576279,
+        "gpuFence": 33.0,
+        "firstFrame": 1274.300000011921,
+        "httpActive": 29.4296875,
+        "httpSpan": 236.71484375
+      },
+      "sumPeak": 1771884696,
+      "uniqueAtSumPeak": 1738117272,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42456,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 930204264,
+          "auxiliary": {
+            "phys_footprint_peak": 930073192,
+            "phys_footprint": 930073192
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 42454,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 841680432,
+          "auxiliary": {
+            "phys_footprint_peak": 841696816,
+            "phys_footprint": 841696816
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1669845240,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [570, 581],
+      "kernelLifetimePeaks": {
+        "42456": 943966824,
+        "42454": 842253872
+      },
+      "loadFirst": "10:27  up 3 days, 21:13, 1 user, load averages: 1.86 2.01 2.02\n",
+      "loadLast": "10:28  up 3 days, 21:13, 1 user, load averages: 1.89 2.01 2.01\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "s0028",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-metal-s0028-2",
+      "timingsMs": {
+        "hash": 96.40000003576279,
+        "body": 29.599999964237213,
+        "upload": 32.30000001192093,
+        "compileLinkStatus": 57.10000002384186,
+        "drawCPU": 0,
+        "decompress": 150.79999995231628,
+        "navigatorSurface": 0.6000000238418579,
+        "surfaces": 74.19999998807907,
+        "gpuFence": 31.100000023841858,
+        "firstFrame": 1269.4000000357628,
+        "httpActive": 23.299072265625,
+        "httpSpan": 233.89306640625
+      },
+      "sumPeak": 1715802384,
+      "uniqueAtSumPeak": 1682034960,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43120,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 869239424,
+          "auxiliary": {
+            "phys_footprint_peak": 912443744,
+            "phys_footprint": 869157504
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43118,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 846562960,
+          "auxiliary": {
+            "phys_footprint_peak": 846595728,
+            "phys_footprint": 846595728
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1675317568,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [572, 582],
+      "kernelLifetimePeaks": {
+        "43120": 921258672,
+        "43118": 846939792
+      },
+      "loadFirst": "10:28  up 3 days, 21:14, 1 user, load averages: 1.94 2.02 2.02\n",
+      "loadLast": "10:28  up 3 days, 21:14, 1 user, load averages: 2.52 2.15 2.06\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "s0028",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-metal-s0028-3",
+      "timingsMs": {
+        "hash": 97.00000005960464,
+        "body": 30.399999976158142,
+        "upload": 32.40000003576279,
+        "compileLinkStatus": 57.90000003576279,
+        "drawCPU": 0,
+        "decompress": 153.10000002384186,
+        "navigatorSurface": 0.8999999761581421,
+        "surfaces": 74.10000002384186,
+        "gpuFence": 33.59999996423721,
+        "firstFrame": 1279.5,
+        "httpActive": 24.083251953125,
+        "httpSpan": 237.922119140625
+      },
+      "sumPeak": 1709592728,
+      "uniqueAtSumPeak": 1675825304,
+      "processesAtPeak": [
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43784,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 865880632,
+          "auxiliary": {
+            "phys_footprint_peak": 915278128,
+            "phys_footprint": 865749560
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "chrome-headless-shell",
+          "pid": 43782,
+          "translated": false,
+          "page size": 16384,
+          "footprint": 843712096,
+          "auxiliary": {
+            "phys_footprint_peak": 843728480,
+            "phys_footprint": 843728480
+          },
+          "type": "GPU"
+        }
+      ],
+      "stableMedian": 1669501104,
+      "physicalSamples": 28,
+      "sampleGapRangeMs": [571, 586],
+      "kernelLifetimePeaks": {
+        "43784": 915278128,
+        "43782": 844105312
+      },
+      "loadFirst": "10:29  up 3 days, 21:14, 1 user, load averages: 2.08 2.07 2.04\n",
+      "loadLast": "10:29  up 3 days, 21:15, 1 user, load averages: 2.46 2.15 2.07\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "s0028",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-swiftshader-current-1",
+      "timingsMs": {
+        "hash": 506.0999999642372,
+        "body": 1627.8999999165535,
+        "upload": 59.19999998807907,
+        "compileLinkStatus": 744.3000000119209,
+        "drawCPU": 3.800000011920929,
+        "decompress": 1699.2000000476837,
+        "navigatorSurface": 1539.0,
+        "surfaces": null,
+        "gpuFence": 7881.900000035763,
+        "firstFrame": 46042.10000002384,
+        "httpActive": 1255.542724609375,
+        "httpSpan": 13981.60595703125
+      },
+      "sumPeak": 3083833600,
+      "uniqueAtSumPeak": 3050287360,
+      "processesAtPeak": [
+        {
+          "name": "Google Chrome for Testing Helper (GPU)",
+          "pid": 44090,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 2053874296,
+          "auxiliary": {
+            "phys_footprint_peak": 2041586296,
+            "phys_footprint": 2041569912
+          },
+          "type": "GPU"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 44096,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 899092856,
+          "auxiliary": {
+            "phys_footprint_peak": 899727736,
+            "phys_footprint": 899727736
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 44094,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 100200480,
+          "auxiliary": {
+            "phys_footprint_peak": 108240928,
+            "phys_footprint": 100847648
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 44095,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 30665968,
+          "auxiliary": {
+            "phys_footprint_peak": 31223024,
+            "phys_footprint": 31223024
+          },
+          "type": "renderer"
+        }
+      ],
+      "stableMedian": 2660064116.0,
+      "physicalSamples": 64,
+      "sampleGapRangeMs": [795, 2895],
+      "kernelLifetimePeaks": {
+        "44090": 2066859000,
+        "44094": 108240928,
+        "44096": 900518288,
+        "44095": 31223024
+      },
+      "loadFirst": "10:29  up 3 days, 21:15, 1 user, load averages: 2.15 2.09 2.05\n",
+      "loadLast": "10:30  up 3 days, 21:16, 1 user, load averages: 6.38 3.26 2.48\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "current",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    },
+    {
+      "run": "r4c-swiftshader-s0028-1",
+      "timingsMs": {
+        "hash": 620.5000000596046,
+        "body": 103.5,
+        "upload": 585.9999999403954,
+        "compileLinkStatus": 717.1999999880791,
+        "drawCPU": 0,
+        "decompress": 1262.0000000596046,
+        "navigatorSurface": 16.19999998807907,
+        "surfaces": 275.30000001192093,
+        "gpuFence": 5448.899999976158,
+        "firstFrame": 33759.69999998808,
+        "httpActive": 69.143310546875,
+        "httpSpan": 2734.8642578125
+      },
+      "sumPeak": 3120604512,
+      "uniqueAtSumPeak": 3087287648,
+      "processesAtPeak": [
+        {
+          "name": "Google Chrome for Testing Helper (GPU)",
+          "pid": 45178,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 1870562984,
+          "auxiliary": {
+            "phys_footprint_peak": 1788279808,
+            "phys_footprint": 1711109800
+          },
+          "type": "GPU"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 45184,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 1112318280,
+          "auxiliary": {
+            "phys_footprint_peak": 1113063752,
+            "phys_footprint": 1113063752
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 45182,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 107229432,
+          "auxiliary": {
+            "phys_footprint_peak": 115429624,
+            "phys_footprint": 107876600
+          },
+          "type": "renderer"
+        },
+        {
+          "name": "Google Chrome for Testing Helper (Renderer)",
+          "pid": 45183,
+          "translated": true,
+          "page size": 4096,
+          "footprint": 30493816,
+          "auxiliary": {
+            "phys_footprint_peak": 31050872,
+            "phys_footprint": 31050872
+          },
+          "type": "renderer"
+        }
+      ],
+      "stableMedian": 2910643216.0,
+      "physicalSamples": 50,
+      "sampleGapRangeMs": [835, 3523],
+      "kernelLifetimePeaks": {
+        "45178": 1915993688,
+        "45182": 115429624,
+        "45184": 1131241872,
+        "45183": 31050872
+      },
+      "loadFirst": "10:30  up 3 days, 21:16, 1 user, load averages: 6.53 3.39 2.54\n",
+      "loadLast": "10:31  up 3 days, 21:17, 1 user, load averages: 7.15 4.05 2.83\n",
+      "errors": [],
+      "renderer": {
+        "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "person": "s0028",
+        "lost": false,
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": "undefined"
+      }
+    }
+  ],
+  "rawEvidence": [
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-1/result.json",
+      "sha256": "cd2249bdf110fe2bb60a43b5d21769fd3c3dcfe1fe53203ea6e4ad8943fd013a"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-2/result.json",
+      "sha256": "b4f09ae2d2f9eecce5708291b368750d2c0d6712b87737f6c05934c835bddb25"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-3/result.json",
+      "sha256": "67b069293a23c32b5a825c8a7dae2e36be67812fc386c8ad353a1489b00479c9"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-1/result.json",
+      "sha256": "b0a161ebd61f808723bc7d7434d30b76c1a902ed556840b538d4113472b71bd8"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-2/result.json",
+      "sha256": "571a654e825d716b5e08eb7e6501cb7b4faf0bea06e39dc40f0ff88b7d3b46eb"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-3/result.json",
+      "sha256": "0ff16c9d9b1b3f43794cfb0bdefe7802ab5258055c4a856a30ff7b525be1b446"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-swiftshader-current-1/result.json",
+      "sha256": "00d9da0bd079caca302f6f9035e023404b244598d5115010948057ac0aeb7c55"
+    },
+    {
+      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-swiftshader-s0028-1/result.json",
+      "sha256": "3d352fc8ff77a60268c79c9a9bf98a998ea20a3bba6cc2da3932b42912fe0539"
+    }
+  ],
+  "surfaceEquality": {
+    "fields": 19,
+    "triangles": 1781772,
+    "errorMm": 0,
+    "format": "indexed-f32-u32-v1",
+    "rawBytes": 32071200,
+    "gzipBytes": 9672026,
+    "sha256Raw": "a9b82a42b4e7eeac653b4ddd5459828e60508fd69fb925630a0dca20bbae5642",
+    "sha256Gzip": "e4a0ad55352559880358ced125b308b79ac0ccf347f01ee01a07bfb4bd110252"
+  },
+  "repetitionReason": "Final candidate after A17: 3 clean alternating Metal pairs, no external >=100% CPU and dispersion <20%. Earlier spike/current rep2, repeated pair4 and pre-A17 states retained in external r4c/.",
+  "contextLossEvents": {
+    "r4c-metal-s0028-1": 0,
+    "r4c-metal-current-1": 0,
+    "r4c-metal-s0028-2": 0,
+    "r4c-metal-current-2": 0,
+    "r4c-metal-current-3": 0,
+    "r4c-metal-s0028-3": 0,
+    "r4c-swiftshader-s0028-1": 0,
+    "r4c-swiftshader-current-1": 0
+  }
+}

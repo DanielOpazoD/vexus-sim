@@ -10058,41 +10058,57 @@ Piel exacta en el sentido del contrato muestreado p95 ≤1,5 mm/máximo ≤3 mm 
 
 **Verificación.** Los ocho programas completos de coste B P0e pasan estáticamente; RAWFIELD 1.212.601/9.763 tokens/ramas y ECHO 505.781/4.091, máximo 16 samplers y 101–138 slots. El microshader SwiftShader dibujó ambos atlas con GL=0; no acredita JIT/arranque completo. Los contratos sintéticos comprueban procedencia, campos perdidos/corruptos, categorías, gas, colocación de profundidad, periodicidad, desconocidos y descarga real con un negativo de anotación llena. El coste B se ejecuta también con descriptores sintéticos en la CI general. Evidencia, archivos archivados, reproducción y códigos locales del cierre se enlazan desde el documento de migración; ninguna CI remota o revisión por otro agente se atribuye a esta entrega.
 
-## 318. Medir memoria real y mantener P1 detenido tras la dieta
+## 318. Cargar P1 s0028 con mallas exactas y capacidad medida
 
-**Contexto.** Objetivos 3/7/8. El propietario fija pico total de renderer/página/Worker +
-GPU ≤1.000.000.000 B y objetivo P1 ≤800.000.000 B, para PC actuales de 8–16 GB con integrada.
-La muestra r2 de 1.120.588.568 B no era pico exhaustivo ni tenía referencia de la anatomía actual.
-Genérico r1 rechazado: RAWFIELD 1.770.910/14.870 >1.385.000/11.060; [negativo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
+**Contexto.** Objetivos 3/7/8. R3 se rechazó bajo objetivo 800 MB/techo 1 GB; su base
+actual ya daba Σ1,449–1,607 GB. Antes de r4 el propietario corrigió el criterio para PC
+8–16 GB con integrada: app completa Metal Σ renderer + GPU ≤2 GB, incremento medido y
+declarado; SwiftShader sólo cuadro dentro de BOOT_MS/contexto, sin techo de memoria.
+La dieta global es un bloque posterior. R3 demoraba ~20 s por extraer superficies en Worker.
+Genérico r1 rechazado: RAWFIELD 1.770.910/14.870 >1.385.000/11.060; se conserva su negativo.
 
-**Opciones.** Eliminar normales duplicadas del stream no indexado s0028, acotar staging de
-subida común y revisar propiedad CPU. Sin aislamiento de origen cruzado ni hosting con esas
-cabeceras acreditado (release sólo empaqueta ZIP), no se depende de SharedArrayBuffer.
-Dos pasadas/máscara para superficies conservan los 19 hashes, pero no ahorran pico observado
-y empeoran el arranque: ensayo retirado, con código, pruebas y negativos externos conservados.
+**Opciones.** Se conserva el lector especializado por persona/sampler antes de compilar,
+con ocho programas completos por variante y límites originales. Cuantización/decimación
+se rechazan: Float32 indexado exacto cabe en los 25.000.000 B autorizados aunque excede
+la preferencia de descarga. Propiedad CPU única/SAB y dieta de toda la app quedan fuera de P1.
 
-**Decisión.** Derivar las normales planas de los mismos triángulos s0028 en GPU, retirando
-64.143.792 B CPU; en los buffers GPU efectivamente subidos se observan 63.753.696 B menos. Crear RG16F inmutable del mismo tamaño y
-subir vistas Z de ≤4 MiB por llamada en ambas anatomías. No cambiar texeles, campos, pitch,
-precisión ósea, poses, pared ni física. Mantener dos copias CPU de atlas: página y Worker hacen
-consultas síncronas; propiedad única permanente exige rediseñar adquisición, no detachar una
-copia que sigue siendo necesaria. El candidato continúa sólo por `?abdomen=s0028`.
+**Decisión.** Precalcular los 19 campos con el extractor fuente, indexando por bits sin
+perder orden/orientación de ningún triángulo: cota geométrica previa 0 mm. Generador,
+contrato `S0028_SURFACE`, hashes raw/gzip/expandidos y procedencia CT/LAS/mm/revisión
+quedan en el repositorio; verificación antes de instalar y prueba contra las fuentes.
+Materiales/normal plana GPU/iluminación 3D se conservan. El Worker ya sólo clasifica
+el corte; la E2E exige mapa real e inicialización con ambos atlas y prohíbe extracción.
+Se mantiene subida RG16F por vistas de r3, dos copias CPU, poses/pared y selector explícito.
+La ligera x64 destapa un falso timeout del corte (A17): presentación RAF mientras GPU está
+pendiente consumía el watchdog por cuadros activos. `advanceWatchdog=allowGpu` conserva
+mensajes/mapas sin cargar ese reloj durante la espera; mantiene 3 s, 250 ms/cuadro y el
+control de colgado/congelado. Regresión roja y humo original fallido se conservan; ambos
+pasan corregidos. Se repite el cierre completo sobre este cambio, sin ampliar plazos.
 
-**Consecuencias.** La referencia ya excede el objetivo: Metal antes 1.480–1.505 MB y después
-1.415–1.425 MB; s0028 pasa de 1.953–1.971 MB a 1.740–1.755 MB en las tres pasadas principales.
-Son MB decimales de footprint con memoria compartida descontada; sumar procesos da una cota
-más alta. SwiftShader x64/Rosetta también excede ampliamente 1 GB, en ambas personas.
-**P1 sigue rechazado por memoria**, incluso antes de paridad/consumidores/diez láminas.
-Primer cuadro Metal final s0028 20,04–20,19 s; x64 alcanza cuadro en las tres pasadas finales,
-pero no acredita uso razonable de memoria. La carga y las repeticiones se conservan; no se
-convierte la comparación temporal en aceleración causal ni validación de otros PC.
+**Consecuencias.** Tres pares alternados Metal: actual 1,548–1,641 s/Σ1,447–1,460 GB;
+s0028 1,269–1,280 s/Σ1,710–1,772 GB, aumento 0,250–0,325 GB por par. Cumple ≤2 GB
+y ≤+2 s de arranque en este M4/24 GiB; no certifica otros PC ni un máximo continuo.
+La carga/repetición previas a A17 se conservan; las cifras de esta entrada son las tres
+pasadas finales sin otra carga intensa identificada.
+SwiftShader x64/Rosetta limpio llega en 46,042/33,760 s actual/s0028, lost=false, dentro
+de BOOT_MS=180 s; memoria observada Σ3,084/3,121 GB sin gate. Los errores CDP heredados
+y el intento corregido aún fallido se conservan; el par limpio no pausa/consulta heap Worker,
+no medido. Footprint de todos los renderer/GPU permanece externo; no se suma CDP otra vez.
 
-**Verificación.** Negativos previos de normales y transferencia, pruebas verdes del candidato,
-matrices seriales de tres lanzamientos por persona/backend, repeticiones por interferencia,
-footprint externo por proceso y categorías nativas, heap/backing CDP y recursos lógicos GPU
-sin doble suma. Ocho programas por variante y límites originales intactos; JS 1.024.250 B,
-margen 45.830 B. HTTP y cierre completo con sus códigos, SHA, procedencia y desviaciones en
-[informe r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md). Los intervalos muestreados no son pico continuo; los contadores vitales del kernel (otra contabilidad)
-se conservan separados. Capturas de arranque abiertas no sustituyen diez láminas con
-ID ni paridad del candidato. Una sola decisión 318; sin revisión ajena, CI remota, push, PR,
-stash ni escrituras gh. No es validación clínica.
+Mallas 9.672.026 B gzip/32.071.200 B RAW; descarga final **24.484.081 B**, exceso preferido
+4.974.079 B y margen autorizado **515.919 B**. JS **1.027.141 B**, margen **42.939 B**.
+Los ocho programas por persona caben, tórax conserva 0 B de margen. Paridad de nodos y
+CPU/Worker exacta; siete empates reales nearest (+1 lung crudo) explicados por índices
+double/Float32, fixture/negativo conservados, 16 perturbaciones ±0,001 mm coincidentes.
+No se afirma igualdad categórica exacta en empates ni se descartan por distancia +16 mm.
+Diez láminas abiertas con ID, poses/pared actuales provisionales P2–P8; renal focal, sombras
+costales y apoyo lateral requieren revisión anatómica posterior. Sin validación clínica.
+
+**Verificación.** `s0028Precomputed.test.ts` es el primer negativo conservado de r4 sobre
+ff6e5b8; prueba lenta reextrae 19 campos y la rápida expande índices. Corrupción/procedencia,
+profundidad/contacto y Worker real cubiertos. Formato, índice, lint, tipos, test serial, contratos
+Python, build, check completo, calibración y E2E afectadas/ligera se registran con códigos
+en [evidencia P1](evidence/s0028-p1/README.md). [Migración](anatomia/migracion-s0028.md)
+recoge todos los costes y límites. Una sola decisión 318: historial r3 y enmiendas A1–A17
+con negativos conservados. Sin delegación/revisión ajena, push, PR, stash, gh, CI remota
+ni cambios al puerto 5174; commits sólo locales.

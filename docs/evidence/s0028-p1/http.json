@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-11-03T15:31:37.329Z",
+  "rows": [
+    {
+      "file": "abdominal-direct.gzip-BiQlVOtV.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 8567375,
+      "httpBodyBytes": 8567375,
+      "sha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd"
+    },
+    {
+      "file": "thoracic-direct.gzip-Cb4MJvZn.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 5252011,
+      "httpBodyBytes": 5252011,
+      "sha256": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d"
+    },
+    {
+      "file": "annotation-capacity.gzip-DPGfQmsC.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 6999,
+      "httpBodyBytes": 6999,
+      "sha256": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836"
+    },
+    {
+      "file": "skin-polar.gzip-DbyAGry5.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 947509,
+      "httpBodyBytes": 947509,
+      "sha256": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e"
+    },
+    {
+      "file": "candidate-manifest-Bsla_Bui.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 34521,
+      "httpBodyBytes": 34521,
+      "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+    },
+    {
+      "file": "abdominal-body-CUZ10dBo.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 3640,
+      "httpBodyBytes": 3640,
+      "sha256": "47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323"
+    },
+    {
+      "file": "surfaces.gzip-YAyNKCnk.bin",
+      "status": 200,
+      "contentEncoding": null,
+      "contentLength": 9672026,
+      "httpBodyBytes": 9672026,
+      "sha256": "e4a0ad55352559880358ced125b308b79ac0ccf347f01ee01a07bfb4bd110252"
+    }
+  ],
+  "totalHttpBodyBytes": 24484081,
+  "limitBytes": 25000000,
+  "jsBytes": 1027141
+}

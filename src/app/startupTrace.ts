@@ -2,6 +2,8 @@
 export const STARTUP_PREFIX = '[vexus:startup] ';
 export const STARTUP_STAGES = [
   'bootstrap:begin',
+  'surfaces:begin',
+  'surfaces:ready',
   'simulation:begin',
   'simulation:ready',
   'controls:ready',

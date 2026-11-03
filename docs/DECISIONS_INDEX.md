@@ -321,4 +321,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [315](DECISIONS.md#L9902) | La VCI llega a una aurícula visible por el hígado, con atlas cargados | vigente |
 | [316](DECISIONS.md#L10015) | Pared cava única: frontera medida y ensayo rechazado | ensayo no promovido |
 | [317](DECISIONS.md#L10045) | Migrar s0028 por fases y abrir P1 con el lector directo B | vigente |
-| [318](DECISIONS.md#L10061) | Medir memoria real y mantener P1 detenido tras la dieta | vigente |
+| [318](DECISIONS.md#L10061) | Cargar P1 s0028 con mallas exactas y capacidad medida | vigente |

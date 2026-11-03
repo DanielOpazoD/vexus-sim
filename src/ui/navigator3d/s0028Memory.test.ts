@@ -12,7 +12,7 @@ vi.mock('../s0028Surfaces', () => ({
     name,
     asset: name === 'liver' ? 'abdominal' : 'thoracic',
     positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1]),
-    maxBlockMs: 0,
+    indices: new Uint32Array([0, 1, 2, 3, 4, 5]),
   })),
 }));
 
@@ -31,7 +31,7 @@ it('conserva los triángulos y su iluminación plana sin duplicarlos en normales
     const position: unknown = geometry.getAttribute('position');
     if (!(position instanceof BufferAttribute)) throw new Error('Falta el atributo de posiciones');
     expect(position.array).toBe(surface?.positions);
-    expect(geometry.index).toBeNull();
+    expect(geometry.index?.array).toBe(surface?.indices);
     expect(geometry.getAttribute('normal')).toBeUndefined();
     expect(mesh.material).toBeInstanceOf(MeshStandardMaterial);
     if (!(mesh.material instanceof MeshStandardMaterial)) throw new Error('Falta el material físico');

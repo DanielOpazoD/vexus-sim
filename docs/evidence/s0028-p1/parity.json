@@ -1,0 +1,20 @@
+{
+  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+  "nodes": 1520,
+  "badNodes": 0,
+  "points": 6479,
+  "bad": 8,
+  "actualBad": 7,
+  "max": 0.011719688877747103,
+  "boneMax": 1.117470252864905e-5,
+  "depthMax": 0.03468322465188578,
+  "gradientMax": 0.0201214463933847,
+  "workerBad": 0,
+  "negative": {
+    "distanceToleranceMm": 0.05,
+    "boneToleranceMm": 0.0001
+  },
+  "glError": 0,
+  "lost": false,
+  "errors": []
+}

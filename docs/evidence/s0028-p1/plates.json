@@ -1,0 +1,2317 @@
+{
+  "openedAt": "2026-11-03T10:33:04.697665-05:00",
+  "root": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final",
+  "rows": [
+    {
+      "file": "plates/01-subxiphoid.png",
+      "sha256": "d6cb1202b8fcd261192fff67a0d3e141b9b71044f4678fc8f46c94252ccfc33d",
+      "opened": true,
+      "expected": {
+        "phi": 1.6,
+        "z": -60,
+        "yaw": -0.02516291680704072,
+        "rock": 0.3,
+        "tilt": -0.1,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 1.6,
+          "z": -60,
+          "lift": 0,
+          "yaw": -0.025162916807040858,
+          "rock": 0.3,
+          "tilt": -0.1
+        },
+        "acquiredPose": {
+          "phi": 1.6,
+          "z": -60,
+          "lift": 0,
+          "yaw": -0.025162916807040858,
+          "rock": 0.3,
+          "tilt": -0.1
+        },
+        "frame": 18,
+        "mapFrame": 13,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/02-epigastric.png",
+      "sha256": "b62bde44b75fcd8ca12aa12ecd9b16f068062ed471ec2375ce11420d14796d18",
+      "opened": true,
+      "expected": {
+        "phi": 1.55,
+        "z": -35,
+        "yaw": -1.5707963267948966,
+        "rock": 0,
+        "tilt": 0.15,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 1.55,
+          "z": -35,
+          "lift": 0,
+          "yaw": -1.5707963267948966,
+          "rock": 0,
+          "tilt": 0.15
+        },
+        "acquiredPose": {
+          "phi": 1.55,
+          "z": -35,
+          "lift": 0,
+          "yaw": -1.5707963267948966,
+          "rock": 0,
+          "tilt": 0.15
+        },
+        "frame": 34,
+        "mapFrame": 29,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/03-intercostal.png",
+      "sha256": "b148aa1e687eae3de530a5c2d22c5dbd1fb258e7340b9763e59b5d933d74759d",
+      "opened": true,
+      "expected": {
+        "phi": 2.5,
+        "z": -35,
+        "yaw": -1.2,
+        "rock": 0.08958884100807597,
+        "tilt": 0.15439831127567974,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 2.5,
+          "z": -35,
+          "lift": 0,
+          "yaw": -1.1999999999999993,
+          "rock": 0.08958884100807597,
+          "tilt": 0.15439831127567974
+        },
+        "acquiredPose": {
+          "phi": 2.5,
+          "z": -35,
+          "lift": 0,
+          "yaw": -1.1999999999999993,
+          "rock": 0.08958884100807597,
+          "tilt": 0.15439831127567974
+        },
+        "frame": 49,
+        "mapFrame": 45,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/04-subcostal.png",
+      "sha256": "4e6dd621b54328b91b5d58a706d651e6096c22ea58dab9f03188c00a9d421b4c",
+      "opened": true,
+      "expected": {
+        "phi": 2,
+        "z": -80,
+        "yaw": 0.6280025227578521,
+        "rock": 0.3259201915316282,
+        "tilt": -0.03886141881794285,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 2,
+          "z": -80,
+          "lift": 0,
+          "yaw": 0.6280025227578516,
+          "rock": 0.3259201915316282,
+          "tilt": -0.03886141881794285
+        },
+        "acquiredPose": {
+          "phi": 2,
+          "z": -80,
+          "lift": 0,
+          "yaw": 0.6280025227578516,
+          "rock": 0.3259201915316282,
+          "tilt": -0.03886141881794285
+        },
+        "frame": 59,
+        "mapFrame": 54,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/05-flank.png",
+      "sha256": "c34e97fc4130924ed25272e94e6fe820c53713bbf98d0d1391adf50734e4f8b6",
+      "opened": true,
+      "expected": {
+        "phi": 3.1,
+        "z": -75,
+        "yaw": 0.1767952406260464,
+        "rock": 0.4707775613505776,
+        "tilt": -0.04687503959831865,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 3.1,
+          "z": -75,
+          "lift": 0,
+          "yaw": 0.17679524062604557,
+          "rock": 0.4707775613505776,
+          "tilt": -0.04687503959831865
+        },
+        "acquiredPose": {
+          "phi": 3.1,
+          "z": -75,
+          "lift": 0,
+          "yaw": 0.17679524062604557,
+          "rock": 0.4707775613505776,
+          "tilt": -0.04687503959831865
+        },
+        "frame": 75,
+        "mapFrame": 71,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/06-portal.png",
+      "sha256": "b8962749a1037bc7818ac8f7c8bd671874a544be7cd37037361d29ba2a7221a7",
+      "opened": true,
+      "expected": {
+        "phi": 3.01941960595019,
+        "z": -40,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 3.01941960595019,
+          "z": -40,
+          "lift": 0,
+          "yaw": -1.2566370614359172,
+          "rock": -0.10471975511965977,
+          "tilt": -0.03490658503988659
+        },
+        "acquiredPose": {
+          "phi": 3.01941960595019,
+          "z": -40,
+          "lift": 0,
+          "yaw": -1.2566370614359172,
+          "rock": -0.10471975511965977,
+          "tilt": -0.03490658503988659
+        },
+        "frame": 84,
+        "mapFrame": 80,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/07-portalTrunk.png",
+      "sha256": "be147213486e7ee52ad4d9b99320607eaa7dcb0a576cddb8e493f181803fff20",
+      "opened": true,
+      "expected": {
+        "phi": 3.05,
+        "z": -80,
+        "yaw": 0.22135021897142884,
+        "rock": -0.13225461110004316,
+        "tilt": 0.11100678455374574,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 3.05,
+          "z": -80,
+          "lift": 0,
+          "yaw": 0.2213502189714287,
+          "rock": -0.13225461110004316,
+          "tilt": 0.11100678455374574
+        },
+        "acquiredPose": {
+          "phi": 3.05,
+          "z": -80,
+          "lift": 0,
+          "yaw": 0.2213502189714287,
+          "rock": -0.13225461110004316,
+          "tilt": 0.11100678455374574
+        },
+        "frame": 100,
+        "mapFrame": 95,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/08-renal.png",
+      "sha256": "3d3a125c847b1d850316173d407087d78a6d6fe338f6620003deddf46519ffd9",
+      "opened": true,
+      "expected": {
+        "phi": 2.627,
+        "z": -142.6,
+        "yaw": -0.006,
+        "rock": 0.089,
+        "tilt": -0.363,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 2.627,
+          "z": -142.6,
+          "lift": 0,
+          "yaw": -0.006000000000000227,
+          "rock": 0.089,
+          "tilt": -0.363
+        },
+        "acquiredPose": {
+          "phi": 2.627,
+          "z": -142.6,
+          "lift": 0,
+          "yaw": -0.006000000000000227,
+          "rock": 0.089,
+          "tilt": -0.363
+        },
+        "frame": 109,
+        "mapFrame": 105,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/09-hepatorenal.png",
+      "sha256": "3474f694ce3cfb7d17b96cf48b1f48f1e301196c16818dcac778e9aa76b56b32",
+      "opened": true,
+      "expected": {
+        "phi": 2.96,
+        "z": -115.333,
+        "yaw": -0.008,
+        "rock": -0.114,
+        "tilt": -0.253,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 2.96,
+          "z": -115.333,
+          "lift": 0,
+          "yaw": -0.007999999999999119,
+          "rock": -0.114,
+          "tilt": -0.253
+        },
+        "acquiredPose": {
+          "phi": 2.96,
+          "z": -115.333,
+          "lift": 0,
+          "yaw": -0.007999999999999119,
+          "rock": -0.114,
+          "tilt": -0.253
+        },
+        "frame": 126,
+        "mapFrame": 121,
+        "lost": false,
+        "ready": true
+      }
+    },
+    {
+      "file": "plates/10-portalSubcostal.png",
+      "sha256": "f17d3636efbe7e11124a279ffa56a5a086496d3fe4e22c54f5b227d6852c3385",
+      "opened": true,
+      "expected": {
+        "phi": 2.85,
+        "z": -95,
+        "yaw": -0.622104,
+        "rock": 0.080718,
+        "tilt": 0.136272,
+        "lift": 0
+      },
+      "observed": {
+        "identity": {
+          "person": "s0028",
+          "frameId": "s0028-audit-las-v1",
+          "revision": "s0028-p0e-P0c-direct-v1",
+          "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+          "fields": [
+            {
+              "name": "liver",
+              "asset": "abdominal",
+              "originMm": [-133.98527431275116, -81.71478450019774, -142.48879268882285],
+              "dimensions": [173, 117, 112],
+              "offset": [0, 105, 477],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "spleen",
+              "asset": "abdominal",
+              "originMm": [62.51472568724884, -71.21478450019774, -104.98879268882285],
+              "dimensions": [55, 61, 58],
+              "offset": [82, 118, 354],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "pancreas",
+              "asset": "abdominal",
+              "originMm": [-39.48527431275116, -15.714784500197737, -157.48879268882285],
+              "dimensions": [99, 47, 69],
+              "offset": [54, 200, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyRight",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, -68.21478450019774, -181.48879268882285],
+              "dimensions": [53, 53, 68],
+              "offset": [54, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "kidneyLeft",
+              "asset": "abdominal",
+              "originMm": [29.51472568724884, -62.21478450019774, -173.98879268882285],
+              "dimensions": [53, 46, 77],
+              "offset": [0, 193, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "gallbladder",
+              "asset": "abdominal",
+              "originMm": [-87.48527431275116, 15.785215499802263, -101.98879268882285],
+              "dimensions": [32, 30, 27],
+              "offset": [49, 155, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "bladder",
+              "asset": "abdominal",
+              "originMm": [-28.98527431275116, -32.21478450019774, -374.98879268882285],
+              "dimensions": [55, 53, 34],
+              "offset": [108, 200, 319],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "digestiveTract",
+              "asset": "abdominal",
+              "originMm": [-115.98527431275116, -105.71478450019774, -371.98879268882285],
+              "dimensions": [168, 136, 248],
+              "offset": [0, 118, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "posteriorMuscle",
+              "asset": "abdominal",
+              "originMm": [-105.48527431275116, -114.71478450019774, -392.98879268882285],
+              "dimensions": [157, 117, 398],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lumbarSacralBone",
+              "asset": "abdominal",
+              "originMm": [-132.48527431275116, -98.21478450019774, -404.98879268882285],
+              "dimensions": [189, 104, 220],
+              "offset": [0, 0, 399],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "aorta",
+              "asset": "abdominal",
+              "originMm": [-27.48527431275116, -56.21478450019774, -205.48879268882285],
+              "dimensions": [48, 74, 227],
+              "offset": [0, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "inferior_vena_cava",
+              "asset": "abdominal",
+              "originMm": [-33.48527431275116, -27.714784500197737, -211.48879268882285],
+              "dimensions": [32, 36, 163],
+              "offset": [49, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "portal_vein_and_splenic_vein",
+              "asset": "abdominal",
+              "originMm": [-73.98527431275116, -27.714784500197737, -109.48879268882285],
+              "dimensions": [127, 61, 51],
+              "offset": [49, 180, 388],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "renalCysts",
+              "asset": "abdominal",
+              "originMm": [74.51472568724884, -57.71478450019774, -125.98879268882285],
+              "dimensions": [16, 17, 17],
+              "offset": [158, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "sacrum",
+              "asset": "abdominal",
+              "originMm": [-43.98527431275116, -125.21478450019774, -362.98879268882285],
+              "dimensions": [82, 81, 104],
+              "offset": [82, 118, 249],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "thoracicBone",
+              "asset": "thoracic",
+              "originMm": [-139.98527431275116, -107.21478450019774, -137.98879268882285],
+              "dimensions": [193, 139, 218],
+              "offset": [0, 0, 0],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "cartilage",
+              "asset": "thoracic",
+              "originMm": [-106.98527431275116, 29.285215499802263, -94.48879268882285],
+              "dimensions": [152, 51, 163],
+              "offset": [0, 0, 389],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "lung",
+              "asset": "thoracic",
+              "originMm": [-133.98527431275116, -95.21478450019774, -77.98879268882285],
+              "dimensions": [184, 124, 169],
+              "offset": [0, 0, 219],
+              "pitchMm": 1.5
+            },
+            {
+              "name": "heart",
+              "asset": "thoracic",
+              "originMm": [-52.98527431275116, -38.21478450019774, -22.488792688822855],
+              "dimensions": [96, 79, 89],
+              "offset": [0, 52, 389],
+              "pitchMm": 1.5
+            }
+          ],
+          "depth": {
+            "originMm": [-225.48527431275116, -134.21478450019774, -218.98879268882285],
+            "dimensions": [147, 93, 96],
+            "pitchMm": 3,
+            "offset": [0, 104, 589]
+          },
+          "abdominal": {
+            "textureDimensions": [189, 256, 685],
+            "rawBytes": 132572160,
+            "gzipBytes": 8567375,
+            "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+            "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08"
+          },
+          "thoracic": {
+            "textureDimensions": [193, 139, 552],
+            "rawBytes": 59234016,
+            "gzipBytes": 5252011,
+            "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+            "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e"
+          },
+          "capacity": {
+            "rawBytes": 5671296,
+            "gzipBytes": 6999,
+            "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+            "sha256Raw": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8"
+          },
+          "skin": {
+            "rawBytes": 2813952,
+            "gzipBytes": 947509,
+            "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+            "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456"
+          },
+          "manifest": {
+            "bytes": 34521,
+            "sha256": "c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd"
+          }
+        },
+        "pose": {
+          "phi": 2.85,
+          "z": -95,
+          "lift": 0,
+          "yaw": -0.6221040000000002,
+          "rock": 0.080718,
+          "tilt": 0.136272
+        },
+        "acquiredPose": {
+          "phi": 2.85,
+          "z": -95,
+          "lift": 0,
+          "yaw": -0.6221040000000002,
+          "rock": 0.080718,
+          "tilt": 0.136272
+        },
+        "frame": 136,
+        "mapFrame": 131,
+        "lost": false,
+        "ready": true
+      }
+    }
+  ],
+  "inspection": "Diez abiertas individualmente tras A17. Mismas poses/pared provisionales; sombras costales, apoyo lateral parcial y renal focal sin seno claro conservados. No aceptaci\u00f3n anat\u00f3mica ni cl\u00ednica."
+}

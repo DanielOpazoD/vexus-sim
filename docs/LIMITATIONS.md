@@ -672,37 +672,43 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 
 ## Candidato experimental s0028 (317/318)
 
-P0 prepara herramientas; P1 añade un candidato experimental local y r3 mantiene la parada por memoria. Los identificadores
-de limitación del producto permanecen vigentes. [Migración s0028](anatomia/migracion-s0028.md)
-distingue lo observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y
-ramas no anotadas no se aprueban por disponer de reserva de bytes. Piel verificada sólo en D
-(Z −210…+60 mm y φ completo) con ombligo local aproximado (3,140913 mm frente a 3 mm);
-pelvis/ingle aproximadas. Profundidad fuera de CT a ≥12 mm fuera de piel en aire sin consumidor
-es desconocida, no aprobada; cualquier falta de cobertura de un consumidor sigue pendiente.
+P0 prepara herramientas; P1 r4c carga un candidato local sólo por `?abdomen=s0028`.
+Los identificadores de limitación del producto permanecen vigentes. [Migración](anatomia/migracion-s0028.md)
+distingue observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y
+ramas no anotadas no quedan aceptadas por disponer de bytes. Poses/pared son las actuales,
+provisionales P2–P8; renal focal poco demostrativa, sombras costales y apoyo lateral parcial
+permanecen visibles en las diez láminas abiertas. Piel verificada sólo en D (Z −210…+60 mm,
+φ completo), ombligo aproximado 3,140913 mm frente a 3 mm; pelvis/ingle aproximadas.
+La cobertura runtime de profundidad/contacto no acredita exactitud fuera del TAC.
 
-B exige texturas 189×256×685 y 193×139×552, por encima del mínimo 256. El nuevo techo autorizado
-139.921.010/60.413.664 B no modifica el cargador en P0. P1 mide pico real y primer cuadro completo
-en navegador/SwiftShader y se detiene si no caben. El microshader y los ocho costes estáticos
-no prueban esa capacidad ni paridad del clasificador. La descarga de cada fase, incluidas
-anotaciones gzip reales, debe mantenerse ≤19.510.002 B. No es validación clínica.
+B necesita texturas 189×256×685 y 193×139×552, por encima del mínimo WebGL 256.
+Techos exclusivos 139.921.010/60.413.664 B intactos, tórax con 0 B de margen. Ocho
+programas por variante dentro de techo; clasificación e interiores completos siguen P2–P8.
+Gas nearest no es SDF continuo; psoas/discos sin fuente siguen desconocidos, sin alias.
+Siete empates nearest del lector real (+1 lung crudo) conservan diferencia categórica
+CPU double/GPU Float32 en mitad de celda; están explicados, no borrados ni igualados
+artificialmente. Nodos y CPU/Worker exactos, distancias dentro de las cotas muestreadas.
 
-La ronda P1 r3 de 318 mantiene los ocho shaders por persona dentro de sus límites y aplica
-dos reducciones: normales planas derivadas en GPU sólo en s0028 y subida RG16F por vistas
-Z en ambas personas. No cambia campos, texeles, precisión, anatomía ni poses. JS cabe con
-45.830 B de margen; eso no acredita memoria razonable. Tres arranques Metal finales dan
-1.415–1.425 MB de pico actual y 1.740–1.755 MB s0028; x64 supera ampliamente 1 GB en ambas.
-Pico muestreado/ventana estable y contadores vitales del kernel se distinguen; no es medición continua ni
-certificación de todos los PC Chrome/Edge de 8–16 GB. Carga/cachés y negativos permanecen.
+El criterio anterior ≤1 GB/objetivo 800 MB se retiró por decisión del propietario antes de r4;
+la base r3 Σ ya daba 1,449–1,607 GB. Nuevo criterio Metal ≤2 GB para toda la app: actual
+Σ1,447–1,460 GB y B 1,710–1,772 GB en tres pares (incremento 0,250–0,325 GB). No es
+pico continuo ni certificación de PC de 8–16 GB. Dos copias CPU siguen necesarias;
+sin dependencia de SAB ni promesa de ahorro nominal. Dieta global posterior, fuera de P1.
+SwiftShader x64/Rosetta: 46,042/33,760 s actual/B dentro de BOOT_MS, sin pérdida de contexto;
+Σ3,084/3,121 GB observados, sin techo de memoria. Heap Worker Swift no medido en el par
+limpio: el observador con autoAttach produjo detach/timeouts, conservados como negativos.
 
-**No pasa el objetivo P1 ≤800 MB ni el techo total ≤1 GB.** Dos copias CPU de atlas
-siguen necesarias para consultas síncronas en página/Worker. No hay aislamiento de origen
-cruzado ni hosting con COOP/COEP acreditado; no se depende de SAB. El ahorro nominal de
-una copia no se presenta como ahorro real ni solución suficiente. El tórax conserva 0 B
-de margen. La referencia actual también necesita una dieta de toda la app.
+Mallas precalculadas exactas (sin recortar triángulos/resolución), hash y normal conservados:
+9.672.026 B gzip; paquete HTTP **24.484.081 B**, excede preferencia 19.510.002 B en
+4.974.079 B, dentro de autorización 25.000.000 B, margen **515.919 B**. JS 1.027.141 B,
+margen **42.939 B**. Anotaciones futuras miden otra vez gzip real.
+[Evidencia, negativos y cierre local](evidence/s0028-p1/README.md). Sin cambio de default,
+CI remota ni validación clínica.
 
-Cuadros x64 observados, capturas abiertas o 19 hashes idénticos de un ensayo de mallas no
-acreditan paridad CPU/GPU/Worker ni cobertura de profundidad/contacto. Memoria aceptada,
-paridad, consumidores y diez láminas con ID siguen pendientes **de P1**. El intento de dos
-pasadas fue retirado, conservando su negativo; sólo se mantienen mejoras medidas de recursos.
-Clasificador mínimo y pared/poses provisionales en [migración](anatomia/migracion-s0028.md).
-[Informe, SHA, cierre y desviaciones r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md). Sin cambio del default ni validación clínica.
+Historial anterior a A17: el cuarto par Metal repitió por carga externa el segundo, conservado: actual 1,548 s/Σ1,461 GB,
+B 1,279 s/Σ1,712 GB, incremento 0,252 GB; también cumple los límites. Las tres pasadas
+principales anteriores no se sustituyen por esta repetición.
+
+A17 evita el falso timeout del Worker durante los ticks de presentación mientras la GPU
+está pendiente; no cambia sus 3 s por cuadros activos ni el control de Worker colgado.
+El humo x64 fallido y la regresión roja se conservan; el escenario original pasa corregido.

@@ -1,4 +1,3 @@
-import { takeS0028Worker } from './s0028Surfaces';
 import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { maskContours } from './anatomyContour';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
@@ -457,10 +456,9 @@ export class CutMapView {
   private ensureWorker(sim: Simulator, nowMs: number): Worker | null {
     if (this.worker && this.workerScene === sim.scene) return this.worker;
     if (!this.worker && nowMs < this.retryAt) return null;
-    const prepared = !this.worker ? takeS0028Worker() : undefined;
     const first = !this.worker;
     try {
-      this.worker ??= prepared ?? new Worker(cutMapWorkerUrl, { type: 'module' });
+      this.worker ??= new Worker(cutMapWorkerUrl, { type: 'module' });
     } catch (e) {
       this.fail(e, nowMs);
       return null;
@@ -482,8 +480,8 @@ export class CutMapView {
       id: ++this.requestId,
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
-      abdominalField: first && !prepared && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: first && !prepared ? thoracicAtlas : undefined,
+      abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
+      thoracicField: first ? thoracicAtlas : undefined,
     };
     worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
       const message = ev.data;
@@ -530,14 +528,15 @@ export class CutMapView {
   }
 
   /** Sigue el movimiento adquirido; `hz` limita solo el refresco fisiológico con la sonda quieta. */
-  draw(sim: Simulator, nowMs: number, hz = 8): void {
+  draw(sim: Simulator, nowMs: number, hz = 8, advanceWatchdog = true): void {
     this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
     if (!shown) return;
     // Discard the previous scene before checking its outstanding request.
     const worker = this.ensureWorker(sim, nowMs);
-    // Three active seconds without completed rows still detect a stalled worker.
-    if (this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
+    // CPU presentation ticks while the GPU is busy are not acquired loop frames.
+    // Continue servicing the Worker there without charging its active-frame clock.
+    if (advanceWatchdog && this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
     const previous = this.mapInputs;
     const geometryChanged =
       previous &&

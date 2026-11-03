@@ -376,18 +376,31 @@ Gas conserva ocupación/etiqueta nearest, no SDF continuo. La capacidad de anota
 (5.671.296 B RAW, ~7 KB gzip) es U: cada llenado mide descarga real de nuevo frente a 19.510.002 B.
 P0 no tenía runtime/activos nuevos. El ensayo local P1 y su parada se describen a continuación. [Evidencia y puertas](anatomia/migracion-s0028.md).
 
-P1 r3 (318) conserva sólo el candidato local explícito y el lector especializado, con los
-campos/precisión fuente intactos. Deriva normales planas del mismo triángulo en GPU y sube
-RG16F por vistas Z sin cambiar texeles. No cambia poses, pared/capas ni vasos. Clasificador
-mínimo heredado, categorías B y gas nearest sin SDF continuo; psoas/discos sin fuente
-permanecen desconocidos, sin alias ni cúpulas auxiliares del donante anterior. Interiores
-renal/cardíaco y vasos siguen provisionales P2–P7. Las superficies B vienen del cero nativo,
-sin acreditar paridad completa CPU/GPU/Worker. El ensayo de dos pasadas se retiró por no
-ahorrar pico y demorar arranque; sus 19 hashes idénticos y negativos quedan conservados.
+P1 r4c (318) conserva el lector especializado y la anatomía paralela explícita. Las mallas
+offline indexadas Float32 expanden exactamente los 19 campos fuente (cota 0 mm): orden,
+orientación, normal plana e iluminación intactos, sin extracción al arrancar. El contrato fija
+hashes/procedencia/marco y se reextraen las fuentes en una prueba lenta. Dos copias CPU
+permanecen; el Worker sólo clasifica el corte. Poses/pared, clasificación mínima, categorías B
+y gas nearest sin SDF continuo siguen provisionales P2–P8; psoas/discos desconocidos sin alias.
 
-La memoria real sigue rechazada: también la anatomía actual excede 800 MB y 1 GB. Mantiene
-dos copias CPU; no usa SAB ni promete ahorro a partir de restar bytes nominales. Footprint,
-heap y recursos GPU se informan por separado, sin doble suma. Capturas de arranque abiertas
-no son diez láminas con ID ni aprobación anatómica. [Informe r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md) y
-[migración](anatomia/migracion-s0028.md) conservan paradas, cifras y pruebas. Sin cambio de
-default ni validación clínica.
+Paridad muestreada CPU/GPU/Worker y consumidores de profundidad/contacto documentados en
+[migración](anatomia/migracion-s0028.md). Siete etiquetas del lector real (+1 lung crudo)
+difieren exactamente en empates nearest double/Float32; índices y perturbaciones ±0,001 mm
+explican los casos, conservados como negativos. No se afirma igualdad exacta ni exactitud
+anatómica fuera del TAC. Las diez láminas se abrieron con bundle/mallas visibles y rótulo
+provisional; no acreditan ventanas P2–P8 aceptadas.
+
+El propietario retiró antes de r4 el techo 1 GB/objetivo 800 MB: Metal exige Σ app ≤2 GB
+y Swift arranque/contexto sin techo de memoria. Tres pares dan Σ1,447–1,460 GB actual y
+1,710–1,772 GB B, incremento 0,250–0,325 GB; picos muestreados, no continuos. La dieta
+global es posterior. Descarga **24.484.081 B**, sobre preferencia 19.510.002 B, dentro
+de 25.000.000 B autorizados; margen **515.919 B**. JS deja **42.939 B**.
+[Evidencia/negativos](evidence/s0028-p1/README.md), sin cambio de default ni validación clínica.
+
+Historial anterior a A17: el cuarto par Metal repitió por carga externa el segundo, conservado: actual 1,548 s/Σ1,461 GB,
+B 1,279 s/Σ1,712 GB, incremento 0,252 GB; también cumple los límites. Las tres pasadas
+principales anteriores no se sustituyen por esta repetición.
+
+A17 evita el falso timeout del Worker durante los ticks de presentación mientras la GPU
+está pendiente; no cambia sus 3 s por cuadros activos ni el control de Worker colgado.
+El humo x64 fallido y la regresión roja se conservan; el escenario original pasa corregido.

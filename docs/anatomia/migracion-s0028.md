@@ -1,71 +1,69 @@
 # Migración a s0028: cierre P0 y candidato P1
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 r3 sigue rechazado por memoria (318).**
-Pico total autorizado ≤1 GB; objetivo P1 ≤800 MB, P2 previsto ≤900 MB. Todos decimales.
-La anatomía actual también excede el presupuesto. Candidato sólo local `?abdomen=s0028`,
-sin cambiar default. Los TAC originales permanecen fuera de Git. Las menciones históricas
-«316 provisional» no sustituyen la decisión 316 vigente de la pared cava.
+**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 r4c candidato local (318).**
+Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
+≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
+de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
+La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
+Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
+no sustituyen la decisión 316 vigente de la pared cava.
 
-## P1 r3: memoria real, dieta y frontera (318)
+## P1 r4c: mallas exactas, memoria y arranque (318)
 
-Genérico r1 rechazado: RAWFIELD 1.770.910/14.870 >1.385.000/11.060; [negativo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
-R2 observó 1.120.588.568 B x64, una muestra anterior al cuadro, sin referencia actual;
-no era pico exhaustivo. [Informe r2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r2/report.md).
+Lector especializado `personShader`: selecciona persona/sampler antes de compilar y
+conserva los ocho programas actuales sin añadirles ramas. Genérico r1 rechazado:
+RAWFIELD 1.770.910/14.870 >1.385.000/11.060. Los negativos r1–r3 permanecen enlazados
+en [evidencia P1](../evidence/s0028-p1/README.md). No cambia física, campos, resolución,
+precisión ósea, poses ni pared. Clasificación funcional e interiores siguen provisionales P2–P8.
 
-Arnés r3: navegador propio limpio, mismo build por comparación, 1280×800/e2e=1,
-Metal arm64 y SwiftShader x64/Rosetta, serie/un trabajador. Tres repeticiones por persona y
-backend, carga cada ~2 s y repeticiones declaradas. `footprint` externo conserva página,
-Worker y GPU, incluso cuando JS está bloqueado. La tabla muestra rangos de picos muestreados;
-renderer/GPU corresponden a esas muestras. Total descuenta compartidos y **no suma** CDP ni
-texturas otra vez. El JSON conserva intervalos reales, contadores vitales del kernel por PID (otra contabilidad),
-categorías nativas y negativos de observación. Estable = ventana tras cuadro
-fijada por protocolo; antes x64 sólo se midió en la repetición que alcanzó cuadro. NM no es cero.
+Mallas indexadas offline Float32/Uint32, 19 campos y 1.781.772 triángulos: expansión exacta
+bit a bit del extractor fuente, cota 0 mm fijada antes de generarlas. 32.071.200 B RAW,
+9.672.026 B gzip. SHA256, inventario y procedencia CT/marco/revisión en `S0028_SURFACE`,
+comprobados antes de instalar. Materiales/flatShading/espejo X conservan normal e iluminación.
+El Worker ya sólo clasifica el corte; no extrae superficies durante el arranque.
+A17 corrige además un falso vencimiento: los ticks de presentación mientras GPU está
+pendiente siguen atendiendo mensajes/mapas, pero no consumen el reloj por cuadros activos
+del watchdog. Se mantienen 3 s y 250 ms/cuadro; el control congelado/colgado sigue fallando
+si no progresa. El humo original x64 falló dos veces antes y pasa con el cambio, sin ignorar errorLog.
+Dos copias CPU de atlas se conservan para consultas síncronas página/Worker, sin SAB.
+La subida RG16F por vistas de ≤4 MiB de r3 continúa sin cambiar texeles.
 
-| Variante                      |   n |   Renderer MB |        GPU MB |   Pico app MB |    Estable MB |
-| ----------------------------- | --: | ------------: | ------------: | ------------: | ------------: |
-| metal · current · antes       |   3 |   790,9–800,5 |   791,3–808,3 | 1480,4–1504,7 | 1471,5–1473,6 |
-| metal · current · final       |   3 |   717,2–728,3 |   725,5–742,9 | 1414,5–1425,3 | 1408,3–1409,4 |
-| metal · s0028 · antes         |   3 | 1104,4–1125,3 |  998,5–1001,6 | 1952,6–1970,6 | 1936,8–1949,4 |
-| metal · s0028 · final         |   3 |   918,5–935,1 |   851,9–854,0 | 1740,4–1755,1 | 1675,8–1700,3 |
-| swiftshader · current · antes |   4 |  977,6–1215,4 | 1736,2–2145,2 | 2612,9–3109,8 |        2682,6 |
-| swiftshader · current · final |   4 | 1019,3–1048,9 | 1871,8–1932,7 | 2867,1–2948,0 | 2589,1–2665,2 |
-| swiftshader · s0028 · antes   |   4 | 1248,7–1268,3 | 1561,0–2070,8 | 2677,7–3187,1 |        2989,2 |
-| swiftshader · s0028 · final   |   4 | 1004,5–1120,6 | 1841,5–1884,7 | 2814,5–2973,9 | 2573,1–2724,4 |
+Mismo arnés/build de producción, perfiles limpios, 1280×800/e2e=1, Metal arm64 M4/24 GiB;
+tres pares alternados en serie, carga cada ~2 s y ventana de 15 s tras cuadro. Gate sobre
+Σ de TODOS los renderer + GPU, sin descontar compartidos ni sumar otra vez heap/texturas.
 
-**No pasa P1: ni objetivo 800 MB ni techo 1 GB.** Incluso renderer solo puede exceder 800 MB.
-La referencia demuestra un problema de toda la app; no es válido atribuir a s0028 la resta
-sobre aquella muestra r2. El hardware observado es M4/24 GiB con Rosetta para x64, no una
-certificación de Chrome/Edge en todos los PC de 8–16 GB.
+| Variante               |        n | Primer cuadro s | Pico Σ app GB | Aumento sobre actual GB |
+| ---------------------- | -------: | --------------: | ------------: | ----------------------: |
+| Metal actual           |        3 |     1,548–1,641 |   1,447–1,460 |                       — |
+| Metal s0028            |        3 |     1,269–1,280 |   1,710–1,772 |     0,250–0,325 por par |
+| SwiftShader x64 actual | 1 limpio |          46,042 |         3,084 |                       — |
+| SwiftShader x64 s0028  | 1 limpio |          33,760 |         3,121 |     sin gate de memoria |
 
-Dieta conservada: (1) s0028 usa normal plana derivada en GPU sobre el mismo stream, sin
-64.143.792 B de normales CPU; la reducción GPU efectivamente subida observada es 63.753.696 B; (2) ambas personas usan almacenamiento RG16F
-inmutable y vistas de hasta 4 MiB por llamada de subida, sin nueva copia CPU ni cambio de un
-texel. La primera reduce recursos de malla; la segunda baja staging/footprint de la app actual.
-No se promete que 4 MiB por llamada limite todo el pool interno del driver.
+La tanda final tras A17 no presenta procesos externos ≥100 % CPU ni dispersión >20 %.
+La carga externa de current rep2 y su repetición pertenecen al candidato anterior;
+se conservan con sus cifras originales en las enmiendas A15/A17 y `r4c/`.
 
-Ensayo retirado: contar máscaras y emitir en dos pasadas conservaba los 19 SHA256 de
-posiciones, pero dio 1.840–1.857 MB y ~28,2 s Metal frente a sólo normales 1.829 MB/20,97 s
-(ensayo intermedio). No se conserva una reducción sin ahorro de pico acreditado. Código,
-prueba fallida previa, verde, hashes y resultados se conservan en r3.
+Metal pasa 2 GB y delta de arranque ≤+2 s; no se declara aceleración causal universal.
+La base r3 Σ ya era 1,449–1,607 GB; por eso 1 GB no era criterio viable para la app completa.
+Los picos son muestreados cada ~0,6 s, no un máximo continuo. Footprint único y máximos
+vitales del kernel se conservan aparte en [mediciones](../evidence/s0028-p1/measurements.json).
+No certifica Chrome/Edge en todos los PC de 8–16 GB.
 
-Dos copias CPU de atlas permanecen: 112.228.544 B por hilo actual, 191.806.176 B por hilo B.
-Página necesita clasificación, profundidad/gradientes, apoyo/contacto y adquisición Doppler;
-Worker necesita superficies y clasificación del corte. Inventario estático en r3, sin presentarlo
-como cobertura completa. Transferencia exclusiva durante arranque no elimina la segunda copia
-estable. Propiedad única exige hacer asíncrona la adquisición y devolver snapshots coherentes.
-No SAB: runtime sin crossOriginIsolated y release.yml sólo produce ZIP, sin hosting/cabeceras
-acreditados. Gzip/hash ya tienen referencias locales; no se finge liberación del allocator
-nativo al salir de la función. Transitorios se distinguen del heap JS y de recursos retenidos.
+Swift x64 bajo Rosetta usa el producto completo y valla `ultrasound:gpu-ready`; ambos
+contextos se conservan y llegan antes de BOOT_MS CI=180 s. Los 125 s heredados eran
+de current, no s0028. Detach/timeouts del observador se conservan como negativos; el par
+limpio no pausa ni consulta heap Worker por CDP (no medido), pero mantiene footprint
+externo de todos los renderer/GPU. No se amplían plazos del producto ni de CI.
 
-Propuestas para **toda la app**, todavía sin ahorro real atribuido: propiedad CPU única en
-Worker con snapshots de adquisición; ciclo de vida diferido/descarga de recursos y programas
-inactivos de B/Color/THI/cine conservando resolución y 120 cuadros; compactar mallas actuales
-sin perder triángulos, iluminación ni restauración de contexto. Perfilar categorías nativas
-GPU/allocator por etapa antes de asignarles ahorro. La copia nominal 192 MB no garantiza 800 MB.
+Descarga HTTP final de siete activos, perfil provisional incluido: **24.484.081 B**,
+exceso de **4.974.079 B** sobre preferencia 19.510.002 B, dentro del máximo autorizado
+25.000.000 B con **515.919 B** de margen. JS separado **1.027.141/1.070.080 B**,
+margen **42.939 B** (antes 45.830 B). Sin recortar estructuras/resolución ni cuantizar.
+Techos exclusivos abdomen/tórax 139.921.010/60.413.664 B intactos; margen torácico 0 B.
+Cada llenado futuro de anotaciones debe medir otra vez gzip/paquete real.
 
-`personShader` mantiene la selección TS previa a compilar, con sampler fijo por región.
-Los ocho programas actuales no crecen y los techos originales no cambian:
+Ocho programas completos por variante, helpers y techos originales reejecutados:
 
 | Programa           | Actual tokens/ramas | s0028 tokens/ramas | Techo            | Samplers | Slots |
 | ------------------ | ------------------- | ------------------ | ---------------- | -------: | ----: |
@@ -78,28 +76,31 @@ Los ocho programas actuales no crecen y los techos originales no cambian:
 | TRANS_HITS_GRID    | 230.028/2.030       | 217.185/1.938      | 252.000/2.210    |       11 |   102 |
 | COLOR              | 226.512/1.987       | 217.286/1.912      | 248.000/2.160    |        7 |   110 |
 
-JS del candidato: **1.024.250/1.070.080 B**, margen **45.830 B**; incluye Worker, ambos lectores
-y ganchos. Los campos B, manifiesto y sus hashes permanecen íntegros; descarga HTTP y fuentes
-se revalidan en el cierre r3. Techos exclusivos abdomen/tórax 139.921.010/60.413.664 B,
-**margen torácico 0 B**. Los 19 campos almacenados no equivalen a clasificador completo:
-consultas históricas, categorías B y gas nearest/mod128; gas sin SDF continuo. Psoas/discos
-sin fuente desconocidos, sin alias; no se leen cúpulas auxiliares del donante anterior.
+Paridad en 1.520 nodos y 6.479 puntos Float32, incluyendo costuras/bordes, gas y lectores
+reales: nodos y CPU/Worker exactos; distancia máx. 0,011720 mm (cota 0,05), hueso
+0,000011175 mm (cota 0,0001). Profundidad/gradiente: 300 puntos, máx. 0,034684 mm/0,020122.
+Los **7 desacuerdos categóricos reales** (+1 lung crudo) quedan explicados por nearest
+double/Float32 justo en mitad de celda: índices vecinos registrados, no campos perdidos.
+Las 16 perturbaciones diagonales ±0,001 mm concuerdan. Se conserva fixture/test negativo;
+no se omiten etiquetas por distancia +16 ni se afirma igualdad exacta en esos empates.
+No es equivalencia anatómica del clasificador completo futuro.
 
-Primer cuadro acreditado por `ultrasound:gpu-ready`: Metal final s0028 **20,04–20,19 s**,
-actual **2,98–3,01 s**. X64 final llega antes de BOOT_MS en las tres principales; timeouts
-previos y repeticiones no se borran. El informe desglosa descarga, descompresión, subida,
-superficies, enlace observado y dibujo→valla. JIT diferido puede solapar dibujo: no se
-inventa un tiempo puro ni se suman intervalos concurrentes. Carga/cachés impiden prometer
-una aceleración causal frente a los 28,765 s históricos.
+`s0028DepthConsumers.test.ts` recorre signo/magnitud, gradiente ±1,5 mm, muestras de
+contacto ±1 mm, respWeight/insideWall, caras de pared, apoyo de diez poses, skinEntry
+a través de probeContact, firstCrossing, probeFrame y contactCoupling. Recorre φ completo,
+bordes Z de D y envolvente de 6 mm; contrafactual retira B y cambia consumidores reales.
+Acredita cableado/continuidad utilizable, no exactitud fuera de CT ni aceptación de pared.
 
-Quedan **de P1**: memoria aceptada, paridad CPU/GPU/Worker en puntos/costuras, cobertura de
-consumidores de profundidad/contacto y diez láminas con ID. Cuadro observado x64 no es P1
-aceptado. Se abrieron capturas de arranque finales, sin ID visible ni diez ventanas;
-no se presentan como láminas de aceptación. Poses, pared/capas, vasos e interiores siguen
-provisionales para P2–P7; P8 conserva poses finales. No se habilita P2 por el pase estático.
+Diez láminas finales **abiertas individualmente**, con ID bundle/mallas/marco visible, en
+[r4c/plates](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/plates/), inventario/poses/hashes en
+[plates.json](../evidence/s0028-p1/plates.json). Poses y pared actuales, **provisionales P2–P8**.
+Se conservan sombras costales, apoyo parcial lateral y una renal focal sin seno claramente
+demostrado; no se retocan poses para fabricar ventanas aceptadas. El primer juego con mapa/UI
+atrasados también queda conservado. No es validación clínica ni aceptación anatómica P2–P8.
 
-[Protocolo, enmiendas, tablas/componentes, cronología, negativos y cierre/SHA r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r3/report.md).
-Sin delegación, push, PR, stash, escrituras gh ni puerto 5174. No es validación clínica.
+Contratos de mallas, negativos, enmiendas A1–A17, procedencia, desglose de arranque, carga
+y cierre completo serial en [evidencia P1](../evidence/s0028-p1/README.md). Un candidato
+local para PR no acredita revisión externa, CI remota, merge ni despliegue.
 
 ## Qué se acepta y qué no acredita P0
 
@@ -116,7 +117,7 @@ lineal y etiqueta G nearest. Gas usa bit 128, etiqueta digestiva mod128; no cons
 del gas. Se guardan todos los nodos/etiquetas fuente, origen y dimensiones, sin quitar órganos ni
 recortar soporte para caber. Precisión ósea conserva los ocho nodos de `sourceDistancePrecise`.
 Los veinte descriptores no equivalen a un clasificador funcional de veinte campos: el probe de
-coste mantiene cuatro consultas legacy. P1 debe implementar y medir clasificación completa.
+coste mantiene cuatro consultas legacy. P1 verifica el acceso a todos los campos; la clasificación funcional e interiores se completan por órgano en P2–P8.
 
 | Contabilidad de B                                   | Medida / decisión vigente                                                                                                                            |
 | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -138,8 +139,9 @@ No se cargan simultáneamente dos personas ni se transfieren buffers dejando sin
 
 **Descarga — decisión de implementación declarada en este cierre:** contar los bytes realmente
 transmitidos. La reserva vacía viaja gzip; la residencia cuenta sus 5.671.296 B RAW. Cada fase
-que la llene mide su gzip real, incluye todos los archivos/manifiesto y se detiene si supera
-19.510.002 B. No se aumenta el límite, ni se acredita con ceros el coste futuro de anotaciones.
+que la llene mide su gzip real e incluye todos los archivos/manifiesto. P0 conserva el límite
+19.510.002 B; para P1 con mallas exactas, 318 autoriza hasta 25.000.000 B, declarado arriba.
+No se acredita con ceros el coste futuro de anotaciones.
 El manifiesto nuevo incluye la procedencia por campo y omite diagnósticos duplicados/de ejecución; eso explica que el total sea 14.809.024 B y no sólo
 20.480.481−5.671.296+6.999 = 14.816.184 B. Los binarios de los atlas no cambian en este cierre.
 
@@ -164,7 +166,7 @@ extiende la excepción a esa envolvente ni se transforma ausencia de referencia 
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P0, esta PR            | Fuente/manifiesto, B reproducible, piel/profundidad P0e, capacidad, coste de B y contratos sintéticos sin TAC en CI                                                                                             |
 | P1                     | Selector/carga excluyente y corrupta/cancelable, identidad CPU/GPU/Worker, techo nuevo al cargar, pico real y primer cuadro completo Metal/SwiftShader; detener si capacidad, paridad, tiempos o shaders fallan |
-| P1, superficies y piel | Generar cero común por bloques en Worker sin tareas principales ≥50 ms, sin truncar mallas; revalidar EDT, gradiente, contacto/pared y consumidores fuera de CT; continuidad al cruzar D                        |
+| P1, superficies y piel | Cargar mallas offline del cero común, triángulos exactos y hashes fijados, sin truncarlas; revalidar EDT, gradiente, contacto/pared y consumidores fuera de CT; continuidad al cruzar D                         |
 | P2/P3                  | Piel/pared/esqueleto y sólidos con vecinos renales/posteriores; resolver conflictos fuente, sin precedencia para ocultarlos                                                                                     |
 | P4/P5/P6               | Digestivo/gas/capas y redes vasculares/raíces del mismo hígado; conservar fisiología y negativos PW                                                                                                             |
 | P7/P8                  | Tórax/VCI–AD del caso y diez poses/adquisiciones; láminas y lista de 14 relaciones aceptadas                                                                                                                    |

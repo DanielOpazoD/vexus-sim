@@ -154,6 +154,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
     for (const f of s0028Surfaces.filter((f) => ['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
+      geometry.setIndex(new THREE.BufferAttribute(f.indices, 1));
       const mesh = new THREE.Mesh(geometry, f.name === 'cartilage' ? cartilage : bone);
       mesh.scale.setScalar(CM);
       mesh.name = f.name;

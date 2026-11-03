@@ -192,7 +192,8 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     for (const f of s0028Surfaces.filter((f) => !['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
-      // El stream no indexado ya tenía normales por cara: Three las deriva del mismo triángulo en GPU.
+      geometry.setIndex(new THREE.BufferAttribute(f.indices, 1));
+      // La indexación conserva cada triángulo: Three deriva la misma normal plana en GPU.
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({

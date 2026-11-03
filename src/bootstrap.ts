@@ -483,7 +483,7 @@ export async function start(): Promise<void> {
     function drawAcquiredViews(s: Simulator, now: number, allowGpu: boolean): void {
       fitTraceCanvases();
       // Always service the Worker, including progress, cancellation and new maps.
-      if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+      if (store.get().torso && !gpu.lost) cutMap?.draw(s, now, 8, allowGpu);
       const map = cutMap?.lastMap?.map;
       const state = [
         s,

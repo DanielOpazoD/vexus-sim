@@ -55,7 +55,8 @@ import { basename, join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
-  // s0028 B, decision 317: pinned assets; the complete HTTP package also has a 19,510,002 B gate.
+  [/surfaces\.gzip-.*\.bin$/, 9672026],
+  // s0028 B, decision 317: pinned assets; decision 318 permits the complete exact-mesh HTTP package up to 25,000,000 B.
   [/abdominal-direct\.gzip-.*\.bin$/, 8567375],
   [/thoracic-direct\.gzip-.*\.bin$/, 5252011],
   [/annotation-capacity\.gzip-.*\.bin$/, 6999],

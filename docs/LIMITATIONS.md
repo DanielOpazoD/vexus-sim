@@ -669,3 +669,19 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 
 - `probe-contact-plane-estimated` (184): el marco rígido de una sonda sobre el perfil registrado usa cuerdas de la misma piel a ±medio espesor elevacional (6,5 mm para el convexo actual), en vez de la normal puntual discontinua de la tabla. La distancia de presión usa un gradiente estimado a ±1 mm sobre esa misma piel para evitar otro salto al cruzar celdas; se conserva la tolerancia de 0,05 mm del solver. No es un ajuste biomecánico de toda la huella ni una superficie cutánea nueva. Piel, espesor y gradientes físicos permanecen compartidos. Se verifican nudos y barridos finos; no se certifica cualquier maniobra ni una frecuencia universal de cuadros. La apposición hepática inferomedial conserva huecos estimados de hasta 9,01 mm en el dominio ampliado auditado; no se declara resuelta por el cambio de marco. Véase `anatomy/vexus-window-acceptance.md`.
 - `hepatobiliary-connectors-estimated` (285): relación del pedículo y conexión cística estimadas sobre un adulto registrado; sin variantes completas, distensión o ayuno vesicular por caso. La pared de 1,8 mm no es una medición individual. Suavidad de compresión y transición parietal verificadas en poses muestreadas, sin certificación de todas las maniobras ni nueva biomecánica. Véase también `APPROXIMATIONS.md`, decisión 285.
+
+## Candidato s0028 offline (317 provisional)
+
+P0 prepara herramientas, no instala una segunda anatomía en el simulador. Los identificadores
+de limitación del producto permanecen vigentes. [Migración s0028](anatomia/migracion-s0028.md)
+distingue lo observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y
+ramas no anotadas no se aprueban por disponer de reserva de bytes. Piel verificada sólo en D
+(Z −210…+60 mm y φ completo) con ombligo local aproximado (3,140913 mm frente a 3 mm);
+pelvis/ingle aproximadas. Profundidad fuera de CT a ≥12 mm fuera de piel en aire sin consumidor
+es desconocida, no aprobada; cualquier falta de cobertura de un consumidor sigue pendiente.
+
+B exige texturas 189×256×685 y 193×139×552, por encima del mínimo 256. El nuevo techo autorizado
+139.921.010/60.413.664 B no modifica el cargador en P0. P1 mide pico real y primer cuadro completo
+en navegador/SwiftShader y se detiene si no caben. El microshader y los ocho costes estáticos
+no prueban esa capacidad ni paridad del clasificador. La descarga de cada fase, incluidas
+anotaciones gzip reales, debe mantenerse ≤19.510.002 B. No es validación clínica.

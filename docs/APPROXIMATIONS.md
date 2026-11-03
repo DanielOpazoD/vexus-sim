@@ -357,3 +357,21 @@ viscosidad de cava anterior ovina de Zócalo 2008 no conserva la respiración sa
 todos los patrones renales. No se trasladan esos coeficientes a una VCI humana como
 si estuvieran calibrados. La formulación, protocolo, negativos y frontera están en
 [el informe del ensayo](fidelity/ivc-wall-frontier.md); no sustituye la decisión 73.
+
+### s0028: candidato offline B y dominio de fidelidad (317 provisional)
+
+Una persona, registro rígido único, sin HU→brillo ni etiquetas exteriores→histología. La piel
+se deriva del componente corporal mayor >−400 HU por corte, con huecos rellenos y brazos
+conectados conservados. B almacena XY RG16F en 1.024 rayos cada 0,75 mm. Exactitud sólo bajo
+el contrato muestreado 1,5/3 mm en D (Z −210…+60 mm, φ completo), con excepción local declarada
+del ombligo: 3,140913 mm en LAS [−0,927874;111,974688;−164,613793]; diagnóstico fino 3,314219 mm
+conservado. Pelvis/ingle aproximadas, sin restringir movimiento. No es Hausdorff continuo.
+
+La profundidad auxiliar usa EDT R16F de 3 mm del mismo TAC, dentro del atlas abdominal, sin
+sustituir los campos fuente de 1,5 mm. Su exactitud se exige donde hay referencia TAC; a ≥12 mm
+fuera de piel, en aire sin consumidor y fuera de rejilla CT, es desconocida, no aprobada.
+El clamp EDT más distancia a caja conserva continuidad, no acredita referencia exterior ni
+exactitud de tejido sin TAC. Contacto, pared y cobertura de consumidores se revalidan en P1.
+Gas conserva ocupación/etiqueta nearest, no SDF continuo. La capacidad de anotación vacía
+(5.671.296 B RAW, ~7 KB gzip) es U: cada llenado mide descarga real de nuevo frente a 19.510.002 B.
+No hay runtime/activos nuevos ni validación clínica. [Evidencia y puertas](anatomia/migracion-s0028.md).

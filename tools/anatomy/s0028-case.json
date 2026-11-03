@@ -1,0 +1,1050 @@
+{
+  "schemaVersion": 1,
+  "person": "s0028",
+  "frameId": "s0028-audit-las-v1",
+  "revision": "p0-1",
+  "source": {
+    "dataset": "TotalSegmentator",
+    "version": "3.0.0",
+    "author": "Jakob Wasserthal / University Hospital Basel",
+    "license": "CC BY 4.0",
+    "doi": "10.5281/zenodo.22688904"
+  },
+  "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
+  "shape": [299, 299, 394],
+  "affineRASmm": [
+    [1.5, 0.0, 0.0, -230.5625],
+    [0.0, 1.5, 0.0, -81.5625],
+    [0.0, 0.0, 1.5, -5.0],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "headerUnits": ["unknown", "unknown"],
+  "millimeterEvidence": "TotalSegmentator v3 isotropic 1.5mm release; native affine agrees, header spatial units absent",
+  "pitchMm": 1.5,
+  "rasToLASmm": [
+    [-1.0, 0.0, 0.0, -3.04777431275115],
+    [0.0, 1.0, 0.0, -148.65228450019774],
+    [0.0, 0.0, 1.0, -390.98879268882285],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "transformSource": "audit/s0028-metrics.json (one reflection + translation; no lumbar refit)",
+  "requiredMasks": [
+    "adrenal_gland_left",
+    "adrenal_gland_right",
+    "aorta",
+    "atrial_appendage_left",
+    "autochthon_left",
+    "autochthon_right",
+    "brachiocephalic_trunk",
+    "brachiocephalic_vein_left",
+    "brachiocephalic_vein_right",
+    "brain",
+    "clavicula_left",
+    "clavicula_right",
+    "colon",
+    "common_carotid_artery_left",
+    "common_carotid_artery_right",
+    "costal_cartilages",
+    "duodenum",
+    "esophagus",
+    "femur_left",
+    "femur_right",
+    "gallbladder",
+    "gluteus_maximus_left",
+    "gluteus_maximus_right",
+    "gluteus_medius_left",
+    "gluteus_medius_right",
+    "gluteus_minimus_left",
+    "gluteus_minimus_right",
+    "heart",
+    "hip_left",
+    "hip_right",
+    "humerus_left",
+    "humerus_right",
+    "iliac_artery_left",
+    "iliac_artery_right",
+    "iliac_vena_left",
+    "iliac_vena_right",
+    "iliopsoas_left",
+    "iliopsoas_right",
+    "inferior_vena_cava",
+    "kidney_cyst_left",
+    "kidney_cyst_right",
+    "kidney_left",
+    "kidney_right",
+    "liver",
+    "lung_lower_lobe_left",
+    "lung_lower_lobe_right",
+    "lung_middle_lobe_right",
+    "lung_upper_lobe_left",
+    "lung_upper_lobe_right",
+    "pancreas",
+    "portal_vein_and_splenic_vein",
+    "prostate",
+    "pulmonary_vein",
+    "rib_left_1",
+    "rib_left_10",
+    "rib_left_11",
+    "rib_left_12",
+    "rib_left_2",
+    "rib_left_3",
+    "rib_left_4",
+    "rib_left_5",
+    "rib_left_6",
+    "rib_left_7",
+    "rib_left_8",
+    "rib_left_9",
+    "rib_right_1",
+    "rib_right_10",
+    "rib_right_11",
+    "rib_right_12",
+    "rib_right_2",
+    "rib_right_3",
+    "rib_right_4",
+    "rib_right_5",
+    "rib_right_6",
+    "rib_right_7",
+    "rib_right_8",
+    "rib_right_9",
+    "sacrum",
+    "scapula_left",
+    "scapula_right",
+    "skull",
+    "small_bowel",
+    "spinal_cord",
+    "spleen",
+    "sternum",
+    "stomach",
+    "subclavian_artery_left",
+    "subclavian_artery_right",
+    "superior_vena_cava",
+    "thyroid_gland",
+    "trachea",
+    "urinary_bladder",
+    "vertebrae_C1",
+    "vertebrae_C2",
+    "vertebrae_C3",
+    "vertebrae_C4",
+    "vertebrae_C5",
+    "vertebrae_C6",
+    "vertebrae_C7",
+    "vertebrae_L1",
+    "vertebrae_L2",
+    "vertebrae_L3",
+    "vertebrae_L4",
+    "vertebrae_L5",
+    "vertebrae_L6",
+    "vertebrae_T1",
+    "vertebrae_T10",
+    "vertebrae_T11",
+    "vertebrae_T12",
+    "vertebrae_T2",
+    "vertebrae_T3",
+    "vertebrae_T4",
+    "vertebrae_T5",
+    "vertebrae_T6",
+    "vertebrae_T7",
+    "vertebrae_T8",
+    "vertebrae_T9"
+  ],
+  "historicalConflictMasks": [
+    "liver",
+    "kidney_right",
+    "kidney_left",
+    "kidney_cyst_left",
+    "kidney_cyst_right",
+    "stomach",
+    "colon",
+    "duodenum",
+    "small_bowel",
+    "spleen",
+    "pancreas",
+    "gallbladder",
+    "aorta",
+    "inferior_vena_cava",
+    "portal_vein_and_splenic_vein",
+    "iliopsoas_left",
+    "iliopsoas_right",
+    "autochthon_left",
+    "autochthon_right",
+    "heart",
+    "urinary_bladder",
+    "lung_lower_lobe_right",
+    "lung_lower_lobe_left",
+    "lung_upper_lobe_right",
+    "lung_upper_lobe_left",
+    "lung_middle_lobe_right",
+    "vertebrae_T8",
+    "vertebrae_T9",
+    "vertebrae_T10",
+    "vertebrae_T11",
+    "vertebrae_T12",
+    "vertebrae_L1",
+    "vertebrae_L2",
+    "vertebrae_L3",
+    "vertebrae_L4",
+    "vertebrae_L5",
+    "rib_right_5",
+    "rib_right_6",
+    "rib_right_7",
+    "rib_right_8",
+    "rib_right_9",
+    "rib_right_10",
+    "rib_right_11",
+    "rib_right_12",
+    "rib_left_5",
+    "rib_left_6",
+    "rib_left_7",
+    "rib_left_8",
+    "rib_left_9",
+    "rib_left_10",
+    "rib_left_11",
+    "rib_left_12",
+    "humerus_right",
+    "humerus_left",
+    "hip_left",
+    "hip_right"
+  ],
+  "masks": {
+    "adrenal_gland_left": {
+      "person": "s0028",
+      "path": "segmentations/adrenal_gland_left.nii.gz",
+      "sha256": "5e59379a366fb4611b5eea0848921185babe0cda4e7005048dcc9321958c54e3",
+      "status": "O"
+    },
+    "adrenal_gland_right": {
+      "person": "s0028",
+      "path": "segmentations/adrenal_gland_right.nii.gz",
+      "sha256": "147c910940824f603f04e117e2975178292b6bbdbdc587b747c88c7f9ee5c934",
+      "status": "O"
+    },
+    "aorta": {
+      "person": "s0028",
+      "path": "segmentations/aorta.nii.gz",
+      "sha256": "ea6b1a111d3173bd3f50d8db2cb53e5ca333ddf7be029a695339eb16bac668e9",
+      "status": "O"
+    },
+    "atrial_appendage_left": {
+      "person": "s0028",
+      "path": "segmentations/atrial_appendage_left.nii.gz",
+      "sha256": "4fb7e3a3d1533fc1da799c8294fbaea9b1db2ea9f2c609458b8d0dab57876d17",
+      "status": "O"
+    },
+    "autochthon_left": {
+      "person": "s0028",
+      "path": "segmentations/autochthon_left.nii.gz",
+      "sha256": "255e77227e9011bc95ebcb1615fabe792dff51ffd3b6c3c8b0a94ee0c957881a",
+      "status": "O"
+    },
+    "autochthon_right": {
+      "person": "s0028",
+      "path": "segmentations/autochthon_right.nii.gz",
+      "sha256": "4aff88000c0fc00b0ee46ddd62dae4b43963c45d8b8c8b4b84d36cf2ff83493e",
+      "status": "O"
+    },
+    "brachiocephalic_trunk": {
+      "person": "s0028",
+      "path": "segmentations/brachiocephalic_trunk.nii.gz",
+      "sha256": "d406222d0d18aca54092f3b6885e0b3c1c864181582ffe4089db19582a634b4c",
+      "status": "O"
+    },
+    "brachiocephalic_vein_left": {
+      "person": "s0028",
+      "path": "segmentations/brachiocephalic_vein_left.nii.gz",
+      "sha256": "effe38dac45e735fdec2d38426e3969b0300d474a4d49397c46f789146842ca7",
+      "status": "O"
+    },
+    "brachiocephalic_vein_right": {
+      "person": "s0028",
+      "path": "segmentations/brachiocephalic_vein_right.nii.gz",
+      "sha256": "4462b5773ad4c21bd106830c23ef64ef26df42275c81ee6dff84367027a5176c",
+      "status": "O"
+    },
+    "brain": {
+      "person": "s0028",
+      "path": "segmentations/brain.nii.gz",
+      "sha256": "4371570eeeb75aa1d9b52ad7a59731e2ad85c500ff704a17f5eb02880d280dcc",
+      "status": "O"
+    },
+    "clavicula_left": {
+      "person": "s0028",
+      "path": "segmentations/clavicula_left.nii.gz",
+      "sha256": "749c26e1cca7ed7b0b092090d2664d15bbb627a2aa48e4c3a02e98e5f67c4dbb",
+      "status": "O"
+    },
+    "clavicula_right": {
+      "person": "s0028",
+      "path": "segmentations/clavicula_right.nii.gz",
+      "sha256": "7a66dd126fd5b7deb2c9ce99925dbd43e1fec9507e283939c72ce5d4f0a0a2a1",
+      "status": "O"
+    },
+    "colon": {
+      "person": "s0028",
+      "path": "segmentations/colon.nii.gz",
+      "sha256": "f32c7373577d90b79c478153efc374ebcff944c24f0a89c61fdd3df4b7fde721",
+      "status": "O"
+    },
+    "common_carotid_artery_left": {
+      "person": "s0028",
+      "path": "segmentations/common_carotid_artery_left.nii.gz",
+      "sha256": "9c41a2afde0e2b6d39988af2562691573626d0ed0d78d9d8a36593a169c6d94f",
+      "status": "O"
+    },
+    "common_carotid_artery_right": {
+      "person": "s0028",
+      "path": "segmentations/common_carotid_artery_right.nii.gz",
+      "sha256": "9029050f97b9a545e37acfba69fd1440d6cc1724dffdb87803d4071609d3d900",
+      "status": "O"
+    },
+    "costal_cartilages": {
+      "person": "s0028",
+      "path": "segmentations/costal_cartilages.nii.gz",
+      "sha256": "14d4a30c934a7761615820e2a006f6c875e98c93bbbe7b0131ef174d9d798f7f",
+      "status": "O"
+    },
+    "duodenum": {
+      "person": "s0028",
+      "path": "segmentations/duodenum.nii.gz",
+      "sha256": "2056a02419a2df22b2d93109a08919caf0f419154013452a4c9a5dfee190815c",
+      "status": "O"
+    },
+    "esophagus": {
+      "person": "s0028",
+      "path": "segmentations/esophagus.nii.gz",
+      "sha256": "112ba8a39ad213c5a4cdc51d02689707d8cf33cee7e7224d3b8c6468d26f79ee",
+      "status": "O"
+    },
+    "femur_left": {
+      "person": "s0028",
+      "path": "segmentations/femur_left.nii.gz",
+      "sha256": "d859c3099b291592cd55f42bdd24ed3f1035730eb2ae129d4981c30326b8e436",
+      "status": "O"
+    },
+    "femur_right": {
+      "person": "s0028",
+      "path": "segmentations/femur_right.nii.gz",
+      "sha256": "a1fdf1228c1091370c2508d3b14db612ff2ca16ab3f9e8c54778a642816d41e7",
+      "status": "O"
+    },
+    "gallbladder": {
+      "person": "s0028",
+      "path": "segmentations/gallbladder.nii.gz",
+      "sha256": "01dc8ca612d8c5fa4be60886718f93c1fad712b3a339984c995e1cd7abba6a70",
+      "status": "O"
+    },
+    "gluteus_maximus_left": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_maximus_left.nii.gz",
+      "sha256": "976abd1554d74d906a6c37030b42305f824e47f29a60272040c26c624c64487e",
+      "status": "O"
+    },
+    "gluteus_maximus_right": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_maximus_right.nii.gz",
+      "sha256": "95d5ebf9223033d584f09a11e864d1f0a1c2793f5b4ee9f73ed0da180404ecee",
+      "status": "O"
+    },
+    "gluteus_medius_left": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_medius_left.nii.gz",
+      "sha256": "1baea788b9b31fe1353aaaef4a14687590b7bc6503335ceb69d63927bdf43925",
+      "status": "O"
+    },
+    "gluteus_medius_right": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_medius_right.nii.gz",
+      "sha256": "f3a5cd85a83b55e2f09008613421e3e080fdab03b1efb94b8a846c686b0459b9",
+      "status": "O"
+    },
+    "gluteus_minimus_left": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_minimus_left.nii.gz",
+      "sha256": "1a520e3b57106917cd466bdd0cd897c312522f7babd80114cd4067034146701d",
+      "status": "O"
+    },
+    "gluteus_minimus_right": {
+      "person": "s0028",
+      "path": "segmentations/gluteus_minimus_right.nii.gz",
+      "sha256": "193f2776c7571dad8b09e2f9b9d9641df22b9ed0f00ba74b2299f414e6f490bb",
+      "status": "O"
+    },
+    "heart": {
+      "person": "s0028",
+      "path": "segmentations/heart.nii.gz",
+      "sha256": "17a9b38786eed8b59f7db6825b86cdd8f240d64220673b1e48b496c07d2a8a0b",
+      "status": "O"
+    },
+    "hip_left": {
+      "person": "s0028",
+      "path": "segmentations/hip_left.nii.gz",
+      "sha256": "e4b116fff9c6e8fef7be2143721d8072c132f7008974cf15e2975a4b914d0ca7",
+      "status": "O"
+    },
+    "hip_right": {
+      "person": "s0028",
+      "path": "segmentations/hip_right.nii.gz",
+      "sha256": "b84e790f3a68440f434e32f042deaa08ad13f2a5b97148611232eaea9d1b6fc2",
+      "status": "O"
+    },
+    "humerus_left": {
+      "person": "s0028",
+      "path": "segmentations/humerus_left.nii.gz",
+      "sha256": "1c30788724a7b26e57a99160f0dfdbdf91ed316aaa00238546f9acbad9d2c956",
+      "status": "O"
+    },
+    "humerus_right": {
+      "person": "s0028",
+      "path": "segmentations/humerus_right.nii.gz",
+      "sha256": "b324ac9d6d27a8b1645f7cdff8d4145e3cb9f02980cabcd8849290eb369de8b0",
+      "status": "O"
+    },
+    "iliac_artery_left": {
+      "person": "s0028",
+      "path": "segmentations/iliac_artery_left.nii.gz",
+      "sha256": "64e90cd210c653a05bb74641ee13a28239389ceed4fd0c4189a9aaa2644c86cf",
+      "status": "O"
+    },
+    "iliac_artery_right": {
+      "person": "s0028",
+      "path": "segmentations/iliac_artery_right.nii.gz",
+      "sha256": "fe20fab78fcc19fc023fa5152b392bed9be48222aa3af3c6e69c663c98f3eec5",
+      "status": "O"
+    },
+    "iliac_vena_left": {
+      "person": "s0028",
+      "path": "segmentations/iliac_vena_left.nii.gz",
+      "sha256": "62325c31b12d16b15debb7b2fef5bc49ccc5ff1c2c62535a2acb55779a407e1c",
+      "status": "O"
+    },
+    "iliac_vena_right": {
+      "person": "s0028",
+      "path": "segmentations/iliac_vena_right.nii.gz",
+      "sha256": "1b3159c6aced4a7edaab3d30c3374d347a3c0adbfb9ccd0a2d82f877fe4e93e2",
+      "status": "O"
+    },
+    "iliopsoas_left": {
+      "person": "s0028",
+      "path": "segmentations/iliopsoas_left.nii.gz",
+      "sha256": "39b46cec43cd09ced7733f35b594f191e2d22f926f1c078871ba40e82a7c97f2",
+      "status": "O"
+    },
+    "iliopsoas_right": {
+      "person": "s0028",
+      "path": "segmentations/iliopsoas_right.nii.gz",
+      "sha256": "f508d46f31965dbb96ab09c5565904848ee95a774d0349754170b8500fb6f1e8",
+      "status": "O"
+    },
+    "inferior_vena_cava": {
+      "person": "s0028",
+      "path": "segmentations/inferior_vena_cava.nii.gz",
+      "sha256": "2cd0fa06d036f01f1481c6ff9dbf1456375a452472d66a6ff7ad5adb159ca14b",
+      "status": "O"
+    },
+    "kidney_cyst_left": {
+      "person": "s0028",
+      "path": "segmentations/kidney_cyst_left.nii.gz",
+      "sha256": "5fab8bed5fc1be58dd11ea48f26f0b84fb8a796c3f0d93fe50e561225798b80b",
+      "status": "O"
+    },
+    "kidney_cyst_right": {
+      "person": "s0028",
+      "path": "segmentations/kidney_cyst_right.nii.gz",
+      "sha256": "4371570eeeb75aa1d9b52ad7a59731e2ad85c500ff704a17f5eb02880d280dcc",
+      "status": "O"
+    },
+    "kidney_left": {
+      "person": "s0028",
+      "path": "segmentations/kidney_left.nii.gz",
+      "sha256": "5925298249dbe8d311ee7115911800173532406d8b02a9e80fc5ef896da3ec74",
+      "status": "O"
+    },
+    "kidney_right": {
+      "person": "s0028",
+      "path": "segmentations/kidney_right.nii.gz",
+      "sha256": "c055b3fb96cc97e92852f8557cb34ef569e0a91018e29744616f2a3b397b9c80",
+      "status": "O"
+    },
+    "liver": {
+      "person": "s0028",
+      "path": "segmentations/liver.nii.gz",
+      "sha256": "10549818924d105f875a75ed70b7107e6bb8af0dcbb21c3aaa6d05a0d2caee4e",
+      "status": "O"
+    },
+    "lung_lower_lobe_left": {
+      "person": "s0028",
+      "path": "segmentations/lung_lower_lobe_left.nii.gz",
+      "sha256": "f58c971a64526b5c764975a4796efb6334a407da188d90e035c73d3fe5483ed6",
+      "status": "O"
+    },
+    "lung_lower_lobe_right": {
+      "person": "s0028",
+      "path": "segmentations/lung_lower_lobe_right.nii.gz",
+      "sha256": "d1928da02bdd9038a262a24038e76c0e0f0e9b50c25e4143052e7e58cee9038d",
+      "status": "O"
+    },
+    "lung_middle_lobe_right": {
+      "person": "s0028",
+      "path": "segmentations/lung_middle_lobe_right.nii.gz",
+      "sha256": "7aea32f3cfd6a4d0cb88f2b6fe3720b0766cce2f699cbad0d1726bfab1fa243c",
+      "status": "O"
+    },
+    "lung_upper_lobe_left": {
+      "person": "s0028",
+      "path": "segmentations/lung_upper_lobe_left.nii.gz",
+      "sha256": "a1f65922aafbed62a56fada553d7201f763caac28781ac78e5e17d57f9fd029c",
+      "status": "O"
+    },
+    "lung_upper_lobe_right": {
+      "person": "s0028",
+      "path": "segmentations/lung_upper_lobe_right.nii.gz",
+      "sha256": "62a5f5fcfda0bb98456a513170a64d762b67cbb5d14735398af7156f44d898a6",
+      "status": "O"
+    },
+    "pancreas": {
+      "person": "s0028",
+      "path": "segmentations/pancreas.nii.gz",
+      "sha256": "37b6580de54f2fb9a11b8013fce39239c723f060295ea29ee21612e831487033",
+      "status": "O"
+    },
+    "portal_vein_and_splenic_vein": {
+      "person": "s0028",
+      "path": "segmentations/portal_vein_and_splenic_vein.nii.gz",
+      "sha256": "f1ea0abdb068d6726059b02262981663a4bee2f68296aa1035db5fd46063db8c",
+      "status": "O"
+    },
+    "prostate": {
+      "person": "s0028",
+      "path": "segmentations/prostate.nii.gz",
+      "sha256": "4371570eeeb75aa1d9b52ad7a59731e2ad85c500ff704a17f5eb02880d280dcc",
+      "status": "O"
+    },
+    "pulmonary_vein": {
+      "person": "s0028",
+      "path": "segmentations/pulmonary_vein.nii.gz",
+      "sha256": "6035ccf47fd721305bd6cbbb0fda510bf3e2087f5966943398019546488dcc28",
+      "status": "O"
+    },
+    "rib_left_1": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_1.nii.gz",
+      "sha256": "65dfe4d59eb02d2b4b2217305ab45283f9e230915d83abe35b7527448375abc6",
+      "status": "O"
+    },
+    "rib_left_10": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_10.nii.gz",
+      "sha256": "d91ce3dd8f5191ed0528a6d3bb2c966e09ea40b86585833fee42b9ca0a341ad7",
+      "status": "O"
+    },
+    "rib_left_11": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_11.nii.gz",
+      "sha256": "c1c05d050fd98510608096c71ec20c2050a1eb29dda342a82a9a92e1657a691e",
+      "status": "O"
+    },
+    "rib_left_12": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_12.nii.gz",
+      "sha256": "4917d9680eb95828ab907a58da93cd94068f8866544d4109d0636aca1a42ecc3",
+      "status": "O"
+    },
+    "rib_left_2": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_2.nii.gz",
+      "sha256": "0bbe9f12642f90fa548fece39dabde53e33377f6f1d53a22bafdb8ae7afd1deb",
+      "status": "O"
+    },
+    "rib_left_3": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_3.nii.gz",
+      "sha256": "c1e5217cccb40f934af0eab24b7ea36db134763c42bd9873af48167a33e72fec",
+      "status": "O"
+    },
+    "rib_left_4": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_4.nii.gz",
+      "sha256": "0e3927e1e22ca88a6fbaff809676452984358c3cbac6d4aabcae6c1efe50b193",
+      "status": "O"
+    },
+    "rib_left_5": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_5.nii.gz",
+      "sha256": "f926cc748df08d3d259c2a7a7eb3608a17aaf8d2be06a22e4842c2ae51b03989",
+      "status": "O"
+    },
+    "rib_left_6": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_6.nii.gz",
+      "sha256": "be16beeda26d49ca22630a6e50b8c6782e39f016aea352f0170d40a8bf306714",
+      "status": "O"
+    },
+    "rib_left_7": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_7.nii.gz",
+      "sha256": "7e898e0ffaa420aa00f49eaf2cf5a849edbf4c75a09775d833bc0d1da0a669f8",
+      "status": "O"
+    },
+    "rib_left_8": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_8.nii.gz",
+      "sha256": "99b9afd40c7e9d35e76bc413c0ac55c567fdb1d2a3b0147e14a00d74d4737268",
+      "status": "O"
+    },
+    "rib_left_9": {
+      "person": "s0028",
+      "path": "segmentations/rib_left_9.nii.gz",
+      "sha256": "2d2e2c82775954734cda09c9d28f3bede8fa6ccc34aa00dd0427c0d6a354bce6",
+      "status": "O"
+    },
+    "rib_right_1": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_1.nii.gz",
+      "sha256": "3abc9b88a576987e1ed2e79d96ceef235433a274634ad12fb0f0b547e4875da9",
+      "status": "O"
+    },
+    "rib_right_10": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_10.nii.gz",
+      "sha256": "a67012ef75fed6ff878528b5dac8cbd6fe5fff41cce0bcffb059a910f56bf352",
+      "status": "O"
+    },
+    "rib_right_11": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_11.nii.gz",
+      "sha256": "fb1861b250fa8e492df8fe27bb664161147caf3e41d81963134d11e20e010643",
+      "status": "O"
+    },
+    "rib_right_12": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_12.nii.gz",
+      "sha256": "27b88239686a37a9087b708805ae2142a57dbe2567a8c9e8990d006f4c015408",
+      "status": "O"
+    },
+    "rib_right_2": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_2.nii.gz",
+      "sha256": "77388103368467c668dd64b08687538b656980999c0b0a49357c2dd851b85422",
+      "status": "O"
+    },
+    "rib_right_3": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_3.nii.gz",
+      "sha256": "0eccee88f3371d4ae67b4242c7177697dd43068724b80fa0618f9be7465eb977",
+      "status": "O"
+    },
+    "rib_right_4": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_4.nii.gz",
+      "sha256": "3a3c055314a9e27f0ccc8afbe474e95a67af35c6e42da6508d9400beaa19ca9c",
+      "status": "O"
+    },
+    "rib_right_5": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_5.nii.gz",
+      "sha256": "a1ec0b7c14dd33424d1d74a6cb010e1ec545887357edd0235f4c08f061f4cd36",
+      "status": "O"
+    },
+    "rib_right_6": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_6.nii.gz",
+      "sha256": "fddd0053a848a0d1bc4f9f4e9cdc9b02e291a6029fcf1669f24fe684867c809e",
+      "status": "O"
+    },
+    "rib_right_7": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_7.nii.gz",
+      "sha256": "234c97f42bc25632301647c3c46a97d48f25bbbeac16e1dfc933dea82793d688",
+      "status": "O"
+    },
+    "rib_right_8": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_8.nii.gz",
+      "sha256": "ec70394daa4e73c798b1535f721fd789f10c85b6d5cf487aa1b51d2999dbd0ac",
+      "status": "O"
+    },
+    "rib_right_9": {
+      "person": "s0028",
+      "path": "segmentations/rib_right_9.nii.gz",
+      "sha256": "4c57b5abfeb30cdd5b10bbe7dc14ba6d6ad7cb8f77881b51265415751e5997dd",
+      "status": "O"
+    },
+    "sacrum": {
+      "person": "s0028",
+      "path": "segmentations/sacrum.nii.gz",
+      "sha256": "7459c0d2c8be58c452793b1940c1d65e67de4e5c5125e87d7bd9841ef3df8493",
+      "status": "O"
+    },
+    "scapula_left": {
+      "person": "s0028",
+      "path": "segmentations/scapula_left.nii.gz",
+      "sha256": "895b7e33944770ac43f69ea8e31160987467935d62c5ffb61428e0f17e0898c2",
+      "status": "O"
+    },
+    "scapula_right": {
+      "person": "s0028",
+      "path": "segmentations/scapula_right.nii.gz",
+      "sha256": "934b6060dbea3c3f21b172a1958edccab5f9bfc30422bacbd4b0ee510258632e",
+      "status": "O"
+    },
+    "skull": {
+      "person": "s0028",
+      "path": "segmentations/skull.nii.gz",
+      "sha256": "6d4af71b4615fb09a1fe8fd1ee99dbfb31bbd40a98ffaf4dbf0807c118ae81d2",
+      "status": "O"
+    },
+    "small_bowel": {
+      "person": "s0028",
+      "path": "segmentations/small_bowel.nii.gz",
+      "sha256": "d6d026951d811c57c225fab2232a325c16590052df0c26423fc2f6381eb4bd69",
+      "status": "O"
+    },
+    "spinal_cord": {
+      "person": "s0028",
+      "path": "segmentations/spinal_cord.nii.gz",
+      "sha256": "15b2353df1b384d622c571927469d63026608586733dbec0e03436e5f7b4cc62",
+      "status": "O"
+    },
+    "spleen": {
+      "person": "s0028",
+      "path": "segmentations/spleen.nii.gz",
+      "sha256": "9572a5ec13640611ba60f2f9d673c9c2802ed9516ff56657357ba329be722e97",
+      "status": "O"
+    },
+    "sternum": {
+      "person": "s0028",
+      "path": "segmentations/sternum.nii.gz",
+      "sha256": "d43db3a40c7a750065bf09fdf7de8ec4401c04680f8f88173e785a573611c109",
+      "status": "O"
+    },
+    "stomach": {
+      "person": "s0028",
+      "path": "segmentations/stomach.nii.gz",
+      "sha256": "aae7e04e3fa785dbde2aa04534f5cc65dbe8d3553ce07567036ee50d2c00780d",
+      "status": "O"
+    },
+    "subclavian_artery_left": {
+      "person": "s0028",
+      "path": "segmentations/subclavian_artery_left.nii.gz",
+      "sha256": "f6b08e9376480def22c943a90e08954ca69ef0eb4dfd0603ea89ffb2ebc45e3b",
+      "status": "O"
+    },
+    "subclavian_artery_right": {
+      "person": "s0028",
+      "path": "segmentations/subclavian_artery_right.nii.gz",
+      "sha256": "1107c3dbcfa51c58d2887ec9ec9f99935f950567ace8157250d156e5e7ed2c90",
+      "status": "O"
+    },
+    "superior_vena_cava": {
+      "person": "s0028",
+      "path": "segmentations/superior_vena_cava.nii.gz",
+      "sha256": "e80b0ab889647489770c6a9bd255631b5f3d98833abfc78dad531dbc1ddcd286",
+      "status": "O"
+    },
+    "thyroid_gland": {
+      "person": "s0028",
+      "path": "segmentations/thyroid_gland.nii.gz",
+      "sha256": "1ad37cc582451ba50699908c2da5cf1cdd7321b82f73d3ad2d4101630303cd7c",
+      "status": "O"
+    },
+    "trachea": {
+      "person": "s0028",
+      "path": "segmentations/trachea.nii.gz",
+      "sha256": "c6d20694d45ba84575e930d3d3c716d2562e74f17c4a4ba1d6326dbf48185bc5",
+      "status": "O"
+    },
+    "urinary_bladder": {
+      "person": "s0028",
+      "path": "segmentations/urinary_bladder.nii.gz",
+      "sha256": "733b7f24a08b963fbe5a508c8f0b9fadc8556533179bd20dffad11069a5e0e27",
+      "status": "O"
+    },
+    "vertebrae_C1": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C1.nii.gz",
+      "sha256": "4e834f9a3f3eb2516cd09ef866e19356f815953679edc4e61a2af28ae7b6fa8e",
+      "status": "O"
+    },
+    "vertebrae_C2": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C2.nii.gz",
+      "sha256": "abd03cc796bcabc8375d0a3d514df0e1fb2dd3d67eca688d0cc9ab497969e618",
+      "status": "O"
+    },
+    "vertebrae_C3": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C3.nii.gz",
+      "sha256": "55b235ffa758ac111318f05f5c4330dcd4c3a1d732450b940364c8d23a210433",
+      "status": "O"
+    },
+    "vertebrae_C4": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C4.nii.gz",
+      "sha256": "56a8e29844d3cd7a7226fb64522a3cca13eed6c7fc4554f91a58560caa3bf325",
+      "status": "O"
+    },
+    "vertebrae_C5": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C5.nii.gz",
+      "sha256": "fea0ce297d3fa9b85220b2a6e403a044786838d9a2689205bde538e11f817c24",
+      "status": "O"
+    },
+    "vertebrae_C6": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C6.nii.gz",
+      "sha256": "e20f1f4bccd923f0b518d4d761e994f65171797349b8ed13353d6f61c5b66e34",
+      "status": "O"
+    },
+    "vertebrae_C7": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_C7.nii.gz",
+      "sha256": "9bb87f0507a61ff3fa25a24ecd737079cbe9ca5b44db11f2547e07df19e6d778",
+      "status": "O"
+    },
+    "vertebrae_L1": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L1.nii.gz",
+      "sha256": "97aa1c8f4222b7ed7bfd26c6154c467c31c3644ae6b5c70d525815a387436580",
+      "status": "O"
+    },
+    "vertebrae_L2": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L2.nii.gz",
+      "sha256": "34ecd3f29f70d6a688f0d6693c91f494baf8a169cd4d5b76f517139e610f1b46",
+      "status": "O"
+    },
+    "vertebrae_L3": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L3.nii.gz",
+      "sha256": "e086a3000d56d95a1e03630383eabc7e282f3361e467ba97dbacb50890454b4d",
+      "status": "O"
+    },
+    "vertebrae_L4": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L4.nii.gz",
+      "sha256": "b8d6ff2740d74d1ec23bd164fc5dd3d984d0584ab128a7f96d8093ac9deca9f2",
+      "status": "O"
+    },
+    "vertebrae_L5": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L5.nii.gz",
+      "sha256": "d122ab9961b50528c19eda97383e5bc025bb8520d149a17b6917f9f9ec8dad65",
+      "status": "O"
+    },
+    "vertebrae_L6": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_L6.nii.gz",
+      "sha256": "4371570eeeb75aa1d9b52ad7a59731e2ad85c500ff704a17f5eb02880d280dcc",
+      "status": "O"
+    },
+    "vertebrae_T1": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T1.nii.gz",
+      "sha256": "67a7bb0ac24c7130cad767e65f967807b0ad832b01ca49ee9410af8593f5c45b",
+      "status": "O"
+    },
+    "vertebrae_T10": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T10.nii.gz",
+      "sha256": "ce8625510b9454945b494465b1b1ecb9eefbb644740c06bb41d45777332a40f9",
+      "status": "O"
+    },
+    "vertebrae_T11": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T11.nii.gz",
+      "sha256": "0c6a3a751370c97a90b04ec7cd73196f9fbdb2e6e9d548f64b245b75c26030fa",
+      "status": "O"
+    },
+    "vertebrae_T12": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T12.nii.gz",
+      "sha256": "92aa16b53ab3b8f8abaa52ee1caaca42ac24da0cb4097e8530d8bc2bba502267",
+      "status": "O"
+    },
+    "vertebrae_T2": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T2.nii.gz",
+      "sha256": "d7e65258f860ce8b8397f2a188c7b393021f076da0ca9b29fa549de7aa57b308",
+      "status": "O"
+    },
+    "vertebrae_T3": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T3.nii.gz",
+      "sha256": "e83c6dfeb335ac6c173c370f4e9ea46fd780e7f42da249ff2da5166124f3f698",
+      "status": "O"
+    },
+    "vertebrae_T4": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T4.nii.gz",
+      "sha256": "0cb8af759de81566e2720a55a66d28f5acc462a0303efa40c50702f46a8fd4e8",
+      "status": "O"
+    },
+    "vertebrae_T5": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T5.nii.gz",
+      "sha256": "9c1c3c83be4140b8969f8bdb376390236f5d65d401ee7f040a5f8e822013ddab",
+      "status": "O"
+    },
+    "vertebrae_T6": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T6.nii.gz",
+      "sha256": "9f35cc324e7faf6da0d192b98e89ec216796592fb309e2f4dc1e593fd6875376",
+      "status": "O"
+    },
+    "vertebrae_T7": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T7.nii.gz",
+      "sha256": "08f6cab2f029d8ded0a587705ca9d4119e042091efaa4f94eac47739b7778467",
+      "status": "O"
+    },
+    "vertebrae_T8": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T8.nii.gz",
+      "sha256": "2a20b426898672f3470e710ee2020f8dcffa7c95df12387666410cacf0a61c28",
+      "status": "O"
+    },
+    "vertebrae_T9": {
+      "person": "s0028",
+      "path": "segmentations/vertebrae_T9.nii.gz",
+      "sha256": "14071cabff1c405c265cecf378f0b0395401a8d33f0a3e777bdfcbde472018d4",
+      "status": "O"
+    }
+  },
+  "fieldGroups": [
+    {
+      "name": "liver",
+      "masks": ["liver"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "spleen",
+      "masks": ["spleen"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "pancreas",
+      "masks": ["pancreas"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "kidneyRight",
+      "masks": ["kidney_right"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "kidneyLeft",
+      "masks": ["kidney_left"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "gallbladder",
+      "masks": ["gallbladder"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "bladder",
+      "masks": ["urinary_bladder"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "digestiveTract",
+      "masks": ["stomach", "duodenum", "small_bowel", "colon"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "posteriorMuscle",
+      "masks": ["iliopsoas_left", "iliopsoas_right", "autochthon_left", "autochthon_right"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "lumbarSacralBone",
+      "masks": ["vertebrae_L1", "vertebrae_L2", "vertebrae_L3", "vertebrae_L4", "vertebrae_L5", "vertebrae_L6", "hip_left", "hip_right"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "aorta",
+      "masks": ["aorta"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "inferior_vena_cava",
+      "masks": ["inferior_vena_cava"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "portal_vein_and_splenic_vein",
+      "masks": ["portal_vein_and_splenic_vein"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "renalCysts",
+      "masks": ["kidney_cyst_left", "kidney_cyst_right"],
+      "asset": "abdominal"
+    },
+    {
+      "name": "thoracicBone",
+      "masks": [
+        "rib_left_1",
+        "rib_left_10",
+        "rib_left_11",
+        "rib_left_12",
+        "rib_left_2",
+        "rib_left_3",
+        "rib_left_4",
+        "rib_left_5",
+        "rib_left_6",
+        "rib_left_7",
+        "rib_left_8",
+        "rib_left_9",
+        "rib_right_1",
+        "rib_right_10",
+        "rib_right_11",
+        "rib_right_12",
+        "rib_right_2",
+        "rib_right_3",
+        "rib_right_4",
+        "rib_right_5",
+        "rib_right_6",
+        "rib_right_7",
+        "rib_right_8",
+        "rib_right_9",
+        "vertebrae_T1",
+        "vertebrae_T10",
+        "vertebrae_T11",
+        "vertebrae_T12",
+        "vertebrae_T2",
+        "vertebrae_T3",
+        "vertebrae_T4",
+        "vertebrae_T5",
+        "vertebrae_T6",
+        "vertebrae_T7",
+        "vertebrae_T8",
+        "vertebrae_T9",
+        "sternum"
+      ],
+      "asset": "thoracic"
+    },
+    {
+      "name": "cartilage",
+      "masks": ["costal_cartilages"],
+      "asset": "thoracic"
+    },
+    {
+      "name": "lung",
+      "masks": ["lung_lower_lobe_left", "lung_lower_lobe_right", "lung_middle_lobe_right", "lung_upper_lobe_left", "lung_upper_lobe_right"],
+      "asset": "thoracic"
+    },
+    {
+      "name": "heart",
+      "masks": ["heart"],
+      "asset": "thoracic"
+    },
+    {
+      "name": "sacrum",
+      "masks": ["sacrum"],
+      "asset": "abdominal"
+    }
+  ],
+  "classificationOrderUsed": false,
+  "runtimeInstalled": false,
+  "clinicalValidation": false
+}

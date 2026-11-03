@@ -10108,7 +10108,12 @@ cara inferior del bloque hepático el origen no es representable en Float32; la 
 `s0028NearestTies.test.ts`. No se demostró cambio visible de tejido. Deriva respiratoria 3D:
 las mallas comparten la `Float32Array` con la fuente y el cambio de caso soltaba la respiración
 sin volver al reposo (8 → 16 → 24 mm); `release()` restaura antes de soltar, con prueba roja
-conservada en `s0028Memory.test.ts`. Sin coste de memoria.
+conservada en `s0028Memory.test.ts`. Sin coste de memoria. CI SwiftShader destapó además un defecto
+preexistente en main (rojo controlado en ea20fe0): con la GPU saturada el compositor deja de entregar
+RAF, el Worker queda libre y la adquisición nueva nunca se pide, así que el corte publica el cuadro
+anterior indefinidamente (`aortaPulse` 3/3 en a3c91f2). Un temporizador CPU de 8 Hz, la misma cadencia
+quieta, atiende el corte sin adquirir GPU ni avanzar el watchdog; A17, timeouts y BOOT_MS intactos.
+Regresión roja primero en `e2e/cutMapRafStall.spec.ts`; no repara una GPU realmente colgada.
 Diez láminas abiertas con ID, poses/pared actuales provisionales P2–P8; renal focal, sombras
 costales y apoyo lateral requieren revisión anatómica posterior. Sin validación clínica.
 

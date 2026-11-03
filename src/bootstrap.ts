@@ -142,14 +142,22 @@ export async function start(): Promise<void> {
     markStartup('cut:import');
     void import('./ui/cutMapView')
       .then(({ CutMapView }) => {
-        cutMap = new CutMapView(cutCanvas, () => {
+        const drawCutMap = (advanceWatchdog = true): void => {
           if (store.get().torso && !gpu.lost && !panel.venousComparisonOpen) {
             try {
-              cutMap?.draw(sim(), performance.now());
+              cutMap?.draw(sim(), performance.now(), 8, advanceWatchdog);
             } catch (error) {
               errorLog.report('corte', error);
             }
           }
+        };
+        cutMap = new CutMapView(cutCanvas, drawCutMap);
+        // GPU backpressure can suspend RAF delivery while CPU tasks still run.
+        // Service the real acquired snapshot at its existing idle cadence; these
+        // ticks neither acquire GPU frames nor advance the active-frame watchdog.
+        const cutTimer = window.setInterval(() => drawCutMap(false), 1000 / 8);
+        window.addEventListener('pagehide', (event) => {
+          if (!event.persisted) window.clearInterval(cutTimer);
         });
         cutMap.setLabels(store.get().debug);
         markStartup('cut:ready');

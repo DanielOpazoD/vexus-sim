@@ -47,6 +47,8 @@ def require_record(record):
             raise ValueError('ausencia no puede convertirse en cero ni promoverse')
         if v is not None and (not np.isfinite(v) or v <= 1.5 or v > 80 or not value.get('source')):
             raise ValueError('orden/ausencia o procedencia de frontera inválida')
+    if bounds[2]['provenance'] not in ['E', 'U']:
+        raise ValueError('interfaz fina E/U, nunca observada')
     known = [v['value'] for v in bounds if v['value'] is not None]
     if known and (len(known) != 3 or not known[0] < known[1] <= known[2]):
         raise ValueError('orden de fronteras cruzado o incompleto')
@@ -56,7 +58,7 @@ def require_record(record):
         raise ValueError('identidad regional desconocida/promovida')
     if p == 'O' and (record.get('regionEvidence') != 'O' or not region.get('source')):
         raise ValueError('identidad U presentada como O; HU no identifica músculos')
-    if p == 'D' and record.get('regionEvidence') not in ['O', 'D']:
+    if p == 'D' and (record.get('regionEvidence') not in ['O', 'D'] or not region.get('source')):
         raise ValueError('identidad derivada sin fuente regional')
 
 
@@ -197,6 +199,14 @@ def export(annotation_dir, baseline_dir, out, case):
     load_capacity().require_wall_budget(len(payload), 0, 0, 0, 0)
     start = part['offsetBytes']
     raw[start:start+len(payload)] = payload
+    part.update(format='s0028-wall-regional-v1; 16 RG16F tiles 65x91x2 + 181 RG16F centers; remainder unused',
+                payloadBytes=len(payload), ownerReview='pending')
+    encoded_header = json.dumps(header, separators=(',', ':')).encode()
+    if len(encoded_header)+8 > 4096:
+        raise ValueError('presupuesto cabecera capacidad')
+    raw[:4096] = bytes(4096)
+    raw[:8] = struct.pack('<4sI', b'S28C', len(encoded_header))
+    raw[8:8+len(encoded_header)] = encoded_header
     descriptor = {
         'format': 's0028-wall-regional-v1', 'annotationId': annotation['id'],
         'sourceSha256': hashlib.sha256((annotation_dir/'annotation.json').read_bytes()).hexdigest(),
@@ -210,9 +220,10 @@ def export(annotation_dir, baseline_dir, out, case):
         'review': 'pending-owner', 'runtimeInstalled': False, 'posterior': 'U/P3',
     }
     meta = json.dumps(descriptor, separators=(',', ':')).encode()
-    load_capacity().require_wall_budget(len(payload), len(meta), 0, 0, 0)
+    header_delta = max(0, len(encoded_header)-count)
+    load_capacity().require_wall_budget(len(payload), len(meta)+header_delta, 0, 0, 0)
     compressed = gzip.compress(raw, compresslevel=9, mtime=0)
-    if raw[:start] != original[:start] or raw[start+len(payload):] != original[start+len(payload):]:
+    if raw[4096:start] != original[4096:start] or raw[start+len(payload):] != original[start+len(payload):]:
         raise ValueError('ocupación de reserva ajena')
     with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as stream:
         for offset in range(0, len(raw), 65536):
@@ -224,16 +235,15 @@ def export(annotation_dir, baseline_dir, out, case):
     (out/'annotation-capacity.gzip.bin').write_bytes(compressed)
     manifest['wallP2Offline'] = descriptor
     manifest['capacity'].update(downloadBytes=len(compressed), sha256=hashlib.sha256(raw).hexdigest(),
-                                sha256Gzip=hashlib.sha256(compressed).hexdigest(), anatomyAnnotated=False)
+                                sha256Gzip=hashlib.sha256(compressed).hexdigest(), anatomyAnnotated=False,
+                                compressionCredit=len(raw)-len(compressed))
     for record in manifest['files']:
         if record['file'] == cap_file.name:
             record.update(bytes=len(compressed), sha256=hashlib.sha256(compressed).hexdigest())
-    candidate = json.dumps(manifest, separators=(',', ':'), ensure_ascii=False).encode()
+    candidate = (json.dumps(manifest, indent=2, ensure_ascii=False)+'\n').encode()
     (out/'candidate-manifest.bin').write_bytes(candidate)
-    # Comparar manifiestos compactos equivalentes; no adjudicar el ahorro de espacios a la anotación.
-    canonical_base = json.dumps(json.loads(baseline_bytes), separators=(',', ':'), ensure_ascii=False).encode()
-    metadata_delta = len(candidate)-len(canonical_base)
-    load_capacity().require_wall_budget(len(payload), max(len(meta), metadata_delta), 0, 0, 0)
+    metadata_delta = len(candidate)-len(baseline_bytes)
+    load_capacity().require_wall_budget(len(payload), max(len(meta), metadata_delta)+header_delta, 0, 0, 0)
     files = []
     for path in sorted(baseline_dir.iterdir()):
         if path.suffix != '.bin':
@@ -256,7 +266,7 @@ def export(annotation_dir, baseline_dir, out, case):
         raise ValueError('presupuesto descarga P2 excedido')
     report = {'files': files, 'baselineDownloadBytes': before, 'candidateDownloadBytes': after,
               'incrementBytes': increment, 'gzipCapacityBytes': len(compressed), 'payloadBytes': len(payload),
-              'metadataBytes': len(meta), 'metadataDeltaBytes': metadata_delta,
+              'metadataBytes': max(len(meta), metadata_delta)+header_delta, 'metadataDeltaBytes': metadata_delta,
               'atlasIncrementBytes': 0, 'rawReservationIncrementBytes': 0, 'thoracicIncrementBytes': 0,
               'additionalTemporaryBudgetBytes': 16000000, 'peakMetalMeasured': False,
               'offlineOnly': True, 'ownerReview': 'pending', 'globalAnatomyAnnotated': False}

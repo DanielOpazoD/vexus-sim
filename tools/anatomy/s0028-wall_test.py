@@ -1,9 +1,11 @@
 """Contrato P2 offline: no requiere TAC, red, renderer ni anotación del propietario."""
 import copy
+import gzip
 import importlib.util
 import json
 from pathlib import Path
 import unittest
+import tempfile
 
 import numpy as np
 
@@ -45,6 +47,10 @@ class WallContract(unittest.TestCase):
         wall.require_record(record)
         record['region'] = {'value': 'obliques', 'provenance': 'O'}
         with self.assertRaisesRegex(ValueError, 'identidad'):
+            wall.require_record(record)
+        record = self.record()
+        record['boundaries'][2]['provenance'] = 'O'
+        with self.assertRaisesRegex(ValueError, 'fina'):
             wall.require_record(record)
 
     def test_crossed_boundaries_and_missing_as_zero_fail(self):
@@ -108,6 +114,51 @@ class WallContract(unittest.TestCase):
         for key in ['missingBands', 'unknownRegions', 'collisions']:
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'revisión'):
                 wall.require_reviewable({'method': 'adjacent-ct-traces', 'missingBands': 0, 'unknownRegions': 0, 'collisions': 0, key: 1})
+
+    def test_export_reopens_p1_reserve_preserves_neighbors_and_binds_records_to_tiles(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            baseline, annotation, output = [root/p for p in ['baseline', 'annotation', 'out']]
+            baseline.mkdir()
+            annotation.mkdir()
+            plan = capacity.materialize_capacity(baseline, 344)
+            original = (baseline/'annotation-capacity.bin').read_bytes()
+            (baseline/'annotation-capacity.bin').unlink()
+            (baseline/'annotation-capacity.gzip.bin').write_bytes(gzip.compress(original, mtime=0))
+            (root/'abdominal-body.bin').write_bytes(b'profile')
+            manifest = {'packing': {'sourcePhysicalFrameSha256': 'fixture', 'assets': [
+                {'name': 'abdominal', 'textureDimensions': [189, 256, 685], 'fields': [
+                    {'name': 'liver', 'offset': [0, 0, 0], 'dimensions': [4, 4, 4]}], 'depthOffset': [4, 0, 0]}]},
+                'depth': {'dimensions': [4, 4, 4]}, 'capacity': plan, 'files': []}
+            (baseline/'candidate-manifest.bin').write_text(json.dumps(manifest, indent=2)+'\n')
+            record = {**self.record(), 'cell': [0, 0]}
+            source = {'id': 'synthetic', 'source': {k: CASE[k] for k in wall.FRAME_KEYS},
+                      'physicalFrameSha256': 'fixture', 'records': [record],
+                      'placements': [[0, 0, 619+2*i] for i in range(16)], 'centerOffset': [48, 0, 398]}
+            surface = np.empty(wall.SHAPE, '<f2')
+            surface[..., :3], surface[..., 3] = np.nan, 0
+            surface[0, 0] = wall.encode_record(record)
+            (annotation/'tiles.f16').write_bytes(wall.tile_surface(surface).tobytes())
+            (annotation/'centers.f16').write_bytes(np.zeros((181, 2), '<f2').tobytes())
+            path = annotation/'annotation.json'
+            path.write_text(json.dumps(source))
+            report = wall.export(annotation, baseline, output, CASE)
+            self.assertEqual(report['atlasIncrementBytes'], 0)
+            self.assertEqual(report['thoracicIncrementBytes'], 0)
+            self.assertLessEqual(report['metadataBytes'], 4096)
+            actual = gzip.decompress((output/'annotation-capacity.gzip.bin').read_bytes())
+            self.assertEqual(len(actual), len(original))
+            end = 4096+report['payloadBytes']
+            self.assertEqual(actual[end:], original[end:])
+            source['records'] = []
+            path.write_text(json.dumps(source))
+            with self.assertRaisesRegex(ValueError, 'muestra ausente'):
+                wall.export(annotation, baseline, output, CASE)
+            source['records'] = [record]
+            source['placements'][0] = [0, 0, 0]
+            path.write_text(json.dumps(source))
+            with self.assertRaisesRegex(ValueError, 'campo ajeno'):
+                wall.export(annotation, baseline, output, CASE)
 
 
 if __name__ == '__main__':

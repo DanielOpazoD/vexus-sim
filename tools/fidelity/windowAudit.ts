@@ -124,7 +124,7 @@ try {
             const t = window.__vexusTest!.sim().scene.torso;
             return { a: t.a, b: t.b, profile: t.profile };
           });
-          const target = startPointsFor(torso).find((p) => p.id === view)!;
+          const target = startPointsFor(torso, { person: 'current' }).find((p) => p.id === view)!;
           await page
             .locator('.win-card')
             .nth(START_POINTS.findIndex((p) => p.id === view))

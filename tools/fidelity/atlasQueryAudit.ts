@@ -136,7 +136,7 @@ const planes: Array<Record<string, unknown>> = [],
   mapTimings: Array<Record<string, unknown>> = [];
 for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION]) {
   const scenes = [new before.anatomy.AnatomyScene(patient), new after.anatomy.AnatomyScene(patient)];
-  for (const startPoint of startPointsFor(scenes[0].torso)) {
+  for (const startPoint of startPointsFor(scenes[0].torso, { person: 'current' })) {
     const pose = {
       phi: startPoint.phi,
       z: startPoint.z,

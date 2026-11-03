@@ -61,7 +61,7 @@ describe('Porta subcostal: adquisición real sobre el cuerpo completo (212–213
         setAbdominalAtlas(model === 'atlas' ? atlas : undefined);
         setThoracicAtlas(model === 'atlas' ? thoracic : undefined);
         const session = openSession(base, 'apnea-expiratory');
-        const sp = startPointsFor(session.scene.torso).find((point) => point.id === 'portalSubcostal')!;
+        const sp = startPointsFor(session.scene.torso, { person: 'current' }).find((point) => point.id === 'portalSubcostal')!;
         // Apoyos subcostales explorados; el límite lateral es solo de este preset, nunca de navegación.
         expect(sp.phi).toBeGreaterThanOrEqual(1.4);
         expect(sp.phi).toBeLessThanOrEqual(model === 'atlas' ? 2.85 : 2.2);

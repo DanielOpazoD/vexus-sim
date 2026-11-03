@@ -55,6 +55,12 @@ import { basename, join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
+  // s0028 B, decision 317: pinned assets; the complete HTTP package also has a 19,510,002 B gate.
+  [/abdominal-direct\.gzip-.*\.bin$/, 8567375],
+  [/thoracic-direct\.gzip-.*\.bin$/, 5252011],
+  [/annotation-capacity\.gzip-.*\.bin$/, 6999],
+  [/skin-polar\.gzip-.*\.bin$/, 947509],
+  [/candidate-manifest-.*\.bin$/, 34521],
   // El perfil corporal conserva sus 2080 bytes; carga solo al activar referencia, sin base64 en JS.
   [/reference-body-.*\.bin$/, 2080],
   [/abdominal-body-.*\.bin$/, 3640],

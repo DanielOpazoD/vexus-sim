@@ -34,7 +34,7 @@ const TOTAL_RENAL = new Set<Tissue>([Tissue.RenalCortex, Tissue.RenalMedulla, Ti
 
 /** Corte de la ventana renal en una rejilla polar: líneas en contacto, riñón visible y contorno cortado por el sector, el fondo o una sombra. */
 function renalCut(scene: AnatomyScene, depthMm: number) {
-  const sp = startPointsFor(scene.torso).find((p) => p.id === 'renal')!;
+  const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'renal')!;
   const k = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
   const lines = 129;
   const dr = 0.75;

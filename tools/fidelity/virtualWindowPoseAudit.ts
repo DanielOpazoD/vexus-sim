@@ -20,7 +20,7 @@ for (const base of [NORMAL_ADULT, TRICUSPID_REGURGITATION]) {
   const query = new AnatomyQuery(new AnatomyScene(p)),
     engine = new PhysiologyEngine(p, query.scene.vesselAreas());
   while (engine.clock.t < 2 - 1e-9) engine.step();
-  const sp = startPointsFor(query.scene.torso).find((s) => s.id === 'intercostal')!;
+  const sp = startPointsFor(query.scene.torso, { person: 'current' }).find((s) => s.id === 'intercostal')!;
   for (const [rock, tilt] of [
     [0, 0],
     [2, 0],

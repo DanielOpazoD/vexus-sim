@@ -1,3 +1,4 @@
+import { anatomyBundle } from '../anatomy/anatomyBundle';
 import { thoracicAtlas } from '../anatomy/thoracicAtlas';
 import { THORACIC_ATLAS } from '../anatomy/thoracicAtlasData';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
@@ -6,7 +7,14 @@ import { ABDOMINAL_ATLAS } from '../anatomy/abdominalAtlasData';
 /** One bounded source volume; historical renderers bind a complete 4-byte dummy texture. */
 export function createAbdominalTexture(gl: WebGL2RenderingContext, enabled: boolean, thoracic = false): WebGLTexture {
   const data = thoracic ? thoracicAtlas : abdominalAtlas,
-    meta = thoracic ? THORACIC_ATLAS : ABDOMINAL_ATLAS;
+    meta =
+      anatomyBundle.person === 's0028'
+        ? thoracic
+          ? anatomyBundle.thoracic
+          : anatomyBundle.abdominal
+        : thoracic
+          ? THORACIC_ATLAS
+          : ABDOMINAL_ATLAS;
   if (enabled && !data) throw new Error('Campo abdominal CPU ausente');
   const dimensions = enabled ? meta.textureDimensions : [1, 1, 1];
   if (dimensions.some((d) => d > gl.getParameter(gl.MAX_3D_TEXTURE_SIZE))) throw new Error('GPU sin capacidad para el atlas abdominal');

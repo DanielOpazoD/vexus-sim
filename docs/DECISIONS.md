@@ -10058,34 +10058,37 @@ Piel exacta en el sentido del contrato muestreado p95 ≤1,5 mm/máximo ≤3 mm 
 
 **Verificación.** Los ocho programas completos de coste B P0e pasan estáticamente; RAWFIELD 1.212.601/9.763 tokens/ramas y ECHO 505.781/4.091, máximo 16 samplers y 101–138 slots. El microshader SwiftShader dibujó ambos atlas con GL=0; no acredita JIT/arranque completo. Los contratos sintéticos comprueban procedencia, campos perdidos/corruptos, categorías, gas, colocación de profundidad, periodicidad, desconocidos y descarga real con un negativo de anotación llena. El coste B se ejecuta también con descriptores sintéticos en la CI general. Evidencia, archivos archivados, reproducción y códigos locales del cierre se enlazan desde el documento de migración; ninguna CI remota o revisión por otro agente se atribuye a esta entrega.
 
-## 318. Detener el ensayo P1 al exceder los ocho techos con el lector genérico B
+## 318. Especializar P1 por persona y detenerlo por memoria física superior a 1 GB
 
-**Contexto.** P0 fusionada en ea20fe0 abre P1 condicionada. Antes de cargar el producto,
-la selección del sampler por descriptor y precisión ósea en el lector genérico B lleva
-RAWFIELD de 1.260.863/10.108 a 1.770.910/14.870 tokens/ramas, frente a 1.385.000/11.060.
-Los ocho programas exceden tokens y ramas; samplers (máximo 16) y slots (máximo 138) caben.
-La tabla completa y las fuentes están en [migración s0028](anatomia/migracion-s0028.md).
+**Contexto.** Objetivos 3/7/8; decisión del propietario del 03-11-2026: programa de una sola
+persona elegido por TS antes de escena/Worker/renderer, PC actual de 8–16 GB con integrada,
+criterio de trabajo ≤1 GB app completa, aviso >800 MB y techos de textura de 317 intactos.
+Lector genérico r1 rechazado: RAWFIELD 1.770.910/14.870 > 1.385.000/11.060; [negativo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
 
-**Opciones.** Instalar el lector sobre cota o aumentar techos: rechazado. Continuar midiendo
-pico/JIT de un candidato ya rechazado: contradice la parada previa. Especializar el sampler
-por atlas en los puntos de llamada: alternativa pendiente de otra ronda, sin evidencia de
-aceptación. La representación B y el resultado P0 no se declaran imposibles ni sustituidos.
+**Opciones.** Selección dinámica de sampler por consulta duplica rutas alcanzables. Se ensaya
+especialización TS por persona y atlas; no se relajan shaders, samplers, JS, plazos ni resolución.
+Compartir una de las copias CPU/Worker se propone tras medir, sin implementarlo en este ensayo.
 
-**Decisión.** Se aplica la parada de P1 fijada antes de medir. Se conservan sólo herramientas
-de diagnóstico `s0028-p1-reader.ts`/`s0028-p1-cost.ts`, sin imports del producto ni activos.
-El lector mantiene 19 campos físicos y consulta de gas nearest, no es el clasificador de
-veinte campos; retira del ensayo los alias psoas→autóctono/discos→sacro de coste P0.
-No se modifican `shaderLimits.test.ts`, presupuestos, plazos, tolerancias ni resolución.
+**Decisión.** `personShader` genera sólo el lector elegido. Actual conserva fuente/tokens/ramas;
+s0028 pasa 8/8: RAWFIELD 1.088.852/8.891 y COLOR 217.286/1.912, máximo 16 samplers y 138 slots.
+La guarda mide ambas variantes con helpers/techos originales y detecta regresiones de cada una.
+Selector/bundle congelado, identidad explícita, carga exclusiva/cancelable y hash/procedencia
+entran sólo como candidato local `abdomen=s0028`. Se usan B y techos exclusivos al cargar, con
+margen torácico 0 B. Superficies nativas por bloques en Worker; clasificación mínima declarada,
+sin convertir los 19 campos almacenados en anatomía completa ni recuperar alias sin fuente.
 
-**Consecuencias.** Objetivos 3/7/8: la app sigue en su atlas actual. P1 permanece incompleta:
-selector/bundle/carga cancelable y corrupta, identidad TS–GPU–Worker, clasificador, descarga
-HTTP del build, pico observado, primer cuadro Metal/SwiftShader, paridad y diez láminas
-pendientes. Los cuatro gzip B reabiertos y sus hashes no acreditan esas fases. P2 conserva
-su alcance y depende de un P1 aceptado. No hay validación clínica.
+**Consecuencias.** Metal confirma su primer cuadro GPU a 28.765 ms; descarga HTTP real 14.812.055/19.510.002 B.
+JS final 1.024.012/1.070.080 B, margen 46.068 B. **P1 se detiene**:
+SwiftShader x64/Rosetta alcanza footprint físico observado **1.120.588.568 B > 1 GB** para
+página/Worker y GPU, antes de aceptar su primer cuadro. CDP+texturas no captó toda la memoria
+nativa; ese subtotal no acredita el criterio. Compartir una copia de atlas tendría un ahorro
+nominal de 191.806.176 B, sujeto a nueva medición. No se aplica ajuste tras el negativo.
+No se activa por defecto ni se declara fusionable/aceptado. Paridad completa, diez láminas,
+pico aceptado y primer cuadro SwiftShader quedan pendientes de P1. P2 conserva su alcance.
 
-**Verificación.** Negativo de CLI con salida 1 en los ocho programas sobre B real y fixture
-sintético; el contrato exige ese rechazo sin mover cotas y comprueba las ocho bases dentro
-de límite. Helpers extraídos literalmente del guardián, con SHA256 en el informe. Prueba
-inicial sin módulo y primer fallo de aserción textual conservados. Resultados de cierre,
-SHA y límites de evidencia en el [recibo local](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
-No se atribuyen ejecución remota de CI ni revisión ajena.
+**Verificación.** Pruebas previas fallidas, 16 fuentes completas, mutaciones de ambas variantes,
+HTTP real, captura Metal abierta, muestra física original y parada explícita del navegador propio.
+La primera estimación Metal subcontaba RG32F: negativo y enmienda conservados. Códigos reales
+de cierre/E2E, SHA y diferencias del árbol medido están en [ronda 2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r2/report.md).
+Una sola decisión 318 reescrita; r1 permanece en una línea y su evidencia externa. Sin revisión
+ajena, CI remota, push, PR, stash ni escrituras gh. No es validación clínica.

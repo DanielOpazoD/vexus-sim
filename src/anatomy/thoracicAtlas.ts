@@ -1,21 +1,48 @@
+import { anatomyBundle } from './anatomyBundle';
 import type { Vec3 } from '../core/vec3';
 import { sourceDistance, sourceLabel } from './sourceVolume';
 import { THORACIC_ATLAS as F } from './thoracicAtlasData';
 export let thoracicAtlas: Uint16Array | undefined;
 const VOLUME = { originMm: F.originMm, dimensions: F.textureDimensions, offset: [0, 0, 0], pitchMm: F.pitchMm } as const;
 export function setThoracicAtlas(data?: Uint16Array): void {
-  if (data && data.byteLength !== F.rawBytes) throw new Error('Campo torácico incompleto');
+  if (data && data.byteLength !== (anatomyBundle.person === 's0028' ? anatomyBundle.thoracic.rawBytes : F.rawBytes))
+    throw new Error('Campo torácico incompleto');
   thoracicAtlas = data;
 }
 export function thoracicValue(p: Vec3): { d: number; label: number } {
   if (!thoracicAtlas) return { d: 16, label: 0 };
   return {
-    d: sourceDistance(thoracicAtlas, p, VOLUME, F.textureDimensions),
-    label: sourceLabel(thoracicAtlas, p, VOLUME, F.textureDimensions),
+    d: sourceDistance(
+      thoracicAtlas,
+      p,
+      anatomyBundle.person === 's0028' ? anatomyBundle.fields.find((f) => f.name === 'thoracicBone')! : VOLUME,
+      anatomyBundle.person === 's0028' ? anatomyBundle.thoracic.textureDimensions : F.textureDimensions,
+    ),
+    label: sourceLabel(
+      thoracicAtlas,
+      p,
+      anatomyBundle.person === 's0028' ? anatomyBundle.fields.find((f) => f.name === 'thoracicBone')! : VOLUME,
+      anatomyBundle.person === 's0028' ? anatomyBundle.thoracic.textureDimensions : F.textureDimensions,
+    ),
   };
 }
-export const thoracicSdf = (p: Vec3): number => (thoracicAtlas ? sourceDistance(thoracicAtlas, p, VOLUME, F.textureDimensions) : 16);
-export const thoracicMaterial = (label: number): string | undefined => ['bone', 'cartilage', 'vertebra'][F.materials[label] ?? -1];
+export const thoracicSdf = (p: Vec3): number =>
+  thoracicAtlas
+    ? sourceDistance(
+        thoracicAtlas,
+        p,
+        anatomyBundle.person === 's0028' ? anatomyBundle.fields.find((f) => f.name === 'thoracicBone')! : VOLUME,
+        anatomyBundle.person === 's0028' ? anatomyBundle.thoracic.textureDimensions : F.textureDimensions,
+      )
+    : 16;
+export const thoracicMaterial = (label: number): string | undefined =>
+  anatomyBundle.person === 's0028'
+    ? label >= 25 && label <= 36
+      ? 'vertebra'
+      : label > 0 && label <= 37
+        ? 'bone'
+        : undefined
+    : ['bone', 'cartilage', 'vertebra'][F.materials[label] ?? -1];
 export function thoracicGradient(p: Vec3): Vec3 {
   return [0, 1, 2].map((i) => {
     const a: Vec3 = [...p],

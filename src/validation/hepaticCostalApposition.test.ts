@@ -129,7 +129,7 @@ it('gives deep costal cortex an acoustic owner before bone, without erasing bone
 });
 it('marks the intercostal oblique posteriorly while keeping a rigid, equivalent acquisition plane', () => {
   const s = new AnatomyScene(NORMAL_ADULT),
-    sp = startPointsFor(s.torso).find((p) => p.id === 'intercostal')!;
+    sp = startPointsFor(s.torso, { person: 'current' }).find((p) => p.id === 'intercostal')!;
   const fr = probeFrame({ ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, s.torso, CONVEX_C35);
   expect(fr.lateral[1]).toBeLessThan(-0.5);
   const original = probeFrame(
@@ -146,7 +146,7 @@ it('marks the intercostal oblique posteriorly while keeping a rigid, equivalent 
 
 it('keeps the rigid contact plane continuous across skin knots in every window', () => {
   const s = new AnatomyScene(NORMAL_ADULT);
-  for (const p of startPointsFor(s.torso)) {
+  for (const p of startPointsFor(s.torso, { person: 'current' })) {
     const pose = { ...p, lift: 0, rock: p.rock ?? 0, tilt: p.tilt ?? 0 };
     const pairs = [];
     for (let z = Math.ceil((p.z - 15) / 10) * 10; z < p.z + 15; z += 10)

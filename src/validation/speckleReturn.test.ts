@@ -16,7 +16,7 @@ import {
 // Medio homogéneo estático: mismos puntos materiales, semilla y pose al regresar.
 // No es una PSF independiente, una imagen GPU ni una calibración clínica.
 const torso = new AnatomyScene(NORMAL_ADULT).torso;
-const start = startPointsFor(torso).find((p) => p.id === 'intercostal')!;
+const start = startPointsFor(torso, { person: 'current' }).find((p) => p.id === 'intercostal')!;
 const base: ProbePose = { phi: start.phi, z: start.z, lift: 0, yaw: start.yaw, rock: start.rock ?? 0, tilt: start.tilt ?? 0 };
 const frameAt = (pose: ProbePose) => probeContact(pose, CONVEX_C35, torso).frame;
 const initialFrame = frameAt(base);

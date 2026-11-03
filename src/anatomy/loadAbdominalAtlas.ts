@@ -12,9 +12,12 @@ export async function sha256(data: Uint8Array<ArrayBuffer>): Promise<string> {
 export async function loadPinnedGzip(
   url: URL,
   meta: { rawBytes: number; gzipBytes: number; sha256Gzip: string; sha256Raw: string },
+  options: { signal?: AbortSignal; rawLimit?: number; gzipLimit?: number } = {},
 ): Promise<ArrayBuffer> {
-  if (meta.rawBytes > 96 * 1024 * 1024 || meta.gzipBytes > 8 * 1024 * 1024) throw new Error('Activo abdominal excede su límite');
-  const response = await fetch(url);
+  if (meta.rawBytes > (options.rawLimit ?? 96 * 1024 * 1024) || meta.gzipBytes > (options.gzipLimit ?? 8 * 1024 * 1024))
+    throw new Error('Activo abdominal excede su límite');
+  options.signal?.throwIfAborted();
+  const response = await fetch(url, { signal: options.signal });
   if (!response.ok) throw new Error(`Atlas abdominal: HTTP ${response.status}`);
   const compressed = new Uint8Array(await response.arrayBuffer());
   if (compressed.length !== meta.gzipBytes || (await sha256(compressed)) !== meta.sha256Gzip)
@@ -23,6 +26,7 @@ export async function loadPinnedGzip(
   const raw = new Uint8Array(meta.rawBytes);
   let offset = 0;
   for (;;) {
+    options.signal?.throwIfAborted();
     const { done, value } = await reader.read();
     if (done) break;
     if (offset + value.length > raw.length) {
@@ -33,6 +37,7 @@ export async function loadPinnedGzip(
     offset += value.length;
   }
   if (offset !== raw.length || (await sha256(raw)) !== meta.sha256Raw) throw new Error('Atlas abdominal incompleto o alterado');
+  options.signal?.throwIfAborted();
   return raw.buffer;
 }
 

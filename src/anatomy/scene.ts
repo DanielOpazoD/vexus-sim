@@ -1,3 +1,4 @@
+import { anatomyBundle } from './anatomyBundle';
 import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
@@ -264,6 +265,7 @@ export function ribTiltMm(ribNo: number): number {
 }
 
 export class AnatomyScene {
+  readonly identity = anatomyBundle;
   readonly hasAbdominalAtlas = !!abdominalAtlas;
   bowelRadii = bowelRadii(null);
   readonly torso: Torso;
@@ -711,7 +713,7 @@ export class AnatomyScene {
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     if (this.hasAbdominalAtlas) {
       const gut = abdominalAtlasValue(m, 1);
-      const mesentery = gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
+      const mesentery = this.identity.person !== 's0028' && gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
       return { ...NONE, tissue: mesentery ? Tissue.MesentericFat : Tissue.UnsegmentedSoftTissue, boundaryDistance: Math.min(bd, 1) };
     }
     const q = bowelQuery(m, this.bowelRadii),

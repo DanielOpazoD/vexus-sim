@@ -374,10 +374,15 @@ El clamp EDT más distancia a caja conserva continuidad, no acredita referencia 
 exactitud de tejido sin TAC. Contacto, pared y cobertura de consumidores se revalidan en P1.
 Gas conserva ocupación/etiqueta nearest, no SDF continuo. La capacidad de anotación vacía
 (5.671.296 B RAW, ~7 KB gzip) es U: cada llenado mide descarga real de nuevo frente a 19.510.002 B.
-No hay runtime/activos nuevos ni validación clínica. [Evidencia y puertas](anatomia/migracion-s0028.md).
+P0 no tenía runtime/activos nuevos. El ensayo local P1 y su parada se describen a continuación. [Evidencia y puertas](anatomia/migracion-s0028.md).
 
-El ensayo P1 (318) se detiene antes del producto: el lector genérico de B supera los ocho
-techos estáticos. Su clasificación histórica parcial no se presenta como veinte campos
-funcionales. Gas sigue nearest sin SDF continuo; psoas/discos sin fuente no se sustituyen
-por autóctono/sacro. No se aceptan piel, pared, poses, interfaces ni órganos por este ensayo.
-La prueba de coste P0 permanece separada; véase [la frontera P1](anatomia/migracion-s0028.md).
+P1 r2 (318) integra sólo un candidato local explícito: ambos lectores GLSL viajan en JS,
+pero TS elige uno antes de compilar. Pasa shaders; se rechaza por footprint físico SwiftShader
+1.120.588.568 B >1 GB. Clasificador mínimo heredado, categorías B explícitas y gas nearest,
+sin SDF de gas; la distancia binaria provisional no es una frontera anatómica fina. Psoas y
+discos sin fuente son desconocidos; no hay alias ni cúpulas auxiliares del donante anterior.
+Poses, pared/capas, interiores renal/cardíaco y vasos son provisionales P2–P7. Las superficies
+B se extraen del cero nativo por bloques en Worker, sin demostrar paridad completa. La captura
+Metal abierta no acredita las diez ventanas ni aceptación anatómica. Se conserva el negativo
+genérico r1 en [migración](anatomia/migracion-s0028.md). Sin optimización de copias después del
+negativo, sin cambio de default ni validación clínica.

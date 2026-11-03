@@ -1,3 +1,4 @@
+import { takeS0028Worker } from './s0028Surfaces';
 import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { maskContours } from './anatomyContour';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
@@ -456,9 +457,10 @@ export class CutMapView {
   private ensureWorker(sim: Simulator, nowMs: number): Worker | null {
     if (this.worker && this.workerScene === sim.scene) return this.worker;
     if (!this.worker && nowMs < this.retryAt) return null;
+    const prepared = !this.worker ? takeS0028Worker() : undefined;
     const first = !this.worker;
     try {
-      this.worker ??= new Worker(cutMapWorkerUrl, { type: 'module' });
+      this.worker ??= prepared ?? new Worker(cutMapWorkerUrl, { type: 'module' });
     } catch (e) {
       this.fail(e, nowMs);
       return null;
@@ -474,13 +476,14 @@ export class CutMapView {
     this.lastUpdate = -Infinity;
     const init: CutMapInit = {
       type: first ? 'init' : 'patient',
+      identity: sim.scene.identity,
       // Reservar su id ahora invalida respuestas anteriores aunque la GPU
       // retrase la primera adquisición de esta escena.
       id: ++this.requestId,
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
-      abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: first ? thoracicAtlas : undefined,
+      abdominalField: first && !prepared && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
+      thoracicField: first && !prepared ? thoracicAtlas : undefined,
     };
     worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
       const message = ev.data;

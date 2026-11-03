@@ -33,7 +33,7 @@ afterAll(() => {
 for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
   it(`${patient.id}: la fascia no se repliega sobre grasa subcutánea al deslizar y girar en las ocho ventanas`, () => {
     const scene = new AnatomyScene(patient);
-    const windows = startPointsFor(scene.torso).filter((p) => !['flank', 'portalTrunk'].includes(p.id));
+    const windows = startPointsFor(scene.torso, { person: 'current' }).filter((p) => !['flank', 'portalTrunk'].includes(p.id));
     let rays = 0;
     const folds: unknown[] = [];
     // Deslizamiento caudal que reprodujo tres segmentos musculares superficiales

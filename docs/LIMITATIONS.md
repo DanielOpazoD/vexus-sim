@@ -672,7 +672,7 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 
 ## Candidato s0028 offline (317 provisional)
 
-P0 prepara herramientas, no instala una segunda anatomía en el simulador. Los identificadores
+P0 prepara herramientas, sin instalar una segunda anatomía; P1 r2 añade un candidato experimental local y se detiene por memoria. Los identificadores
 de limitación del producto permanecen vigentes. [Migración s0028](anatomia/migracion-s0028.md)
 distingue lo observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y
 ramas no anotadas no se aprueban por disponer de reserva de bytes. Piel verificada sólo en D
@@ -686,9 +686,14 @@ en navegador/SwiftShader y se detiene si no caben. El microshader y los ocho cos
 no prueban esa capacidad ni paridad del clasificador. La descarga de cada fase, incluidas
 anotaciones gzip reales, debe mantenerse ≤19.510.002 B. No es validación clínica.
 
-El ensayo P1 de la decisión 318 incumple los ocho techos con un lector genérico de dos
-rutas y queda sólo como herramienta de diagnóstico. No se instala selector ni paquete,
-no se cambia el techo del cargador, y no hay primer cuadro, pico observado, paridad ni
-láminas nuevas del producto. Este rechazo no prueba imposibilidad de B; los negativos de
-P0 y la fuente se conservan. P1 debe resolver el lector dentro de los mismos límites antes
-de acreditar sus fases pendientes. No añade un identificador de limitación del producto.
+El ensayo P1 r2 de la decisión 318 pasa los ocho shaders especializados de ambas personas,
+pero no pasa memoria: footprint físico observado de página/Worker+GPU **1.120.588.568 B >1 GB**
+en Chromium x64/Rosetta, antes de aceptar el primer cuadro SwiftShader. JS y HTTP reales
+caben; no son prueba de uso razonable en PC actual de 8–16 GB con integrada. Hay una ruta
+experimental explícita, sin cambio del default; no está aceptada ni se declara fusionable.
+Las tres copias y transitorios permanecen: compartir una copia de atlas ahorraría nominalmente
+191.806.176 B, sin implementación ni ahorro real acreditado. El tórax conserva 0 B de margen.
+Paridad CPU/GPU/Worker, primer cuadro SwiftShader, pico total aceptado y diez láminas quedan
+pendientes **de P1**. Metal produjo un cuadro, no validación anatómica/clínica. El clasificador
+mínimo y las aproximaciones heredadas se detallan en [migración](anatomia/migracion-s0028.md).
+El genérico r1 rechazado y los errores de arnés conservan sus negativos externos.

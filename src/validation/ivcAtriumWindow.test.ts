@@ -43,7 +43,7 @@ for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
       engine = new PhysiologyEngine(p, scene.vesselAreas());
     while (engine.clock.t < 2) engine.step();
     const caliber = query.caliberFor(engine.sample);
-    const sp = startPointsFor(scene.torso).find((p) => p.id === 'subxiphoid')!;
+    const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'subxiphoid')!;
     for (const [rock, tilt] of [
       [0, 0],
       [0.035, 0],
@@ -76,7 +76,7 @@ for (const blocker of [Tissue.Lung, Tissue.BowelGas])
       engine = new PhysiologyEngine(p, scene.vesselAreas());
     while (engine.clock.t < 2) engine.step();
     const caliber = query.caliberFor(engine.sample);
-    const sp = startPointsFor(scene.torso).find((p) => p.id === 'subxiphoid')!;
+    const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'subxiphoid')!;
     const classify = scene.classify.bind(scene);
     // Contrafactual sintético: sólo la piel anterior pasa a pulmón/gas. La geometría cargada,
     // el hígado, la barrera y la AD siguen presentes; se prueba el obstáculo real del clasificador.

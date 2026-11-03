@@ -1,69 +1,90 @@
 # Migración a s0028: cierre P0 y lector directo B
 
 Objetivos 3, 7 y 8 de la misión: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (02-11-2026): P0 fusionada, B aceptado por la decisión 317; ensayo P1 detenido por coste de su lector (318), sin integración de producto.**
+**Estado vigente (03-11-2026): P0 fusionada, B aceptado por la decisión 317; P1 especializado pasa shaders y se detiene por memoria real >1 GB (318). Candidato sólo local y experimental.**
 Las menciones históricas a «316 provisional» corresponden al ensayo anterior; la 316 vigente de main trata la pared cava y se conserva íntegra.
-Las entregas P0 y del ensayo P1 no modifican runtime, cargador, shaders del producto ni activos. Los TAC permanecen fuera de Git.
+P0 conserva su alcance offline. Esta ronda P1 integra una ruta explícita experimental, sin activar s0028 por defecto ni acreditar aceptación. Los TAC originales permanecen fuera de Git; sólo se incluyen los activos B derivados y fijados.
 Los dictámenes de P0–P0e al final son historial anterior a las nuevas decisiones, con sus negativos íntegros.
 
-## Ensayo P1 detenido en el lector (318, 02-11-2026)
+## P1, ronda 2: especialización admitida, memoria rechazada (318, 03-11-2026)
 
-**P1 no pasa la parada.** El ensayo previo a la carga de producto selecciona el sampler
-abdominal o torácico por descriptor, conserva los ocho nodos óseos, distancia R/etiqueta
-nearest G, gas bit128 y profundidad R en el atlas abdominal. Su expansión estática excede
-los ocho techos vigentes. Se detiene antes de instalar selector, activos, escena o Worker.
-La app y sus programas actuales conservan exactamente su fuente; no hay candidato activable.
+**P1 no pasa la parada de memoria: footprint físico observado 1.120.588.568 B > 1.000.000.000 B.**
+El lector genérico de ronda 1 queda rechazado: RAWFIELD 1.770.910/14.870 frente a 1.385.000/11.060; [negativo íntegro](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
 
-Este resultado rechaza **este lector genérico de dos rutas**, no demuestra que B sea
-imposible ni invalida la prueba de coste P0: aquélla usaba cuatro consultas históricas y
-alias explícitos. Este ensayo tampoco es un clasificador funcional de veinte campos:
-psoas y discos sin fuente se devuelven desconocidos, sin alias a autóctono o sacro.
-El gas conserva ocupación nearest; su distancia continua sigue pendiente.
+`personShader` elige en TS el lector antes de compilar: una sola ruta de persona y un sampler
+fijo por región. Los programas actuales son idénticos a la base en fuente, tokens y ramas.
+Se comprueban los ocho programas de ambas personas con los helpers/techos exactos de
+`shaderLimits.test.ts`, sin editarlo; los negativos inflan alternativamente cada variante.
 
-Se usan literalmente los helpers y límites de `shaderLimits.test.ts`, sin editarlo.
-Cada celda de coste muestra tokens/ramas; 179 slots y 16 samplers permanecen intactos.
+| Programa           | Actual tokens/ramas | s0028 tokens/ramas | Techo            | Samplers | Slots |
+| ------------------ | ------------------- | ------------------ | ---------------- | -------: | ----: |
+| RAWFIELD           | 1.260.863/10.108    | 1.088.852/8.891    | 1.385.000/11.060 |       10 |   136 |
+| RAWFIELD_ECHO      | 525.694/4.239       | 468.745/3.831      | 577.000/4.640    |       16 |   137 |
+| RAWFIELD_CLASS     | 414.230/3.503       | 393.378/3.350      | 455.000/3.830    |       10 |   136 |
+| RAWFIELD_ELEVATION | 414.370/3.505       | 393.518/3.352      | 455.000/3.830    |       15 |   137 |
+| RAWFIELD_GRADIENT  | 318.190/2.501       | 266.644/2.178      | 351.000/2.760    |       15 |   138 |
+| TRANS_HITS         | 468.025/4.104       | 435.506/3.893      | 513.000/4.470    |        6 |   101 |
+| TRANS_HITS_GRID    | 230.028/2.030       | 217.185/1.938      | 252.000/2.210    |       11 |   102 |
+| COLOR              | 226.512/1.987       | 217.286/1.912      | 248.000/2.160    |        7 |   110 |
 
-| Programa           | Actual           | Ensayo B rechazado | Techo            | Samplers | Slots |
-| ------------------ | ---------------- | ------------------ | ---------------- | -------: | ----: |
-| RAWFIELD           | 1.260.863/10.108 | 1.770.910/14.870   | 1.385.000/11.060 |       10 |   136 |
-| RAWFIELD_ECHO      | 525.694/4.239    | 763.658/6.421      | 577.000/4.640    |       16 |   137 |
-| RAWFIELD_CLASS     | 414.230/3.503    | 632.999/5.485      | 455.000/3.830    |       10 |   136 |
-| RAWFIELD_ELEVATION | 414.370/3.505    | 633.139/5.487      | 455.000/3.830    |       15 |   137 |
-| RAWFIELD_GRADIENT  | 318.190/2.501    | 404.171/3.375      | 351.000/2.760    |       15 |   138 |
-| TRANS_HITS         | 468.025/4.104    | 723.634/6.479      | 513.000/4.470    |        6 |   101 |
-| TRANS_HITS_GRID    | 230.028/2.030    | 360.722/3.227      | 252.000/2.210    |       11 |   102 |
-| COLOR              | 226.512/1.987    | 360.823/3.201      | 248.000/2.160    |        7 |   110 |
+El candidato conserva 19 campos físicos, gas nearest/mod128 y ocho nodos de precisión ósea;
+no es un clasificador anatómico completo. Mínimo: consultas históricas a sólidos/digestivo,
+lectura ósea y profundidad B; psoas/discos sin fuente desconocidos, sin alias. Categorías B
+explícitas: vértebras 25–36, colon 4, intestino delgado 3; ese 3 no acredita mesenterio.
+Las cúpulas auxiliares del donante anterior no se leen en B. Gas no tiene SDF continuo:
+la distancia binaria provisional no equivale a una frontera segmentada fina. Pared/capas,
+poses, interiores renal/cardíaco y vasos siguen esquemáticos/provisionales hasta P2–P7.
 
-La duplicación del cuerpo alcanzable al seleccionar sampler, incluida la ruta de precisión,
-explica el crecimiento del grafo. Es una medida estática, sin optimización del compilador
-ni prueba de JIT. Especializar por atlas en los puntos de llamada es una alternativa por
-ensayar en otra ronda; aquí no se relajan cotas ni se instala el lector rechazado.
+Hay una ruta **experimental local**, `?abdomen=s0028`, seleccionada antes de escena, Worker
+y renderer. Bundle congelado `{person,frameId,revision,...}`, cambio sólo por recarga,
+`startPointsFor` con identidad explícita. Carga exclusiva, señal de cancelación, manifiesto
+fijado por hash (procedencia, dimensiones y marco), gzip/RAW comprobados antes de instalar.
+El manifiesto viaja como `.bin` para conservar sus bytes originales, no para reformatear JSON.
+Los techos exclusivos se comprueban al cargar: abdomen 139.921.010 B y tórax 60.413.664 B;
+**tórax conserva 0 B de margen**. La contabilidad offline no es pico del navegador.
+Superficies de los 19 campos se extraen del cero nativo en bloques 32³ en el mismo Worker
+que luego clasifica el corte; no se descargan las mallas del donante anterior. El contrato
+sintético comprueba costura y ausencia de truncado; no acredita paridad GPU/Worker completa.
 
-Reproducción del negativo (salida nueva externa existente; devuelve **1** al exceder cotas):
+Build final: **1.024.012/1.070.080 B JS**, margen **46.068 B**,
+incluidos ambos lectores, Worker y ganchos. El cierre completo y los hashes constan en el informe.
+HTTP real del build: **14.812.055/19.510.002 B** (cuatro gzip, manifiesto y perfil provisional),
+margen 4.697.947 B; no es una suma nominal de archivos. Los hashes de los atlas coinciden con B.
 
-```sh
-./tools/workspace/run.sh node --import tsx tools/anatomy/s0028-p1-cost.ts /ruta/B /ruta/evidencia-nueva
-```
+Metal Chromium 153 arm64, ANGLE Apple M4: primer cuadro confirmado por valla GPU a **28.765 ms** desde navegación,
+28.772 ms en el host, en la E2E de cierre; captura abierta `migration-p1-r2/metal-first-page.png`. No son diez láminas
+ni aceptación anatómica. Los 19.484 ms del arnés inicial eran dos vueltas JS sin valla;
+se conserva el negativo A5 y se usa el marcador `ultrasound:gpu-ready` del runner. Primera estimación heap/backing+GPU ~949 MB: GPU RG32F estaba
+subcontada y se conserva como negativo del arnés, no como pico final.
 
-`tools/anatomy/s0028-p1-reader.ts` vive sólo en herramientas y pruebas; no se importa desde
-el producto. El contrato sintético `s0028P1Reader.test.ts` exige el rechazo y comprueba que
-los ocho programas actuales siguen bajo sus cotas. No agrega una E2E ficticia a CI.
+SwiftShader Chromium 153 x64/Rosetta: descarga real, carga y compilación ensayadas. El muestreo
+CDP dejó de responder tras 47,128 s; **no demuestra memoria estable**. La medición macOS `footprint`
+independiente observó **943.734.728 B página/Worker + 176.976.720 B GPU = 1.120.588.568 B**,
+antes de aceptar el primer cuadro. No suma heaps a procesos ni a GPU otra vez. Excluye los
+procesos browser/red y no pretende ser el pico exhaustivo: basta ese límite inferior para
+rechazar ≤1 GB. El GPU RSS llegó además a 1.422.303.232 B, métrica distinta, no sumada al footprint.
+Se detuvo expresamente el navegador propio por memoria, sin atribuir caída/OOM ni timeout.
 
-Se reabrieron los cuatro gzip de B del cierre, verificando hashes RAW y transporte y la
-igualdad de ambos atlas con P0e. Archivos + manifiesto actual suman **14.808.415 B en disco**;
-no es descarga HTTP del build. El manifiesto de esa carpeta mide 34.521 B, 609 B menos que
-la cifra histórica de este documento; el original no se sobrescribe. Contabilidad de esa
-carpeta: 139.913.241/60.413.664 B, márgenes 7.769/0 B; **no es pico del navegador**.
+Objetivo del propietario: PC actual 8–16 GB e integrada Chrome/Edge; no se generaliza M4/Rosetta
+como validación de esos PC. >800 MB: propuesta sin implementar, compartir una copia CPU/Worker
+de los atlas (191.806.176 B), y volver a medir transitorios/superficies/memoria nativa. Su resta
+aritmética daría ~929 MB para esta muestra, **no un resultado ni garantía de ahorro real**.
+No se suben techos de textura/shader/JS ni se optimiza tras el negativo.
 
-Quedan sin medir primer cuadro Metal/SwiftShader, heap principal/Worker/GPU y transitorios,
-paridad de producto y diez láminas. No hay láminas nuevas abiertas. P1 sigue pendiente de
-carga cancelable/excluyente, identidad, rechazo de corrupción y procedencia, techo del
-cargador exclusivo de B, clasificador mínimo y prueba ligera en CI. P2 conserva piel,
-pared/esqueleto y contacto; no se adelanta. Se conserva la estimación anterior P1→corte
-196–336 h + 12–24 h del propietario, sin reestimación del lector ni espera de CI.
+Cierre local: formato, índice, lint, tipos, rápida, 14 suites Python/118 pruebas, build,
+`npm run check` (285 archivos core y 7 de matriz reconciliados) y 19 E2E Metal, sin
+reintentos, pasan. La E2E nueva verifica carga, cuadro confirmado por GPU y corrupción;
+la colección completa de CI la descubre. No se ejecuta CI remota ni se acepta memoria.
 
-[Protocolo, negativos, fuentes completas y recibo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1/report.md).
-Sin validación clínica.
+Quedan pendientes **de P1**, no trasladados a P2: primer cuadro SwiftShader aceptado, pico total
+≤1 GB con transitorios, paridad CPU/GPU/Worker en puntos/costuras y diez láminas con ID. La E2E
+ligera está escrita; su ejecución local y las afectadas se declaran en el cierre, sin CI remota.
+P2 conserva piel/pared/esqueleto y contacto; P3–P7 completan las demás estructuras y P8 las poses.
+Horas restantes sin nueva estimación tras la parada; referencia anterior P1→corte 196–336 h
+más 12–24 h del propietario, sin CI: no son horas ejecutadas ni un compromiso.
+
+[Protocolo previo, enmiendas/negativos, fuentes, mediciones y recibo de ronda 2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r2/report.md).
+Sin push, PR, stash, gh, delegación ni puerto 5174. Sin validación clínica.
 
 ## Qué se acepta y qué no acredita P0
 

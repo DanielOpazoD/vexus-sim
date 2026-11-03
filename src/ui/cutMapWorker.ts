@@ -1,3 +1,12 @@
+import { sourceSurface } from '../anatomy/sourceSurface';
+import {
+  anatomyBundle,
+  installAnatomyBundle,
+  S0028_BUNDLE,
+  CURRENT_BUNDLE,
+  LEGACY_BUNDLE,
+  type AnatomyIdentity,
+} from '../anatomy/anatomyBundle';
 import { structureIdentity } from '../anatomy/structureIdentity';
 import { setReferenceBody } from '../anatomy/referenceBody';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
@@ -37,6 +46,7 @@ export interface CutMapRequest {
 
 export interface CutMapInit {
   type: 'init' | 'patient';
+  identity: AnatomyIdentity;
   id: number;
   patient: PatientState;
   referenceProfile?: Float32Array;
@@ -86,14 +96,42 @@ let vesselIndex = new Map<string, number>();
 const post = (m: CutMapResponse | CutMapError | CutMapProgress, transfer: Transferable[] = []) =>
   (self as unknown as Worker).postMessage(m, transfer);
 
-self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
+self.onmessage = async (
+  ev: MessageEvent<CutMapInit | CutMapRequest | { type: 'surfaces'; abdominalField: Uint16Array; thoracicField: Uint16Array }>,
+) => {
   const msg = ev.data;
   const current = ++revision;
   try {
+    if (msg.type === 'surfaces') {
+      installAnatomyBundle(S0028_BUNDLE);
+      setAbdominalAtlas(msg.abdominalField);
+      setThoracicAtlas(msg.thoracicField);
+      const surfaces = [];
+      for (const field of S0028_BUNDLE.fields)
+        surfaces.push(
+          await sourceSurface(
+            field.asset === 'abdominal' ? msg.abdominalField : msg.thoracicField,
+            field,
+            field.asset === 'abdominal' ? S0028_BUNDLE.abdominal.textureDimensions : S0028_BUNDLE.thoracic.textureDimensions,
+          ),
+        );
+      (self as unknown as Worker).postMessage(
+        { type: 'surfaces', surfaces },
+        surfaces.map((s) => s.positions.buffer),
+      );
+      return;
+    }
     if (msg.type !== 'map') {
+      if (msg.type === 'patient' && msg.identity.person !== anatomyBundle.person) throw new Error('Worker de otra persona');
+      if (msg.type === 'init')
+        installAnatomyBundle(
+          msg.identity.person === 's0028' ? S0028_BUNDLE : msg.identity.person === 'current' ? CURRENT_BUNDLE : LEGACY_BUNDLE,
+        );
+      if (msg.identity.frameId !== anatomyBundle.frameId || msg.identity.revision !== anatomyBundle.revision)
+        throw new Error('Identidad Worker incompatible');
       setReferenceBody(msg.referenceProfile);
       // Immutable atlas arrays are loaded once per worker, not per patient.
-      if (msg.type === 'init') {
+      if (msg.type === 'init' && msg.abdominalField) {
         setAbdominalAtlas(msg.abdominalField);
         setThoracicAtlas(msg.thoracicField);
       }
@@ -136,6 +174,6 @@ self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
     }
     post({ type: 'map', id: msg.id, width, height, tissue, vessel, structure }, [tissue.buffer, vessel.buffer, structure.buffer]);
   } catch (e) {
-    post({ type: 'error', id: msg.id, message: e instanceof Error ? e.message : String(e) });
+    post({ type: 'error', id: 'id' in msg ? msg.id : 0, message: e instanceof Error ? e.message : String(e) });
   }
 };

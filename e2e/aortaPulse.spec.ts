@@ -23,7 +23,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       const s = window.__vexusTest!.sim();
       return { torso: s.scene.torso, pose: s.pose };
     });
-    const transverse = startPointsFor(poses.torso).find((p) => p.id === 'epigastric')!;
+    const transverse = startPointsFor(poses.torso, { person: 'current' }).find((p) => p.id === 'epigastric')!;
     // Las láminas de imagen y el cine son evidencia en Metal, fuera de CI: en SwiftShader superan los 5 min por caso (decisión 314)
     for (const view of ['transverse'] as const) {
       await page.evaluate(
@@ -162,7 +162,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
     await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().patient.id)).toBe(caseId);
     const torso = await page.evaluate(() => window.__vexusTest!.sim().scene.torso);
-    const pose = startPointsFor(torso).find((p) => p.id === 'epigastric')!;
+    const pose = startPointsFor(torso, { person: 'current' }).find((p) => p.id === 'epigastric')!;
     const results = [];
     for (const systole of [false, true]) {
       const frame = await page.evaluate(

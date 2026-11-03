@@ -1,5 +1,13 @@
 import { thoracicAtlas, thoracicValue, thoracicMaterial, boneSurfaceFrame } from './thoracicAtlas';
-import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight, registeredDomeSample } from './abdominalAtlas';
+import {
+  abdominalAtlas,
+  s0028Depth,
+  s0028DepthGradient,
+  abdominalAtlasSdf,
+  hepaticDomeValue,
+  registeredDomeHeight,
+  registeredDomeSample,
+} from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import { DIAPHRAGM_THICKNESS_MM } from './tissues';
@@ -728,6 +736,8 @@ export function torsoPhi(x: number, y: number, t: Torso): number {
 
 /** Distancia radial (mm, aproximada) desde la piel: negativa dentro del cuerpo. */
 export function torsoDepth(p: Vec3, t: Torso): number {
+  const source = s0028Depth(p);
+  if (source !== undefined) return source;
   if (t.profile) return bodyDepth(p, t.profile);
   const y = p[1] - (t.y0 ?? 0);
   const u = p[0] / t.a;
@@ -744,6 +754,8 @@ export function torsoDepth(p: Vec3, t: Torso): number {
  * caras de las capas de la pared sin su ondulación (el eco de cara plana de la serie de la pleura, decisión 62).
  */
 export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
+  const source = s0028DepthGradient(p);
+  if (source) return source;
   if (t.profile) return bodyGradient(p, t.profile);
   p = [p[0], p[1] - (t.y0 ?? 0), p[2]];
   const r = Math.hypot(p[0], p[1]);
@@ -756,6 +768,11 @@ export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
 
 /** Normal exterior aproximada de la piel en el punto. */
 export function torsoNormal(p: Vec3, t: Torso): Vec3 {
+  const source = s0028DepthGradient(p);
+  if (source) {
+    const n = Math.hypot(...source) || 1;
+    return source.map((v) => v / n) as Vec3;
+  }
   if (t.profile) {
     const g = bodyGradient(p, t.profile);
     const n = Math.hypot(...g);

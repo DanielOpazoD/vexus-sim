@@ -1,3 +1,4 @@
+import { s0028Surfaces } from '../s0028Surfaces';
 import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
 import { abdominalSurface } from '../../anatomy/abdominalSurface';
 import { ABDOMINAL_SURFACE } from '../../anatomy/abdominalSurfaceData';
@@ -187,6 +188,26 @@ export function buildHeartMesh(a: AnatomyScene): THREE.Mesh {
 
 export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
+  if (a.identity.person === 's0028') {
+    for (const f of s0028Surfaces.filter((f) => !['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({
+          color: f.name === 'liver' ? 0x995d49 : 0xcda08b,
+          roughness: 0.8,
+          transparent: true,
+          opacity: 0.6,
+        }),
+      );
+      mesh.scale.setScalar(CM);
+      mesh.name = f.name;
+      g.add(mesh);
+    }
+    return g;
+  }
   if (!a.hasAbdominalAtlas) {
     const liver = buildLiverMesh(a);
     g.add(liver, buildCouinaudLabels(a, liver));

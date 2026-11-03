@@ -1,3 +1,4 @@
+import { s0028Surfaces } from '../s0028Surfaces';
 import { bodyStride } from '../../anatomy/referenceBody';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
@@ -147,6 +148,18 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
+  if (a.identity.person === 's0028') {
+    for (const f of s0028Surfaces.filter((f) => ['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, f.name === 'cartilage' ? cartilage : bone);
+      mesh.scale.setScalar(CM);
+      mesh.name = f.name;
+      g.add(mesh);
+    }
+    return g;
+  }
   if (a.hasAbdominalAtlas) {
     if (!thoracicSurface) throw new Error('Esqueleto torácico sin cargar');
     for (const [i, [offset, count]] of THORACIC_SURFACE.fields.entries()) {

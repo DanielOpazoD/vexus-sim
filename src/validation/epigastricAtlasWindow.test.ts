@@ -40,7 +40,7 @@ for (const base of [NORMAL_ADULT, SEVERE_CONGESTION])
       query = new AnatomyQuery(scene),
       engine = new PhysiologyEngine(patient, scene.vesselAreas());
     const sample = engine.sample,
-      sp = startPointsFor(scene.torso).find((p) => p.id === 'epigastric')!;
+      sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'epigastric')!;
     const contact = probeContact({ ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso),
       frame = contact.frame;
     query.setProbeCompression(contact);

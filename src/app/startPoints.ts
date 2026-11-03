@@ -1,3 +1,4 @@
+import type { AnatomyIdentity } from '../anatomy/anatomyBundle';
 import type { Torso } from '../anatomy/primitives';
 /**
  * «Puntos de partida» (decisión 17): posiciones cutáneas con los ángulos de partida de cada
@@ -294,6 +295,10 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
               : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
-export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {
+export function startPointsFor(
+  torso: Pick<Torso, 'a' | 'b' | 'profile'>,
+  identity: Pick<AnatomyIdentity, 'person'>,
+): readonly StartPoint[] {
+  if (identity.person === 's0028') return ABDOMINAL_POINTS;
   return torso.profile && torso.profile.length !== 520 ? ABDOMINAL_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;
 }

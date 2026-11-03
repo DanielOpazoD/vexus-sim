@@ -50,7 +50,7 @@ export function exportModel(out: string): void {
   const engine = new PhysiologyEngine({ ...NORMAL_ADULT, respiratoryPattern: 'apnea-expiratory' }, scene.vesselAreas());
   for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
   const caliber = query.caliberFor(engine.sample);
-  const planes = startPointsFor(scene.torso).map((sp) => {
+  const planes = startPointsFor(scene.torso, { person: 'current' }).map((sp) => {
     const frame = probeFrame({ ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, scene.torso, CONVEX_C35);
     return { id: sp.id, phi: sp.phi, z: sp.z, ...frame, width: 181, height: 221, u0: -135, r0: -60, pitchMm: 1.5 };
   });

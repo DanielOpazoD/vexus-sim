@@ -62,7 +62,7 @@ describe('porta lateral: parénquima y plano anatómico, sin máscara de cava (1
           query = new AnatomyQuery(scene);
         const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: 2 });
         for (let i = 0; i < Math.round(30 / engine.clock.dt); i++) engine.step();
-        const sp = startPointsFor(scene.torso).find((s) => s.id === 'portal')!;
+        const sp = startPointsFor(scene.torso, { person: 'current' }).find((s) => s.id === 'portal')!;
         const before = portalSlice(scene, query, engine, previous[reference ? 1 : 0]);
         const after = portalSlice(scene, query, engine, { ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
         const tag = JSON.stringify({ before, after });

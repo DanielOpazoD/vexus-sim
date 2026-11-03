@@ -96,7 +96,7 @@ export class VenousSpectralAcquisition {
           !bodyProfile.every((v, i) => v === observedProfile[i]))
       )
         throw new Error('The reference body changed during acquisition setup');
-      const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
+      const sp = startPointsFor(scene.torso, scene.identity).find((s) => s.id === window)!;
       // En el atlas ambas puertas se adquieren en el nuevo plano renal (276).
       // Las anatomías anteriores conservan sus barridos auditados.
       const pairedTilt = paired && !scene.hasAbdominalAtlas ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;

@@ -46,7 +46,7 @@ export function openSession(base: PatientState, respiratoryPattern: RespiratoryP
 
 /** La sonda en un punto de partida con su compresión (decisión 63), como `goToStartPoint`. */
 export function probeAt(session: ChainSession, window: StartPoint['id']): ProbeContact {
-  const sp = startPointsFor(session.scene.torso).find((s) => s.id === window)!;
+  const sp = startPointsFor(session.scene.torso, session.scene.identity).find((s) => s.id === window)!;
   const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const contact = probeContact(pose, TR, session.scene.torso);
   session.anatomy.setProbeCompression(contact);

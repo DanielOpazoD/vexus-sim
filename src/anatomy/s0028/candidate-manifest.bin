@@ -1,0 +1,1105 @@
+{
+  "revision": "s0028-p0-close-B-v1",
+  "packing": {
+    "revision": "s0028-p0e-P0c-direct-v1",
+    "logicalFields": 20,
+    "physicalFields": 19,
+    "pitchMm": 1.5,
+    "sourcePhysicalFrameSha256": "2a0bba52e69f9ea82fc66355c3ec6e308f529b541182968f9b67a031872f49d1",
+    "assets": [
+      {
+        "name": "abdominal",
+        "textureDimensions": [
+          189,
+          256,
+          685
+        ],
+        "rawBytes": 132572160,
+        "fieldsRawBytes": 90689848,
+        "paddingBytes": 29108936,
+        "gzipBytes": 8567375,
+        "file": "abdominal-direct.gzip.bin",
+        "sha256Raw": "cb91610c5ad9421d4ceb4f42bd301b7ee7588ae066048e010d665165a4be9a08",
+        "sha256Gzip": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+        "rawLimitBytes": 139921010,
+        "textureMarginBytes": 7348850,
+        "packingSeconds": 10.180271374993026,
+        "fields": [
+          {
+            "name": "liver",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "liver"
+            ],
+            "originMm": [
+              -133.98527431275116,
+              -81.71478450019774,
+              -142.48879268882285
+            ],
+            "dimensions": [
+              173,
+              117,
+              112
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 9067968,
+            "gzipBytes": 673387,
+            "sha256Raw": "2d2825a453c06dcaa8940a7f9472957f3d0c9823c2555768f6f39dfa6f0c1f32",
+            "sha256Gzip": "14f6f4a5b57209ff3fb4850ec15db02fdc02384741f88cc4cf3f3be501e35860",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 398759,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 9070770,
+            "sourceLabels": {
+              "1": "liver"
+            },
+            "offset": [
+              0,
+              105,
+              477
+            ],
+            "storedSha256Raw": "2d2825a453c06dcaa8940a7f9472957f3d0c9823c2555768f6f39dfa6f0c1f32",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "spleen",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "spleen"
+            ],
+            "originMm": [
+              62.51472568724884,
+              -71.21478450019774,
+              -104.98879268882285
+            ],
+            "dimensions": [
+              55,
+              61,
+              58
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 778360,
+            "gzipBytes": 58767,
+            "sha256Raw": "d75edd000df888ba2a45eec80bf41e5fec4946eaeaa3d555e3d907e0163b4014",
+            "sha256Gzip": "1251affc5f849a71ecbc05f02dc17a11d6fff07367de557e85989c524c6d8c69",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 28224,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 778632,
+            "sourceLabels": {
+              "1": "spleen"
+            },
+            "offset": [
+              82,
+              118,
+              354
+            ],
+            "storedSha256Raw": "d75edd000df888ba2a45eec80bf41e5fec4946eaeaa3d555e3d907e0163b4014",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "pancreas",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "pancreas"
+            ],
+            "originMm": [
+              -39.48527431275116,
+              -15.714784500197737,
+              -157.48879268882285
+            ],
+            "dimensions": [
+              99,
+              47,
+              69
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 1284228,
+            "gzipBytes": 85745,
+            "sha256Raw": "a61534aacfb5c8bc23e96e817e2cd26a89c4ec8da625bb91df675dd28c827cba",
+            "sha256Gzip": "4e67bce95b53d31ae3b1248260606a7b093d1eaab18b941940a9f4a4c4912c20",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 22725,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 1284655,
+            "sourceLabels": {
+              "1": "pancreas"
+            },
+            "offset": [
+              54,
+              200,
+              249
+            ],
+            "storedSha256Raw": "a61534aacfb5c8bc23e96e817e2cd26a89c4ec8da625bb91df675dd28c827cba",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "kidneyRight",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "kidney_right"
+            ],
+            "originMm": [
+              -87.48527431275116,
+              -68.21478450019774,
+              -181.48879268882285
+            ],
+            "dimensions": [
+              53,
+              53,
+              68
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 764048,
+            "gzipBytes": 62990,
+            "sha256Raw": "a27f42eb17647a5ed3ae5f3561340459f6c29c3026d96af2b51a5d46fc62af72",
+            "sha256Gzip": "1151e06396658dae0100c8de46d58d2dc9ee8ed3e8de984367a0d7ef30a0a98b",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 32085,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 764315,
+            "sourceLabels": {
+              "1": "kidney_right"
+            },
+            "offset": [
+              54,
+              200,
+              319
+            ],
+            "storedSha256Raw": "a27f42eb17647a5ed3ae5f3561340459f6c29c3026d96af2b51a5d46fc62af72",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "kidneyLeft",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "kidney_left"
+            ],
+            "originMm": [
+              29.51472568724884,
+              -62.21478450019774,
+              -173.98879268882285
+            ],
+            "dimensions": [
+              53,
+              46,
+              77
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 750904,
+            "gzipBytes": 62172,
+            "sha256Raw": "db1d05a1d237c9d456464cc9a94442d87763d1821b9425b12624ed35e896619d",
+            "sha256Gzip": "ac3d643a423b317fafabeebd926d0389b8f5c3f408892d09450474baeeba57c3",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 32125,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 751166,
+            "sourceLabels": {
+              "1": "kidney_left"
+            },
+            "offset": [
+              0,
+              193,
+              249
+            ],
+            "storedSha256Raw": "db1d05a1d237c9d456464cc9a94442d87763d1821b9425b12624ed35e896619d",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "gallbladder",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "gallbladder"
+            ],
+            "originMm": [
+              -87.48527431275116,
+              15.785215499802263,
+              -101.98879268882285
+            ],
+            "dimensions": [
+              32,
+              30,
+              27
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 103680,
+            "gzipBytes": 10628,
+            "sha256Raw": "c99355c2237cf6a0b4fa2dd65345d2df9f7d3addb740626cbc77036668b7f682",
+            "sha256Gzip": "f05a466b45d43c850f6c1cb5f59a46c52747cf77d09cfd37ebed08579b843044",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 1426,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 103747,
+            "sourceLabels": {
+              "1": "gallbladder"
+            },
+            "offset": [
+              49,
+              155,
+              249
+            ],
+            "storedSha256Raw": "c99355c2237cf6a0b4fa2dd65345d2df9f7d3addb740626cbc77036668b7f682",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "bladder",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "urinary_bladder"
+            ],
+            "originMm": [
+              -28.98527431275116,
+              -32.21478450019774,
+              -374.98879268882285
+            ],
+            "dimensions": [
+              55,
+              53,
+              34
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 396440,
+            "gzipBytes": 34386,
+            "sha256Raw": "d4198e4d2870244fca4a4d4162b51ebf7bc00bf465fdca72d25a9f2166caffc9",
+            "sha256Gzip": "c4ddfd49d55eefbd8eb96fbbaf3723f13a3775bb3a94404792311b79d0ece0be",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 15629,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 396597,
+            "sourceLabels": {
+              "1": "urinary_bladder"
+            },
+            "offset": [
+              108,
+              200,
+              319
+            ],
+            "storedSha256Raw": "d4198e4d2870244fca4a4d4162b51ebf7bc00bf465fdca72d25a9f2166caffc9",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "digestiveTract",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "stomach",
+              "duodenum",
+              "small_bowel",
+              "colon"
+            ],
+            "originMm": [
+              -115.98527431275116,
+              -105.71478450019774,
+              -371.98879268882285
+            ],
+            "dimensions": [
+              168,
+              136,
+              248
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 22665216,
+            "gzipBytes": 1638340,
+            "sha256Raw": "cd9483cb3049c22e88d0ff023ae1fc577b26fc924637a0aa547f9a14aabd9afd",
+            "sha256Gzip": "a5652564bfa7015b5733384b791db2d1f44ab2d87a3cc506a138170d868fcbe6",
+            "labelValues": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "occupiedVoxels": 605592,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 22672168,
+            "sourceLabels": {
+              "1": "stomach",
+              "2": "duodenum",
+              "3": "small_bowel",
+              "4": "colon"
+            },
+            "offset": [
+              0,
+              118,
+              0
+            ],
+            "storedSha256Raw": "e78a07dd43e565ddcb0d2ec0f2262dab084f45c6de68c3b739222805b1565335",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "posteriorMuscle",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "iliopsoas_left",
+              "iliopsoas_right",
+              "autochthon_left",
+              "autochthon_right"
+            ],
+            "originMm": [
+              -105.48527431275116,
+              -114.71478450019774,
+              -392.98879268882285
+            ],
+            "dimensions": [
+              157,
+              117,
+              398
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 29243448,
+            "gzipBytes": 1643252,
+            "sha256Raw": "d2db0494b9a668140c9828ef2078f92f5018dc609aba31a4111ccb532f96a011",
+            "sha256Gzip": "3714b039f543512a90226c6a3d7aa7f79aa729c5681dd3664b5c4b3214dbd3de",
+            "labelValues": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "occupiedVoxels": 363841,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 29252405,
+            "sourceLabels": {
+              "1": "iliopsoas_left",
+              "2": "iliopsoas_right",
+              "3": "autochthon_left",
+              "4": "autochthon_right"
+            },
+            "offset": [
+              0,
+              0,
+              0
+            ],
+            "storedSha256Raw": "d2db0494b9a668140c9828ef2078f92f5018dc609aba31a4111ccb532f96a011",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "lumbarSacralBone",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "vertebrae_L1",
+              "vertebrae_L2",
+              "vertebrae_L3",
+              "vertebrae_L4",
+              "vertebrae_L5",
+              "vertebrae_L6",
+              "hip_left",
+              "hip_right"
+            ],
+            "originMm": [
+              -132.48527431275116,
+              -98.21478450019774,
+              -404.98879268882285
+            ],
+            "dimensions": [
+              189,
+              104,
+              220
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 17297280,
+            "gzipBytes": 1102295,
+            "sha256Raw": "2da0a510155dc621bea469bb29111c9d9b66a781056d667d7241e5c584f5e10f",
+            "sha256Gzip": "bd4cb517b0c1d95fb32016b8b8a94672a6bd8988bc3f2195009518adeb6ccea2",
+            "labelValues": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "occupiedVoxels": 212335,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 17302592,
+            "sourceLabels": {
+              "1": "vertebrae_L1",
+              "2": "vertebrae_L2",
+              "3": "vertebrae_L3",
+              "4": "vertebrae_L4",
+              "5": "vertebrae_L5",
+              "6": "hip_left",
+              "7": "hip_right"
+            },
+            "offset": [
+              0,
+              0,
+              399
+            ],
+            "storedSha256Raw": "2da0a510155dc621bea469bb29111c9d9b66a781056d667d7241e5c584f5e10f",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "aorta",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "aorta"
+            ],
+            "originMm": [
+              -27.48527431275116,
+              -56.21478450019774,
+              -205.48879268882285
+            ],
+            "dimensions": [
+              48,
+              74,
+              227
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 3225216,
+            "gzipBytes": 154890,
+            "sha256Raw": "5ed3e4b51e5944d28aae8435bfdbbc1b478c2e83eaac7e700a1644c60fb8bcfb",
+            "sha256Gzip": "c241dff22ba8b6108fbfa9cecaf92e047e8e4a97f89c63166db58b1a1a65fe04",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 47775,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 3226233,
+            "sourceLabels": {
+              "1": "aorta"
+            },
+            "offset": [
+              0,
+              118,
+              249
+            ],
+            "storedSha256Raw": "5ed3e4b51e5944d28aae8435bfdbbc1b478c2e83eaac7e700a1644c60fb8bcfb",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "inferior_vena_cava",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "inferior_vena_cava"
+            ],
+            "originMm": [
+              -33.48527431275116,
+              -27.714784500197737,
+              -211.48879268882285
+            ],
+            "dimensions": [
+              32,
+              36,
+              163
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 751104,
+            "gzipBytes": 60994,
+            "sha256Raw": "7e9a9d941efc2c06a8b6eb5d47b9342cefb0b672e611eaf694d7e98fb518b84a",
+            "sha256Gzip": "dfbd8026358ce853c1ddadbc6eb1226ddecdbdcf7be3017152d3b0e3174235f5",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 20497,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 751366,
+            "sourceLabels": {
+              "1": "inferior_vena_cava"
+            },
+            "offset": [
+              49,
+              118,
+              249
+            ],
+            "storedSha256Raw": "7e9a9d941efc2c06a8b6eb5d47b9342cefb0b672e611eaf694d7e98fb518b84a",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "portal_vein_and_splenic_vein",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "portal_vein_and_splenic_vein"
+            ],
+            "originMm": [
+              -73.98527431275116,
+              -27.714784500197737,
+              -109.48879268882285
+            ],
+            "dimensions": [
+              127,
+              61,
+              51
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 1580388,
+            "gzipBytes": 70950,
+            "sha256Raw": "24cbd18996cdeae0261c33bc45b1fcd53dd9d8674979f4b9fef3adf970c08074",
+            "sha256Gzip": "e6f5a11004fd3bb10abe823f5f59d5ca9caaee2be95c9e7819c845d28be8ed2f",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 5690,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 1580905,
+            "sourceLabels": {
+              "1": "portal_vein_and_splenic_vein"
+            },
+            "offset": [
+              49,
+              180,
+              388
+            ],
+            "storedSha256Raw": "24cbd18996cdeae0261c33bc45b1fcd53dd9d8674979f4b9fef3adf970c08074",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "renalCysts",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "kidney_cyst_left",
+              "kidney_cyst_right"
+            ],
+            "originMm": [
+              74.51472568724884,
+              -57.71478450019774,
+              -125.98879268882285
+            ],
+            "dimensions": [
+              16,
+              17,
+              17
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 18496,
+            "gzipBytes": 2026,
+            "sha256Raw": "41cb53efe086dea6a0b45dfd5ae7467c167ae85f4cc313f418f8ff80a37d9844",
+            "sha256Gzip": "e4b2418f7c249f40b5970e69aae86525a03a2864c8aec463092186c5e9a061f0",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 53,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 18538,
+            "sourceLabels": {
+              "1": "kidney_cyst_left"
+            },
+            "offset": [
+              158,
+              0,
+              0
+            ],
+            "storedSha256Raw": "41cb53efe086dea6a0b45dfd5ae7467c167ae85f4cc313f418f8ff80a37d9844",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "sacrum",
+            "asset": "abdominal",
+            "status": "source",
+            "supportFor": [
+              "sacrum"
+            ],
+            "originMm": [
+              -43.98527431275116,
+              -125.21478450019774,
+              -362.98879268882285
+            ],
+            "dimensions": [
+              82,
+              81,
+              104
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 2763072,
+            "gzipBytes": 155975,
+            "sha256Raw": "6fe3a58d8e466b1a7198543f3ed608505add262dacdb36030f96ca5dffeacbdd",
+            "sha256Gzip": "9f03c1a5d03c65e29f323f5adb3687f666f37b75a9a23b326e19cf4ee461eed7",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 42690,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 2763949,
+            "sourceLabels": {
+              "1": "sacrum"
+            },
+            "offset": [
+              82,
+              118,
+              249
+            ],
+            "storedSha256Raw": "6fe3a58d8e466b1a7198543f3ed608505add262dacdb36030f96ca5dffeacbdd",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          }
+        ],
+        "allBricksDecodedExact": true,
+        "max3d256Pass": false,
+        "depthOffset": [
+          0,
+          104,
+          589
+        ],
+        "depthBytesInAtlas": 5249664
+      },
+      {
+        "name": "thoracic",
+        "textureDimensions": [
+          193,
+          139,
+          552
+        ],
+        "rawBytes": 59234016,
+        "fieldsRawBytes": 46570968,
+        "paddingBytes": 12663048,
+        "gzipBytes": 5252011,
+        "file": "thoracic-direct.gzip.bin",
+        "sha256Raw": "0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e",
+        "sha256Gzip": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d",
+        "rawLimitBytes": 60413664,
+        "textureMarginBytes": 1179648,
+        "packingSeconds": 3.523445333004929,
+        "fields": [
+          {
+            "name": "thoracicBone",
+            "asset": "thoracic",
+            "status": "source",
+            "supportFor": [
+              "rib_left_1",
+              "rib_left_10",
+              "rib_left_11",
+              "rib_left_12",
+              "rib_left_2",
+              "rib_left_3",
+              "rib_left_4",
+              "rib_left_5",
+              "rib_left_6",
+              "rib_left_7",
+              "rib_left_8",
+              "rib_left_9",
+              "rib_right_1",
+              "rib_right_10",
+              "rib_right_11",
+              "rib_right_12",
+              "rib_right_2",
+              "rib_right_3",
+              "rib_right_4",
+              "rib_right_5",
+              "rib_right_6",
+              "rib_right_7",
+              "rib_right_8",
+              "rib_right_9",
+              "vertebrae_T1",
+              "vertebrae_T10",
+              "vertebrae_T11",
+              "vertebrae_T12",
+              "vertebrae_T2",
+              "vertebrae_T3",
+              "vertebrae_T4",
+              "vertebrae_T5",
+              "vertebrae_T6",
+              "vertebrae_T7",
+              "vertebrae_T8",
+              "vertebrae_T9",
+              "sternum"
+            ],
+            "originMm": [
+              -139.98527431275116,
+              -107.21478450019774,
+              -137.98879268882285
+            ],
+            "dimensions": [
+              193,
+              139,
+              218
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 23393144,
+            "gzipBytes": 2554202,
+            "sha256Raw": "77e0525700e49771de4b475e3492cf810a36ba800e03d937e908fc76949961b2",
+            "sha256Gzip": "67b6656bdebfcc395287d389cebf7faffee8674d73040cf6c90e646c6f4b92f3",
+            "labelValues": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37
+            ],
+            "occupiedVoxels": 164415,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 23400316,
+            "sourceLabels": {
+              "1": "rib_left_1",
+              "2": "rib_left_10",
+              "3": "rib_left_11",
+              "4": "rib_left_12",
+              "5": "rib_left_2",
+              "6": "rib_left_3",
+              "7": "rib_left_4",
+              "8": "rib_left_5",
+              "9": "rib_left_6",
+              "10": "rib_left_7",
+              "11": "rib_left_8",
+              "12": "rib_left_9",
+              "13": "rib_right_1",
+              "14": "rib_right_10",
+              "15": "rib_right_11",
+              "16": "rib_right_12",
+              "17": "rib_right_2",
+              "18": "rib_right_3",
+              "19": "rib_right_4",
+              "20": "rib_right_5",
+              "21": "rib_right_6",
+              "22": "rib_right_7",
+              "23": "rib_right_8",
+              "24": "rib_right_9",
+              "25": "vertebrae_T1",
+              "26": "vertebrae_T10",
+              "27": "vertebrae_T11",
+              "28": "vertebrae_T12",
+              "29": "vertebrae_T2",
+              "30": "vertebrae_T3",
+              "31": "vertebrae_T4",
+              "32": "vertebrae_T5",
+              "33": "vertebrae_T6",
+              "34": "vertebrae_T7",
+              "35": "vertebrae_T8",
+              "36": "vertebrae_T9",
+              "37": "sternum"
+            },
+            "offset": [
+              0,
+              0,
+              0
+            ],
+            "storedSha256Raw": "77e0525700e49771de4b475e3492cf810a36ba800e03d937e908fc76949961b2",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "cartilage",
+            "asset": "thoracic",
+            "status": "source",
+            "supportFor": [
+              "costal_cartilages"
+            ],
+            "originMm": [
+              -106.98527431275116,
+              29.285215499802263,
+              -94.48879268882285
+            ],
+            "dimensions": [
+              152,
+              51,
+              163
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 5054304,
+            "gzipBytes": 242415,
+            "sha256Raw": "e27c00723e50e9b1341c56b43736a41c47a8f33ab3b7a34d65fdc85e56d92886",
+            "sha256Gzip": "a1a7abed785204f1baad957385d6fe60ae12a6cbd7a95d028caf09f45c538936",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 24746,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 5055881,
+            "sourceLabels": {
+              "1": "costal_cartilages"
+            },
+            "offset": [
+              0,
+              0,
+              389
+            ],
+            "storedSha256Raw": "e27c00723e50e9b1341c56b43736a41c47a8f33ab3b7a34d65fdc85e56d92886",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "lung",
+            "asset": "thoracic",
+            "status": "source",
+            "supportFor": [
+              "lung_lower_lobe_left",
+              "lung_lower_lobe_right",
+              "lung_middle_lobe_right",
+              "lung_upper_lobe_left",
+              "lung_upper_lobe_right"
+            ],
+            "originMm": [
+              -133.98527431275116,
+              -95.21478450019774,
+              -77.98879268882285
+            ],
+            "dimensions": [
+              184,
+              124,
+              169
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 15423616,
+            "gzipBytes": 1966788,
+            "sha256Raw": "3c854d4d54ff11b82588f6b345cc0334345072434dc8cde4699d02cf905a08d4",
+            "sha256Gzip": "7a8ff901bfb25fe931ef148c5a954c0cb698aac8488c091ce5b2560a679b830d",
+            "labelValues": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "occupiedVoxels": 1003676,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 15428358,
+            "sourceLabels": {
+              "1": "lung_lower_lobe_left",
+              "2": "lung_lower_lobe_right",
+              "3": "lung_middle_lobe_right",
+              "4": "lung_upper_lobe_left",
+              "5": "lung_upper_lobe_right"
+            },
+            "offset": [
+              0,
+              0,
+              219
+            ],
+            "storedSha256Raw": "3c854d4d54ff11b82588f6b345cc0334345072434dc8cde4699d02cf905a08d4",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          },
+          {
+            "name": "heart",
+            "asset": "thoracic",
+            "status": "source",
+            "supportFor": [
+              "heart"
+            ],
+            "originMm": [
+              -52.98527431275116,
+              -38.21478450019774,
+              -22.488792688822855
+            ],
+            "dimensions": [
+              96,
+              79,
+              89
+            ],
+            "pitchMm": 1.5,
+            "rawBytes": 2699904,
+            "gzipBytes": 229049,
+            "sha256Raw": "cb9acd1320550fbc5743e6f733fc4f3c14816ac82f8dfe1867fa508e35d6a1ca",
+            "sha256Gzip": "2bb05406fd17d9f848e238b262550b07f6bd4d9054c77ca1a364c1728b10cff7",
+            "labelValues": [
+              0,
+              1
+            ],
+            "occupiedVoxels": 130095,
+            "gzipFutureGuaranteed": true,
+            "gzipIncompressibleBoundBytes": 2700761,
+            "sourceLabels": {
+              "1": "heart"
+            },
+            "offset": [
+              0,
+              52,
+              389
+            ],
+            "storedSha256Raw": "cb9acd1320550fbc5743e6f733fc4f3c14816ac82f8dfe1867fa508e35d6a1ca",
+            "sha256RawMeaning": "source descriptor; storedSha256Raw includes nearest gas bit"
+          }
+        ],
+        "allBricksDecodedExact": true,
+        "max3d256Pass": false,
+        "depthOffset": [
+          0,
+          0,
+          0
+        ],
+        "depthBytesInAtlas": 0
+      }
+    ],
+    "sourceP0cPackingSha256": "1bec72176e2b57a4adf88754a917789c56a34bf3050c292a94dfb9f8793d6822",
+    "gasNearestBitExact": true,
+    "gasSdfStored": false,
+    "runtimeInstalled": false,
+    "clinicalValidation": false
+  },
+  "skin": {
+    "format": "RG16F XY, global periodic polar phi",
+    "dimensions": [
+      1024,
+      687
+    ],
+    "pitchZMm": 0.75,
+    "originZMm": -395.98879268882285,
+    "phiRange": [
+      0,
+      6.283185307179586
+    ],
+    "sourceBodySha256": "c11a262ae02c681a186fb0cd59ac47c59b788d0518ab99fe874edc9c8c33b26d",
+    "rawBytes": 2813952,
+    "gzipBytes": 947509,
+    "sha256Raw": "04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456",
+    "sha256Gzip": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e",
+    "file": "skin-polar.gzip.bin",
+    "cpuSkinPointReads": 4,
+    "cpuProbeFrameQueries": 5,
+    "gpuOptionalSamplerCount": 1
+  },
+  "depth": {
+    "format": "R16F signed EDT, negative inside; 3mm hardware linear",
+    "dimensions": [
+      147,
+      93,
+      96
+    ],
+    "originMm": [
+      -225.48527431275116,
+      -134.21478450019774,
+      -218.98879268882285
+    ],
+    "pitchMm": 3.0,
+    "rawBytes": 2624832,
+    "gzipBytes": 1493326,
+    "sha256Raw": "44cd3e3b3e71ac2892ed5fd134d7c71dff3e6ceb843f58d2e6b7406f300e6f7b",
+    "sha256Gzip": "4beeab1b33e9a03b334d3ce78d77abf400e9e411d3fd64960b05819b0fd7fb76",
+    "file": "body-depth.gzip.bin",
+    "sourceBodySha256": "c11a262ae02c681a186fb0cd59ac47c59b788d0518ab99fe874edc9c8c33b26d"
+  },
+  "capacity": {
+    "wall": {
+      "rows": 344,
+      "angles": 256,
+      "boundaries": 8,
+      "bytesPerSample": 3,
+      "bytes": 2113536,
+      "format": "uint16 depth 1/16mm + uint8 identity, 65535=unknown"
+    },
+    "abdominalMesh": {
+      "vertices": 65536,
+      "triangles": 131072,
+      "bytes": 2359296,
+      "format": "float32 xyz + uint32 indexed triangles, arbitrary connectivity/holes"
+    },
+    "thoracicMesh": {
+      "vertices": 32768,
+      "triangles": 65536,
+      "bytes": 1179648,
+      "format": "float32 xyz + uint32 indexed triangles, arbitrary connectivity/holes"
+    },
+    "tubes": {
+      "nodes": 512,
+      "tubes": 102,
+      "bytes": 14720
+    },
+    "anatomyAnnotated": false,
+    "guarantee": "fixed array capacity, not sufficient anatomy or future triangle count",
+    "file": "annotation-capacity.gzip.bin",
+    "rawBytes": 5671296,
+    "downloadBytes": 6999,
+    "abdominalBytes": 4491648,
+    "thoracicBytes": 1179648,
+    "sha256": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8",
+    "descriptorsDecoded": true,
+    "compressionCredit": 5664297,
+    "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+    "downloadRule": "measure actual gzip again after every annotation phase"
+  },
+  "files": [
+    {
+      "file": "abdominal-direct.gzip.bin",
+      "bytes": 8567375,
+      "sha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd"
+    },
+    {
+      "file": "thoracic-direct.gzip.bin",
+      "bytes": 5252011,
+      "sha256": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d"
+    },
+    {
+      "file": "annotation-capacity.gzip.bin",
+      "bytes": 6999,
+      "sha256": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836"
+    },
+    {
+      "file": "skin-polar.gzip.bin",
+      "bytes": 947509,
+      "sha256": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e"
+    }
+  ],
+  "domain": {
+    "zMm": [
+      -210,
+      60
+    ],
+    "phi": "full periodic circle"
+  },
+  "depthInAbdominalAtlas": true,
+  "samplersAdded": 0,
+  "runtimeInstalled": false,
+  "clinicalValidation": false
+}

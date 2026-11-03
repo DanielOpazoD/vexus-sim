@@ -19,7 +19,7 @@ it('uses cranial longitudinal, posterior intercostal and right-patient transvers
   setAbdominalAtlas(new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2));
   setAbdominalBody(new Float32Array(body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)));
   const torso = new AnatomyScene(NORMAL_ADULT).torso,
-    points = startPointsFor(torso);
+    points = startPointsFor(torso, { person: 'current' });
   for (const p of points) {
     const fr = probeFrame({ ...p, lift: 0, rock: p.rock ?? 0, tilt: p.tilt ?? 0 }, torso, CONVEX_C35);
     if (p.id === 'epigastric') expect(fr.lateral[0]).toBeLessThan(-0.9);

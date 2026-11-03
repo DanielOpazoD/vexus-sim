@@ -1,10 +1,11 @@
-import { abdominalAtlasValue, abdominalAtlasGradient, ABDOMINAL_ATLAS_GLSL } from '../abdominalAtlas';
+import { anatomyBundle } from '../anatomyBundle';
+import { abdominalAtlasValue, sourceGas, abdominalAtlasGradient, ABDOMINAL_ATLAS_GLSL } from '../abdominalAtlas';
 import { Tissue } from '../tissues';
 import { Interface } from '../interfaces';
 import type { Vec3 } from '../../core/vec3';
 
 export function digestiveWallMm(label: number): number {
-  return label === 1 ? 3 : label >= 5 ? 2.5 : 2;
+  return label === 1 ? 3 : (anatomyBundle.person === 's0028' ? label === 4 : label >= 5) ? 2.5 : 2;
 }
 /** Five sonographic strata, outer serosa -> inner mucosal interface; estimated resting widths. */
 export function digestiveWallTissue(fraction: number): Tissue {
@@ -20,6 +21,7 @@ export function digestiveWallTissue(fraction: number): Tissue {
 }
 /** Static nondependent gas patches, clipped by the SAME lumen, with no assigned flow. */
 export function digestiveGasPlane(m: Vec3, label: number): number {
+  if (anatomyBundle.person === 's0028') return sourceGas(m) ? 1 : -1;
   return m[1] - (label === 1 ? 30 : 18) - 7 * Math.sin(m[2] / 17) * Math.cos(m[0] / 21);
 }
 /**
@@ -122,7 +124,7 @@ export function abdomenQuery(m: Vec3) {
     };
   // Source labels 5–9 are cecum/colon/rectum. Their non-gaseous contents are
   // an estimated particulate suspension; source geometry and gas placement stay fixed.
-  const gas = inner < 0 && digestiveGasPlane(m, label) > 0;
+  const gas = inner < 0 && (anatomyBundle.person === 's0028' ? sourceGas(m) : digestiveGasPlane(m, label) > 0);
   // Los pliegues son demasiado irregulares para una cara especular: en el estómago solo la serosa da eco de interfaz; la mucosa contra la luz se ve por el contraste de tejidos
   const iface = stomach || Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen;
   return {
@@ -135,7 +137,7 @@ export function abdomenQuery(m: Vec3) {
           ? Tissue.BowelGas
           : stomach
             ? Tissue.GastricContents
-            : label >= 5 && label <= 9
+            : (anatomyBundle.person === 's0028' ? label === 4 : label >= 5 && label <= 9)
               ? Tissue.ColonicContents
               : Tissue.Fluid,
     boundaryDistance: stomach

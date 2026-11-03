@@ -1,3 +1,4 @@
+import { anatomyBundle } from '../anatomy/anatomyBundle';
 import { torsoSkinPoint, type Torso } from '../anatomy/primitives';
 import { startPointsFor, type StartPoint } from '../app/startPoints';
 import { WINDOW_GROUPS } from '../app/windowGroups';
@@ -51,7 +52,7 @@ export function currentStartPoint(
 ): StartPointId | null {
   let best: StartPointId | null = null;
   let bestMm = maxMm;
-  for (const sp of startPointsFor(torso)) {
+  for (const sp of startPointsFor(torso, anatomyBundle)) {
     // escrito para que un giro NaN no cuente como ventana
     if (!(yawDelta(pose.yaw, sp.yaw) < CURRENT_WINDOW_YAW)) continue;
     const d = startPointDistanceMm(pose, sp, torso);
@@ -84,7 +85,7 @@ export class StartPointCards {
     host: HTMLElement,
     private readonly deps: StartPointCardsDeps,
   ) {
-    const points = startPointsFor(deps.getTorso());
+    const points = startPointsFor(deps.getTorso(), anatomyBundle);
     for (const { label, windows } of WINDOW_GROUPS) {
       const group = document.createElement('div');
       group.className = 'win-group';

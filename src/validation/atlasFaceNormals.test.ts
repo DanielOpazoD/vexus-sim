@@ -34,7 +34,7 @@ afterAll(() => {
 /** Cruces de la cápsula por las líneas del plano central: posición y las dos normales, la local de la cara y la del lóbulo. */
 function capsuleCrossings(view: string) {
   const scene = new AnatomyScene({ ...CASES.find((c) => c.id === 'normal-adult')!, respiratoryPattern: 'apnea-expiratory' });
-  const sp = startPointsFor(scene.torso).find((p) => p.id === view)!;
+  const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === view)!;
   const k = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
   const hits: Array<{ line: number; r: number; x: Vec3; local: readonly number[]; lobe: readonly number[] }> = [];
   for (let line = 0; line <= 240; line++) {

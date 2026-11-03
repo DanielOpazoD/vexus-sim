@@ -15,7 +15,7 @@ it('translates rays rigidly over sampled skin without aiming or changing their d
   setReferenceBody(profile);
   const torso = new AnatomyScene(NORMAL_ADULT).torso;
   expect(torso.profile).toBe(profile);
-  for (const sp of startPointsFor(torso)) {
+  for (const sp of startPointsFor(torso, { person: 'current' })) {
     const original = { ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     const old = probeFrame(original, torso, CONVEX_C35);
     const moved = translateProbe(original, original.phi + 0.02, original.z + 3, torso, CONVEX_C35);

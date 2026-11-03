@@ -54,7 +54,7 @@ for (const useReference of [false, true]) {
       const query = new AnatomyQuery(new AnatomyScene(patient));
       const profile = CONVEX_C35_PROFILE,
         tr = profile.geometry;
-      const sp = startPointsFor(query.scene.torso).find((p) => p.id === 'renal')!;
+      const sp = startPointsFor(query.scene.torso, { person: 'current' }).find((p) => p.id === 'renal')!;
       const contact = probeContact(
         { phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) + (tiltDeltaDeg * Math.PI) / 180, lift: 0 },
         tr,

@@ -31,7 +31,7 @@ afterAll(() => {
 
 it('hepatorrenal del atlas: todo el sector en contacto, riñón en eje largo sin bloqueo y el hígado delante (decisión 300)', () => {
   const scene = new AnatomyScene({ ...CASES.find((c) => c.id === 'normal-adult')!, respiratoryPattern: 'apnea-expiratory' });
-  const sp = startPointsFor(scene.torso).find((p) => p.id === 'hepatorenal')!;
+  const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'hepatorenal')!;
   const k = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
   const lines = 65;
   const dr = 1.5;

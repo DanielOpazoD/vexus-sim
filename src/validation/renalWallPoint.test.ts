@@ -50,7 +50,7 @@ it('no introduce una esquina en la deformación al atravesar los nodos de contac
 
 it.each([-1, 0, 1, 'preset'] as const)('redondea la punta original y la del punto de partida: %s', (dz) => {
   const scene = new AnatomyScene(NORMAL_ADULT),
-    sp = startPointsFor(scene.torso).find((p) => p.id === 'renal')!,
+    sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'renal')!,
     target = dz === 'preset' ? { ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 } : { ...pose, z: pose.z + dz },
     k = probeContact(target, CONVEX_C35, scene.torso);
   for (const iface of [Interface.DeepFascia, Interface.Transversalis, Interface.Peritoneum]) {
@@ -88,7 +88,7 @@ it.each([-1, 0, 1, 'preset'] as const)('redondea la punta original y la del punt
 
 it.each([NORMAL_ADULT, SEVERE_CONGESTION])('conserva el plano renal de partida al cambiar el marco cutáneo: $id', (patient) => {
   const scene = new AnatomyScene(patient),
-    sp = startPointsFor(scene.torso).find((p) => p.id === 'renal')!,
+    sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'renal')!,
     k = probeContact({ ...sp, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, CONVEX_C35, scene.torso);
   // Planos mundo de la pose de la decisión 309. Un cambio de la piel o del marco cutáneo no debe moverlos sin decidirlo.
   const reference =

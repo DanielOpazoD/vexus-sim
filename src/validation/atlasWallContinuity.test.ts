@@ -106,7 +106,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
 for (const caseId of ['normal-adult', 'severe-congestion'])
   it(`redondea el quiebre visible de la fascia hepatorrenal, ${caseId} (217)`, () => {
     const scene = new AnatomyScene(CASES.find((c) => c.id === caseId)!);
-    const sp = startPointsFor(scene.torso).find((p) => p.id === 'hepatorenal')!;
+    const sp = startPointsFor(scene.torso, { person: 'current' }).find((p) => p.id === 'hepatorenal')!;
     const k = probeContact({ ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, CONVEX_C35, scene.torso);
     const points: [number, number][] = [];
     for (let deg = 3; deg <= 15; deg += 0.125) {

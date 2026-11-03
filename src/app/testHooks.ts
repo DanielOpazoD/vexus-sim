@@ -1487,7 +1487,7 @@ function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number; 
 
 /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
 function goTo(sim: Simulator, id: StartPoint['id']): void {
-  const sp = startPointsFor(sim.scene.torso).find((p) => p.id === id)!;
+  const sp = startPointsFor(sim.scene.torso, sim.scene.identity).find((p) => p.id === id)!;
   sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
   sim.advance(0.05);
 }

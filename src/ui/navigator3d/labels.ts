@@ -53,7 +53,7 @@ export function windowLabelPositions(a: AnatomyScene): THREE.Vector3[] {
   const placed: THREE.Vector3[] = [];
   const positions = new Map<string, THREE.Vector3>();
   // Reservar los anclajes históricos evita mover rótulos calibrados al simplificar el menú.
-  const ordered = [...startPointsFor(a.torso)].sort(
+  const ordered = [...startPointsFor(a.torso, a.identity)].sort(
     (a, b) => Number(a.id === 'portal' || a.id === 'portalSubcostal') - Number(b.id === 'portal' || b.id === 'portalSubcostal'),
   );
   for (const m of ordered) {

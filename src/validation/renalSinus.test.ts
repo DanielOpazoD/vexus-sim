@@ -71,7 +71,7 @@ function hullArea(points: readonly (readonly [number, number])[]): number {
 
 /** Solidez del corte del seno en el plano de la sonda: área / área de su casco convexo. Un óvalo liso da ≈ 1. */
 function sinusSolidity(k: Kidney, view: 'renal' | 'hepatorenal', scene: AnatomyScene): number {
-  const sp = startPointsFor(scene.torso).find((s) => s.id === view)!;
+  const sp = startPointsFor(scene.torso, { person: 'current' }).find((s) => s.id === view)!;
   const f = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
   const points: [number, number][] = [];
   const STEP = 0.5;

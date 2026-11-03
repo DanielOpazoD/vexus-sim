@@ -1,3 +1,4 @@
+import { anatomyBundle } from './anatomy/anatomyBundle';
 import { registerDevtools } from './app/devtools';
 import { caseDisplayLabel, teacherToggleAllowed } from './app/blindMode';
 import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
@@ -41,6 +42,11 @@ import { gpuPageTurns as gpuTurns } from './app/gpuPageTurns';
 export async function start(): Promise<void> {
   markStartup('bootstrap:begin');
   try {
+    if (anatomyBundle.person === 's0028') {
+      const controller = new AbortController();
+      window.addEventListener('pagehide', () => controller.abort(), { once: true });
+      await (await import('./ui/s0028Surfaces')).loadS0028Surfaces(controller.signal);
+    }
     await gpuTurns.prepare();
     /**
      * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
@@ -119,7 +125,7 @@ export async function start(): Promise<void> {
     // ganchos y arranca como el usuario (subxifoidea y armónica): así prueba también la configuración que se ve.
     const e2eMode = new URLSearchParams(location.search).get('e2e');
     if (e2eMode === null || e2eMode === 'app') {
-      const first = startPointsFor(sim().scene.torso)[0];
+      const first = startPointsFor(sim().scene.torso, sim().scene.identity)[0];
       sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
       dispatch({ type: 'harmonic', enabled: true });
       // Como un equipo abdominal moderno; la e2e física sigue en 0 y prueba el filtro aparte (decisión 313)

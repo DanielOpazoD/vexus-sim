@@ -1,3 +1,4 @@
+import { selectAnatomy, installAnatomyBundle } from './anatomy/anatomyBundle';
 import { loadReferenceBody } from './anatomy/loadReferenceBody';
 import { loadAbdominalAtlas } from './anatomy/loadAbdominalAtlas';
 
@@ -5,7 +6,15 @@ import { loadAbdominalAtlas } from './anatomy/loadAbdominalAtlas';
 // An explicit legacy torso remains available for comparisons and regression fixtures.
 async function start(): Promise<void> {
   try {
-    if (new URLSearchParams(location.search).get('abdomen') !== 'legacy') await loadAbdominalAtlas();
+    const bundle = selectAnatomy(new URLSearchParams(location.search));
+    const controller = new AbortController();
+    window.addEventListener('pagehide', () => controller.abort(), { once: true });
+    if (bundle.person === 's0028') {
+      await (await import('./anatomy/loadS0028')).loadS0028(controller.signal);
+    } else {
+      installAnatomyBundle(bundle);
+      if (bundle.person === 'current') await loadAbdominalAtlas();
+    }
     if (new URLSearchParams(location.search).get('reference') === '1') await loadReferenceBody();
     await (await import('./bootstrap')).start();
   } catch (error) {

@@ -1,3 +1,4 @@
+import { anatomyBundle } from './anatomyBundle';
 import type { Vec3 } from '../core/vec3';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME, REGISTERED_DOME, REGISTERED_DOME_GRADIENT } from './abdominalAtlasData';
 import { HALF } from './halfFloat';
@@ -8,27 +9,51 @@ export { HALF } from './halfFloat';
 export let abdominalAtlas: Uint16Array | undefined;
 
 export function setAbdominalAtlas(values?: Uint16Array): void {
-  if (values && values.byteLength !== ABDOMINAL_ATLAS.rawBytes) throw new Error('Tamaño del atlas abdominal inválido');
+  if (values && values.byteLength !== (anatomyBundle.person === 's0028' ? anatomyBundle.abdominal.rawBytes : ABDOMINAL_ATLAS.rawBytes))
+    throw new Error('Tamaño del atlas abdominal inválido');
   abdominalAtlas = values;
 }
 
 export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label: number } {
   const data = abdominalAtlas,
-    f = ABDOMINAL_FIELDS[field];
+    f =
+      anatomyBundle.person === 's0028'
+        ? anatomyBundle.fields.find((f) => f.name === ABDOMINAL_FIELDS[field]?.name)
+        : ABDOMINAL_FIELDS[field];
   if (!data || !f) return { d: 16, label: 0 };
+  const label = sourceLabel(
+    data,
+    p,
+    f,
+    anatomyBundle.person === 's0028' ? anatomyBundle.abdominal.textureDimensions : ABDOMINAL_ATLAS.textureDimensions,
+  );
   return {
-    d: sourceDistance(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
-    label: sourceLabel(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
+    d: sourceDistance(
+      data,
+      p,
+      f,
+      anatomyBundle.person === 's0028' ? anatomyBundle.abdominal.textureDimensions : ABDOMINAL_ATLAS.textureDimensions,
+    ),
+    label: anatomyBundle.person === 's0028' ? label % 128 : label,
   };
 }
 
 export function abdominalAtlasSdf(p: Vec3, field: number): number {
-  const f = ABDOMINAL_FIELDS[field];
-  return abdominalAtlas && f ? sourceDistance(abdominalAtlas, p, f, ABDOMINAL_ATLAS.textureDimensions) : 16;
+  const f =
+    anatomyBundle.person === 's0028' ? anatomyBundle.fields.find((f) => f.name === ABDOMINAL_FIELDS[field]?.name) : ABDOMINAL_FIELDS[field];
+  return abdominalAtlas && f
+    ? sourceDistance(
+        abdominalAtlas,
+        p,
+        f,
+        anatomyBundle.person === 's0028' ? anatomyBundle.abdominal.textureDimensions : ABDOMINAL_ATLAS.textureDimensions,
+      )
+    : 16;
 }
 
 /** Upper-source roof approximation, including the same hepatic contact. Not crura or hiatal openings. */
 export function registeredDomeHeight(x: number, y: number): number | undefined {
+  if (anatomyBundle.person === 's0028') return undefined;
   const data = abdominalAtlas,
     f = REGISTERED_DOME,
     qx = (x - f.originMm[0]) / f.pitchMm,
@@ -54,6 +79,7 @@ export function registeredDomeValue(x: number, y: number): [number, number] {
 
 /** Same graph and continuous derived nodal slopes; guide only, not independent anatomy. */
 export function registeredDomeSample(x: number, y: number): [number, number, number, number] {
+  if (anatomyBundle.person === 's0028') return [0, 0, 0, 0];
   const data = abdominalAtlas,
     f = REGISTERED_DOME,
     qx = (x - f.originMm[0]) / f.pitchMm,
@@ -77,6 +103,7 @@ export function registeredDomeSample(x: number, y: number): [number, number, num
 
 /** Estimated hepatic contact surface, sampled in material coordinates like the organs. */
 export function hepaticDomeValue(x: number, y: number): [number, number] {
+  if (anatomyBundle.person === 's0028') return [0, 0];
   const data = abdominalAtlas,
     f = HEPATIC_DOME,
     q = [(x - f.originMm[0]) / f.pitchMm, (y - f.originMm[1]) / f.pitchMm];
@@ -105,6 +132,36 @@ export function abdominalAtlasGradient(p: Vec3, field: number): Vec3 {
     b[i] -= h;
     return (abdominalAtlasSdf(a, field) - abdominalAtlasSdf(b, field)) / (2 * h);
   }) as Vec3;
+}
+
+export function s0028Depth(p: Vec3): number | undefined {
+  if (anatomyBundle.person !== 's0028' || !abdominalAtlas) return undefined;
+  const f = anatomyBundle.depth;
+  const at: Vec3 = [0, 0, 0];
+  let outside = 0;
+  for (let i = 0; i < 3; i++) {
+    const q = (p[i] - f.originMm[i]) / 3;
+    const a = Math.max(0, Math.min(f.dimensions[i] - 1, q));
+    at[i] = f.originMm[i] + a * 3;
+    outside += (q - a) ** 2;
+  }
+  return sourceDistance(abdominalAtlas, at, f, anatomyBundle.abdominal.textureDimensions) + Math.sqrt(outside) * 3;
+}
+export function s0028DepthGradient(p: Vec3): Vec3 | undefined {
+  if (anatomyBundle.person !== 's0028' || !abdominalAtlas) return undefined;
+  return [0, 1, 2].map((i) => {
+    const a: Vec3 = [...p],
+      b: Vec3 = [...p];
+    a[i] += 1.5;
+    b[i] -= 1.5;
+    return (s0028Depth(a)! - s0028Depth(b)!) / 3;
+  }) as Vec3;
+}
+
+export function sourceGas(p: Vec3): boolean {
+  if (anatomyBundle.person !== 's0028' || !abdominalAtlas) return false;
+  const f = anatomyBundle.fields.find((f) => f.name === 'digestiveTract')!;
+  return sourceLabel(abdominalAtlas, p, f, anatomyBundle.abdominal.textureDimensions) >= 128;
 }
 
 export const ABDOMINAL_ATLAS_GLSL = /* glsl */ `

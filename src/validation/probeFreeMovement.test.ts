@@ -26,7 +26,7 @@ function sampledTorso() {
 it('reaches every requested step around the torso and through thoracic/abdominal heights from every window', () => {
   const torso = sampledTorso();
   expect(torso.profile).toBeDefined();
-  for (const start of startPointsFor(torso))
+  for (const start of startPointsFor(torso, { person: 'current' }))
     for (const direction of [-1, 1]) {
       let pose: ProbePose = { ...start, lift: 0, rock: start.rock ?? 0, tilt: start.tilt ?? 0 };
       const original = probeFrame(pose, torso, CONVEX_C35);
@@ -51,7 +51,7 @@ it('reaches every requested step around the torso and through thoracic/abdominal
 
 it('preserves full angular turns in both directions rather than pinning rock and tilt at 40 degrees', () => {
   const torso = sampledTorso();
-  for (const start of startPointsFor(torso))
+  for (const start of startPointsFor(torso, { person: 'current' }))
     for (const key of ['yaw', 'rock', 'tilt'] as const)
       for (const angle of [-3 * Math.PI, -2.7, -1.6, -1.2, 1.2, 1.6, 2.7, 3 * Math.PI]) {
         const pose = { ...start, lift: 0, rock: start.rock ?? 0, tilt: start.tilt ?? 0, [key]: angle };

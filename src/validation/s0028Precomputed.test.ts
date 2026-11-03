@@ -18,6 +18,10 @@ it('libera al menos 4 MB de descarga sin cambiar el formato residente Float32/Ui
     expect(f.positions.buffer).toBe(raw);
     expect(f.indices.buffer).toBe(raw);
   }
+  // La descodificación es in situ: una segunda pasada corrompería las vistas ya entregadas.
+  expect(createHash('sha256').update(new Uint8Array(raw)).digest('hex')).toBe(M.sha256DecodedRaw);
+  expect(() => indexedSurfaces(raw)).toThrow(/ya descodificadas/);
+  expect(createHash('sha256').update(new Uint8Array(raw)).digest('hex')).toBe(M.sha256DecodedRaw);
 });
 it('el primer cuadro s0028 carga superficies offline sin extracción Worker', () => {
   const loader = readFileSync('src/ui/s0028Surfaces.ts', 'utf8');

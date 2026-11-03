@@ -32,8 +32,11 @@ export async function verifySurfaceProvenance(
   )
     throw new Error('Superficies s0028: procedencia, marco o inventario alterados');
 }
+const decoded = new WeakSet<ArrayBuffer>();
 export function indexedSurfaces(raw: ArrayBuffer): IndexedSourceSurface[] {
   if (raw.byteLength !== M.rawBytes) throw new Error('Superficies s0028 incompletas');
+  if (decoded.has(raw)) throw new Error('Superficies s0028 ya descodificadas');
+  decoded.add(raw);
   // El buffer verificado es exclusivo del cargador: se transforma una sola vez, in-place.
   // Deltas de bits por eje, no de valores Float32: conserva hasta los triángulos casi degenerados.
   return M.fields.map((f) => {

@@ -6,17 +6,25 @@ import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { torsoDepth, torsoSkinPoint } from '../anatomy/primitives';
+import { torsoDepth, torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { startPointsFor } from '../app/startPoints';
-import { setS0028Wall, s0028InsideWall, s0028WallAt, s0028WallSurface } from '../anatomy/s0028Wall';
+import {
+  setS0028Wall,
+  s0028InsideWall,
+  s0028WallAt,
+  s0028WallFaceGradient,
+  s0028WallSurface,
+  s0028WallUploads,
+} from '../anatomy/s0028Wall';
+import { HALF } from '../anatomy/halfFloat';
 import { wallFaceGradient, wallFaceSd } from '../anatomy/organs/wall';
 import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
 import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
 import { firstRegionalWallCrossing, probeContact } from '../probe/contact';
-import { dot, cross, normalize, sub, type Vec3 } from '../core/vec3';
+import { dot, cross, normalize, smoothstep, sub, type Vec3 } from '../core/vec3';
 import { s0028SourceValue } from '../anatomy/s0028Source';
 import { nodeSin } from '../anatomy/compression';
 import chartFixtures from './fixtures/s0028-wall-chart.json';
@@ -46,34 +54,35 @@ it('s0028 desactiva hepaticCostalBody y la piel E mide 1,5 mm', () => {
   expect(scene.torso.skinMm).toBe(1.5);
 });
 
-it('recupera la carta bilineal v2 de normal cutánea con soporte de 13 mm', () => {
+it('proyecta por EDT y lee la carta bilineal v2 con fixtures directos', () => {
+  // Valores regenerados con proyección directa; row/col/depth/bounds originales conservan la inversa offline S−dN.
   for (const f of chartFixtures) {
     const p: Vec3 = [f.point[0], f.point[1], f.point[2]],
       q = s0028WallAt(p);
     expect(q?.kind).toBe('known');
-    if (q?.kind !== 'known') throw new Error('Carta sin inversa');
-    expect(Math.abs(q.z - (f.row * 1.5 - 210))).toBeLessThan(0.01);
-    expect(Math.abs(q.phi - (f.col * 2 * Math.PI) / 512)).toBeLessThan(0.0001);
-    expect(Math.abs(q.depthMm - f.depth)).toBeLessThan(0.01);
-    expect(Math.abs(q.outerMm - f.bounds[0])).toBeLessThan(0.01);
-    expect(Math.abs(q.innerMm - f.bounds[1])).toBeLessThan(0.01);
+    if (q?.kind !== 'known') throw new Error('Carta sin soporte directo');
+    expect(Math.abs(q.z - (f.direct.row * 1.5 - 210))).toBeLessThan(0.005);
+    expect(Math.abs(q.phi - (f.direct.col * 2 * Math.PI) / 512)).toBeLessThan(0.0001);
+    expect(Math.abs(q.depthMm - f.direct.depth)).toBeLessThan(0.005);
+    expect(Math.abs(q.outerMm - f.direct.bounds[0])).toBeLessThan(0.005);
+    expect(Math.abs(q.innerMm - f.direct.bounds[1])).toBeLessThan(0.005);
   }
 });
 
 it('la banda propia y sus caras sustituyen W global sin llamar músculo a una identidad U', () => {
-  // Perfil propio v2, calculado independientemente con el exportador Python.
+  // Perfil propio v2: límites y profundidad directos; la inversa offline se conserva en el fixture.
   const f = chartFixtures[0];
   const fat: Vec3 = [f.skin[0] - 20 * f.normal[0], f.skin[1] - 20 * f.normal[1], f.skin[2] - 20 * f.normal[2]];
   const band: Vec3 = [f.point[0], f.point[1], f.point[2]];
   const q = s0028WallAt(band);
   expect(q?.kind).toBe('known');
   if (q?.kind !== 'known') throw new Error('Falta el perfil propio');
-  expect(q.outerMm).toBeCloseTo(f.bounds[0], 2);
-  expect(q.innerMm).toBeCloseTo(f.bounds[1], 2);
+  expect(Math.abs(q.outerMm - f.direct.bounds[0])).toBeLessThan(0.005);
+  expect(Math.abs(q.innerMm - f.direct.bounds[1])).toBeLessThan(0.005);
   expect(q.provenance[3]).toBe('U');
   expect(scene.classify(fat, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.Fat, wall: 'fat-D/E' });
   expect(scene.classify(band, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.UnsegmentedSoftTissue, wall: 'band-D/E' });
-  expect(scene.insideWallMm(band)).toBeCloseTo(f.depth - f.bounds[1], 2);
+  expect(Math.abs(scene.insideWallMm(band) - (f.direct.depth - f.direct.bounds[1]))).toBeLessThan(0.005);
   const before = [
     scene.classify(band, BASELINE_CALIBER),
     scene.respiratoryWeight(band),
@@ -95,28 +104,93 @@ it('la banda propia y sus caras sustituyen W global sin llamar músculo a una id
   }
 });
 
-it('cada cara y el peso respiratorio usan el gradiente regional, no sólo la normal cutánea', () => {
-  const m: Vec3 = [-115, 44, -108];
-  const h = 0.05;
-  for (const face of [Interface.DeepFascia, Interface.Peritoneum]) {
-    const g = wallFaceGradient(m, face, scene.torso);
-    expect(g.every(Number.isFinite)).toBe(true);
-    for (const axis of [0, 1, 2]) {
-      const a: Vec3 = [...m],
-        b: Vec3 = [...m];
-      a[axis] += h;
-      b[axis] -= h;
-      expect(g[axis]).toBeCloseTo((wallFaceSd(a, face, scene.torso) - wallFaceSd(b, face, scene.torso)) / (2 * h), 9);
+it('una celda D/E vale a cualquier profundidad y una celda U no vale a ninguna', () => {
+  // Más allá de la cara interna, inside > 0 es interior del cuerpo: contacto, respiración y cruce lo necesitan.
+  for (const f of chartFixtures)
+    for (const d of [0, 20, 60]) {
+      const p: Vec3 = [f.skin[0] - d * f.normal[0], f.skin[1] - d * f.normal[1], f.skin[2] - d * f.normal[2]];
+      const q = s0028WallAt(p);
+      expect(q?.kind, `fila ${f.row}, columna ${f.col}, ${d} mm`).toBe('known');
+      if (q?.kind !== 'known') continue;
+      expect(q.depthMm).toBe(-torsoDepth(p, scene.torso));
+      expect(Math.sign(s0028InsideWall(p)!)).toBe(d === 60 ? 1 : -1);
+      expect(Number.isFinite(wallFaceSd(p, Interface.Peritoneum, scene.torso))).toBe(true);
     }
+  // Posterior U/P3 a lo largo de su normal EDT: la celda U decide aunque cambie la profundidad.
+  for (const phi of [0, 3.926991])
+    for (const d of [0, 20, 60]) {
+      const skin = torsoSkinPoint(phi, -200, scene.torso),
+        g = torsoDepthGradient(skin, scene.torso),
+        n = Math.hypot(...g);
+      const p: Vec3 = [skin[0] - (d * g[0]) / n, skin[1] - (d * g[1]) / n, skin[2] - (d * g[2]) / n];
+      expect(s0028WallAt(p), `φ ${phi}, ${d} mm`).toMatchObject({ kind: 'unknown', reason: 'coverage' });
+      expect(s0028InsideWall(p)).toBeNull();
+      expect(scene.respiratoryWeight(p)).toBe(0);
+      expect(Number.isNaN(wallFaceSd(p, Interface.Peritoneum, scene.torso))).toBe(true);
+      expect(wallFaceGradient(p, Interface.Peritoneum, scene.torso).every(Number.isNaN)).toBe(true);
+      expect(respiratoryWeightGradient(scene, p)).toEqual([0, 0, 0]);
+    }
+});
+
+it('cada cara y el peso respiratorio usan el gradiente analítico regional: una consulta y la pendiente de su celda', () => {
+  // Fórmula independiente: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|², centro de fila constante en z.
+  const centers = s0028WallUploads().at(-1)!.data;
+  const points: Vec3[] = [[-115, 44, -108], ...chartFixtures.map((f) => [f.point[0], f.point[1], f.point[2]] as Vec3)];
+  for (const m of points) {
+    const q = s0028WallAt(m);
+    if (q?.kind !== 'known') throw new Error('Punto de banda sin carta');
+    const g = torsoDepthGradient(m, scene.torso),
+      gg = dot(g, g),
+      tau = torsoDepth(m, scene.torso);
+    const s: Vec3 = [m[0] - (tau * g[0]) / gg, m[1] - (tau * g[1]) / gg, m[2] - (tau * g[2]) / gg];
+    const row = (s[2] + 210) / 1.5,
+      lo = Math.floor(row);
+    const cy = HALF[centers[2 * lo + 1]] * (1 - (row - lo)) + HALF[centers[2 * Math.min(180, lo + 1) + 1]] * (row - lo);
+    const X = s[0],
+      Y = s[1] - cy;
+    expect(Math.atan2(Y, X)).toBeCloseTo(q.phi, 12);
+    const col = ((((q.phi / (2 * Math.PI)) % 1) + 1) % 1) * 512;
+    const e = 1e-4,
+      sc = col - Math.floor(col) < 0.5 ? e : -e,
+      sr = row - Math.min(179, lo) < 0.5 ? e : -e;
+    const at = (dc: number, dr: number) => s0028WallSurface(((col + dc) * 2 * Math.PI) / 512, (row + dr) * 1.5 - 210);
+    for (const [face, key, boundary] of [
+      [Interface.DeepFascia, 'outerMm', 0],
+      [Interface.Peritoneum, 'interfaceMm', 2],
+    ] as const) {
+      const c1 = at(sc, 0),
+        r1 = at(0, sr);
+      if (c1.kind !== 'known' || r1.kind !== 'known') throw new Error('Pendiente fuera de la celda');
+      const a = ((512 / (2 * Math.PI)) * ((c1[key] - q[key]) / sc)) / (X * X + Y * Y);
+      const v: Vec3 = [-Y * a, X * a, (r1[key] - q[key]) / sr / 1.5];
+      const t = dot(g, v) / gg;
+      const expected: Vec3 = [-g[0] - v[0] + g[0] * t, -g[1] - v[1] + g[1] * t, -g[2] - v[2] + g[2] * t];
+      const got = wallFaceGradient(m, face, scene.torso);
+      for (const axis of [0, 1, 2]) expect(got[axis]).toBeCloseTo(expected[axis], 6);
+      expect(s0028WallFaceGradient(m, boundary)!.sd).toBe(q.depthMm - q[key]);
+      // La pendiente regional cambia la normal respecto de la cutánea donde la carta no es plana.
+      if (Math.hypot(...v) > 0.01) expect(Math.hypot(got[0] + g[0], got[1] + g[1], got[2] + g[2])).toBeGreaterThan(0.005);
+    }
+    const ip = wallFaceGradient(m, Interface.Peritoneum, scene.torso),
+      inside = scene.insideWallMm(m);
+    const dx = m[0] - scene.spine.x0,
+      dy = m[1] - scene.spine.y0,
+      rs = Math.hypot(dx, dy);
+    const slope = (lo: number, hi: number, x: number) => {
+      const u = (x - lo) / (hi - lo);
+      return u > 0 && u < 1 ? (6 * u * (1 - u)) / (hi - lo) : 0;
+    };
+    const ka = smoothstep(scene.spine.r + 5, scene.spine.r + 35, rs) * slope(0, 25, inside),
+      kb = (smoothstep(0, 25, inside) * slope(scene.spine.r + 5, scene.spine.r + 35, rs)) / rs;
+    const w = respiratoryWeightGradient(scene, m);
+    expect(w[0]).toBeCloseTo(ka * ip[0] + kb * dx, 12);
+    expect(w[1]).toBeCloseTo(ka * ip[1] + kb * dy, 12);
+    expect(w[2]).toBeCloseTo(ka * ip[2], 12);
   }
-  const g = respiratoryWeightGradient(scene, m);
-  for (const axis of [0, 1, 2]) {
-    const a: Vec3 = [...m],
-      b: Vec3 = [...m];
-    a[axis] += h;
-    b[axis] -= h;
-    expect(g[axis]).toBeCloseTo((scene.respiratoryWeight(a) - scene.respiratoryWeight(b)) / (2 * h), 9);
-  }
+  // La piel E sólo tiene el gradiente EDT.
+  const m: Vec3 = [-115, 44, -108],
+    g = torsoDepthGradient(m, scene.torso);
+  expect(wallFaceGradient(m, Interface.SkinFat, scene.torso)).toEqual([-g[0], -g[1], -g[2]]);
 });
 
 it('el marco usa cinco puntos del mismo cero y huella rígida de 13 mm, con normal exterior', () => {

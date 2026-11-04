@@ -99,3 +99,18 @@ Las 117 máscaras, mallas fuente y reposo compartido permanecen. La inversa tien
 pliegues:32.108 parches comparados,4 soportes diferentes y7 ramas alternativas,
 0 cambios grasa/banda/interior donde ambas conocidas; sin promesa de paridad global.
 GPU/Worker/mapa/3D/JIT/Metal son r2b. Decisión320 pendiente del propietario.
+
+## Proyección directa: testigos r2b en curso
+
+El contrato de runtime solicitado proyecta `p − torsoDepth(p)·∇/|∇|²`, usa la
+semilla polar y lee la carta bilineal; la profundidad es `−torsoDepth(p)`. Los
+cuatro testigos en `src/validation/fixtures/s0028-wall-chart.json` conservan los
+valores originales de la inversa offline `S−dN` y añaden los de proyección directa.
+En esos cuatro puntos, el máximo |Δ| frente a la inversa es 0,484492 mm en
+frontera y 0,433234 mm en profundidad; el desplazamiento angular máximo es
+3,755395 columnas. Las diferencias de distancia son menores al vóxel nativo de
+1,5 mm; no acreditan paridad por ventana ni validación clínica. Los nuevos
+fixtures exigen error <0,005 mm para profundidad y fronteras. Datos y script:
+`migration-p2-r2b/logs/direct-projection-fixtures-v2.jsonl` y
+`migration-p2-r2b/scripts/direct-projection-fixtures.ts` en la carpeta externa de
+la ronda. Las normales analíticas y las restantes puertas de r2b siguen pendientes.

@@ -1,86 +1,72 @@
 import { S0028_BUNDLE as B } from '../anatomyBundle';
-import { S0028_CHART_OFFSETS } from './s0028WallChart';
 
 const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3(${v.join(',')})`).join(',');
 
-/** Carta bilineal S−dN, en la reserva P1; identidad nearest independiente de geometría D/E. */
+/**
+ * Regla directa P2 (gemela de `s0028Wall.ts`): proyección EDT `p − τ·∇τ/|∇τ|²`, semilla polar y carta bilineal en la
+ * reserva P1; identidad nearest independiente de la geometría D/E. Consulta: 7 EDT + 1 centro + 4 códigos + 2 fronteras
+ * = 14 lecturas; con gradiente analítico, 2 más. Sin bucles: el Newton S−dN queda offline.
+ */
 export const S0028_WALL_GLSL = /* glsl */ `
 const ivec3 S28_WALL_OFF[16]=ivec3[](${offsets(B.wall.placements)});
-const ivec3 S28_CHART_OFF[16]=ivec3[](${offsets(S0028_CHART_OFFSETS)});
-struct S28Chart {vec3 s;vec3 n;vec3 sr;vec3 sc;vec3 nr;vec3 nc;};
-void s28ChartNode(ivec2 q,out vec3 s,out vec3 n){
-  q.x=(q.x%512+512)%512;
-  int band=min(1,q.y/90),tile=band*8+q.x/64;
-  ivec3 at=S28_CHART_OFF[tile]+ivec3(q.x%64,q.y-band*90,0);
-  s=vec3(texelFetch(uAbdominalAtlas,at,0).rg+texelFetch(uAbdominalAtlas,at+ivec3(0,0,1),0).rg,float(q.y)*1.5-210.0);
-  vec2 e=texelFetch(uAbdominalAtlas,at+ivec3(0,0,2),0).rg;
-  n=vec3(e,1.0-abs(e.x)-abs(e.y));
-  n.xy-=mix(vec2(-1.0),vec2(1.0),greaterThanEqual(n.xy,vec2(0.0)))*clamp(-n.z,0.0,1.0);
-  n=normalize(n);
-}
-S28Chart s28Chart(vec2 rc){
-  vec2 q=vec2(mod(rc.x,512.0),clamp(rc.y,0.0,180.0));
-  ivec2 ij=ivec2(floor(q));ij.y=min(179,ij.y);vec2 f=q-vec2(ij);
-  vec3 s0,s1,s2,s3,n0,n1,n2,n3;
-  s28ChartNode(ij,s0,n0);s28ChartNode(ij+ivec2(1,0),s1,n1);
-  s28ChartNode(ij+ivec2(0,1),s2,n2);s28ChartNode(ij+ivec2(1,1),s3,n3);
-  S28Chart o;
-  o.s=mix(mix(s0,s1,f.x),mix(s2,s3,f.x),f.y);
-  o.n=mix(mix(n0,n1,f.x),mix(n2,n3,f.x),f.y);
-  o.sr=mix(s2-s0,s3-s1,f.x);o.sc=mix(s1-s0,s3-s2,f.y);
-  float len=length(o.n);o.n/=len;
-  vec3 nr=mix(n2-n0,n3-n1,f.x),nc=mix(n1-n0,n3-n2,f.y);
-  o.nr=(nr-o.n*dot(o.n,nr))/len;o.nc=(nc-o.n*dot(o.n,nc))/len;
-  return o;
-}
-vec4 s28Solve(vec3 p,vec2 rc){
-  S28Chart f=s28Chart(rc);float d=dot(f.s-p,f.n);
-  for(int i=0;i<12;i++){
-    f=s28Chart(rc);vec3 e=p-f.s+d*f.n;
-    if(length(e)<0.000001)break;
-    vec3 a=f.sr-d*f.nr,b=f.sc-d*f.nc,c=-f.n,bc=cross(b,c);
-    float det=dot(a,bc);if(abs(det)<0.0000001)break;
-    rc.y=clamp(rc.y+clamp(dot(e,bc)/det,-4.0,4.0),-0.5,180.5);
-    rc.x+=clamp(dot(e,cross(c,a))/det,-4.0,4.0);
-    d+=clamp(dot(e,cross(a,b))/det,-10.0,10.0);
-  }
-  f=s28Chart(rc);return vec4(rc,d,length(p-f.s+d*f.n));
-}
-vec2 s28Seed(vec3 p){
-  float row=clamp((p.z+210.0)/1.5,0.0,180.0);
-  float cy=textureLod(uAbdominalAtlas,(vec3(48.0,row,398.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0)),0.0).g;
-  return vec2(mod(atan(p.y-cy,p.x),6.283185307179586)*81.48733086305042,row);
+vec2 s28Project(vec3 p,out float depth,out vec3 g,out vec3 s,out vec2 xy){
+  depth=torsoDepth(p);g=s28DepthGradient(p);
+  s=p-depth*g/max(dot(g,g),0.000001);
+  float row=clamp((s.z+210.0)/1.5,0.0,180.0);
+  xy=vec2(s.x,s.y-textureLod(uAbdominalAtlas,(vec3(${B.wall.centerOffset[0]}.0,row,${B.wall.centerOffset[2]}.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0)),0.0).g);
+  return vec2(mod(atan(xy.y,xy.x),6.283185307179586)*81.48733086305042,row);
 }
 bool s28WallKnown(vec4 codes){
   return all(greaterThan(mod(floor(codes/8.0),4.0),vec4(0.0)))&&
     all(greaterThan(mod(floor(codes/32.0),4.0),vec4(0.0)))&&
     all(greaterThan(mod(floor(codes/128.0),4.0),vec4(0.0)));
 }
-// xyz=fronteras, w=código nearest; NaN expresa U sin fabricar una superficie.
+ivec3 s28Cell(vec2 rc,out vec2 f){
+  rc.x=mod(rc.x,512.0);ivec2 ij=ivec2(floor(rc));ij.y=min(179,ij.y);
+  f=rc-vec2(ij);int band=ij.y/90;
+  return S28_WALL_OFF[band*8+ij.x/64]+ivec3(ij.x%64,ij.y-band*90,0);
+}
+// xyz=fronteras, w=código nearest; U: w=-1 y fronteras NaN, sin fabricar una superficie.
 vec4 s28WallSurface(vec2 rc){
   float nan=uintBitsToFloat(0x7fc00000u);
-  if(rc.y<0.0||rc.y>180.0)return vec4(nan);
-  rc.x=mod(rc.x,512.0);ivec2 ij=ivec2(floor(rc));ij.y=min(179,ij.y);
-  vec2 f=rc-vec2(ij);int band=ij.y/90;
-  ivec3 at=S28_WALL_OFF[band*8+ij.x/64]+ivec3(ij.x%64,ij.y-band*90,0),inside=at+ivec3(0,0,1);
+  if(rc.y<0.0||rc.y>180.0)return vec4(nan,nan,nan,-1.0);
+  vec2 f;ivec3 at=s28Cell(rc,f),inside=at+ivec3(0,0,1);
   vec4 codes=vec4(texelFetch(uAbdominalAtlas,inside,0).g,texelFetch(uAbdominalAtlas,inside+ivec3(1,0,0),0).g,
     texelFetch(uAbdominalAtlas,inside+ivec3(0,1,0),0).g,texelFetch(uAbdominalAtlas,inside+ivec3(1,1,0),0).g);
-  if(!s28WallKnown(codes))return vec4(nan);
-  vec3 uv=(vec3(at)+vec3(f,0.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0));
+  if(!s28WallKnown(codes))return vec4(nan,nan,nan,-1.0);
+  vec3 size=vec3(textureSize(uAbdominalAtlas,0)),uv=(vec3(at)+vec3(f,0.0)+0.5)/size;
   vec2 ft=textureLod(uAbdominalAtlas,uv,0.0).rg;
-  float pe=textureLod(uAbdominalAtlas,uv+vec3(0.0,0.0,1.0/float(textureSize(uAbdominalAtlas,0).z)),0.0).r;
+  float pe=textureLod(uAbdominalAtlas,uv+vec3(0.0,0.0,1.0/size.z),0.0).r;
   return vec4(ft,pe,codes[(f.y>=0.5?2:0)+(f.x>=0.5?1:0)]);
 }
-// xyzw = outer/inner/interface/depth; valid conserva sólo la geometría, nunca exige identidad muscular.
+bool s28Valid(vec3 g,vec3 s,float depth,vec4 b){return dot(g,g)>0.000001&&s.z>=-210.0&&s.z<=60.0&&depth<=6.0&&b.w>=0.0;}
+// xyzw = outer/inner/interface/depth; con celda D/E vale a cualquier profundidad, nunca exige identidad muscular.
 vec4 s28WallAt(vec3 p,out bool valid){
-  vec3 g=s28DepthGradient(p),surface=p-torsoDepth(p)*g/max(dot(g,g),0.000001);
-  vec4 q=s28Solve(p,s28Seed(surface));
-  if(q.w>0.001){vec4 b=s28Solve(p,s28Seed(p));if(b.w<q.w)q=b;}
-  vec4 bounds=s28WallSurface(q.xy);
-  valid=q.w<=0.1&&q.z>=-6.0&&!isnan(bounds.x);
-  return vec4(bounds.xyz,q.z);
+  float depth;vec3 g,s;vec2 xy;
+  vec4 b=s28WallSurface(s28Project(p,depth,g,s,xy));
+  valid=s28Valid(g,s,depth,b);
+  return vec4(b.xyz,-depth);
 }
 float s28Inside(vec3 m){bool valid;vec4 q=s28WallAt(m,valid);return valid?q.w-q.z:-1000.0;}
+// ∇(profundidad − frontera k), k: 0 externa, 1 interna, 2 interfaz: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|²;
+// k=3, piel E a 1,5 mm: −∇τ. La celda es bilineal: medio texel dentro de ella da su derivada exacta con dos lecturas.
+// Gemelo: s0028WallFaceGradient.
+vec3 s28FaceGradient(vec3 p,int k,out float sd,out bool valid){
+  float depth;vec3 g,s;vec2 xy;
+  vec2 rc=s28Project(p,depth,g,s,xy);
+  if(k==3){sd=-depth-1.5;valid=true;return -g;}
+  vec4 b=s28WallSurface(rc);
+  valid=s28Valid(g,s,depth,b);sd=-1000.0;
+  if(!valid)return vec3(0.0);
+  float v=k==0?b.x:k==1?b.y:b.z;sd=-depth-v;
+  vec2 f;ivec3 at=s28Cell(rc,f)+ivec3(0,0,k/2);
+  vec3 size=vec3(textureSize(uAbdominalAtlas,0)),uv=vec3(at)+vec3(f,0.0)+0.5;
+  vec2 h=mix(vec2(0.5),vec2(-0.5),greaterThanEqual(f,vec2(0.5)));
+  vec2 dc=textureLod(uAbdominalAtlas,(uv+vec3(h.x,0.0,0.0))/size,0.0).rg,dr=textureLod(uAbdominalAtlas,(uv+vec3(0.0,h.y,0.0))/size,0.0).rg;
+  vec2 slope=(vec2(k==1?dc.y:dc.x,k==1?dr.y:dr.x)-v)/h;
+  vec3 w=vec3(vec2(-xy.y,xy.x)*(81.48733086305042*slope.x/max(dot(xy,xy),0.000001)),slope.y/1.5);
+  return -g-w+g*(dot(g,w)/dot(g,g));
+}
 `;
 
 type Replace = (source: string, type: string, name: string, replacement: string) => string;
@@ -99,7 +85,14 @@ float respWeight(vec3 m){float inside=s28Inside(m);return smoothstep(0.0,25.0,in
     'vec3',
     'respWeightGradient',
     `
-vec3 respWeightGradient(vec3 m){vec2 e=vec2(0.05,0.0);return vec3(respWeight(m+e.xyy)-respWeight(m-e.xyy),respWeight(m+e.yxy)-respWeight(m-e.yxy),respWeight(m+e.yyx)-respWeight(m-e.yyx))/0.1;}`,
+vec3 respWeightGradient(vec3 m){
+ float inside;bool valid;vec3 gi=s28FaceGradient(m,2,inside,valid);
+ if(!valid)return vec3(0.0);
+ vec2 delta=m.xy-uSpine.xy;float r=length(delta);
+ float a=smoothstep(uSpine.z+5.0,uSpine.z+35.0,r)*smoothstepSlope(0.0,25.0,inside);
+ float b=smoothstep(0.0,25.0,inside)*smoothstepSlope(uSpine.z+5.0,uSpine.z+35.0,r)/max(r,1e-9);
+ return a*gi+vec3(b*delta,0.0);
+}`,
   );
   changed = replace(
     changed,
@@ -109,8 +102,9 @@ vec3 respWeightGradient(vec3 m){vec2 e=vec2(0.05,0.0);return vec3(respWeight(m+e
 float wallFaceSd(vec3 m,int face){
  if(face==IF_SKIN_FAT)return -torsoDepth(m)-1.5;
  bool valid;vec4 q=s28WallAt(m,valid);
- if(!valid)return uintBitsToFloat(0x7fc00000u);
- return q.w-(face==IF_DEEP_FASCIA?q.x:face==IF_TRANSVERSALIS?q.y:q.z);
+ float nan=uintBitsToFloat(0x7fc00000u);
+ if(!valid)return nan;
+ return q.w-(face==IF_DEEP_FASCIA?q.x:face==IF_TRANSVERSALIS?q.y:face==IF_PERITONEUM?q.z:nan);
 }`,
   );
   changed = replace(
@@ -118,7 +112,11 @@ float wallFaceSd(vec3 m,int face){
     'vec3',
     'wallFaceGradient',
     `
-vec3 wallFaceGradient(vec3 m,int face){vec2 e=vec2(0.05,0.0);return vec3(wallFaceSd(m+e.xyy,face)-wallFaceSd(m-e.xyy,face),wallFaceSd(m+e.yxy,face)-wallFaceSd(m-e.yxy,face),wallFaceSd(m+e.yyx,face)-wallFaceSd(m-e.yyx,face))/0.1;}`,
+vec3 wallFaceGradient(vec3 m,int face){
+ int k=face==IF_SKIN_FAT?3:face==IF_DEEP_FASCIA?0:face==IF_TRANSVERSALIS?1:face==IF_PERITONEUM?2:-1;
+ float sd;bool valid;vec3 g=s28FaceGradient(m,max(k,0),sd,valid);
+ return valid&&k>=0?g:vec3(uintBitsToFloat(0x7fc00000u));
+}`,
   );
   changed = replace(
     changed,
@@ -167,12 +165,14 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
   c.tissue=T_UNSEGMENTED;c.bd=0.0;return;
 ` +
     changed.slice(end);
+  // Sin cortina ni tórax/cúpula procedurales (dDome=1000) nada vivo de classifyInside lee `wall`: sin segunda
+  // consulta de pared; −depth−wall=1000 es el «sin límite» de la CPU (wallMm de U).
   changed = changed.replace(
     /float\s+wall\s*=\s*uWall\.x\s*\+\s*uWall\.y\s*\+\s*uWall\.z\s*;/,
     `
   vec2 lung=s28_lung(m);if(lung.x<0.0){c.tissue=T_LUNG;c.bd=-lung.x;return;}
   if(s28_heart(m).x<0.0){vec3 normal;float dome=sdDome(m,normal),ifd;c.tissue=thorax(m,dome,c.bd,ifd,c.n);return;}
-  float wall=-depth-s28Inside(m);`,
+  float wall=-depth-1000.0;`,
   );
   changed = changed.replace(
     /if\s*\(withCurtain\)\s*\{\s*float\s+dCurtain\s*=\s*lungCurtainDistance\(m,\s*-depth\s*-\s*wall\);\s*if\s*\(dCurtain\s*>=\s*0\.0\)\s*\{[^}]+\}\s*\}/,
@@ -203,7 +203,12 @@ Cls classifyWith(vec3 m,bool withCurtain){
     'float wallFaceDepth(float u,float z,int face){return uintBitsToFloat(0x7fc00000u);}',
   );
   changed = replace(changed, 'vec4', 'wallDepths', 'vec4 wallDepths(float u,float z){return vec4(uintBitsToFloat(0x7fc00000u));}');
-  changed = replace(changed, 'float', 'domeSd', 'float domeSd(vec3 m){vec3 n;return max(sdDome(m,n),-s28Inside(m));}');
+  changed = replace(
+    changed,
+    'float',
+    'domeSd',
+    'float domeSd(vec3 m){vec3 n;bool valid;vec4 q=s28WallAt(m,valid);float d=sdDome(m,n);return valid?max(d,q.z-q.w):d;}',
+  );
   changed = replace(changed, 'float', 'ribSd', 'float ribSd(vec3 m,int k){return thoracicSdf(m);}');
   // El pericondrio pertenece al campo de cartílago, no al SDF óseo.
   changed = changed.replace(

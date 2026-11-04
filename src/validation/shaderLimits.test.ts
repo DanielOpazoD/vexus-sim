@@ -5,6 +5,8 @@ import { INTERFACE_COUNT } from '../anatomy/interfaces';
 import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
+import { personShader } from '../anatomy/gpu/personShader';
+import { S0028_BUNDLE } from '../anatomy/anatomyBundle';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import {
   FRAG_COMPOUND,
@@ -151,6 +153,68 @@ function loopBodies(g: Map<string, string>): string[] {
   return out;
 }
 
+/** Lecturas de textura de `fn` con sus llamadas expandidas: las instrucciones que compila cada llamada. */
+function expandedTextureReads(g: Map<string, string>, fn: string, memo = new Map<string, number>()): number {
+  const known = memo.get(fn);
+  if (known !== undefined) return known;
+  const body = g.get(fn)!;
+  const reads = callsIn(g, body, fn).reduce(
+    (n, c) => n + expandedTextureReads(g, c, memo),
+    (body.match(/\b(?:texture|textureLod|texelFetch)\s*\(/g) ?? []).length,
+  );
+  memo.set(fn, reads);
+  return reads;
+}
+
+/** Funciones que la especialización añade o cambia y que traen un bucle que la fuente común no tenía (multiconjunto). */
+function newLoops(base: string, specialized: string): string[] {
+  const before = glslCallGraph(base);
+  const loopsIn = (body: string) => {
+    const loops: string[] = [];
+    for (const match of body.matchAll(/\b(?:for|while)\s*\(/g)) {
+      let i = match.index + match[0].length;
+      for (let depth = 1; depth > 0 && i < body.length; i++) depth += body[i] === '(' ? 1 : body[i] === ')' ? -1 : 0;
+      while (/\s/.test(body[i] ?? '')) i++;
+      if (body[i] === '{') {
+        i++;
+        for (let depth = 1; depth > 0 && i < body.length; i++) depth += body[i] === '{' ? 1 : body[i] === '}' ? -1 : 0;
+      } else {
+        const end = body.indexOf(';', i);
+        i = end < 0 ? body.length : end + 1;
+      }
+      loops.push(body.slice(match.index, i).replace(/\s+/g, ''));
+    }
+    return loops;
+  };
+  return [...glslCallGraph(specialized)]
+    .filter(([name, body]) => {
+      const old = loopsIn(before.get(name) ?? '');
+      return loopsIn(body).some((loop) => {
+        const index = old.indexOf(loop);
+        if (index < 0) return true;
+        old.splice(index, 1);
+        return false;
+      });
+    })
+    .map(([name]) => name);
+}
+
+/**
+ * Techos [tokens, ramas] con SwiftShader: 10 % sobre el tamaño con el que CI completa. Valen para las dos personas
+ * (`personShader` especializa antes de compilar). Para subirlas, mide antes el primer cuadro en CI.
+ */
+const limits: Record<string, [number, number]> = {
+  FRAG_RAWFIELD: [1_385_000, 11_060],
+  FRAG_RAWFIELD_ECHO: [577_000, 4_640],
+  FRAG_RAWFIELD_CLASS: [455_000, 3_830],
+  FRAG_RAWFIELD_ELEVATION: [455_000, 3_830],
+  FRAG_RAWFIELD_GRADIENT: [351_000, 2_760],
+  FRAG_TRANS_HITS: [513_000, 4_470],
+  FRAG_TRANS_HITS_GRID: [252_000, 2_210],
+  FRAG_COLOR: [248_000, 2_160],
+};
+const S0028 = { person: 's0028', bundle: S0028_BUNDLE } as const;
+
 const FRAGMENT_SHADERS = Object.entries(PASSES).filter((e): e is [string, string] => e[0].startsWith('FRAG_') && typeof e[1] === 'string');
 
 /**
@@ -196,6 +260,20 @@ const SLOT_GUARD = Math.floor(0.8 * WEBGL2_MIN_FRAGMENT_VECTORS);
  * silencio. Cada caso (la hepatomegalia cambia el árbol procedural) debe dejar margen.
  */
 describe('Límites del shader con margen para crecer', () => {
+  it('las funciones añadidas o modificadas para s0028 no introducen bucles GLSL', () => {
+    const sources = PASSES as unknown as Record<string, string>;
+    for (const name of Object.keys(limits)) expect(newLoops(sources[name], personShader(sources[name], S0028)), name).toEqual([]);
+    // Negativo: el lector Newton descartado (12 iteraciones sobre la carta, bisección 59f27ff/a26fe4a) vuelve a rojo.
+    const newton = personShader(PASSES.FRAG_RAWFIELD_CLASS, S0028).replace(
+      'vec4 s28WallAt(vec3 p,out bool valid){',
+      `vec2 s28Solve(vec3 p,vec2 rc){
+  for(int i=0;i<12;i++){vec4 b=s28WallSurface(rc);if(b.w<0.0)break;rc+=clamp(b.xy-p.xy,-4.0,4.0);}
+  return rc;
+}
+vec4 s28WallAt(vec3 p,out bool valid){`,
+    );
+    expect(newLoops(PASSES.FRAG_RAWFIELD_CLASS, newton)).toEqual(['s28Solve']);
+  });
   for (const c of CASES) {
     it(`${c.id}: tubos, nodos y segmentos por tubo dentro de los límites con ≥ 20 % de margen`, () => {
       const scene = new AnatomyScene(c);
@@ -432,22 +510,46 @@ describe('Límites del shader con margen para crecer', () => {
   // guarda lo adelanta. Cotas [tokens, ramas]: 10 % sobre el tamaño con el que CI completa. Para subirlas, mide antes el primer
   // cuadro en CI (`.validation/triplex-startup.jsonl`).
   it('ningún programa con anatomía crece al expandirse sin medir su primer cuadro en SwiftShader', () => {
-    const limits: Record<string, [number, number]> = {
-      FRAG_RAWFIELD: [1_385_000, 11_060],
-      FRAG_RAWFIELD_ECHO: [577_000, 4_640],
-      FRAG_RAWFIELD_CLASS: [455_000, 3_830],
-      FRAG_RAWFIELD_ELEVATION: [455_000, 3_830],
-      FRAG_RAWFIELD_GRADIENT: [351_000, 2_760],
-      FRAG_TRANS_HITS: [513_000, 4_470],
-      FRAG_TRANS_HITS_GRID: [252_000, 2_210],
-      FRAG_COLOR: [248_000, 2_160],
-    };
     const sources = PASSES as unknown as Record<string, string>;
     for (const [name, [tokens, branches]] of Object.entries(limits)) {
       const graph = glslCallGraph(sources[name]);
       expect(expandedTokens(graph, 'main'), name).toBeLessThanOrEqual(tokens);
       expect(expandedBranches(graph, 'main'), name).toBeLessThanOrEqual(branches);
     }
+  });
+
+  it('los ocho programas especializados s0028 caben en los mismos techos, con ≤ 16 samplers y ≤ 179 ranuras', () => {
+    const sources = PASSES as unknown as Record<string, string>;
+    for (const [name, [tokens, branches]] of Object.entries(limits)) {
+      const source = personShader(sources[name], S0028);
+      expect(source, name).not.toBe(sources[name]);
+      const graph = glslCallGraph(source);
+      expect(expandedTokens(graph, 'main'), name).toBeLessThanOrEqual(tokens);
+      expect(expandedBranches(graph, 'main'), name).toBeLessThanOrEqual(branches);
+      expect(samplersOf(source).length, name).toBeLessThanOrEqual(16);
+      expect(uniformSlots(source).slots, name).toBeLessThanOrEqual(SLOT_GUARD);
+    }
+  });
+
+  it('s0028: una consulta de pared lee ≤ 20 texturas y cada gradiente de cara o respiración hace una sola consulta', () => {
+    const graph = glslCallGraph(personShader(PASSES.FRAG_RAWFIELD, S0028));
+    // 7 EDT (profundidad y gradiente central), 1 centro de fila, 4 códigos nearest y 2 fronteras bilineales.
+    expect(expandedTextureReads(graph, 's28WallAt')).toBe(14);
+    // Con la pendiente de la celda: dos lecturas más a medio texel.
+    expect(expandedTextureReads(graph, 's28FaceGradient')).toBe(16);
+    for (const fn of ['wallFaceGradient', 'respWeightGradient']) {
+      expect(expandedTextureReads(graph, fn), fn).toBeLessThanOrEqual(20);
+      expect(inlinedCopies(graph, fn, 's28Project'), fn).toBe(1);
+    }
+    // Negativo: el gradiente central del candidato inicial r2b repetía seis consultas completas.
+    const central = glslCallGraph(
+      personShader(PASSES.FRAG_RAWFIELD, S0028).replace(
+        /vec3 wallFaceGradient\(vec3 m,int face\)\{[^}]*\}/,
+        'vec3 wallFaceGradient(vec3 m,int face){vec2 e=vec2(0.05,0.0);return vec3(wallFaceSd(m+e.xyy,face)-wallFaceSd(m-e.xyy,face),wallFaceSd(m+e.yxy,face)-wallFaceSd(m-e.yxy,face),wallFaceSd(m+e.yyx,face)-wallFaceSd(m-e.yyx,face))/0.1;}',
+      ),
+    );
+    expect(inlinedCopies(central, 'wallFaceGradient', 's28Project')).toBe(6);
+    expect(expandedTextureReads(central, 'wallFaceGradient')).toBeGreaterThan(20);
   });
   // Estas cotas son las de main a9520b8 (A0 2 copias de classify, A1 1, B 3, color, consulta y mapa 1).
   it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {

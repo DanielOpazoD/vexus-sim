@@ -1,6 +1,6 @@
 import { referenceCartilage } from '../referenceCartilage';
 import { anatomyBundle } from '../anatomyBundle';
-import { s0028WallAt } from '../s0028Wall';
+import { s0028WallAt, s0028WallFaceGradient } from '../s0028Wall';
 import type { Vec3 } from '../../core/vec3';
 import { Interface } from '../interfaces';
 import { sdRib, ribShape, torsoDepth, torsoDepthGradient, type Rib, type Spine, type Torso } from '../primitives';
@@ -421,15 +421,13 @@ export function wallFaceSlope(u: number, z: number, face: Interface, t: Torso): 
  */
 export function wallFaceGradient(m: Vec3, face: Interface, t: Torso): Vec3 {
   if (anatomyBundle.person === 's0028') {
-    const h = 0.05;
-    const derivative = (axis: number) => {
-      const a: Vec3 = [...m],
-        b: Vec3 = [...m];
-      a[axis] += h;
-      b[axis] -= h;
-      return (wallFaceSd(a, face, t) - wallFaceSd(b, face, t)) / (2 * h);
-    };
-    return [derivative(0), derivative(1), derivative(2)];
+    // Analítico, gemelo de la GLSL: una consulta de pared y dos lecturas de la pendiente de la carta, sin seis consultas.
+    if (face === Interface.SkinFat) {
+      const g = torsoDepthGradient(m, t);
+      return [-g[0], -g[1], -g[2]];
+    }
+    const boundary = face === Interface.DeepFascia ? 0 : face === Interface.Transversalis ? 1 : face === Interface.Peritoneum ? 2 : null;
+    return (boundary === null ? null : s0028WallFaceGradient(m, boundary))?.gradient ?? [NaN, NaN, NaN];
   }
   const [fu, fz] = wallFaceSlope(wallArc(m, t), m[2], face, t);
   const gu = wallArcGradient(m, t);

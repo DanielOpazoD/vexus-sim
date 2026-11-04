@@ -1,23 +1,16 @@
 import { dot, smoothstep, type Vec3 } from '../core/vec3';
 import { warpAt, type ProbeCompression, type Warp } from './compression';
 import { torsoDepth, torsoDepthGradient } from './primitives';
+import { s0028WallFaceGradient } from './s0028Wall';
 import { RESPIRATORY_DIRECTION as DIR } from './respiratoryDirection';
 import type { AnatomyScene } from './scene';
 
 /** Derivada analítica del mismo peso, fuera de las uniones no diferenciables del perfil torácico. */
 export function respiratoryWeightGradient(scene: AnatomyScene, m: Vec3): Vec3 {
-  if (scene.identity.person === 's0028') {
-    const h = 0.05;
-    const derivative = (axis: number): number => {
-      const a: Vec3 = [...m],
-        b: Vec3 = [...m];
-      a[axis] += h;
-      b[axis] -= h;
-      return (scene.respiratoryWeight(a) - scene.respiratoryWeight(b)) / (2 * h);
-    };
-    return [derivative(0), derivative(1), derivative(2)];
-  }
-  const inside = -torsoDepth(m, scene.torso) - scene.wallThickness();
+  const s0028 = scene.identity.person === 's0028' ? s0028WallFaceGradient(m, 2) : undefined;
+  // s0028: U no tiene cara interna, peso nulo y gradiente nulo.
+  if (s0028 === null) return [0, 0, 0];
+  const inside = s0028 ? s0028.sd : -torsoDepth(m, scene.torso) - scene.wallThickness();
   const dx = m[0] - scene.spine.x0,
     dy = m[1] - scene.spine.y0;
   const r = Math.hypot(dx, dy);
@@ -30,7 +23,8 @@ export function respiratoryWeightGradient(scene: AnatomyScene, m: Vec3): Vec3 {
   const a = -spine * slope(0, 25, inside);
   const b = (wall * slope(scene.spine.r + 5, scene.spine.r + 35, r)) / Math.max(r, 1e-9);
   if (a === 0) return [b * dx, b * dy, 0];
-  const g = torsoDepthGradient(m, scene.torso);
+  // ∇inside: −∇τ en el tronco genérico; en s0028, el gradiente analítico de la cara interna regional.
+  const g: Vec3 = s0028 ? [-s0028.gradient[0], -s0028.gradient[1], -s0028.gradient[2]] : torsoDepthGradient(m, scene.torso);
   return [a * g[0] + b * dx, a * g[1] + b * dy, a * g[2]];
 }
 

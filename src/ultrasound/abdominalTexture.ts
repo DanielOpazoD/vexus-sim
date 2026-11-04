@@ -4,7 +4,6 @@ import { THORACIC_ATLAS } from '../anatomy/thoracicAtlasData';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
 import { ABDOMINAL_ATLAS } from '../anatomy/abdominalAtlasData';
 import { s0028WallUploads } from '../anatomy/s0028Wall';
-import { s0028ChartUploads } from '../anatomy/gpu/s0028WallChart';
 
 /** One bounded source volume; historical renderers bind a complete 4-byte dummy texture. */
 export function createAbdominalTexture(gl: WebGL2RenderingContext, enabled: boolean, thoracic = false): WebGLTexture {
@@ -46,7 +45,7 @@ export function createAbdominalTexture(gl: WebGL2RenderingContext, enabled: bool
       );
     }
     if (!thoracic && anatomyBundle.person === 's0028')
-      for (const { offset, size, data } of [...s0028WallUploads(), ...s0028ChartUploads()])
+      for (const { offset, size, data } of s0028WallUploads())
         gl.texSubImage3D(gl.TEXTURE_3D, 0, offset[0], offset[1], offset[2], size[0], size[1], size[2], gl.RG, gl.HALF_FLOAT, data);
   } else {
     gl.texImage3D(gl.TEXTURE_3D, 0, gl.RG16F, 1, 1, 1, 0, gl.RG, gl.HALF_FLOAT, new Uint16Array([0x4c00, 0]));

@@ -1,5 +1,5 @@
 import { anatomyBundle, S0028_BUNDLE as B } from './anatomyBundle';
-import { abdominalAtlas, s0028Depth } from './abdominalAtlas';
+import { s0028Depth, s0028DepthGradient } from './abdominalAtlas';
 import { HALF } from './halfFloat';
 import { S0028_WALL_PACKAGE as P } from './s0028WallData';
 import type { Vec3 } from '../core/vec3';
@@ -33,20 +33,6 @@ export function s0028WallUploads(): ReadonlyArray<{ offset: readonly number[]; s
     { offset: B.wall.centerOffset, size: [1, 181, 1], data: buffers.tiles.subarray(16 * TILE_WORDS) },
   ];
 }
-let chart:
-  | {
-      skin: ArrayBufferLike;
-      atlas: Uint16Array;
-      tiles: Uint16Array;
-      nodes: Float32Array;
-      seeds: Float32Array;
-      order: Uint32Array;
-      middle: Uint32Array;
-      skinOrder: Uint32Array;
-    }
-  | undefined;
-/** S y N derivados: 2.224.128 B CPU; no copia de atlas, reserva o mallas. */
-export const S0028_WALL_CHART_BYTES = 512 * 181 * 6 * Float32Array.BYTES_PER_ELEMENT;
 const TILE_WORDS = 65 * 91 * 2 * 2;
 
 /** Vistas sobre la reserva y piel P1: ningún atlas o buffer completo adicional. */
@@ -117,35 +103,41 @@ export function s0028SkinPoint(phi: number, z: number): Vec3 | undefined {
   return at((lo + hi) / 2);
 }
 
-/** Interpolación sólo con cuatro soportes geométricos válidos; región nearest independiente. */
-export function s0028WallSurface(phi: number, z: number, depthMm = 0): S0028WallSample {
-  if (!buffers) return { kind: 'unknown', reason: 'unloaded', depthMm };
-  if (z < -210 || z > 60) return { kind: 'unknown', reason: 'domain', depthMm };
-  const col = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 512;
-  const row = (z + 210) / 1.5,
-    x = Math.floor(col),
+/** Celda bilineal de la carta en (columna, fila): cuatro códigos y lectura de página/canal en una fracción de la celda. */
+function chartCell(col: number, row: number) {
+  const x = Math.floor(col),
     y = Math.min(179, Math.floor(row));
   const tile = Math.floor(y / 90) * 8 + Math.floor(x / 64),
     xx = x % 64,
     yy = y % 90;
-  const fx = col - x,
-    fy = row - y;
   const at = (dx: number, dy: number, page: number, k: number) =>
     HALF[buffers!.tiles[tile * TILE_WORDS + ((page * 91 + yy + dy) * 65 + xx + dx) * 2 + k]];
   const codes = [at(0, 0, 1, 1), at(1, 0, 1, 1), at(0, 1, 1, 1), at(1, 1, 1, 1)];
-  if (codes.some((c) => [8, 32, 128].some((f) => Math.floor(c / f) % 4 === 0))) return { kind: 'unknown', reason: 'coverage', depthMm };
-  const mix = (page: number, k: number) => {
-    const a = at(0, 0, page, k) + fx * (at(1, 0, page, k) - at(0, 0, page, k));
-    const b = at(0, 1, page, k) + fx * (at(1, 1, page, k) - at(0, 1, page, k));
-    return a + fy * (b - a);
+  const fx = col - x,
+    fy = row - y;
+  const mix = (page: number, k: number, u = fx, v = fy) => {
+    const a = at(0, 0, page, k) + u * (at(1, 0, page, k) - at(0, 0, page, k));
+    const b = at(0, 1, page, k) + u * (at(1, 1, page, k) - at(0, 1, page, k));
+    return a + v * (b - a);
   };
-  const code = codes[(fy >= 0.5 ? 2 : 0) + (fx >= 0.5 ? 1 : 0)];
+  return { codes, known: !codes.some((c) => [8, 32, 128].some((f) => Math.floor(c / f) % 4 === 0)), fx, fy, mix };
+}
+
+const columnOf = (phi: number) => ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 512;
+
+/** Interpolación sólo con cuatro soportes geométricos válidos; región nearest independiente. */
+export function s0028WallSurface(phi: number, z: number, depthMm = 0): S0028WallSample {
+  if (!buffers) return { kind: 'unknown', reason: 'unloaded', depthMm };
+  if (z < -210 || z > 60) return { kind: 'unknown', reason: 'domain', depthMm };
+  const cell = chartCell(columnOf(phi), (z + 210) / 1.5);
+  if (!cell.known) return { kind: 'unknown', reason: 'coverage', depthMm };
+  const code = cell.codes[(cell.fy >= 0.5 ? 2 : 0) + (cell.fx >= 0.5 ? 1 : 0)];
   return {
     kind: 'known',
     depthMm,
-    outerMm: mix(0, 0),
-    innerMm: mix(0, 1),
-    interfaceMm: mix(1, 0),
+    outerMm: cell.mix(0, 0),
+    innerMm: cell.mix(0, 1),
+    interfaceMm: cell.mix(1, 0),
     provenance: [
       PROVENANCE[Math.floor(code / 8) % 4],
       PROVENANCE[Math.floor(code / 32) % 4],
@@ -158,175 +150,75 @@ export function s0028WallSurface(phi: number, z: number, depthMm = 0): S0028Wall
   };
 }
 
-/** Carta del cero común y normales con el soporte declarado por el paquete. */
-export function s0028WallChart(): Float32Array {
-  if (chart?.skin === buffers!.skin.buffer && chart.atlas === abdominalAtlas && chart.tiles === buffers!.tiles) return chart.nodes;
-  const nodes = new Float32Array(512 * 181 * 6);
-  const h = B.wall.surfaceGeometry.normal.includes('13 mm') ? 6.5 : 1.5;
-  for (let r = 0; r < 181; r++)
-    for (let c = 0; c < 512; c++) {
-      const s = s0028SkinPoint((c * 2 * Math.PI) / 512, r * 1.5 - 210)!;
-      const g: Vec3 = [0, 0, 0];
-      for (let axis = 0; axis < 3; axis++) {
-        const a: Vec3 = [...s],
-          b: Vec3 = [...s];
-        a[axis] += h;
-        b[axis] -= h;
-        g[axis] = (s0028Depth(a)! - s0028Depth(b)!) / (2 * h);
-      }
-      const n = Math.hypot(...g) || 1,
-        k = (r * 512 + c) * 6;
-      nodes.set(s, k);
-      nodes.set([g[0] / n, g[1] / n, g[2] / n], k + 3);
-    }
-  const midpoints: number[] = [];
-  for (let r = 0; r < 181; r++)
-    for (let c = 0; c < 512; c++) {
-      const tile = Math.min(1, Math.floor(r / 90)) * 8 + Math.floor(c / 64);
-      const at = tile * TILE_WORDS + ((r - Math.min(1, Math.floor(r / 90)) * 90) * 65 + (c % 64)) * 2;
-      const depth = (HALF[buffers!.tiles[at]] + HALF[buffers!.tiles[at + 1]]) / 2;
-      if (!Number.isFinite(depth)) continue;
-      const index = r * 512 + c,
-        k = index * 6;
-      midpoints.push(nodes[k] - depth * nodes[k + 3], nodes[k + 1] - depth * nodes[k + 4], nodes[k + 2] - depth * nodes[k + 5], index);
-    }
-  const seeds = new Float32Array(midpoints);
-  const coordinate = (index: number, axis: number, depth: number) => nodes[index * 6 + axis] - depth * nodes[index * 6 + axis + 3];
-  const order = spatialOrder(seeds.length / 4, (i, axis) => seeds[i * 4 + axis]);
-  const middle = spatialOrder(512 * 181, (i, axis) => coordinate(i, axis, 25));
-  const skinOrder = spatialOrder(512 * 181, (i, axis) => coordinate(i, axis, 0));
-  chart = { skin: buffers!.skin.buffer, atlas: abdominalAtlas!, tiles: buffers!.tiles, nodes, seeds, order, middle, skinOrder };
-  return nodes;
+interface DirectProjection {
+  /** EDT en p (negativa dentro) y su gradiente central de 1,5 mm. */
+  depth: number;
+  g: Vec3;
+  gg: number;
+  /** Superficie proyectada y su vector polar respecto del centro de la fila. */
+  surface: Vec3;
+  x: number;
+  y: number;
 }
 
-function spatialOrder(count: number, at: (i: number, axis: number) => number): Uint32Array {
-  const order = Uint32Array.from({ length: count }, (_, i) => i);
-  const sort = (lo: number, hi: number, axis: number): void => {
-    if (hi - lo < 2) return;
-    order.subarray(lo, hi).sort((a, b) => at(a, axis) - at(b, axis));
-    const mid = (lo + hi) >>> 1;
-    sort(lo, mid, (axis + 1) % 3);
-    sort(mid + 1, hi, (axis + 1) % 3);
-  };
-  sort(0, count, 0);
-  return order;
+/** `p − torsoDepth(p)·∇/|∇|²` con semilla polar; fuera del cero, del gradiente o del dominio z no hay carta. */
+function directProjection(p: Vec3): DirectProjection | S0028WallSample {
+  const depth = s0028Depth(p);
+  if (!buffers || depth === undefined) return { kind: 'unknown', reason: 'unloaded', depthMm: -(depth ?? 0) };
+  const g = s0028DepthGradient(p)!;
+  const gg = g[0] * g[0] + g[1] * g[1] + g[2] * g[2];
+  if (gg <= 0.000001 || depth > 6) return { kind: 'unknown', reason: 'projection', depthMm: -depth };
+  const surface: Vec3 = [p[0] - (depth * g[0]) / gg, p[1] - (depth * g[1]) / gg, p[2] - (depth * g[2]) / gg];
+  if (surface[2] < -210 || surface[2] > 60) return { kind: 'unknown', reason: 'domain', depthMm: -depth };
+  const row = (surface[2] + 210) / 1.5;
+  const lo = Math.floor(row),
+    hi = Math.min(180, lo + 1),
+    t = row - lo;
+  const center = (r: number) => HALF[buffers!.tiles[16 * TILE_WORDS + 2 * r + 1]];
+  return { depth, g, gg, surface, x: surface[0], y: surface[1] - (center(lo) * (1 - t) + center(hi) * t) };
 }
 
-/** Sólo busca semillas espaciales; el residual de S−dN y los tiles deciden la geometría. */
-function nearestSeed(p: Vec3, order: Uint32Array, at: (i: number, axis: number) => number): number {
-  let best = Infinity,
-    index = 0;
-  const visit = (lo: number, hi: number, axis: number): void => {
-    if (lo >= hi) return;
-    const mid = (lo + hi) >>> 1,
-      i = order[mid];
-    const d = (p[0] - at(i, 0)) ** 2 + (p[1] - at(i, 1)) ** 2 + (p[2] - at(i, 2)) ** 2;
-    if (d < best) {
-      best = d;
-      index = i;
-    }
-    const delta = p[axis] - at(i, axis),
-      next = (axis + 1) % 3;
-    if (delta < 0) {
-      visit(lo, mid, next);
-      if (delta * delta < best) visit(mid + 1, hi, next);
-    } else {
-      visit(mid + 1, hi, next);
-      if (delta * delta < best) visit(lo, mid, next);
-    }
-  };
-  visit(0, order.length, 0);
-  return index;
-}
-
-/** [S,N,∂rS,∂cS,∂rN,∂cN]; N normaliza la interpolación bilineal de nodos. */
-function chartSample(nodes: Float32Array, r: number, c: number, out: Float64Array): void {
-  const row = Math.max(0, Math.min(180, r)),
-    col = ((c % 512) + 512) % 512;
-  const ri = Math.min(179, Math.floor(row)),
-    ci = Math.floor(col),
-    u = row - ri,
-    v = col - ci;
-  const a = (ri * 512 + ci) * 6,
-    b = (ri * 512 + ((ci + 1) % 512)) * 6;
-  for (let k = 0; k < 6; k++) {
-    const f0 = nodes[a + k],
-      f1 = nodes[b + k],
-      f2 = nodes[a + 512 * 6 + k],
-      f3 = nodes[b + 512 * 6 + k];
-    out[k] = (1 - u) * ((1 - v) * f0 + v * f1) + u * ((1 - v) * f2 + v * f3);
-    out[6 + k] = (1 - v) * (f2 - f0) + v * (f3 - f1);
-    out[12 + k] = (1 - u) * (f1 - f0) + u * (f3 - f2);
-  }
-  const length = Math.hypot(out[3], out[4], out[5]) || 1;
-  for (let k = 3; k < 6; k++) out[k] /= length;
-  const dr = out[3] * out[9] + out[4] * out[10] + out[5] * out[11];
-  const dc = out[3] * out[15] + out[4] * out[16] + out[5] * out[17];
-  for (let k = 0; k < 3; k++) {
-    const nr = (out[9 + k] - out[3 + k] * dr) / length,
-      nc = (out[15 + k] - out[3 + k] * dc) / length;
-    out[9 + k] = out[12 + k];
-    out[12 + k] = nr;
-    out[15 + k] = nc;
-  }
-}
-
-function solveChart(p: Vec3, row: number, col: number, nodes: Float32Array): { row: number; col: number; depth: number; error: number } {
-  let r = row,
-    c = col;
-  const f = new Float64Array(18),
-    clip = (v: number, max: number) => Math.max(-max, Math.min(max, v));
-  chartSample(nodes, r, c, f);
-  let d = (f[0] - p[0]) * f[3] + (f[1] - p[1]) * f[4] + (f[2] - p[2]) * f[5];
-  for (let i = 0; i < 12; i++) {
-    chartSample(nodes, r, c, f);
-    const x = p[0] - f[0] + d * f[3],
-      y = p[1] - f[1] + d * f[4],
-      z = p[2] - f[2] + d * f[5];
-    if (Math.hypot(x, y, z) < 1e-6) break;
-    const a0 = f[6] - d * f[12],
-      a1 = f[7] - d * f[13],
-      a2 = f[8] - d * f[14];
-    const b0 = f[9] - d * f[15],
-      b1 = f[10] - d * f[16],
-      b2 = f[11] - d * f[17];
-    const c0 = -f[3],
-      c1 = -f[4],
-      c2 = -f[5];
-    const bc0 = b1 * c2 - b2 * c1,
-      bc1 = b2 * c0 - b0 * c2,
-      bc2 = b0 * c1 - b1 * c0;
-    const det = a0 * bc0 + a1 * bc1 + a2 * bc2;
-    if (Math.abs(det) < 1e-7) break;
-    r = Math.max(-0.5, Math.min(180.5, r + clip((x * bc0 + y * bc1 + z * bc2) / det, 4)));
-    c += clip((x * (c1 * a2 - c2 * a1) + y * (c2 * a0 - c0 * a2) + z * (c0 * a1 - c1 * a0)) / det, 4);
-    d += clip((x * (a1 * b2 - a2 * b1) + y * (a2 * b0 - a0 * b2) + z * (a0 * b1 - a1 * b0)) / det, 10);
-  }
-  chartSample(nodes, r, c, f);
-  return { row: r, col: c, depth: d, error: Math.hypot(p[0] - f[0] + d * f[3], p[1] - f[1] + d * f[4], p[2] - f[2] + d * f[5]) };
-}
-
-/** Newton sobre S−dN. La EDT profunda sólo da la semilla; nunca decide la pared. */
+/**
+ * Proyección directa sobre EDT; profundidad positiva hacia el interior. Con la celda D/E la consulta vale a cualquier
+ * profundidad (más allá de la cara interna es interior del cuerpo); U sólo por celda U o fuera del dominio.
+ */
 export function s0028WallAt(p: Vec3): S0028WallSample | undefined {
   if (anatomyBundle.person !== 's0028') return undefined;
-  if (!buffers || !abdominalAtlas) return { kind: 'unknown', reason: 'unloaded', depthMm: -(s0028Depth(p) ?? 0) };
-  const nodes = s0028WallChart(),
-    { seeds, order, middle, skinOrder } = chart!;
-  if (order.length === 0) return { kind: 'unknown', reason: 'coverage', depthMm: -s0028Depth(p)! };
-  const index = seeds[nearestSeed(p, order, (i, axis) => seeds[i * 4 + axis]) * 4 + 3];
-  let q = solveChart(p, Math.floor(index / 512), index % 512, nodes);
-  if (q.error > 0.001) {
-    for (const [tree, depth] of [
-      [middle, 25],
-      [skinOrder, 0],
-    ] as const) {
-      const seed = nearestSeed(p, tree, (i, axis) => nodes[i * 6 + axis] - depth * nodes[i * 6 + axis + 3]);
-      const other = solveChart(p, Math.floor(seed / 512), seed % 512, nodes);
-      if (other.error < q.error) q = other;
-    }
-  }
-  if (q.error > 0.1 || q.depth < -6) return { kind: 'unknown', reason: 'projection', depthMm: q.depth };
-  return s0028WallSurface((q.col * 2 * Math.PI) / 512, q.row * 1.5 - 210, q.depth);
+  const q = directProjection(p);
+  if ('kind' in q) return q;
+  return s0028WallSurface(Math.atan2(q.y, q.x), q.surface[2], -q.depth);
+}
+
+/** Frontera de la carta: 0 externa (fascia profunda), 1 interna (transversalis), 2 interfaz (peritoneo). */
+export type S0028Boundary = 0 | 1 | 2;
+const PAGE_CHANNEL = [
+  [0, 0],
+  [0, 1],
+  [1, 0],
+] as const;
+
+/**
+ * Gradiente analítico de `profundidad − frontera` (gemelo de `s28FaceGradient` en GLSL): −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f),
+ * P = I − ∇τ∇τᵀ/|∇τ|² (la proyección sin su curvatura; el centro de fila se toma constante en z). La celda es
+ * bilineal: la diferencia de medio texel dentro de ella es su derivada exacta, dos lecturas. null en U o fuera.
+ */
+export function s0028WallFaceGradient(p: Vec3, boundary: S0028Boundary): { sd: number; gradient: Vec3 } | null {
+  if (anatomyBundle.person !== 's0028') return null;
+  const q = directProjection(p);
+  if ('kind' in q) return null;
+  const cell = chartCell(columnOf(Math.atan2(q.y, q.x)), (q.surface[2] + 210) / 1.5);
+  if (!cell.known) return null;
+  const [page, k] = PAGE_CHANNEL[boundary];
+  const b = cell.mix(page, k),
+    hc = cell.fx < 0.5 ? 0.5 : -0.5,
+    hr = cell.fy < 0.5 ? 0.5 : -0.5;
+  const dc = (cell.mix(page, k, cell.fx + hc, cell.fy) - b) / hc,
+    dr = (cell.mix(page, k, cell.fx, cell.fy + hr) - b) / hr;
+  const a = ((512 / (2 * Math.PI)) * dc) / Math.max(q.x * q.x + q.y * q.y, 0.000001);
+  const v: Vec3 = [-q.y * a, q.x * a, dr / 1.5],
+    g = q.g;
+  const t = (g[0] * v[0] + g[1] * v[1] + g[2] * v[2]) / q.gg;
+  return { sd: -q.depth - b, gradient: [-g[0] - v[0] + g[0] * t, -g[1] - v[1] + g[1] * t, -g[2] - v[2] + g[2] * t] };
 }
 
 /** null significa que no existe una cara interna demostrada; no es profundidad cero. */

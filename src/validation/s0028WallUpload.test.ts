@@ -6,7 +6,7 @@ import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setS0028Wall } from '../anatomy/s0028Wall';
 import { createAbdominalTexture } from '../ultrasound/abdominalTexture';
 
-it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin copiar el atlas', () => {
+it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin copiar el atlas ni derivar la carta S−dN', () => {
   installAnatomyBundle(B);
   const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
   const data = new Uint16Array(B.abdominal.rawBytes / 2),
@@ -54,5 +54,8 @@ it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin cop
   const centre = uploads.find((u) => u.x === 48 && u.y === 0 && u.z === 398 && u.w === 1 && u.h === 181);
   expect(centre?.input.buffer).toBe(capacity);
   expect(centre?.input.byteLength).toBe(724);
+  // Regla directa: sólo pared y centros; la carta S−dN del Newton descartado ya no se deriva ni se sube.
+  expect(uploads.filter((u) => u.w === 65 && u.h === 91)).toHaveLength(16);
+  expect(uploads.filter((u) => u.x === 65 && u.z >= 619)).toEqual([]);
   expect(data.every((x) => x === 0)).toBe(true);
 });

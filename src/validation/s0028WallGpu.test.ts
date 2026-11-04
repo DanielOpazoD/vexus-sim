@@ -30,6 +30,15 @@ it('s0028 sustituye W global en todos los consumidores alcanzables y lee cuatro 
   expect(source).not.toMatch(/uWall\.x\s*\+\s*uWall\.y\s*\+\s*uWall\.z|skin\s*\+\s*uWall\.y\s*\+\s*uWall\.z/);
   expect(source).toContain('s28WallKnown');
   expect(source).toContain('s28WallAt');
+  // Regla directa: sin Newton ni carta S−dN en GPU; la inversa queda offline.
+  expect(source).not.toMatch(/s28Solve|s28Chart|S28_CHART_OFF/);
+  // Negativo: un consumidor nuevo con W global no se especializa.
+  const legacy = PASSES.FRAG_RAWFIELD_CLASS.replace(
+    '\nvoid main() {',
+    '\nfloat legacyWall(){return uWall.x + uWall.y + uWall.z;}\nvoid main() {',
+  );
+  expect(legacy).not.toBe(PASSES.FRAG_RAWFIELD_CLASS);
+  expect(() => personShader(legacy, { person: 's0028', bundle })).toThrow(/W global/);
 });
 
 it('rechaza el sampler 17 en ECHO usando el contrato real intacto', () => {

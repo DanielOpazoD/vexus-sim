@@ -212,6 +212,44 @@ class WallContract(unittest.TestCase):
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'hueco'):
                 wall.require_surface_record(changed)
 
+    def test_logical_complex_requires_own_boundary_support_and_visceral_cap(self):
+        record = self.surface_record()
+        record['boundaries'][2]['value'] = 29.
+        record['surfaceEvidence'].update(visceralStopMm=32., boundarySupportMm=[[17, 19], [28, 30]])
+        wall.require_logical_surface_record(record)
+        for key, value in [('boundarySupportMm', [[10, 12], [28, 30]]),
+                           ('boundarySupportMm', [[15, 20], [28, 30]]), ('visceralStopMm', 28.)]:
+            changed = copy.deepcopy(record)
+            changed['surfaceEvidence'][key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'perfil|órgano'):
+                wall.require_logical_surface_record(changed)
+
+        changed = copy.deepcopy(record)
+        changed['boundaries'][2]['value'] = 30.
+        with self.assertRaisesRegex(ValueError, 'interfaz'):
+            wall.require_logical_surface_record(changed)
+
+    def test_logical_gradient_needs_source_costal_transition_and_keeps_U(self):
+        surface = np.zeros(wall.SHAPE, '<f2')
+        surface[..., :3] = np.nan
+        surface[50, 128] = [18, 29, 29, wall.encode_record(self.record())[3]]
+        surface[50, 129] = [22, 34, 34, wall.encode_record(self.record())[3]]
+        with self.assertRaisesRegex(ValueError, 'gradiente'):
+            wall.require_logical_surface(surface, {})
+        edge = {'cells': [[50, 128], [50, 129]], 'anatomy': 'source-costal-rim',
+                'sourceCostalDistanceMm': [1., 2.], 'sourceMasksSha256': 'synthetic-source'}
+        annotation = {'transitionEdges': [edge]}
+        wall.require_logical_surface(surface, annotation)
+        for key, value in [('sourceCostalDistanceMm', [1, 6.01]), ('anatomy', 'unexplained'),
+                           ('sourceMasksSha256', '')]:
+            changed = copy.deepcopy(annotation)
+            changed['transitionEdges'][0][key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'costal'):
+                wall.require_logical_surface(surface, changed)
+        surface[50, 129, :3] += 20
+        with self.assertRaisesRegex(ValueError, 'gradiente'):
+            wall.require_logical_surface(surface, annotation)
+
 
 if __name__ == '__main__':
     unittest.main()

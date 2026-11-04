@@ -26,6 +26,17 @@ SURFACE_GEOMETRY = {
     'innerInterfaceOffsetMm': 0, 'runtimeProof': False,
 }
 
+LOGICAL_SURFACE_GEOMETRY = {
+    'normal': 'unit common skin EDT gradient; 13 mm symmetric support',
+    'inverse': 'continuous bilinear normal chart; residual <=0.1 mm',
+    'organEnvelopeVoxels26': 1, 'sourceVoxelBackoffMm': .5,
+    'sourceConstraint': 'all four bilinear nodes',
+    'skeleton': 'source O material; never muscle; not a visceral stop',
+    'neighborLimitMm': 3, 'costalTransitionLimitMm': 12.0625,
+    'costalSourceDistanceMaxMm': 6, 'innerInterfaceOffsetMm': 0,
+    'runtimeProof': False,
+}
+
 
 def load_capacity():
     spec = importlib.util.spec_from_file_location('capacity', Path(__file__).with_name('s0028-capacity.py'))
@@ -93,6 +104,51 @@ def require_surface_record(record):
     stop = evidence['organSkeletonStopMm']
     if not np.isfinite(stop) or record['boundaries'][2]['value'] > stop:
         raise ValueError('órgano/esqueleto invade el intervalo de pared')
+
+
+def require_logical_surface_record(record):
+    evidence = record['surfaceEvidence']
+    if not 20 <= record['cell'][0] <= 140:
+        raise ValueError('fuera de región anotada; conservar U')
+    if record['boundaries'][2]['value'] != record['boundaries'][1]['value']:
+        raise ValueError('interfaz fina E sin extensión visceral')
+    require_surface_record({**record, 'surfaceEvidence': {
+        **evidence, 'organSkeletonStopMm': evidence['visceralStopMm']}})
+    if record['boundaries'][0]['provenance'] == 'D':
+        support = np.asarray(evidence.get('boundarySupportMm', []), dtype=float)
+        values = np.array([b['value'] for b in record['boundaries'][:2]])
+        if (support.shape != (2, 2) or not np.isfinite(support).all() or
+                np.any(support[:, 1] < support[:, 0]) or
+                np.any(support[:, 1]-support[:, 0] > 3.00001) or
+                np.any(values < support[:, 0]-.001) or
+                np.any(values > support[:, 1]+.001)):
+            raise ValueError('D sin frontera leída en su propio perfil')
+
+
+def require_logical_surface(surface, annotation):
+    """Límite 2D; cada excepción costal queda ligada a evidencia fuente externa."""
+    exceptions = {}
+    for edge in annotation.get('transitionEdges', []):
+        cells = tuple(tuple(c) for c in edge['cells'])
+        distance = np.asarray(edge['sourceCostalDistanceMm'], dtype=float)
+        if (len(cells) != 2 or edge.get('anatomy') != 'source-costal-rim' or
+                distance.shape != (2,) or not np.isfinite(distance).all() or
+                np.any(distance < 0) or np.any(distance > 6) or
+                not edge.get('sourceMasksSha256')):
+            raise ValueError('transición sin evidencia costal fuente')
+        if cells in exceptions:
+            raise ValueError('transición costal duplicada')
+        exceptions[cells] = edge
+    known = np.isfinite(surface[..., :2]).all(-1)
+    for r, c in np.argwhere(known):
+        for rr, cc in [(r+1, c), (r, (c+1) % 512)]:
+            if rr >= 181 or not known[rr, cc]:
+                continue
+            jump = float(np.max(abs(surface[r, c, :2].astype(float)-surface[rr, cc, :2].astype(float))))
+            if jump > 3:
+                edge = exceptions.get(((int(r), int(c)), (int(rr), int(cc))))
+                if edge is None or jump > LOGICAL_SURFACE_GEOMETRY['costalTransitionLimitMm']:
+                    raise ValueError('gradiente superficial sin transición anatómica documentada')
 
 
 def encode_record(record):
@@ -186,15 +242,20 @@ def export(annotation_dir, baseline_dir, out, case):
     annotation_dir, baseline_dir, out = map(Path, [annotation_dir, baseline_dir, out])
     annotation = json.loads((annotation_dir/'annotation.json').read_text())
     require_identity(annotation['source'], case)
-    if (annotation.get('method') == 'surface-own-profiles-v1' and
-            annotation.get('surfaceGeometry') != SURFACE_GEOMETRY):
+    geometry = {'surface-own-profiles-v1': SURFACE_GEOMETRY,
+                'surface-logical-complex-v2': LOGICAL_SURFACE_GEOMETRY}.get(annotation.get('method'))
+    if geometry is not None and annotation.get('surfaceGeometry') != geometry:
         raise ValueError('geometría superficial sin margen de celda finita')
     for record in annotation['records']:
         require_record(record)
         if annotation.get('method') == 'surface-own-profiles-v1':
             require_surface_record(record)
+        elif annotation.get('method') == 'surface-logical-complex-v2':
+            require_logical_surface_record(record)
     tiles = np.frombuffer((annotation_dir/'tiles.f16').read_bytes(), '<f2').reshape(TILE_SHAPE)
     surface = untile_surface(tiles)
+    if annotation.get('method') == 'surface-logical-complex-v2':
+        require_logical_surface(surface, annotation)
     expected = np.empty(SHAPE, '<f2')
     expected[..., :3], expected[..., 3] = np.nan, 0
     seen = set()
@@ -257,7 +318,7 @@ def export(annotation_dir, baseline_dir, out, case):
         'skinMm': {'value': 1.5, 'provenance': 'E'},
         'review': 'pending-owner', 'runtimeInstalled': False, 'posterior': 'U/P3',
     }
-    if annotation.get('method') == 'surface-own-profiles-v1':
+    if geometry is not None:
         descriptor['surfaceGeometry'] = annotation['surfaceGeometry']
     meta = json.dumps(descriptor, separators=(',', ':')).encode()
     header_delta = max(0, len(encoded_header)-count)

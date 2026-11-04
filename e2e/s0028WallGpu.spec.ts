@@ -36,7 +36,7 @@ test('la GPU s0028 conserva la banda D/E con identidad U y el panículo regional
   const resp = await page.evaluate(() => window.__vexusTest!.respirationParity());
   const respTag = `respiración: ${JSON.stringify(resp)}`;
   expect(resp.u, respTag).toBeGreaterThan(1000);
-  expect(resp.uMoving, respTag).toBeGreaterThan(300);
+  expect(resp.movingU, respTag).toBeGreaterThan(300);
   expect(resp.p99WeightDiffU, respTag).toBeLessThan(0.005);
   expect(resp.maxWeightDiffU, respTag).toBeLessThan(0.05);
   expect(resp.maxWeightDiffKnown, respTag).toBeLessThan(0.05);

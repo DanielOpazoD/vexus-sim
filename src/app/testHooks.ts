@@ -1683,7 +1683,7 @@ export interface RespirationParityStats {
   known: number;
   u: number;
   /** Puntos U con peso CPU > 0 (la rampa por profundidad los mueve). */
-  uMoving: number;
+  movingU: number;
   maxWeightDiffKnown: number;
   maxWeightDiffU: number;
   p99WeightDiffU: number;
@@ -1707,7 +1707,7 @@ function respirationParityStats(sim: Simulator): RespirationParityStats {
     points: points.length / 3,
     known: 0,
     u: 0,
-    uMoving: 0,
+    movingU: 0,
     maxWeightDiffKnown: 0,
     maxWeightDiffU: 0,
     p99WeightDiffU: 0,
@@ -1719,7 +1719,7 @@ function respirationParityStats(sim: Simulator): RespirationParityStats {
       dw = Math.abs(gpu[4 * i] - w);
     if (s0028InsideWall(m) === null) {
       stats.u++;
-      if (w > 0) stats.uMoving++;
+      if (w > 0) stats.movingU++;
       diffsU.push(dw);
       stats.maxWeightDiffU = Math.max(stats.maxWeightDiffU, dw);
     } else {

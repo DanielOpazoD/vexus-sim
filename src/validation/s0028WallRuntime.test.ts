@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
 import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { abdominalAtlas, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { sourceDistance } from '../anatomy/sourceVolume';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
@@ -191,6 +192,45 @@ it('cada cara y el peso respiratorio usan el gradiente analítico regional: una 
   const m: Vec3 = [-115, 44, -108],
     g = torsoDepthGradient(m, scene.torso);
   expect(wallFaceGradient(m, Interface.SkinFat, scene.torso)).toEqual([-g[0], -g[1], -g[2]]);
+});
+
+it('la vía directa de inside y la EDT sin reservas son bit a bit las de la consulta general', () => {
+  // Referencia: la EDT con su gradiente central tal como estaban antes de quitar las reservas de memoria.
+  const reference = (p: Vec3): number => {
+    const f = B.depth;
+    const at: Vec3 = [0, 0, 0];
+    let outside = 0;
+    for (let i = 0; i < 3; i++) {
+      const q = (p[i] - f.originMm[i]) / 3;
+      const a = Math.max(0, Math.min(f.dimensions[i] - 1, q));
+      at[i] = f.originMm[i] + a * 3;
+      outside += (q - a) ** 2;
+    }
+    return sourceDistance(abdominalAtlas!, at, f, B.abdominal.textureDimensions) + Math.sqrt(outside) * 3;
+  };
+  let known = 0,
+    unknown = 0;
+  for (let z = -230; z <= 75; z += 9.7)
+    for (let y = -140; y <= 150; y += 13.3)
+      for (let x = -170; x <= 170; x += 12.1) {
+        const p: Vec3 = [x, y, z];
+        expect(Object.is(torsoDepth(p, scene.torso), reference(p))).toBe(true);
+        const g = torsoDepthGradient(p, scene.torso);
+        for (let axis = 0; axis < 3; axis++) {
+          const a: Vec3 = [...p],
+            b: Vec3 = [...p];
+          a[axis] += 1.5;
+          b[axis] -= 1.5;
+          expect(Object.is(g[axis], (reference(a) - reference(b)) / 3)).toBe(true);
+        }
+        const q = s0028WallAt(p);
+        const expected = q?.kind === 'known' ? q.depthMm - q.interfaceMm : null;
+        expect(Object.is(s0028InsideWall(p), expected), JSON.stringify(p)).toBe(true);
+        if (expected === null) unknown++;
+        else known++;
+      }
+  expect(known).toBeGreaterThan(1000);
+  expect(unknown).toBeGreaterThan(1000);
 });
 
 it('el marco usa cinco puntos del mismo cero y huella rígida de 13 mm, con normal exterior', () => {

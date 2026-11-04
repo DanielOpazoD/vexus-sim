@@ -1,5 +1,5 @@
 import { anatomyBundle, S0028_BUNDLE as B } from './anatomyBundle';
-import { s0028Depth, s0028DepthGradient } from './abdominalAtlas';
+import { s0028Depth, s0028DepthGradient, s0028DepthXyz } from './abdominalAtlas';
 import { HALF } from './halfFloat';
 import { S0028_WALL_PACKAGE as P } from './s0028WallData';
 import type { Vec3 } from '../core/vec3';
@@ -224,8 +224,42 @@ export function s0028WallFaceGradient(p: Vec3, boundary: S0028Boundary): { sd: n
   return { sd: -q.depth - b, gradient: [-g[0] - v[0] + g[0] * t, -g[1] - v[1] + g[1] * t, -g[2] - v[2] + g[2] * t] };
 }
 
-/** null significa que no existe una cara interna demostrada; no es profundidad cero. */
+const known = (code: number) => Math.floor(code / 8) % 4 !== 0 && Math.floor(code / 32) % 4 !== 0 && Math.floor(code / 128) % 4 !== 0;
+
+/**
+ * null significa que no existe una cara interna demostrada; no es profundidad cero. Gemela exacta de
+ * `s0028WallAt(p).depthMm − interfaceMm` (mismas operaciones en el mismo orden) sin objetos intermedios: el 3D la
+ * pide una vez por vértice para el peso respiratorio.
+ */
 export function s0028InsideWall(p: Vec3): number | null {
-  const q = s0028WallAt(p);
-  return q?.kind === 'known' ? q.depthMm - q.interfaceMm : null;
+  if (anatomyBundle.person !== 's0028' || !buffers) return null;
+  const [x, y, z] = p;
+  const depth = s0028DepthXyz(x, y, z);
+  if (depth === undefined) return null;
+  const gx = (s0028DepthXyz(x + 1.5, y, z)! - s0028DepthXyz(x - 1.5, y, z)!) / 3,
+    gy = (s0028DepthXyz(x, y + 1.5, z)! - s0028DepthXyz(x, y - 1.5, z)!) / 3,
+    gz = (s0028DepthXyz(x, y, z + 1.5)! - s0028DepthXyz(x, y, z - 1.5)!) / 3;
+  const gg = gx * gx + gy * gy + gz * gz;
+  if (gg <= 0.000001 || depth > 6) return null;
+  const sx = x - (depth * gx) / gg,
+    sy = y - (depth * gy) / gg,
+    sz = z - (depth * gz) / gg;
+  if (sz < -210 || sz > 60) return null;
+  const tiles = buffers.tiles,
+    row = (sz + 210) / 1.5,
+    lo = Math.floor(row),
+    hi = Math.min(180, lo + 1),
+    t = row - lo;
+  const cy = HALF[tiles[16 * TILE_WORDS + 2 * lo + 1]] * (1 - t) + HALF[tiles[16 * TILE_WORDS + 2 * hi + 1]] * t;
+  const col = columnOf(Math.atan2(sy - cy, sx)),
+    cx = Math.floor(col),
+    ry = Math.min(179, Math.floor(row));
+  const base = (Math.floor(ry / 90) * 8 + Math.floor(cx / 64)) * TILE_WORDS + ((91 + (ry % 90)) * 65 + (cx % 64)) * 2;
+  if (!known(HALF[tiles[base + 1]]) || !known(HALF[tiles[base + 3]]) || !known(HALF[tiles[base + 131]]) || !known(HALF[tiles[base + 133]]))
+    return null;
+  const fx = col - cx,
+    fy = row - ry;
+  const a = HALF[tiles[base]] + fx * (HALF[tiles[base + 2]] - HALF[tiles[base]]);
+  const b = HALF[tiles[base + 130]] + fx * (HALF[tiles[base + 132]] - HALF[tiles[base + 130]]);
+  return -depth - (a + fy * (b - a));
 }

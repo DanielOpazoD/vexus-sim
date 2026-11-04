@@ -134,28 +134,31 @@ export function abdominalAtlasGradient(p: Vec3, field: number): Vec3 {
   }) as Vec3;
 }
 
-export function s0028Depth(p: Vec3): number | undefined {
+const depthAt: Vec3 = [0, 0, 0];
+/** La EDT común en (x, y, z), sin reservar memoria: la consultan el 3D por vértice y la pared por punto. */
+export function s0028DepthXyz(x: number, y: number, z: number): number | undefined {
   if (anatomyBundle.person !== 's0028' || !abdominalAtlas) return undefined;
   const f = anatomyBundle.depth;
-  const at: Vec3 = [0, 0, 0];
   let outside = 0;
   for (let i = 0; i < 3; i++) {
-    const q = (p[i] - f.originMm[i]) / 3;
+    const q = ((i === 0 ? x : i === 1 ? y : z) - f.originMm[i]) / 3;
     const a = Math.max(0, Math.min(f.dimensions[i] - 1, q));
-    at[i] = f.originMm[i] + a * 3;
+    depthAt[i] = f.originMm[i] + a * 3;
     outside += (q - a) ** 2;
   }
-  return sourceDistance(abdominalAtlas, at, f, anatomyBundle.abdominal.textureDimensions) + Math.sqrt(outside) * 3;
+  return sourceDistance(abdominalAtlas, depthAt, f, anatomyBundle.abdominal.textureDimensions) + Math.sqrt(outside) * 3;
+}
+export function s0028Depth(p: Vec3): number | undefined {
+  return s0028DepthXyz(p[0], p[1], p[2]);
 }
 export function s0028DepthGradient(p: Vec3): Vec3 | undefined {
   if (anatomyBundle.person !== 's0028' || !abdominalAtlas) return undefined;
-  return [0, 1, 2].map((i) => {
-    const a: Vec3 = [...p],
-      b: Vec3 = [...p];
-    a[i] += 1.5;
-    b[i] -= 1.5;
-    return (s0028Depth(a)! - s0028Depth(b)!) / 3;
-  }) as Vec3;
+  const [x, y, z] = p;
+  return [
+    (s0028DepthXyz(x + 1.5, y, z)! - s0028DepthXyz(x - 1.5, y, z)!) / 3,
+    (s0028DepthXyz(x, y + 1.5, z)! - s0028DepthXyz(x, y - 1.5, z)!) / 3,
+    (s0028DepthXyz(x, y, z + 1.5)! - s0028DepthXyz(x, y, z - 1.5)!) / 3,
+  ];
 }
 
 export function sourceGas(p: Vec3): boolean {

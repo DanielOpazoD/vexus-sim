@@ -4,6 +4,15 @@ import { CutMapView } from '../ui/cutMapView';
 import type { Simulator } from '../app/simulator';
 import { errorLog } from '../app/errorLog';
 import { CONVEX_C35 } from '../probe/probe';
+import { CURRENT_BUNDLE, S0028_BUNDLE } from '../anatomy/anatomyBundle';
+import type * as LoadS0028 from '../anatomy/loadS0028';
+
+// Pared y piel s0028 ya cargadas: así el envío al Worker depende sólo de la identidad de la escena.
+const auxiliary = vi.hoisted(() => ({ capacity: new ArrayBuffer(8), skin: new ArrayBuffer(4) }));
+vi.mock('../anatomy/loadS0028', async (importOriginal) => ({
+  ...(await importOriginal<typeof LoadS0028>()),
+  s0028Auxiliary: auxiliary,
+}));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -38,7 +47,7 @@ function fixture(onMapReady?: () => void) {
   const view = new CutMapView(canvas as unknown as HTMLCanvasElement, onMapReady);
   const sim = {
     patient: { id: 'normal-adult' },
-    scene: { torso: {} },
+    scene: { torso: {}, identity: CURRENT_BUNDLE },
     renderer: {
       displayedFrame: {
         n: 1,
@@ -50,6 +59,33 @@ function fixture(onMapReady?: () => void) {
   const report = vi.spyOn(errorLog, 'report');
   return { view, sim, workers, report, canvas };
 }
+
+it('el default no envía al Worker la pared ni la piel de s0028', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const init = workers[0].postMessage.mock.calls[0][0] as CutMapInit;
+  expect(init.type).toBe('init');
+  expect(init.identity).toBe(CURRENT_BUNDLE);
+  expect(init.wall).toBeUndefined();
+  expect(init.skin).toBeUndefined();
+});
+
+it('s0028 envía pared y piel sólo en la inicialización del Worker', () => {
+  const { view, sim, workers } = fixture();
+  const s0028 = { ...sim, scene: { ...sim.scene, identity: S0028_BUNDLE } } as unknown as Simulator;
+  view.draw(s0028, 1000);
+  const init = workers[0].postMessage.mock.calls[0][0] as CutMapInit;
+  expect(init.type).toBe('init');
+  expect(init.wall).toBe(auxiliary.capacity);
+  expect(init.skin).toBe(auxiliary.skin);
+  view.onSimulatorChanged({ ...s0028, scene: { ...s0028.scene }, patient: { id: 'severe-congestion' } } as unknown as Simulator);
+  view.draw({ ...s0028, scene: { ...s0028.scene }, patient: { id: 'severe-congestion' } } as unknown as Simulator, 1100);
+  const next = workers.flatMap((w) => w.postMessage.mock.calls.map((c) => c[0])).filter((m) => m.type === 'patient') as CutMapInit[];
+  for (const m of next) {
+    expect(m.wall).toBeUndefined();
+    expect(m.skin).toBeUndefined();
+  }
+});
 
 it('presenta y recibe mapas con GPU pendiente sin contar sus ticks como cuadros del watchdog', () => {
   const { view, sim, workers, report } = fixture();

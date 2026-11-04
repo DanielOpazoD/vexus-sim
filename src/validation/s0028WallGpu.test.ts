@@ -62,3 +62,11 @@ it('especializa los programas s0028 después de compactar GLSL para producción'
     expect(specialized, name).not.toMatch(/uWall\.x\s*\+\s*uWall\.y\s*\+\s*uWall\.z/);
   }
 });
+
+it('el corazón s0028 usa la normal de la cúpula para su suelo, como heartFloor en la CPU', () => {
+  // Con la normal inicial (0,1,0) el factor de pendiente max(1, −0,5/n.z) valía 1 y movía el suelo cardíaco (paridad r2b).
+  const source = personShader(PASSES.FRAG_RAWFIELD_CLASS, { person: 's0028', bundle });
+  expect(source).toMatch(
+    /if\(s28_heart\(m\)\.x<0\.0\)\{float dome=sdDome\(m,c\.n\),ifd;c\.tissue=thorax\(m,dome,c\.bd,ifd,c\.n\);return;\}/,
+  );
+});

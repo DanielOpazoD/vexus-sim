@@ -173,7 +173,7 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
     /float\s+wall\s*=\s*uWall\.x\s*\+\s*uWall\.y\s*\+\s*uWall\.z\s*;/,
     `
   vec2 lung=s28_lung(m);if(lung.x<0.0){c.tissue=T_LUNG;c.bd=-lung.x;return;}
-  if(s28_heart(m).x<0.0){vec3 normal;float dome=sdDome(m,normal),ifd;c.tissue=thorax(m,dome,c.bd,ifd,c.n);return;}
+  if(s28_heart(m).x<0.0){float dome=sdDome(m,c.n),ifd;c.tissue=thorax(m,dome,c.bd,ifd,c.n);return;}
   float wall=-depth-1000.0;`,
   );
   changed = changed.replace(

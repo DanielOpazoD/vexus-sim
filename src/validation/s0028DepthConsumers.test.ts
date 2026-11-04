@@ -15,6 +15,7 @@ import { startPointsFor } from '../app/startPoints';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { probeContact, contactCoupling, firstCrossing } from '../probe/contact';
 import type { Vec3 } from '../core/vec3';
+import { setS0028Wall, s0028InsideWall } from '../anatomy/s0028Wall';
 let scene: AnatomyScene;
 let atlas: Uint16Array;
 beforeAll(() => {
@@ -24,6 +25,8 @@ beforeAll(() => {
   setAbdominalAtlas(atlas);
   const thorax = new Uint8Array(gunzipSync(readFileSync('src/anatomy/s0028/thoracic-direct.gzip.bin')));
   setThoracicAtlas(new Uint16Array(thorax.buffer));
+  const auxiliary = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
+  setS0028Wall(auxiliary('annotation-capacity'), auxiliary('skin-polar'));
   const profile = new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin'));
   setAbdominalBody(new Float32Array(profile.buffer));
   scene = new AnatomyScene(NORMAL_ADULT);
@@ -38,7 +41,7 @@ it('profundidad B alimenta signo, magnitud, caras profundas y respiración, tamb
   for (const m of points) {
     const depth = s0028Depth(m);
     expect(torsoDepth(m, scene.torso)).toBe(depth);
-    expect(scene.insideWallMm(m)).toBe(-depth! - scene.wallThickness());
+    expect(scene.insideWallMm(m)).toBe(s0028InsideWall(m) ?? -1e3);
     expect(Number.isFinite(scene.liverInteriorMargin(m))).toBe(true);
     const g = torsoDepthGradient(m, scene.torso);
     for (const axis of [0, 1, 2]) {
@@ -49,16 +52,18 @@ it('profundidad B alimenta signo, magnitud, caras profundas y respiración, tamb
       expect(g[axis]).toBeCloseTo((torsoDepth(a, scene.torso) - torsoDepth(b, scene.torso)) / 3, 10);
     }
     for (const face of [Interface.SkinFat, Interface.DeepFascia, Interface.Peritoneum]) {
-      expect(Number.isFinite(wallFaceSd(m, face, scene.torso))).toBe(true);
-      expect(wallFaceGradient(m, face, scene.torso).every(Number.isFinite)).toBe(true);
+      if (face === Interface.SkinFat || s0028InsideWall(m) !== null) {
+        expect(Number.isFinite(wallFaceSd(m, face, scene.torso))).toBe(true);
+        expect(wallFaceGradient(m, face, scene.torso).every(Number.isFinite)).toBe(true);
+      } else expect(Number.isNaN(wallFaceSd(m, face, scene.torso))).toBe(true);
     }
   }
   // Negative: removing B must change a real consumer, rather than merely changing metadata.
-  const before = points.map((m) => scene.insideWallMm(m));
+  const before = points.map((m) => torsoDepth(m, scene.torso));
   setAbdominalAtlas(undefined);
-  expect(points.map((m) => scene.insideWallMm(m))).not.toEqual(before);
+  expect(points.map((m) => torsoDepth(m, scene.torso))).not.toEqual(before);
   setAbdominalAtlas(atlas);
-  expect(points.map((m) => scene.insideWallMm(m))).toEqual(before);
+  expect(points.map((m) => torsoDepth(m, scene.torso))).toEqual(before);
 });
 
 it('las diez poses provisionales recorren apoyo, gradiente ±1 mm, entrada cutánea y cara interna', () => {

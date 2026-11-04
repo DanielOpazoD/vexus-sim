@@ -1,4 +1,5 @@
 import type { SourceVolume } from './sourceVolume';
+import { S0028_WALL_PACKAGE } from './s0028WallData';
 export interface PersonField extends SourceVolume {
   readonly name: string;
   readonly asset: 'abdominal' | 'thoracic';
@@ -190,22 +191,15 @@ export const S0028_BUNDLE = freeze({
     sha256Gzip: '01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d',
     sha256Raw: '0aef3f322af70ec5dc3f00221ac4710756abc42f31e055d61c05044ccbc92f0e',
   },
-  capacity: {
-    rawBytes: 5671296,
-    gzipBytes: 6999,
-    sha256Gzip: 'a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836',
-    sha256Raw: '1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8',
-  },
+  capacity: S0028_WALL_PACKAGE.capacity,
   skin: {
     rawBytes: 2813952,
     gzipBytes: 947509,
     sha256Gzip: '12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e',
     sha256Raw: '04cb11ada156128218499798e92cdf74c7234cb400574c151b4cf8c3f61b1456',
   },
-  manifest: {
-    bytes: 34521,
-    sha256: 'c5624a1300f4ed7df15ab4857d796f03372583613e05111076bfda6dffe8cabd',
-  },
+  manifest: S0028_WALL_PACKAGE.manifest,
+  wall: S0028_WALL_PACKAGE.descriptor,
 } as const);
 export const CURRENT_BUNDLE = Object.freeze({ person: 'current', frameId: 'registered-las-v1', revision: 'current' } as const);
 export const LEGACY_BUNDLE = Object.freeze({ person: 'legacy', frameId: 'procedural-las-v1', revision: 'current' } as const);

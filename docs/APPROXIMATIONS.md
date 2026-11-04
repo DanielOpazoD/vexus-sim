@@ -360,6 +360,16 @@ si estuvieran calibrados. La formulación, protocolo, negativos y frontera está
 
 ### s0028: paquete B y candidato experimental (317/318)
 
+P2 r2a (320) instala únicamente la pared CPU del candidato r1c. La banda blanda
+D/E no identifica músculo; piel E1,5 mm, fascias/peritoneo e identidad muscular U.
+Cuatro soportes válidos y residual de prisma ≤1,5 mm; fuera de ese contrato queda
+U rotulado, sin interpolar a través del hueco. Una cara interna desconocida no
+comprime ni desplaza por respiración; su NaN/centinela −1000 no son anatomía.
+Es una política conservadora explícita, no una segmentación completa. El perfil
+se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas
+1,5/3 mm ni se añaden excepciones a la umbilical de 317. GPU/Worker/mapa/3D,
+paridad y pico corresponden a r2b; [migración](anatomia/migracion-s0028.md).
+
 Una persona, registro rígido único, sin HU→brillo ni etiquetas exteriores→histología. La piel
 se deriva del componente corporal mayor >−400 HU por corte, con huecos rellenos y brazos
 conectados conservados. B almacena XY RG16F en 1.024 rayos cada 0,75 mm. Exactitud sólo bajo

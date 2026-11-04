@@ -8,6 +8,8 @@ import {
   type ProbeCompression,
 } from '../anatomy/compression';
 import { torsoDepth, torsoDepthGradient, type Torso } from '../anatomy/primitives';
+import { anatomyBundle } from '../anatomy/anatomyBundle';
+import { s0028InsideWall, s0028WallAt } from '../anatomy/s0028Wall';
 import { dot, length, smoothstep, type Vec3 } from '../core/vec3';
 import { probeFrame, skinSoftness, type ProbeFrame, type ProbePose, type Transducer } from './probe';
 
@@ -108,6 +110,31 @@ export function firstCrossing(depthAt: (r: number) => number, w: number, r0: num
   return null;
 }
 
+/** No atraviesa un hueco U para encontrar una cara de otro prisma más profundo. */
+export function firstRegionalWallCrossing(insideAt: (r: number) => number | null, r0: number, r1: number): number | null {
+  let lo = r0;
+  const start = insideAt(lo);
+  if (start === null) return null;
+  if (start >= 0) return lo;
+  while (lo < r1) {
+    let hi = Math.min(lo + 1, r1);
+    const value = insideAt(hi);
+    if (value === null) return null;
+    if (value >= 0) {
+      for (let i = 0; i < 18; i++) {
+        const mid = (lo + hi) / 2,
+          v = insideAt(mid);
+        if (v === null) return null;
+        if (v >= 0) hi = mid;
+        else lo = mid;
+      }
+      return (lo + hi) / 2;
+    }
+    lo = hi;
+  }
+  return null;
+}
+
 /**
  * Primer punto de la línea E + dir·r (r ∈ [r0, r1]) dentro de la piel: la elipse del tronco (ρ = 1, donde
  * `torsoDepth` = 0), analítica. null si la línea no entra.
@@ -151,6 +178,8 @@ function skinEntry(E: Vec3, dir: Vec3, t: Torso, r0: number, r1: number): number
 
 /** La geometría de un nodo en el tronco rígido, a lo largo de su línea desde el elemento. */
 interface NodeGeometry {
+  /** Cara regional desconocida: null y nodo sin compresión/acoplamiento. */
+  regionalTarget?: number | null;
   /** Distancia a la piel (mm; < 0 la cara la hunde); null si la línea no la cruza. */
   rs: number | null;
   /** Distancia a la cara interna de la pared (mm); la de búsqueda si no llega. */
@@ -193,6 +222,22 @@ function measureFace(frame: ProbeFrame, tr: Transducer, t: Torso, W: number): Fa
     // transmitter. The negative search interval represents indentation only;
     // it must not turn an outward beam into an internal ultrasound source.
     const rs = dot(dir, frame.skinNormal) >= 0 ? null : skinEntry(E, dir, t, -60, 200);
+    if (anatomyBundle.person === 's0028') {
+      const at = (r: number): Vec3 => [E[0] + dir[0] * r, E[1] + dir[1] * r, E[2] + dir[2] * r];
+      const surface = rs === null ? undefined : s0028WallAt(at(rs));
+      const regional = surface?.kind === 'known' ? surface.interfaceMm : null;
+      const crossing =
+        rs === null || regional === null
+          ? null
+          : firstRegionalWallCrossing((r) => s0028InsideWall(at(r)), rs, rs + WALL_SEARCH_FACTOR * 80);
+      nodes.push({
+        rs,
+        rW: crossing ?? Infinity,
+        gapElevation: gapE,
+        regionalTarget: crossing === null || regional === null ? null : regional + CONTACT.wallTolMm,
+      });
+      continue;
+    }
     // a lo largo de la línea la pared mide al menos ~W: la búsqueda de su cara interna empieza cerca
     const near = rs === null ? 0 : rs + 0.9 * W;
     const rW =
@@ -208,8 +253,8 @@ function measureFace(frame: ProbeFrame, tr: Transducer, t: Torso, W: number): Fa
 
 /** Lo que le falta al nodo para apoyar con la pared paralela (mm; ≤ 0: apoya). */
 function nodeShortfall(g: NodeGeometry, wallTarget: number): number {
-  if (g.rs === null) return Infinity;
-  return Math.max(g.rW - wallTarget, g.gapElevation - CONTACT.gelMm);
+  if (g.rs === null || g.regionalTarget === null) return Infinity;
+  return Math.max(g.rW - (g.regionalTarget ?? wallTarget), g.gapElevation - CONTACT.gelMm);
 }
 
 /** Resumen del contacto (para la UI, el banco y las pruebas). */
@@ -237,13 +282,14 @@ export interface ProbeContact extends ProbeCompression {
 
 /** Contacto, marco efectivo y tabla de compresión de un cuadro, desde la pose. */
 export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeContact {
-  const W = compressionPlateMm(t);
+  const rigidFrame = probeFrame({ ...pose, lift: Math.max(0, pose.lift) }, t, tr);
+  const regional = s0028WallAt(rigidFrame.skinPoint);
+  const W = anatomyBundle.person === 's0028' ? (regional?.kind === 'known' ? regional.interfaceMm : 0) : compressionPlateMm(t);
   const target = W + CONTACT.wallTolMm;
   // la sonda se hunde a lo largo de su eje (el operador empuja el mango): el plano de imagen no cambia, solo su
   // origen baja por la línea central. Lo que el usuario aprieta (lift < 0) se suma a lo largo del mismo eje (por
   // la normal de la piel, con la sonda inclinada, alejaba la cara y deslizaba el plano fuera de sí mismo)
   const press = Math.max(0, -pose.lift);
-  const rigidFrame = probeFrame({ ...pose, lift: Math.max(0, pose.lift) }, t, tr);
   const frameAt = (indent: number): ProbeFrame => {
     const a = rigidFrame.axial;
     const move = (p: Vec3): Vec3 => [p[0] + a[0] * indent, p[1] + a[1] * indent, p[2] + a[2] * indent];
@@ -253,7 +299,10 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   // δ: el menor que hace apoyar toda la cara, con el tope de la presión
   const rigid = measureFace(frameAt(0), tr, t, W);
   const capacity = CONTACT.pressMm + CONTACT.pressSoftMm * skinSoftness(pose);
-  const maxIndent = Math.max(0, capacity - Math.max(0, rigid.penetration));
+  const maxIndent =
+    anatomyBundle.person === 's0028' && !rigid.nodes.some((g) => g.regionalTarget !== null && g.regionalTarget !== undefined)
+      ? 0
+      : Math.max(0, capacity - Math.max(0, rigid.penetration));
   let q0 = shortfall(rigid);
   let indent = 0;
   let needed = 0;
@@ -302,8 +351,9 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   const hover: number[] = [];
   const parallel: number[] = [];
   for (const g of face.nodes) {
-    if (g.rs === null) {
-      nodes.push([0, 0, target]);
+    const localTarget = g.regionalTarget ?? target;
+    if (g.rs === null || g.regionalTarget === null) {
+      nodes.push([0, 0, anatomyBundle.person === 's0028' ? 0 : target]);
       hover.push(0);
       parallel.push(0);
       continue;
@@ -312,11 +362,11 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
     // línea: se traslada entera) si el empuje alcanza; si no, el empuje se apaga dentro de la pared
     const s0 = Math.min(0, g.rs);
     const T = g.rW - g.rs;
-    const D = Math.min(Math.max(g.rW, Math.min(target, T)), target + WALL_FADE_MAX_MM);
+    const D = Math.min(Math.max(g.rW, Math.min(localTarget, T)), localTarget + WALL_FADE_MAX_MM);
     nodes.push([s0, Math.min(0, g.rW - D), D]);
     hover.push(1 - smoothstep(CONTACT.gelMm, CONTACT.gelMm + CONTACT.gelRampMm, Math.max(g.rs, g.gapElevation)));
     // la pared, respecto de la piel (un hueco de gel la baja entera, sin doblarla)
-    parallel.push(1 - smoothstep(target, target + CONTACT.wallRampMm, g.rW - Math.max(0, g.rs)));
+    parallel.push(1 - smoothstep(localTarget, localTarget + CONTACT.wallRampMm, g.rW - Math.max(0, g.rs)));
   }
   // La pared paralela, erosionada un nodo: entre un nodo que apoya y otro cuya pared se dobla, la tabla interpolada
   // ya dobla la pared (la cara interna sube 10 mm en 1°); esas líneas no acoplan. Después, un filtro [1 2 1]/4: la

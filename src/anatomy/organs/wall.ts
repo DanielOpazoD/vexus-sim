@@ -1,4 +1,6 @@
 import { referenceCartilage } from '../referenceCartilage';
+import { anatomyBundle } from '../anatomyBundle';
+import { s0028WallAt } from '../s0028Wall';
 import type { Vec3 } from '../../core/vec3';
 import { Interface } from '../interfaces';
 import { sdRib, ribShape, torsoDepth, torsoDepthGradient, type Rib, type Spine, type Torso } from '../primitives';
@@ -357,6 +359,21 @@ export function wallFaceDepth(u: number, z: number, face: Interface, t: Torso): 
  * GPU es una diferencia central y un salto en la distancia lo dispararía). Gemelo de la GLSL.
  */
 export function wallFaceSd(m: Vec3, face: Interface, t: Torso): number {
+  if (anatomyBundle.person === 's0028') {
+    if (face === Interface.SkinFat) return -torsoDepth(m, t) - 1.5;
+    const q = s0028WallAt(m);
+    if (q?.kind !== 'known') return NaN;
+    switch (face) {
+      case Interface.DeepFascia:
+        return q.depthMm - q.outerMm;
+      case Interface.Transversalis:
+        return q.depthMm - q.innerMm;
+      case Interface.Peritoneum:
+        return q.depthMm - q.interfaceMm;
+      default:
+        return NaN; // Identidad/subcapas U: ninguna interfaz analítica heredada.
+    }
+  }
   return -torsoDepth(m, t) - wallFaceDepth(wallArc(m, t), m[2], face, t);
 }
 
@@ -403,6 +420,17 @@ export function wallFaceSlope(u: number, z: number, face: Interface, t: Torso): 
  * (con el relieve, cada una son 13–23 senos). Lo usan `faceGradient` (TS y GLSL) y el eco de las copias de la pared.
  */
 export function wallFaceGradient(m: Vec3, face: Interface, t: Torso): Vec3 {
+  if (anatomyBundle.person === 's0028') {
+    const h = 0.05;
+    const derivative = (axis: number) => {
+      const a: Vec3 = [...m],
+        b: Vec3 = [...m];
+      a[axis] += h;
+      b[axis] -= h;
+      return (wallFaceSd(a, face, t) - wallFaceSd(b, face, t)) / (2 * h);
+    };
+    return [derivative(0), derivative(1), derivative(2)];
+  }
   const [fu, fz] = wallFaceSlope(wallArc(m, t), m[2], face, t);
   const gu = wallArcGradient(m, t);
   const g0 = torsoDepthGradient(m, t);

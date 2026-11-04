@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { selectAnatomy, S0028_BUNDLE } from '../anatomy/anatomyBundle';
-import { loadS0028, verifyS0028Manifest } from '../anatomy/loadS0028';
+import { loadS0028, s0028Auxiliary, verifyS0028Manifest } from '../anatomy/loadS0028';
+import { s0028SkinPoint, s0028WallSurface } from '../anatomy/s0028Wall';
+import { s0028Depth } from '../anatomy/abdominalAtlas';
 
 describe('selección anterior a escena y carga de una persona', () => {
   it('conserva el default y rechaza combinaciones incompatibles', () => {
@@ -23,5 +25,24 @@ describe('selección anterior a escena y carga de una persona', () => {
     const controller = new AbortController();
     controller.abort();
     await expect(loadS0028(controller.signal)).rejects.toThrow();
+  });
+  it('el cargador real instala pared y piel desde los buffers P1 verificados, sin otra descarga', async () => {
+    const fetched: string[] = [];
+    vi.stubGlobal('fetch', (input: URL) => {
+      const url = new URL(input);
+      url.search = '';
+      fetched.push(url.pathname);
+      return Promise.resolve(new Response(new Uint8Array(readFileSync(url)).buffer));
+    });
+    try {
+      await loadS0028(new AbortController().signal);
+      expect(fetched).toHaveLength(6);
+      expect(fetched.filter((p) => p.endsWith('annotation-capacity.gzip.bin'))).toHaveLength(1);
+      expect(s0028Auxiliary?.capacity.byteLength).toBe(5_671_296);
+      expect(s0028WallSurface(Math.PI / 2, -90)).toMatchObject({ kind: 'known', outerMm: 34.25, innerMm: 39.75 });
+      expect(Math.abs(s0028Depth(s0028SkinPoint(Math.PI / 2, -90)!)!)).toBeLessThan(0.00001);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -10,6 +10,7 @@ import {
 } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
+import { s0028SkinPoint } from './s0028Wall';
 import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 import type { Vec3 } from '../core/vec3';
 
@@ -787,6 +788,8 @@ export function torsoNormal(p: Vec3, t: Torso): Vec3 {
 
 /** Punto de la piel para un ángulo φ y altura z. */
 export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
+  const source = s0028SkinPoint(phi, z);
+  if (source) return source;
   if (t.profile) {
     const [r, , , cy] = bodySection(phi, z, t.profile);
     return [r * Math.cos(phi), cy + r * Math.sin(phi), z];

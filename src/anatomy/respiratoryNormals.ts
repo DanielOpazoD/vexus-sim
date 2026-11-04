@@ -6,6 +6,17 @@ import type { AnatomyScene } from './scene';
 
 /** Derivada analítica del mismo peso, fuera de las uniones no diferenciables del perfil torácico. */
 export function respiratoryWeightGradient(scene: AnatomyScene, m: Vec3): Vec3 {
+  if (scene.identity.person === 's0028') {
+    const h = 0.05;
+    const derivative = (axis: number): number => {
+      const a: Vec3 = [...m],
+        b: Vec3 = [...m];
+      a[axis] += h;
+      b[axis] -= h;
+      return (scene.respiratoryWeight(a) - scene.respiratoryWeight(b)) / (2 * h);
+    };
+    return [derivative(0), derivative(1), derivative(2)];
+  }
   const inside = -torsoDepth(m, scene.torso) - scene.wallThickness();
   const dx = m[0] - scene.spine.x0,
     dy = m[1] - scene.spine.y0;

@@ -1060,13 +1060,13 @@
     "guarantee": "fixed array capacity, not sufficient anatomy or future triangle count",
     "file": "annotation-capacity.gzip.bin",
     "rawBytes": 5671296,
-    "downloadBytes": 6999,
+    "downloadBytes": 95837,
     "abdominalBytes": 4491648,
     "thoracicBytes": 1179648,
-    "sha256": "1ac0b2b73598ae6f43327ff3a1a8c8c2cd5c5d2b6c21fc6e3be900a62a4920a8",
+    "sha256": "51b3c6d3cef052c961e94c77cf64189ed6ad44357c4b7510270192b5df30e40f",
     "descriptorsDecoded": true,
-    "compressionCredit": 5664297,
-    "sha256Gzip": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836",
+    "compressionCredit": 5575459,
+    "sha256Gzip": "f58e581f62b5eab1294d7591f2a8f953014cb4f4394098c503ea2725ae0e5fbf",
     "downloadRule": "measure actual gzip again after every annotation phase"
   },
   "files": [
@@ -1082,8 +1082,8 @@
     },
     {
       "file": "annotation-capacity.gzip.bin",
-      "bytes": 6999,
-      "sha256": "a8bd8cb1c243fc0b98f2fddfb3ff3c4933ddc8c3d8e6dad8527a8d4cfeaa9836"
+      "bytes": 95837,
+      "sha256": "f58e581f62b5eab1294d7591f2a8f953014cb4f4394098c503ea2725ae0e5fbf"
     },
     {
       "file": "skin-polar.gzip.bin",
@@ -1101,5 +1101,135 @@
   "depthInAbdominalAtlas": true,
   "samplersAdded": 0,
   "runtimeInstalled": false,
-  "clinicalValidation": false
+  "clinicalValidation": false,
+  "wallP2Offline": {
+    "format": "s0028-wall-regional-v1",
+    "annotationId": "s0028-P2-R1C-surface-v1",
+    "sourceSha256": "1e692c11d0a13819002987fb369cb86274411bc60d061e56b12e64f23195edfb",
+    "dimensions": [
+      512,
+      181
+    ],
+    "zMm": [
+      -210,
+      60
+    ],
+    "tileSize": [
+      65,
+      91,
+      2
+    ],
+    "placements": [
+      [
+        0,
+        0,
+        619
+      ],
+      [
+        0,
+        0,
+        621
+      ],
+      [
+        0,
+        0,
+        623
+      ],
+      [
+        0,
+        0,
+        625
+      ],
+      [
+        0,
+        0,
+        627
+      ],
+      [
+        0,
+        0,
+        629
+      ],
+      [
+        0,
+        0,
+        631
+      ],
+      [
+        0,
+        0,
+        633
+      ],
+      [
+        0,
+        0,
+        635
+      ],
+      [
+        0,
+        0,
+        637
+      ],
+      [
+        0,
+        0,
+        639
+      ],
+      [
+        0,
+        0,
+        641
+      ],
+      [
+        0,
+        0,
+        643
+      ],
+      [
+        0,
+        0,
+        645
+      ],
+      [
+        0,
+        0,
+        647
+      ],
+      [
+        0,
+        0,
+        649
+      ]
+    ],
+    "centerOffset": [
+      48,
+      0,
+      398
+    ],
+    "payloadBytes": 757844,
+    "payloadSha256": "f8e87a81ef1a3298c9c59469e0a4e7e4f83318852afe256fa7cbf135d1f61f34",
+    "channels": [
+      "grossBandOuter",
+      "grossBandInner",
+      "innerInterfaceE",
+      "regionProvenanceNearest"
+    ],
+    "code": "region[0:2]; provenance outer[3:4],inner[5:6],interface[7:8],region[9:10]; U=0 O=1 D=2 E=3",
+    "unknown": "NaN boundary, region=0; no zero fill or interpolation through U",
+    "skinMm": {
+      "value": 1.5,
+      "provenance": "E"
+    },
+    "review": "pending-owner",
+    "runtimeInstalled": false,
+    "posterior": "U/P3",
+    "surfaceGeometry": {
+      "normal": "unit common skin EDT gradient",
+      "prismResidualMaxMm": 1.5,
+      "organEnvelopeVoxels26": 2,
+      "skeletonEnvelopeVoxels26": 1,
+      "innerInterfaceOffsetMm": 0,
+      "runtimeProof": false
+    }
+  }
 }

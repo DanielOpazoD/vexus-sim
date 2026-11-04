@@ -1,4 +1,6 @@
 import { anatomyBundle } from './anatomyBundle';
+import { s0028InsideWall, s0028WallAt } from './s0028Wall';
+import { s0028SourceValue } from './s0028Source';
 import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
@@ -121,6 +123,8 @@ import {
  */
 
 export interface Classification {
+  /** P2 CPU: geometría de pared; la identidad muscular y subcapas finas siguen U. */
+  wall?: 'skin-E' | 'fat-D/E' | 'band-D/E' | 'U';
   tissue: Tissue;
   /** Distancia con signo a la interfaz más cercana relevante (mm). */
   boundaryDistance: number;
@@ -315,14 +319,14 @@ export class AnatomyScene {
       b: 105,
       zMin: this.hasAbdominalAtlas ? -440 : -300,
       zMax: 300,
-      skinMm: 2,
+      skinMm: this.identity.person === 's0028' ? 1.5 : 2,
       fatMm: fat,
       muscleMm: muscle,
       preperitonealMm: preperitonealMm(fat),
     };
     if (registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody)) {
       this.torso.profile = registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody);
-      if (this.hasAbdominalAtlas && this.torso.profile && !registeredBody) {
+      if (this.hasAbdominalAtlas && this.identity.person !== 's0028' && this.torso.profile && !registeredBody) {
         this.torso.profile = hepaticCostalBody(this.torso.profile, this.wallThickness(), this.torso.skinMm);
       }
       this.torso.y0 = -21.106195;
@@ -481,6 +485,7 @@ export class AnatomyScene {
 
   /** Distancia con signo a la cara visceral (positiva dentro del hígado, por encima de ella). */
   visceralFaceDistance(m: Vec3): number {
+    if (this.identity.person === 's0028') return -this.liverSdf(m);
     return visceralFaceDistance(m, this.visceralFace, this.torso, this.wallThickness()).d;
   }
 
@@ -490,6 +495,7 @@ export class AnatomyScene {
    * Positivo = dentro. Lo usa el árbol vascular procedural para no salir del hígado.
    */
   liverInteriorMargin(m: Vec3): number {
+    if (this.identity.person === 's0028') return -this.liverSdf(m);
     return Math.min(
       -this.liverSdf(m),
       -torsoDepth(m, this.torso) - this.wallThickness(),
@@ -541,6 +547,8 @@ export class AnatomyScene {
    * pleura parietal (gemelo GLSL `insideWallMm`). A0 busca en ella el cruce exacto de la pleura (decisión 61).
    */
   insideWallMm(m: Vec3): number {
+    // U no tiene cara interna: centinela negativo finito, sin afirmar una frontera a cero.
+    if (this.identity.person === 's0028') return s0028InsideWall(m) ?? -1e3;
     return -torsoDepth(m, this.torso) - this.wallThickness();
   }
 
@@ -549,6 +557,7 @@ export class AnatomyScene {
    * (decisión 61; gemelo GLSL `inLungCurtain`). Solo tiene sentido donde `classify` da pulmón.
    */
   inLungCurtain(m: Vec3, caliber: VesselCaliber): boolean {
+    if (this.identity.person === 's0028') return s0028SourceValue(m, 'lung').d < 0;
     return inLungCurtain(m, this.insideWallMm(m), caliber.diaphragmCaudalMm);
   }
 
@@ -557,6 +566,7 @@ export class AnatomyScene {
    * la inserción del diafragma): ahí empieza la pleura parietal (decisión 61; gemelo GLSL `inLungRecess`).
    */
   inLungRecess(m: Vec3): boolean {
+    if (this.identity.person === 's0028') return s0028SourceValue(m, 'lung').d < 0;
     return inLungRecess(m, this.insideWallMm(m));
   }
 
@@ -566,6 +576,7 @@ export class AnatomyScene {
    * `lungCurtainEdgeMm`, decisión 61).
    */
   lungEdgeMm(m: Vec3, caliber: VesselCaliber): number | null {
+    if (this.identity.person === 's0028') return null;
     return lungCurtainEdgeMm(m, caliber.diaphragmCaudalMm, diaphragmHeight(m[0], m[1], this.diaphragm, this.torso));
   }
 
@@ -574,7 +585,7 @@ export class AnatomyScene {
    * las vísceras, 0 en pared, costillas y columna (B.4, [EXTRAPOLACIÓN PROPIA]).
    */
   respiratoryWeight(m: Vec3): number {
-    const inside = -torsoDepth(m, this.torso) - this.wallThickness();
+    const inside = this.insideWallMm(m);
     const wWall = smoothstep(0, 25, inside);
     const dSpine = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0);
     const wSpine = smoothstep(this.spine.r + 5, this.spine.r + 35, dSpine);
@@ -604,13 +615,13 @@ export class AnatomyScene {
     if (wall.final) return wall.cls;
     // la columna (PR119; recuperación provisional de la decisión 103): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido blando de
     // alrededor, la cara de su cortical
-    const d = spineDistances(m, this.spine);
+    const d = this.identity.person === 's0028' ? { bone: 1e3, disc: 1e3, body: 1e3 } : spineDistances(m, this.spine);
     if (d.bone < 0) return { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -d.bone };
     const c: Classification =
       d.disc < 0
         ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
         : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm, d.bone);
-    const result = withSpineFace(c, d.bone, d.body, d.disc);
+    const result = this.identity.person === 's0028' ? c : withSpineFace(c, d.bone, d.body, d.disc);
     if (this.hasAbdominalAtlas && thoracicAtlas) {
       const q = thoracicValue(m);
       // Cortex belongs to adjacent soft tissue even when the registered rib
@@ -641,11 +652,22 @@ export class AnatomyScene {
     wallMm: number,
     spineDistance: number,
   ): Classification {
-    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
+    const isS0028 = this.identity.person === 's0028';
+    if (isS0028) {
+      const lung = s0028SourceValue(m, 'lung');
+      if (lung.d < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -lung.d };
+      // P7 conserva los interiores cardíacos E vigentes, limitados por la máscara de esta persona.
+      if (s0028SourceValue(m, 'heart').d < 0) {
+        const [dome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
+        const t = thorax(m, dome, heartFloor(dome, slope));
+        return { ...NONE, tissue: t.tissue, boundaryDistance: t.bd };
+      }
+    }
+    const curtain = withCurtain && !isS0028 ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
     if (tube && tube.interface !== Interface.IvcLumen) return tube;
-    const [dDome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
+    const [dDome, slope] = isS0028 ? [1e3, 1] : sdDiaphragmSlope(m, this.diaphragm, this.torso);
     const floor = heartFloor(dDome, slope);
     // la VCI que entra en la aurícula derecha (decisión 85): dentro de ella no hay pared que dibujar (antes daba un eco de
     // pared brillante y seguía como un anillo dentro de la cavidad): su pared es sangre de la aurícula y su luz conserva el
@@ -697,7 +719,7 @@ export class AnatomyScene {
       const abdomen = abdomenQuery(m);
       if (abdomen) return { ...NONE, ...abdomen };
     }
-    const liver = this.classifyLiver(m, dDome, -depth - wallMm, kidney, dGb - this.gallbladderWallMm);
+    const liver = this.classifyLiver(m, dDome, isS0028 ? 1e3 : -depth - wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, hígado, pared, grasa perirrenal, gas; el corazón queda por encima del diafragma); como en el hígado, no
@@ -707,13 +729,19 @@ export class AnatomyScene {
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
+    if (isS0028) {
+      const muscle = s0028SourceValue(m, 'posteriorMuscle');
+      if (muscle.d < 0 && muscle.label > 0)
+        return { ...NONE, tissue: muscle.label <= 2 ? Tissue.Psoas : Tissue.Muscle, boundaryDistance: -muscle.d };
+      return { ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' };
+    }
     const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
     const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm, this.hasAbdominalAtlas ? m : retroPoint);
     bd = Math.max(0, Math.min(bd, dRetro, spineDistance));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     if (this.hasAbdominalAtlas) {
       const gut = abdominalAtlasValue(m, 1);
-      const mesentery = this.identity.person !== 's0028' && gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
+      const mesentery = gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
       return { ...NONE, tissue: mesentery ? Tissue.MesentericFat : Tissue.UnsegmentedSoftTissue, boundaryDistance: Math.min(bd, 1) };
     }
     const q = bowelQuery(m, this.bowelRadii),
@@ -756,11 +784,13 @@ export class AnatomyScene {
       case 'tube':
         return this.bestTube(m, caliber)?.hit.d ?? null;
       case 'liverSurface': {
+        if (this.identity.person === 's0028') return this.liverSdf(m);
         const insideWallMm = -torsoDepth(m, this.torso) - this.wallThickness();
         const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
         return -Math.min(-this.liverSdf(m), dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
       }
       case 'dome':
+        if (this.identity.person === 's0028') return null;
         return sdDiaphragm(m, this.diaphragm, this.torso);
       case 'kidneyOuter':
         return Math.min(
@@ -828,9 +858,12 @@ export class AnatomyScene {
         // la pendiente de la capa (decisión 88), como la GPU: tres evaluaciones de su profundidad
         const g = wallFaceGradient(m, iface, this.torso);
         const l = Math.hypot(g[0], g[1], g[2]);
+        if (!Number.isFinite(l) || l === 0) return null;
         return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l, curvature: 0 };
       }
       if (isRibInterface(iface)) {
+        if (this.identity.person === 's0028' && iface === Interface.Perichondrium)
+          return this.numericGradient(m, (p) => s0028SourceValue(p, 'cartilage').d, 0);
         if (this.hasAbdominalAtlas && thoracicAtlas) {
           const f = thoracicFrame(m);
           return { ...this.numericGradient(m, thoracicSdf, f.curvature), axis: f.axis };
@@ -904,6 +937,57 @@ export class AnatomyScene {
    * su pericondrio. El hueso no dibuja cara (su cortical la dibuja el tejido blando de fuera).
    */
   private classifyWall(m: Vec3, d: number): { final: true; cls: Classification } | { final: false; wallMm: number } {
+    if (this.identity.person === 's0028') {
+      if (d < 1.5)
+        return {
+          final: true,
+          cls: {
+            ...NONE,
+            tissue: Tissue.Skin,
+            boundaryDistance: Math.min(d, 1.5 - d),
+            interface: Interface.SkinFat,
+            interfaceDistance: 1.5 - d,
+            wall: 'skin-E',
+          },
+        };
+      for (const name of ['thoracicBone', 'lumbarSacralBone', 'sacrum', 'cartilage']) {
+        const source = s0028SourceValue(m, name);
+        if (source.d < 0)
+          return {
+            final: true,
+            cls: {
+              ...NONE,
+              tissue:
+                name === 'cartilage'
+                  ? Tissue.Cartilage
+                  : (name === 'lumbarSacralBone' && source.label <= 5) ||
+                      (name === 'thoracicBone' && thoracicMaterial(source.label) === 'vertebra')
+                    ? Tissue.Vertebra
+                    : Tissue.Bone,
+              boundaryDistance: -source.d,
+              ...(name === 'cartilage' ? { interface: Interface.Perichondrium, interfaceDistance: -source.d } : {}),
+            },
+          };
+      }
+      const q = s0028WallAt(m);
+      if (q?.kind !== 'known' || q.depthMm >= q.interfaceMm)
+        return { final: false, wallMm: d - (q?.kind === 'known' ? q.depthMm - q.interfaceMm : 1e3) };
+      const fat = q.depthMm < q.outerMm;
+      const outer = fat ? 1.5 : q.outerMm,
+        inner = fat ? q.outerMm : q.innerMm;
+      // Banda blanda D/E, no músculo segmentado. No se inventan Scarpa, oblicuos ni grasa preperitoneal.
+      return {
+        final: true,
+        cls: {
+          ...NONE,
+          tissue: fat ? Tissue.Fat : Tissue.UnsegmentedSoftTissue,
+          boundaryDistance: Math.max(0, Math.min(q.depthMm - outer, inner - q.depthMm)),
+          interface: fat ? Interface.DeepFascia : Interface.Peritoneum,
+          interfaceDistance: Math.abs(inner - q.depthMm),
+          wall: fat ? 'fat-D/E' : 'band-D/E',
+        },
+      };
+    }
     const torso = this.torso;
     const skin = torso.skinMm;
     const wall = skin + torso.fatMm + torso.muscleMm;

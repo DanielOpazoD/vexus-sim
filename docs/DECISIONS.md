@@ -10217,3 +10217,37 @@ perfiles propios. Quince láminas finales y dos diagnósticas abiertas, con list
 vacía y hashes registrados. Cierre serial, exclusiones CGAL preexistentes, mediciones
 y rutas en [evidencia P2](evidence/s0028-p2/README.md). No hay agentes, push, PR, gh,
 stash, puerto 5174 ni avance al runtime.
+
+**Ronda P2 r2a, CPU (03-11-2026).** Se autoriza por separado el paso de cero y
+consumidores CPU, manteniendo el candidato reemplazable y esta decisión pendiente
+del propietario. `install-s0028-wall.ts` instala reserva/manifiesto y regenera sus
+metadatos; cambiar la anotación no requiere editar el lector. `setS0028Wall` usa
+vistas sobre los buffers P1: atlas/reserva RAW/tórax +0 B. No se regeneran mallas.
+
+`torsoSkinPoint` busca cero EDT a φ/z fijos desde el perfil s0028. Los cinco apoyos
+de la huella rígida de 13 mm conservan todas las poses. Se desactiva `hepaticCostalBody`.
+Clasificación, caras, contacto/compresión y peso/gradiente respiratorio leen la
+misma cara regional. Se conserva hueso, cartílago, pulmón y músculo posterior fuente;
+autóctonos no se llaman QL. El hígado fuente no se recorta con W/cúpula de otra anatomía.
+La entrada renal histórica −25,5 mm era interior, no exterior; en la cara de
+`main` `8ee9fbd` se mide −17,129599 mm EDT, otra base y métrica, sin mover la pose.
+
+Política U: cuatro soportes geométricos válidos antes de interpolar, identidad
+muscular U independiente de las fronteras D/E, sin fascias analíticas inventadas.
+Un hueco o proyección sin prueba no tiene cara interna; contacto no atraviesa U,
+no comprime nodos sin soporte, y el peso respiratorio es cero allí. Las interfaces
+ausentes son NaN y `insideWallMm` usa −1000 como centinela, nunca como distancia
+anatómica. El fondo sin máscara sigue tejido blando no segmentado rotulado U,
+sin aire ni órgano ni anillo muscular generado por ausencia/saturación.
+
+En diez planos de 75.027 píxeles, U de celdas ocupa 6,82–15,46 %; geometría no
+acreditada total 63,28–78,57 % al incluir proyección/dominio y zonas profundas.
+La pared ocupa cero píxeles de máscaras viscerales o esqueléticas en cada plano;
+no acredita todo el volumen. Las diez láminas TAC/main/CPU están abiertas, con
+casillas vacías. Cobertura/continuidad r1c siguen fallidas, intercostal P8 bloqueada.
+Descarga 20.243.190 B; build CPU 1.037.124/1.070.080 B JS. Dos contratos iniciales
+rojos y ocho mutantes rechazados; default idéntico a main en 82.251 puntos y diez
+marcos. Ocho fuentes GLSL por variante idénticas a main; sus techos no cambian.
+La ruta GPU, subida de tiles, Worker/mapa/3D común, paridad y pico Metal ≤2 GB
+quedan para r2b; no se acredita render ecográfico ni aceptación P2.
+[Informe y cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).

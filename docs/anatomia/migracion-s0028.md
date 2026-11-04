@@ -9,6 +9,46 @@ La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, defaul
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
 
+## P2 r2a: cero y consumidores CPU, revisión pendiente (320)
+
+Sólo `?abdomen=s0028`. El default conserva exactamente clasificación/consumidores
+de `origin/main` `8ee9fbd` en 82.251 puntos y diez marcos de sonda. El candidato
+r1c se instala en la reserva P1 por vistas, sin duplicar atlas ni añadir RAW;
+`tools/anatomy/install-s0028-wall.ts /ruta/al/package` regenera metadatos, dos
+activos y el hash de procedencia de las mallas, conservando todos sus bytes.
+Dos repeticiones son idénticas; marco ajeno rechazado antes de escribir.
+
+Piel común EDT, cinco puntos/13 mm, φ/z/yaw/rock/tilt/lift intactos. El perfil de
+otra anatomía ya no ajusta la pared s0028 mediante `hepaticCostalBody`. Las
+fronteras regionales sustituyen W en clasificación, contacto/compresión,
+respiración y caras. El contorno hepático fuente conserva su geometría sin
+recorte por pared o cúpula procedurales. Esqueleto, cartílago, pulmón y músculos
+posteriores etiquetados por la fuente permanecen, sin inventar QL ni anillo renal.
+
+U nunca es aire ni una etiqueta de órgano. Sólo se interpola con cuatro soportes
+geométricos válidos; identidad muscular U no invalida una medida D/E de banda
+blanda. Sin cara acreditada, el cruce se aborta al llegar a U, no hay compresión
+del nodo ni respiración local. El interior no identificado sigue tejido blando
+no segmentado U. Las subcapas finas y el posterior no anotado siguen U/P3.
+Las mallas comparten su Float32Array fuente y `release()` conserva reposo exacto.
+
+Diez planos TAC/main/r2a, 75.027 píxeles físicos cada uno: pared sobre máscara
+visceral/esquelética 0/0 en cada ventana, no prueba de contención volumétrica.
+U de celdas por ventana (% del plano): subxiphoid 11,27; epigastric 6,82;
+intercostal 14,72; subcostal 7,45; flank 8,46; portal 15,46; portalTrunk 8,42;
+renal 8,47; hepatorenal 9,35; portalSubcostal 8,88. La geometría no acreditada
+total, incluyendo fallos de proyección/dominio y regiones profundas, es
+63,28–78,57 %: se declara por separado, sin presentarla como cobertura aprobada.
+
+Descarga medida 20.243.190 B; JS 1.037.124 B, margen 32.956 B. Atlas, reserva
+RAW y tórax +0 B, sin mover techos ni resolución. Ocho fuentes GLSL por variante
+idénticas a main; tests y ocho mutantes negativos en la evidencia. La integración
+GPU, la distribución de pared/piel al Worker y el mapa/3D común, paridad,
+primer cuadro/JIT y pico Metal ≤2 GB son trabajo r2b. Esta entrega CPU no acepta
+la anotación: cobertura/continuidad r1c y revisión del propietario siguen pendientes.
+[Láminas abiertas, hashes, métricas y cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+No ecografía, CI remota, PR ni validación clínica.
+
 ## P2 r1c: superficie procesada y puertas pendientes (320)
 
 **Pendiente de revisión del propietario. La anotación continua sigue incompleta.**

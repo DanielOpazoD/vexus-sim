@@ -1,4 +1,18 @@
-# P2 r1c: superficie completa procesada, continuidad pendiente
+# P2: pared s0028, revisión del propietario pendiente
+
+## R2a: cero y consumidores CPU
+
+El paso CPU usa el formato r1c como paquete reemplazable. No incorpora GPU ni
+declara aprobada su anotación. [Informe r2a, diez láminas y códigos del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md),
+[métricas por ventana](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/metrics.json),
+[imágenes abiertas y hashes](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/reviewed-images.json).
+Los contratos iniciales rojos, ocho mutantes rechazados y comparación main se
+conservan allí. Descarga 20.243.190 B; JS 1.037.124 B; atlas/reserva RAW/tórax +0 B.
+U no se convierte en aire ni órgano ni anillo uniforme. Worker/GPU/mapa/3D y pico
+Metal corresponden a r2b. Casillas del propietario vacías; cobertura/continuidad
+de r1c y revisión humana siguen pendientes. Sin PR ni validación clínica.
+
+## R1c: superficie completa procesada, continuidad pendiente
 
 **Pendiente de revisión del propietario. La anotación continua no está completada.**
 ID `s0028-P2-R1C-surface-v1`, base `caca4a6`. Sólo herramientas y evidencia offline.

@@ -4,6 +4,7 @@ import { anatomyBundle, installAnatomyBundle, S0028_BUNDLE as B } from './anatom
 import { loadPinnedGzip, sha256 } from './loadAbdominalAtlas';
 import { setAbdominalAtlas } from './abdominalAtlas';
 import { setThoracicAtlas } from './thoracicAtlas';
+import { setS0028Wall } from './s0028Wall';
 
 let loading = false;
 export let s0028Auxiliary: { capacity: ArrayBuffer; skin: ArrayBuffer } | undefined;
@@ -45,6 +46,7 @@ export async function loadS0028(signal: AbortSignal): Promise<void> {
     setAbdominalBody(profile);
     setAbdominalAtlas(new Uint16Array(abdomen));
     setThoracicAtlas(new Uint16Array(thorax));
+    setS0028Wall(capacity, skin);
     s0028Auxiliary = { capacity, skin };
   } finally {
     loading = false;

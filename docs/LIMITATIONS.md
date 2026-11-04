@@ -672,6 +672,14 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 
 ## Candidato experimental s0028 (317/318)
 
+`s0028-wall-cpu-only`: P2 r2a es un paso CPU previo a la integración GPU/Worker/mapa/3D
+de r2b. La anotación r1c tiene cobertura/continuidad fallidas y revisión humana pendiente;
+no es pared ni adquisición aprobada. Los huecos quedan como tejido no segmentado U,
+sin cara interna, compresión ni respiración local. La fracción U de celdas y las
+proyecciones sin prueba se registran separadamente por ventana en la
+[migración](anatomia/migracion-s0028.md). Intercostal sigue bloqueada/P8; posterior U/P3.
+No se acredita ecografía, paridad ni pico Metal nuevo con este paso CPU.
+
 P0 prepara herramientas; P1 r4c carga un candidato local sólo por `?abdomen=s0028`.
 Los identificadores de limitación del producto permanecen vigentes. [Migración](anatomia/migracion-s0028.md)
 distingue observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y

@@ -1,13 +1,58 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU y r2b GPU/Worker/3D con la regla directa (320, pendiente de revisión del propietario).**
+**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, pendiente de revisión del propietario).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## P2 r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa, revisión pendiente (320)
+
+Decisiones del propietario (04-11-2026) sobre el hallazgo de las láminas r2b. La clasificación no cambia: una celda U
+sigue sin identidad ni interfaces.
+
+1. La sonda acopla donde toca piel (la EDT se conoce en todo el dominio), sea cual sea la celda de la carta.
+2. Un nodo cuya entrada de piel cae en celda U comprime contra la cara interna E (estimada, rotulada) del nodo conocido
+   más cercano a ≤12 mm; sin él, sólo piel y sin resistencia de pared (nodo [s₀, 0, 0], paralelismo 1, sin hundimiento
+   propio). El cruce hasta la cara interna atraviesa los huecos U que tienen E; sin E aborta y el nodo queda sólo piel.
+3. Respiración de la celda U por profundidad: smoothstep(p10, p90, −τ) con la cara interna conocida de su fila. La
+   celda D/E sigue con smoothstep(0, 25, profundidad bajo su cara interna). El reposo exacto de mallas (318) no cambia.
+
+Bloque derivado OFFLINE (`tools/anatomy/s0028-wall-derived.py`, contrato sintético `s0028-wall-derived_test.py`) en la
+reserva de pared tras el payload r1c, que no cambia (mismo SHA). Mapa E por nodo 512×181 RG16F: cara interna del nodo
+conocido más cercano por distancia euclídea entre semillas de piel y su código de desplazamiento (9.280 nodos U con E,
+p50/p90/máx 3,9/10,3/12 mm; 48.384 U sin E). Rampa por fila 181 RG16F: p10 23,2–43,2 mm y p90 34,4–73,3 mm; las filas
+sin anotar toman las anotadas más cercanas. La carga verifica cada E contra su nodo fuente y rechaza una cara sin
+fuente, una fuente U u otra cara. Sólo el contacto (CPU) usa el mapa E; la GPU lee la rampa con una lectura filtrada
+en la columna [0,0,653] del atlas, cuyo halo es relleno finito (sin NaN·0 de las teselas). Lecturas por consulta: pared
+17; peso respiratorio y su gradiente 18 (negativo con dos texelFetch: 19). Reserva de pared 1.129.256/2.113.536 B;
+atlas, RAW de reserva y tórax +0 B; descarga 20.393.770/25.000.000 B (+74.945); JS 1.058.034/1.070.080 B; manifiesto
+37.502/38.617 B; ocho techos especializados dentro, samplers ≤16, ranuras ≤138.
+
+Resultado en esta máquina (Low Power Mode, carga ajena registrada en la evidencia):
+
+- Líneas acopladas (≥0,5 de 192, pose de inicio), main / r2b / r2b-U: subxifoidea 142/94/165 · epigástrica
+  192/192/192 · intercostal 185/67/139 · subcostal 155/70/149 · flanco 84/119/144 · portal 131/11/142 · tronco portal
+  178/92/174 · renal 142/155/180 · hepatorrenal 182/118/148 · portal subcostal 167/142/174; total 1.558/1.060/1.607 de
+  1.920. Las cuatro ventanas por debajo de main lo están por la pared regional D/E doblada en un borde de la cara con
+  la presión en su tope (nodos D/E de borde, exceso 1,5–51 mm), no por U.
+- Vértices quietos al respirar: hígado 8/59.130, bazo 4/8.450; riñones, VCI, páncreas, vesícula y porta 0. Todos en
+  celda D/E dentro de su banda (0,1–3,7 mm bajo cero), ninguno U.
+- Planos de las láminas: costuras w 0↔≥0,5 dentro de órganos 0 px (r2b 286–1.183). Quedan saltos |Δw| ≥ 0,5 entre
+  vecinos del mismo tejido, 70–398 por plano, todos en la frontera D/E↔E: la rampa de la fila no es la de la cara
+  local. Medido y no instalado: con la cara E también en la respiración bajan a 0–68 por plano (decisión de r2c).
+- Paridad Metal, rejilla 192×256: en apnea con compresión, desacuerdo interior 0,000–0,002 % y 0,000 % en los píxeles
+  U; con respiración profunda (D 24–30 mm), 0,000–0,043 % y 0,000–0,036 % en U; Worker = CPU 100 %. La paridad viva de
+  r2b corrió en apnea (la app arranca en apnea espiratoria): esta es la primera con respiración.
+- Pico Metal (renderer + GPU): 1,681/1,697 GB en apnea y 1,732 GB respirando (main 8ee9fbd 1,809/1,857).
+- SwiftShader x64 con `?abdomen=s0028`: s0028Load, s0028WallGpu (normales sin caras distintas; peso respiratorio GPU/CPU
+  |Δw| ≤5,1e-5 en 3.264 puntos, 2.108 de ellos U), cutMapRafStall y aortaPulse ×4: 7/7 en 11,2 min, gpu-ready 53–61 s.
+  Las dos corridas anteriores vencieron esperas de 15 s del corte bajo carga ajena (Metal 6/6 en 34 s).
+
+[Evidencia r2b-U](../evidence/s0028-p2/README.md).
 
 ## P2 r2b: GPU, Worker y 3D con la regla directa, revisión pendiente (320)
 

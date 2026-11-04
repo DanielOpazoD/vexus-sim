@@ -10311,3 +10311,19 @@ hasta la cara interna cae en celda U, y la ecografía sale negra ahí: 1.060/1.9
 diez poses (r2a 1.061, main 1.558; portal 11/192). Acoplar los nodos U por la piel, sin exigir presión,
 daría 1.717 (ensayo aislado, compresión de esos nodos sin validar): decisión de r2c.
 [Informe y códigos del cierre serial r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md).
+
+**Ronda P2 r2b-U, contacto y respiración sobre U (04-11-2026).** Sigue pendiente del propietario; r2c la cierra.
+Decisiones del propietario sobre el hallazgo anterior, sin cambiar la clasificación (U sigue sin identidad ni
+interfaces): la sonda acopla donde toca piel, sea cual sea la celda de la carta; un nodo cuya entrada cae en celda U
+comprime contra la cara interna E (rotulada) del nodo conocido más cercano a ≤12 mm y, sin él, sólo por la piel y sin
+resistencia de pared; la celda U respira por profundidad, smoothstep(p10, p90, −τ) con la cara interna conocida de su
+fila, y la D/E como antes. Bloque derivado offline (`tools/anatomy/s0028-wall-derived.py`) en la reserva de pared tras
+el payload r1c intacto: mapa E por nodo (sólo CPU, contacto) y rampa por fila (CPU y GPU, una lectura filtrada en un
+hueco con halo finito). La carga lo verifica contra el payload; atlas, RAW de reserva y tórax +0 B; descarga +74.945 B.
+Lecturas: pared 17, peso respiratorio 18. Líneas acopladas 1.607/1.920 (main 1.558, r2b 1.060); por debajo de main,
+intercostal, subcostal, tronco portal y hepatorrenal por pared D/E doblada en un borde con la presión en su tope.
+Quietos al respirar sólo 8 vértices de hígado y 4 de bazo (celda D/E, dentro de su banda); costuras 0↔≥0,5 dentro de
+órganos 0 px; saltos |Δw| ≥ 0,5 en la frontera D/E↔E, 70–398 pares por plano (con la cara E también en la respiración
+bajarían a 0–68: medido, no instalado). Paridad Metal con respiración profunda ≤0,043 % interior y ≤0,036 % en U; la
+de r2b corrió en apnea. Pico Metal 1,732 GB respirando (main 1,857). Diez láminas abiertas, casillas vacías.
+[Informe r2b-U y códigos del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md).

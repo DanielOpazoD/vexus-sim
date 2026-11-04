@@ -129,3 +129,21 @@ r2a 1.061, r2b 1.060 de 1.920; portal 11/192). Decisión del propietario en r2c.
 [láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/review.html) y
 [mediciones compactas](measurements.json). Decisión 320 pendiente del propietario;
 sin validación clínica.
+
+## Ronda r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa
+
+Decisiones del propietario aplicadas (decisión 320, pendiente): acoplamiento por piel en todo el dominio; nodo U con
+la cara interna E del conocido más cercano a ≤12 mm o sólo piel; respiración U smoothstep(p10, p90, −τ) por fila.
+Bloque derivado offline en la reserva de pared tras el payload r1c intacto (`tools/anatomy/s0028-wall-derived.py`,
+contrato sintético): mapa E por nodo (contacto, CPU) y rampa por fila (CPU y GPU, columna [0,0,653] del atlas).
+
+Cifras de esta máquina con Low Power Mode: líneas acopladas main/r2b/r2b-U 1.558/1.060/1.607 de 1.920; vértices
+quietos hígado 8/59.130 y bazo 4/8.450 (resto 0); costuras 0↔≥0,5 dentro de órganos 0 px; saltos |Δw| ≥ 0,5 en la
+frontera D/E↔E 70–398 por plano; paridad Metal con respiración profunda ≤0,043 % (U ≤0,036 %), Worker = CPU 100 %;
+pico Metal 1,732 GB respirando (main 1,857); JS 1.058.034/1.070.080 B; descarga 20.393.770/25.000.000 B; ocho techos
+dentro; lecturas 17/18. SwiftShader x64 7/7 (gpu-ready 53–61 s; peso respiratorio GPU/CPU |Δw| ≤5,1e-5). Diez láminas TAC/CPU/GPU/cara del contacto/ecografía main y r2b-U abiertas,
+casillas vacías.
+
+[Informe r2b-U](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md),
+[láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/review.html) y
+[mediciones compactas](measurements.json) (bloque `r2bU`). Sin validación clínica.

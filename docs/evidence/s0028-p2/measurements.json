@@ -139,5 +139,80 @@
       "of": 1920
     },
     "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md"
+  },
+  "r2bU": {
+    "rule": "skin coupling everywhere; U node face = nearest known interface within 12 mm (E) or skin only; U respiration smoothstep(p10, p90, -tau) per chart row",
+    "ownerReview": "pending (decision 320)",
+    "derivedBlock": {
+      "tool": "tools/anatomy/s0028-wall-derived.py",
+      "bytes": 371412,
+      "uNodesWithE": 9280,
+      "uNodesWithoutE": 48384,
+      "eDistanceMm": {
+        "p50": 3.92,
+        "p90": 10.32,
+        "max": 12
+      },
+      "rampMm": {
+        "p10": [23.22, 43.16],
+        "p90": [34.41, 73.31]
+      },
+      "wallReserveUsedBytes": 1129256
+    },
+    "readsPerQuery": {
+      "wall": 17,
+      "respiratoryWeight": 18
+    },
+    "coupledLines": {
+      "subxiphoid": 165,
+      "epigastric": 192,
+      "intercostal": 139,
+      "subcostal": 149,
+      "flank": 144,
+      "portal": 142,
+      "portalTrunk": 174,
+      "renal": 180,
+      "hepatorenal": 148,
+      "portalSubcostal": 174
+    },
+    "coupledLinesTotal": {
+      "main": 1558,
+      "r2b": 1060,
+      "r2bU": 1607,
+      "of": 1920
+    },
+    "stillVertices": {
+      "liver": [8, 59130],
+      "spleen": [4, 8450],
+      "kidneyRight": [0, 10354],
+      "kidneyLeft": [0, 10590],
+      "inferior_vena_cava": [0, 9256],
+      "pancreas": [0, 10144],
+      "gallbladder": [0, 1104],
+      "portal_vein_and_splenic_vein": [0, 5106]
+    },
+    "seamsZeroToHalfInOrgansPx": 0,
+    "weightJumpsAtLeastHalfPerPlane": [70, 398],
+    "parityBreathingInteriorDisagreementMax": 0.00043,
+    "parityBreathingUInteriorDisagreementMax": 0.00036,
+    "workerAgreementMin": 1,
+    "metalPeakBytes": {
+      "apnea": [1681051872, 1696698640],
+      "breathing": 1731924192,
+      "mainApnea": 1809043704,
+      "mainBreathing": 1856606552
+    },
+    "jsBytes": 1058034,
+    "downloadBytes": 20393770,
+    "manifestBytes": 37502,
+    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md",
+    "swiftshaderSpecsPassed": "7/7 (third run; first two lost 15 s cut-map waits under load)",
+    "respirationGpuCpuMaxAbsDiff": {
+      "known": 5.06e-5,
+      "u": 2.69e-5,
+      "gradient": 2.38e-5,
+      "points": 3264,
+      "uPoints": 2108
+    }
   }
 }

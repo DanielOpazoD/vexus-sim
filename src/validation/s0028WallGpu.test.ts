@@ -97,3 +97,22 @@ it('la reverberación tras gas de s0028 no eleva bases negativas: sin NaN detrá
   const compact = minifyGlslBody([PASSES.FRAG_RAWFIELD], [], undefined, 'join');
   expect(personShader(compact, { person: 's0028', bundle })).not.toMatch(/pow\(\s*\(r\s*-\s*rk\)/);
 });
+
+it('la GPU s0028 pesa la celda U con la rampa por profundidad de su fila y la celda D/E como antes (gemelo de la CPU)', () => {
+  // s0028RespiratoryWall / rampAt (s0028Wall.ts): celda D/E smoothstep(0, 25, −τ − cara interna); U smoothstep(p10, p90, −τ)
+  // con la fila de la proyección recortada a [0, 180] y una lectura filtrada en la columna derivada.
+  const source = personShader(PASSES.FRAG_RAWFIELD, { person: 's0028', bundle });
+  const [x, y, z] = bundle.wallDerived.ramps.placement;
+  expect(source).toContain(
+    `vec2 s28Ramp(float row){\n  return textureLod(uAbdominalAtlas,(vec3(${x}.0+row,${y}.0,${z}.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0)),0.0).rg;\n}`,
+  );
+  expect(source).toMatch(
+    /float s28RespWall\(vec3 m\)\{\s*float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;\s*vec2 rc=s28Project\(m,depth,g,s,xy\);\s*vec4 b=s28WallSurface\(rc,o,i,e,f\);\s*if\(s28Valid\(g,s,depth,b\)\)return smoothstep\(0\.0,25\.0,-depth-b\.z\);\s*vec2 r=s28Ramp\(rc\.y\);\s*return smoothstep\(r\.x,r\.y,-depth\);\s*\}/,
+  );
+  expect(source).toContain(
+    'float respWeight(vec3 m){return s28RespWall(m)*smoothstep(uSpine.z+5.0,uSpine.z+35.0,length(m.xy-uSpine.xy));}',
+  );
+  expect(source).toMatch(/if\(s28Valid\(g,s,depth,b\)\)gi=s28Grad\(e,f,g,xy\);\s*else\{ramp=s28Ramp\(rc\.y\);inside=-depth;gi=-g;\}/);
+  // El default no cambia (hash por programa en la prueba de arriba).
+  expect(personShader(PASSES.FRAG_RAWFIELD, { person: 'current' })).not.toContain('s28Ramp');
+});

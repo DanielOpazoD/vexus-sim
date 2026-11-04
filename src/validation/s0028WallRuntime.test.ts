@@ -117,7 +117,8 @@ it('una celda D/E vale a cualquier profundidad y una celda U no vale a ninguna',
       expect(Math.sign(s0028InsideWall(p)!)).toBe(d === 60 ? 1 : -1);
       expect(Number.isFinite(wallFaceSd(p, Interface.Peritoneum, scene.torso))).toBe(true);
     }
-  // Posterior U/P3 a lo largo de su normal EDT: la celda U decide aunque cambie la profundidad.
+  // Posterior U/P3 a lo largo de su normal EDT: la celda U decide aunque cambie la profundidad. Sin cara interna; su peso
+  // respiratorio es la rampa por profundidad de su fila (r2b-U, s0028UContact.test.ts), nulo cerca de la piel.
   for (const phi of [0, 3.926991])
     for (const d of [0, 20, 60]) {
       const skin = torsoSkinPoint(phi, -200, scene.torso),
@@ -126,16 +127,15 @@ it('una celda D/E vale a cualquier profundidad y una celda U no vale a ninguna',
       const p: Vec3 = [skin[0] - (d * g[0]) / n, skin[1] - (d * g[1]) / n, skin[2] - (d * g[2]) / n];
       expect(s0028WallAt(p), `φ ${phi}, ${d} mm`).toMatchObject({ kind: 'unknown', reason: 'coverage' });
       expect(s0028InsideWall(p)).toBeNull();
-      expect(scene.respiratoryWeight(p)).toBe(0);
+      if (d < 20) expect(scene.respiratoryWeight(p)).toBe(0);
       expect(Number.isNaN(wallFaceSd(p, Interface.Peritoneum, scene.torso))).toBe(true);
       expect(wallFaceGradient(p, Interface.Peritoneum, scene.torso).every(Number.isNaN)).toBe(true);
-      expect(respiratoryWeightGradient(scene, p)).toEqual([0, 0, 0]);
     }
 });
 
 it('cada cara y el peso respiratorio usan el gradiente analítico regional: una consulta y la pendiente de su celda', () => {
   // Fórmula independiente: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|², centro de fila constante en z.
-  const centers = s0028WallUploads().at(-1)!.data;
+  const centers = s0028WallUploads().find((u) => u.offset === B.wall.centerOffset)!.data;
   const points: Vec3[] = [[-115, 44, -108], ...chartFixtures.map((f) => [f.point[0], f.point[1], f.point[2]] as Vec3)];
   for (const m of points) {
     const q = s0028WallAt(m);
@@ -257,7 +257,7 @@ it('posterior U no es aire, órgano ni anillo muscular; sus interfaces finas est
   const c = scene.classify(m, BASELINE_CALIBER);
   expect(c).toMatchObject({ tissue: Tissue.UnsegmentedSoftTissue, wall: 'U' });
   expect(Number.isNaN(wallFaceSd(m, Interface.Peritoneum, scene.torso))).toBe(true);
-  expect(scene.respiratoryWeight(m)).toBe(0);
+  expect(s0028InsideWall(m)).toBeNull();
 });
 
 it('un paquete enteramente U mantiene el fondo rotulado y nunca produce una banda NaN', () => {
@@ -273,6 +273,8 @@ it('un paquete enteramente U mantiene el fondo rotulado y nunca produce una band
       words[k] = words[k + 1] = words[k + page] = 0x7e00;
       words[k + page + 1] = 0;
     }
+  // Su bloque derivado coherente: sin nodo conocido no hay E en ningún nodo (la rampa por fila se conserva).
+  new Uint16Array(unknown, 4096 + B.wall.payloadBytes, 512 * 181 * 2).fill(0x7e00);
   try {
     setS0028Wall(unknown, skin);
     const p: Vec3 = [0, 109.03521552681923, -90];
@@ -345,6 +347,8 @@ it('rechaza NaN convertido a cero y halos corruptos; un hueco válido queda U si
     u = new Uint16Array(unknown, 4096);
   u[k] = u[k + 1] = u[k + 65 * 91 * 2] = 0x7e00;
   u[k + 65 * 91 * 2 + 1] = 0;
+  // El mismo nodo (fila 80, columna 129) en el mapa E: un U sin E, sin fuente inventada.
+  new Uint16Array(unknown, 4096 + B.wall.payloadBytes, 512 * 181 * 2).fill(0x7e00, (80 * 512 + 129) * 2, (80 * 512 + 129) * 2 + 2);
   try {
     setS0028Wall(unknown, skin);
     expect(s0028WallSurface((128.5 * 2 * Math.PI) / 512, -90)).toMatchObject({ kind: 'unknown', reason: 'coverage' });

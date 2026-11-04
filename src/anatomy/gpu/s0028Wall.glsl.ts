@@ -7,8 +7,10 @@ const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3
  * reserva P1; identidad nearest independiente de la geometría D/E. La carta y los centros se leen con texelFetch y se
  * interpolan aquí, en el orden de la CPU: los huecos U son NaN y el filtro del hardware mezcla el corte z vecino (otra
  * tesela) aun con peso 0 (NaN·0 = NaN). Consulta: 7 EDT + 2 centros + 8 esquinas = 17 lecturas; el gradiente analítico
- * usa las mismas esquinas. Sin bucles: el Newton S−dN queda offline.
+ * usa las mismas esquinas. Sin bucles: el Newton S−dN queda offline. El peso respiratorio de una celda U lee además la
+ * rampa de su fila (bloque derivado E, una lectura filtrada: 18); el mapa E del contacto sólo vive en la CPU.
  */
+const R = B.wallDerived.ramps.placement;
 export const S0028_WALL_GLSL = /* glsl */ `
 const ivec3 S28_WALL_OFF[16]=ivec3[](${offsets(B.wall.placements)});
 vec2 s28Project(vec3 p,out float depth,out vec3 g,out vec3 s,out vec2 xy){
@@ -57,6 +59,11 @@ vec4 s28WallAt(vec3 p,out bool valid){
 float s28Inside(vec3 m){bool valid;vec4 q=s28WallAt(m,valid);return valid?q.w-q.z:-1000.0;}
 // ∇(profundidad − frontera k), k: 0 externa, 1 interna, 2 interfaz: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|²;
 // k=3, piel E a 1,5 mm: −∇τ. La pendiente bilineal sale de las mismas cuatro esquinas. Gemelo: s0028WallFaceGradient.
+vec3 s28Grad(vec4 v,vec2 f,vec3 g,vec2 xy){
+  vec2 slope=s28Slope(v,f);
+  vec3 w=vec3(vec2(-xy.y,xy.x)*(81.48733086305042*slope.x/max(dot(xy,xy),0.000001)),slope.y/1.5);
+  return -g-w+g*(dot(g,w)/dot(g,g));
+}
 vec3 s28FaceGradient(vec3 p,int k,out float sd,out bool valid){
   float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;
   vec2 rc=s28Project(p,depth,g,s,xy);
@@ -65,9 +72,23 @@ vec3 s28FaceGradient(vec3 p,int k,out float sd,out bool valid){
   valid=s28Valid(g,s,depth,b);sd=-1000.0;
   if(!valid)return vec3(0.0);
   vec4 v=k==0?o:k==1?i:e;sd=-depth-s28Mix(v,f);
-  vec2 slope=s28Slope(v,f);
-  vec3 w=vec3(vec2(-xy.y,xy.x)*(81.48733086305042*slope.x/max(dot(xy,xy),0.000001)),slope.y/1.5);
-  return -g-w+g*(dot(g,w)/dot(g,g));
+  return s28Grad(v,f,g,xy);
+}
+// Rampa respiratoria de las celdas U (bloque derivado E): p10/p90 de la cara interna conocida de la fila, en la columna
+// [${R.join(',')}] del atlas. El filtro lineal a lo largo de x interpola las filas lo/hi en una lectura; el halo es relleno
+// finito (la tesela 15 acaba dos cortes antes). Gemelo: rampAt (s0028Wall.ts).
+vec2 s28Ramp(float row){
+  return textureLod(uAbdominalAtlas,(vec3(${R[0]}.0+row,${R[1]}.0,${R[2]}.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0)),0.0).rg;
+}
+// Peso de pared del enlace respiratorio sin el factor de columna (gemelo: s0028RespiratoryWall). Celda D/E: smoothstep(0,
+// 25, profundidad bajo la cara interna); U: rampa por profundidad smoothstep(p10, p90, −τ) de su fila.
+float s28RespWall(vec3 m){
+  float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;
+  vec2 rc=s28Project(m,depth,g,s,xy);
+  vec4 b=s28WallSurface(rc,o,i,e,f);
+  if(s28Valid(g,s,depth,b))return smoothstep(0.0,25.0,-depth-b.z);
+  vec2 r=s28Ramp(rc.y);
+  return smoothstep(r.x,r.y,-depth);
 }
 `;
 
@@ -79,7 +100,7 @@ export function s0028WallShader(source: string, replace: Replace): string {
     'respWeight',
     S0028_WALL_GLSL +
       `
-float respWeight(vec3 m){float inside=s28Inside(m);return smoothstep(0.0,25.0,inside)*smoothstep(uSpine.z+5.0,uSpine.z+35.0,length(m.xy-uSpine.xy));}`,
+float respWeight(vec3 m){return s28RespWall(m)*smoothstep(uSpine.z+5.0,uSpine.z+35.0,length(m.xy-uSpine.xy));}`,
   );
   changed = replace(changed, 'float', 'insideWallMm', 'float insideWallMm(vec3 m){return s28Inside(m);}');
   changed = replace(
@@ -88,12 +109,17 @@ float respWeight(vec3 m){float inside=s28Inside(m);return smoothstep(0.0,25.0,in
     'respWeightGradient',
     `
 vec3 respWeightGradient(vec3 m){
- float inside;bool valid;vec3 gi=s28FaceGradient(m,2,inside,valid);
- if(!valid)return vec3(0.0);
+ float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;
+ vec2 rc=s28Project(m,depth,g,s,xy);
+ vec4 b=s28WallSurface(rc,o,i,e,f);
+ // Celda D/E: la cara interna regional (gradiente analítico); U: la rampa por profundidad de su fila y −∇τ.
+ vec2 ramp=vec2(0.0,25.0);float inside=-depth-b.z;vec3 gi;
+ if(s28Valid(g,s,depth,b))gi=s28Grad(e,f,g,xy);
+ else{ramp=s28Ramp(rc.y);inside=-depth;gi=-g;}
  vec2 delta=m.xy-uSpine.xy;float r=length(delta);
- float a=smoothstep(uSpine.z+5.0,uSpine.z+35.0,r)*smoothstepSlope(0.0,25.0,inside);
- float b=smoothstep(0.0,25.0,inside)*smoothstepSlope(uSpine.z+5.0,uSpine.z+35.0,r)/max(r,1e-9);
- return a*gi+vec3(b*delta,0.0);
+ float a=smoothstep(uSpine.z+5.0,uSpine.z+35.0,r)*smoothstepSlope(ramp.x,ramp.y,inside);
+ float w=smoothstep(ramp.x,ramp.y,inside)*smoothstepSlope(uSpine.z+5.0,uSpine.z+35.0,r)/max(r,1e-9);
+ return a*gi+vec3(w*delta,0.0);
 }`,
   );
   changed = replace(

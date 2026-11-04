@@ -280,6 +280,16 @@ describe('Límites del shader con margen para crecer', () => {
 vec4 s28WallAt(vec3 p,out bool valid){`,
     );
     expect(newLoops(PASSES.FRAG_RAWFIELD_CLASS, newton)).toEqual(['s28Solve']);
+    // Negativo r2b-U: buscar en la GPU el nodo conocido más cercano (en lugar del mapa E y la rampa offline) vuelve a rojo.
+    const search = personShader(PASSES.FRAG_RAWFIELD_CLASS, S0028).replace(
+      /vec2 s28Ramp\(float row\)\{/,
+      `vec2 s28Ramp(float row){
+  vec2 best=vec2(1e3);
+  for(int k=-8;k<=8;k++){vec4 o,i,e;vec2 f;vec4 b=s28WallSurface(vec2(0.0,row+float(k)),o,i,e,f);if(b.w>=0.0)best=min(best,b.zz);}
+  if(best.x<1e3)return best;`,
+    );
+    expect(search).not.toBe(personShader(PASSES.FRAG_RAWFIELD_CLASS, S0028));
+    expect(newLoops(PASSES.FRAG_RAWFIELD_CLASS, search)).toEqual(['s28Ramp']);
   });
   for (const c of CASES) {
     it(`${c.id}: tubos, nodos y segmentos por tubo dentro de los límites con ≥ 20 % de margen`, () => {
@@ -579,6 +589,18 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
       expect(expandedTextureReads(graph, fn), fn).toBeLessThanOrEqual(20);
       expect(inlinedCopies(graph, fn, 's28Project'), fn).toBe(1);
     }
+    // r2b-U: el peso respiratorio y su gradiente son una consulta (17) y una lectura filtrada de la rampa U de su fila.
+    expect(expandedTextureReads(graph, 's28Ramp')).toBe(1);
+    for (const fn of ['s28RespWall', 'respWeight', 'respWeightGradient']) expect(expandedTextureReads(graph, fn), fn).toBe(18);
+    expect(inlinedCopies(graph, 'respWeight', 's28Project')).toBe(1);
+    // Negativo: interpolar la rampa con dos texelFetch (filas lo/hi) sube a 19.
+    const twoReads = glslCallGraph(
+      personShader(PASSES.FRAG_RAWFIELD, S0028).replace(
+        /vec2 s28Ramp\(float row\)\{[^}]*\}/,
+        'vec2 s28Ramp(float row){int lo=int(row);return mix(texelFetch(uAbdominalAtlas,ivec3(lo,0,653),0).rg,texelFetch(uAbdominalAtlas,ivec3(min(lo+1,180),0,653),0).rg,fract(row));}',
+      ),
+    );
+    expect(expandedTextureReads(twoReads, 'respWeight')).toBe(19);
     // Negativo: el gradiente central del candidato inicial r2b repetía seis consultas completas.
     const central = glslCallGraph(
       personShader(PASSES.FRAG_RAWFIELD, S0028).replace(

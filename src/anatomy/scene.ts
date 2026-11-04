@@ -1,5 +1,5 @@
 import { anatomyBundle } from './anatomyBundle';
-import { s0028InsideWall, s0028WallAt } from './s0028Wall';
+import { s0028InsideWall, s0028RespiratoryWall, s0028WallAt } from './s0028Wall';
 import { s0028SourceValue } from './s0028Source';
 import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
@@ -587,8 +587,8 @@ export class AnatomyScene {
    * las vísceras, 0 en pared, costillas y columna (B.4, [EXTRAPOLACIÓN PROPIA]).
    */
   respiratoryWeight(m: Vec3): number {
-    const inside = this.insideWallMm(m);
-    const wWall = smoothstep(0, 25, inside);
+    // s0028: celda D/E como la cara interna regional; U, la rampa por profundidad de su fila (s0028RespiratoryWall).
+    const wWall = this.identity.person === 's0028' ? s0028RespiratoryWall(m) : smoothstep(0, 25, this.insideWallMm(m));
     const dSpine = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0);
     const wSpine = smoothstep(this.spine.r + 5, this.spine.r + 35, dSpine);
     return wWall * wSpine;

@@ -13,7 +13,15 @@ const manifest = readFileSync(resolve(folder, 'candidate-manifest.bin'));
 // El exportador Python valida fuente, unidades, packing, halos y procedencia.
 // Este paso exige también los bytes fijados del bundle P1 antes de sustituir sus dos activos.
 const m: unknown = JSON.parse(manifest.toString());
-if (!m || typeof m !== 'object' || !('wallP2Offline' in m) || !('capacity' in m) || !('skin' in m) || !('packing' in m))
+if (
+  !m ||
+  typeof m !== 'object' ||
+  !('wallP2Offline' in m) ||
+  !('wallP2Derived' in m) ||
+  !('capacity' in m) ||
+  !('skin' in m) ||
+  !('packing' in m)
+)
   throw new Error('Paquete de pared incompleto');
 const packing = m.packing;
 if (
@@ -58,17 +66,32 @@ if (
   descriptor.payloadSha256 !== hash(raw.subarray(4096, 4096 + 757844))
 )
   throw new Error('Formato/payload de pared distinto');
+// Bloque derivado offline (s0028-wall-derived.py): E por nodo y rampa por fila, tras el payload y del mismo payload.
+const derived = m.wallP2Derived;
+const derivedStart = 4096 + 757844;
+if (
+  !object(derived) ||
+  derived.format !== 's0028-wall-derived-v1' ||
+  derived.provenance !== 'E' ||
+  derived.payloadSha256 !== descriptor.payloadSha256 ||
+  derived.offsetBytes !== 757844 ||
+  derived.bytes !== 512 * 181 * 4 + 181 * 4 ||
+  derived.sha256 !== hash(raw.subarray(derivedStart, derivedStart + 371412)) ||
+  !object(derived.ramps) ||
+  JSON.stringify(derived.ramps.placement) !== '[0,0,653]'
+)
+  throw new Error('Bloque derivado de pared distinto o de otro payload');
 writeFileSync(
   'src/anatomy/s0028WallData.ts',
   '/** Generado por tools/anatomy/install-s0028-wall.ts. Candidato reemplazable; revisión pendiente. */\n' +
     'export const S0028_WALL_PACKAGE = ' +
-    JSON.stringify({ capacity, manifest: manifestPin, descriptor: m.wallP2Offline, skin: m.skin }, null, 2) +
+    JSON.stringify({ capacity, manifest: manifestPin, descriptor: m.wallP2Offline, derived, skin: m.skin }, null, 2) +
     ' as const;\n',
 );
 copyFileSync(resolve(folder, 'candidate-manifest.bin'), 'src/anatomy/s0028/candidate-manifest.bin');
 copyFileSync(resolve(folder, 'annotation-capacity.gzip.bin'), 'src/anatomy/s0028/annotation-capacity.gzip.bin');
 // El hash de procedencia fija el bundle completo; los bytes y hashes geométricos no cambian.
-const bundle = { ...B, capacity, manifest: manifestPin, wall: m.wallP2Offline };
+const bundle = { ...B, capacity, manifest: manifestPin, wall: m.wallP2Offline, wallDerived: derived };
 const path = 'src/anatomy/s0028SurfaceData.ts';
 writeFileSync(
   path,

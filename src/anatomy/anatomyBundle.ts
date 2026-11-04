@@ -200,6 +200,7 @@ export const S0028_BUNDLE = freeze({
   },
   manifest: S0028_WALL_PACKAGE.manifest,
   wall: S0028_WALL_PACKAGE.descriptor,
+  wallDerived: S0028_WALL_PACKAGE.derived,
 } as const);
 export const CURRENT_BUNDLE = Object.freeze({ person: 'current', frameId: 'registered-las-v1', revision: 'current' } as const);
 export const LEGACY_BUNDLE = Object.freeze({ person: 'legacy', frameId: 'procedural-las-v1', revision: 'current' } as const);

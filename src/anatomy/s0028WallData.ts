@@ -2,18 +2,18 @@
 export const S0028_WALL_PACKAGE = {
   capacity: {
     rawBytes: 5671296,
-    gzipBytes: 171194,
-    sha256Gzip: '84cdb6f97094caae7151531b2b4ec1f40418721aeab10a8bcaa5a05cb0aafdf2',
-    sha256Raw: '91fc5d88a1a91ac45e2cedb16ffdef9347adb7a1530cd9d35361bfdefbbaf442',
+    gzipBytes: 171173,
+    sha256Gzip: '1c1d91ff75e39d1765fadb527230e8a1880651ceefce8f531967282c96040208',
+    sha256Raw: 'e770ca691fbcac4c85ef898e5143ff7cef14a7a6ae762828d0fc21acb1943643',
   },
   manifest: {
     bytes: 36901,
-    sha256: '442422bf2e58373f42c761d2af4869f50f88f50545e0f9b1d8f3a515a5cf3826',
+    sha256: 'f50f4ef625419fc7e1d69e38416dd11961037a1550713e245b35cfd77e583128',
   },
   descriptor: {
     format: 's0028-wall-regional-v1',
     annotationId: 's0028-P2-R1C-surface-v1',
-    sourceSha256: '33956cae24479b6cef103735077a8175b97177a8bc7d81f607d7097144506b4d',
+    sourceSha256: 'fd7e821f327874ef064c3f13e6ceb44b029bb1a9a3d10bfa58ede348b3b5009c',
     dimensions: [512, 181],
     zMm: [-210, 60],
     tileSize: [65, 91, 2],
@@ -37,7 +37,7 @@ export const S0028_WALL_PACKAGE = {
     ],
     centerOffset: [48, 0, 398],
     payloadBytes: 757844,
-    payloadSha256: '50158df95e3832e8b51275010a770ed63b47478c50deb730b21ef5c7aa0d79ed',
+    payloadSha256: '92091898ad47a9ecf3435f2abea34b40a54d7c60cdce5dd363a4a7dff5aa3107',
     channels: ['grossBandOuter', 'grossBandInner', 'innerInterfaceE', 'regionProvenanceNearest'],
     code: 'region[0:2]; provenance outer[3:4],inner[5:6],interface[7:8],region[9:10]; U=0 O=1 D=2 E=3',
     unknown: 'NaN boundary, region=0; no zero fill or interpolation through U',

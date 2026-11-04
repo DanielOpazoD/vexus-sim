@@ -89,3 +89,13 @@ R1 y el primer candidato r1c quedan intactos. R1 c anterior tenía 76,57% de cob
 salto máximo 28 mm y cinco huellas bajo 90%; no se presenta como aceptado. Sus informes
 están en la raíz externa `migration-p2-r1c`; esta revisión vive en `logical-surface-v2`.
 R2 a CPU preexistente permanece documentada en [su informe](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+
+## Ronda r2a CPU sobre el paquete v2
+
+El runtime CPU instala logical-surface-v2 conservando formato, poses y default.
+Cúpula E/P7 preservada, sin recorte hepático; U explícita, sin normal si el stencil
+cruza U. [Diez planos, fracciones U, negativos, presupuestos y códigos seriales](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+Las 117 máscaras, mallas fuente y reposo compartido permanecen. La inversa tiene
+pliegues:32.108 parches comparados,4 soportes diferentes y7 ramas alternativas,
+0 cambios grasa/banda/interior donde ambas conocidas; sin promesa de paridad global.
+GPU/Worker/mapa/3D/JIT/Metal son r2b. Decisión320 pendiente del propietario.

@@ -673,7 +673,7 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 ## Candidato experimental s0028 (317/318)
 
 `s0028-wall-cpu-only`: P2 r2a es un paso CPU previo a la integración GPU/Worker/mapa/3D
-de r2b. La anotación r1c tiene cobertura/continuidad fallidas y revisión humana pendiente;
+de r2b. Se usa logical-surface-v2, cobertura offline90,98%, revisión humana pendiente;
 no es pared ni adquisición aprobada. Los huecos quedan como tejido no segmentado U,
 sin cara interna, compresión ni respiración local. La fracción U de celdas y las
 proyecciones sin prueba se registran separadamente por ventana en la

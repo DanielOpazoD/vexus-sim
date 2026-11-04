@@ -870,7 +870,7 @@ export class AnatomyScene {
         // la pendiente de la capa (decisión 88), como la GPU: tres evaluaciones de su profundidad
         const g = wallFaceGradient(m, iface, this.torso);
         const l = Math.hypot(g[0], g[1], g[2]);
-        if (!Number.isFinite(l) || l === 0) return null;
+        if (this.identity.person === 's0028' && (!Number.isFinite(l) || l === 0)) return null;
         return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l, curvature: 0 };
       }
       if (isRibInterface(iface)) {

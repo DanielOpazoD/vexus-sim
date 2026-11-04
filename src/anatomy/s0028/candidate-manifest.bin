@@ -1060,13 +1060,13 @@
     "guarantee": "fixed array capacity, not sufficient anatomy or future triangle count",
     "file": "annotation-capacity.gzip.bin",
     "rawBytes": 5671296,
-    "downloadBytes": 171194,
+    "downloadBytes": 171173,
     "abdominalBytes": 4491648,
     "thoracicBytes": 1179648,
-    "sha256": "91fc5d88a1a91ac45e2cedb16ffdef9347adb7a1530cd9d35361bfdefbbaf442",
+    "sha256": "e770ca691fbcac4c85ef898e5143ff7cef14a7a6ae762828d0fc21acb1943643",
     "descriptorsDecoded": true,
-    "compressionCredit": 5500102,
-    "sha256Gzip": "84cdb6f97094caae7151531b2b4ec1f40418721aeab10a8bcaa5a05cb0aafdf2",
+    "compressionCredit": 5500123,
+    "sha256Gzip": "1c1d91ff75e39d1765fadb527230e8a1880651ceefce8f531967282c96040208",
     "downloadRule": "measure actual gzip again after every annotation phase"
   },
   "files": [
@@ -1082,8 +1082,8 @@
     },
     {
       "file": "annotation-capacity.gzip.bin",
-      "bytes": 171194,
-      "sha256": "84cdb6f97094caae7151531b2b4ec1f40418721aeab10a8bcaa5a05cb0aafdf2"
+      "bytes": 171173,
+      "sha256": "1c1d91ff75e39d1765fadb527230e8a1880651ceefce8f531967282c96040208"
     },
     {
       "file": "skin-polar.gzip.bin",
@@ -1105,7 +1105,7 @@
   "wallP2Offline": {
     "format": "s0028-wall-regional-v1",
     "annotationId": "s0028-P2-R1C-surface-v1",
-    "sourceSha256": "33956cae24479b6cef103735077a8175b97177a8bc7d81f607d7097144506b4d",
+    "sourceSha256": "fd7e821f327874ef064c3f13e6ceb44b029bb1a9a3d10bfa58ede348b3b5009c",
     "dimensions": [
       512,
       181
@@ -1207,7 +1207,7 @@
       398
     ],
     "payloadBytes": 757844,
-    "payloadSha256": "50158df95e3832e8b51275010a770ed63b47478c50deb730b21ef5c7aa0d79ed",
+    "payloadSha256": "92091898ad47a9ecf3435f2abea34b40a54d7c60cdce5dd363a4a7dff5aa3107",
     "channels": [
       "grossBandOuter",
       "grossBandInner",

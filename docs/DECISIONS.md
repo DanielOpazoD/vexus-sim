@@ -10222,37 +10222,57 @@ casillas vacías y hashes. Cierre serial, pmset/carga, exclusiones CGAL preexist
 y rutas en [evidencia P2](evidence/s0028-p2/README.md). Sin agentes ni operaciones remotas.
 No es validación clínica ni aceptación del propietario.
 
-**Ronda P2 r2a, CPU (03-11-2026).** Se autoriza por separado el paso de cero y
-consumidores CPU, manteniendo el candidato reemplazable y esta decisión pendiente
-del propietario. `install-s0028-wall.ts` instala reserva/manifiesto y regenera sus
-metadatos; cambiar la anotación no requiere editar el lector. `setS0028Wall` usa
-vistas sobre los buffers P1: atlas/reserva RAW/tórax +0 B. No se regeneran mallas.
+**Ronda P2 r2a, CPU (03-11-2026).** Paso CPU sobre paquete v2 reemplazable,
+sin cambiar el estado pendiente del propietario.
 
-`torsoSkinPoint` busca cero EDT a φ/z fijos desde el perfil s0028. Los cinco apoyos
-de la huella rígida de 13 mm conservan todas las poses. Se desactiva `hepaticCostalBody`.
-Clasificación, caras, contacto/compresión y peso/gradiente respiratorio leen la
-misma cara regional. Se conserva hueso, cartílago, pulmón y músculo posterior fuente;
-autóctonos no se llaman QL. El hígado fuente no se recorta con W/cúpula de otra anatomía.
-La entrada renal histórica −25,5 mm era interior, no exterior; en la cara de
-`main` `8ee9fbd` se mide −17,129599 mm EDT, otra base y métrica, sin mover la pose.
+Se instala la revisión `logical-surface-v2` exportada por r1c, conservando el ID
+`s0028-P2-R1C-surface-v1` y el formato RG16F. Snapshot y hashes en `inputs-v2/source.json`
+de la evidencia externa. Cero EDT a φ/z fijos, cinco apoyos y huella rígida de 13 mm;
+ningún parámetro de pose cambia. `hepaticCostalBody` desactivado sólo para s0028.
 
-Política U: cuatro soportes geométricos válidos antes de interpolar, identidad
-muscular U independiente de las fronteras D/E, sin fascias analíticas inventadas.
-Un hueco o proyección sin prueba no tiene cara interna; contacto no atraviesa U,
-no comprime nodos sin soporte, y el peso respiratorio es cero allí. Las interfaces
-ausentes son NaN y `insideWallMm` usa −1000 como centinela, nunca como distancia
-anatómica. El fondo sin máscara sigue tejido blando no segmentado rotulado U,
-sin aire ni órgano ni anillo muscular generado por ausencia/saturación.
+La carta invierte S−dN con normal EDT de soporte 13 mm y residual≤0,1 mm.
+Semillas espaciales de centro de banda, plano medio y piel; las semillas no deciden material.
+Cache derivado CPU 3.665.664 B, separado de atlas/reserva RAW/tórax+0 B.
+Reexportar el paquete no edita runtime ni geometría de mallas: dos instalaciones
+idénticas y marco P1 ajeno rechazado antes de escribir. Las mallas siguen compartiendo
+su Float32Array fuente y `respiratoryMotion.release()` conserva reposo exacto.
 
-En diez planos de 75.027 píxeles, U de celdas ocupa 6,82–15,46 %; geometría no
-acreditada total 63,28–78,57 % al incluir proyección/dominio y zonas profundas.
-La pared ocupa cero píxeles de máscaras viscerales o esqueléticas en cada plano;
-no acredita todo el volumen. Las diez láminas TAC/main/CPU están abiertas, con
-casillas vacías. Su paquete r1c anterior conserva los fallos de cobertura/continuidad;
-la revisión offline nueva no está instalada. Intercostal P8 bloqueada.
-Descarga 20.243.190 B; build CPU 1.037.124/1.070.080 B JS. Dos contratos iniciales
-rojos y ocho mutantes rechazados; default idéntico a main en 82.251 puntos y diez
-marcos. Ocho fuentes GLSL por variante idénticas a main; sus techos no cambian.
-La ruta GPU, subida de tiles, Worker/mapa/3D común, paridad y pico Metal ≤2 GB
-quedan para r2b; no se acredita render ecográfico ni aceptación P2.
-[Informe y cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+Clasificación, contacto/compresión, caras y respiración usan pared regional.
+La piel E mide 1,5 mm; banda D/E no equivale a músculo identificado. Identidad muscular,
+fascias y peritoneo siguen U; interfaz interna E offset 0. Esqueleto/cartílago/pulmón O
+y músculos posteriores fuente permanecen. Se conserva cúpula E/P7 detrás de los órganos,
+sin usarla para recortar el hígado. Se corrige el signo renal: −25,5 mm histórico es
+interior; la cara de main mide −17,129599 mm EDT en otra base, sin mover la pose.
+
+Política U: sólo se interpola con cuatro soportes geométricos conocidos. Sin soporte
+no hay cara ni cruce a través de U, compresión del nodo o respiración local.
+Si el stencil del gradiente toca U, no se inventa una normal: NaN/null explícitos.
+El interior no identificado queda tejido blando no segmentado rotulado U, nunca
+se deduce aire, órgano, anillo uniforme o músculo de la ausencia de datos.
+Las máscaras fuente conservan identidad propia, incluso donde la pared es U.
+
+Diez planos de 75.027 píxeles físicos: dependencia U efectiva = consulta de celda U
+que termina en clasificación U, dividida por todos los píxeles del plano.
+Por ventana (%): subxiphoid 12,89; epigastric 7,79; intercostal 11,94; subcostal 8,75; flank 12,22; portal 16,98; portalTrunk 9,55; renal 11,17; hepatorenal 16,87; portalSubcostal 10,91.
+También se publica la consulta U conservadora aunque gane una máscara fuente;
+geometría no acreditada total (incluye proyección/dominio/profundidad)=27,29–49,55%.
+Pared geométrica sobre máscara visceral:0 en cada plano, antes de precedencia material;
+no prueba todo el volumen. O puede estar incrustado en el complejo. Hay170 píxeles
+de borde nativo (0–37/ventana), fuera del SDF óseo/cartílago entre+0,0035 y+0,7255 mm;
+ninguno dentro del campo fuente. Se listan aparte, sin borrar máscaras.
+
+Auditoría independiente de 32.108 parches frente a inversa offline: 4 diferencias
+de soporte y 7 ramas de coordenadas alternativas; 0 cambios grasa/banda/interior donde
+ambas soluciones son conocidas. Se declara el límite, sin afirmar paridad global.
+Diez láminas TAC/main/CPU abiertas, seis casillas del propietario vacías y hashes.
+Cobertura offline r1c 90,98%; decisión 320 y revisión del propietario siguen pendientes.
+Intercostal/P8 y posterior U/P3 permanecen fuera de esta ronda.
+
+Descarga 20.318.825/25.000.000 B; JS 1.041.698/1.070.080 B,
+margen 28.382 B. Cache derivado separado; techo torácico 60.413.664 B,
+margen 0 y+1 B rechazado. Ocho GLSL actual/s0028 idénticos a main; techos intactos.
+Pruebas rojas de cero/perfil corporal, cúpula e inversa13 mm→verdes; diez mutantes
+rechazados. Default idéntico a main 8ee9fbd en 82.251 puntos y diez marcos.
+GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 GB quedan
+para r2b. No ecografía, validación clínica, PR, push ni CI remota.
+[Informe y códigos del cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).

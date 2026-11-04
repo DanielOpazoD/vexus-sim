@@ -362,10 +362,12 @@ si estuvieran calibrados. La formulación, protocolo, negativos y frontera está
 
 P2 r2a (320) instala únicamente la pared CPU del candidato r1c. La banda blanda
 D/E no identifica músculo; piel E1,5 mm, fascias/peritoneo e identidad muscular U.
-Cuatro soportes válidos y residual de prisma ≤1,5 mm; fuera de ese contrato queda
+Cuatro soportes válidos y residual de carta bilineal ≤0,1 mm, normal EDT con soporte13 mm; fuera de ese contrato queda
 U rotulado, sin interpolar a través del hueco. Una cara interna desconocida no
 comprime ni desplaza por respiración; su NaN/centinela −1000 no son anatomía.
-Es una política conservadora explícita, no una segmentación completa. El perfil
+La cúpula E/P7 se conserva fuera de las máscaras fuente, sin recorte hepático.
+Si el stencil toca U, su normal está ausente. La inversa tiene pliegues y no se acredita
+paridad global con la referencia offline. Es una política conservadora explícita, no una segmentación completa. El perfil
 se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas
 1,5/3 mm ni se añaden excepciones a la umbilical de 317. GPU/Worker/mapa/3D,
 paridad y pico corresponden a r2b; [migración](anatomia/migracion-s0028.md).

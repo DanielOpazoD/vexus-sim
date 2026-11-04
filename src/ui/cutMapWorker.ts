@@ -10,6 +10,7 @@ import { structureIdentity } from '../anatomy/structureIdentity';
 import { setReferenceBody } from '../anatomy/referenceBody';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
+import { setS0028Wall } from '../anatomy/s0028Wall';
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -51,6 +52,8 @@ export interface CutMapInit {
   referenceProfile?: Float32Array;
   abdominalField?: Uint16Array;
   thoracicField?: Uint16Array;
+  wall?: ArrayBuffer;
+  skin?: ArrayBuffer;
 }
 
 export interface CutMapResponse {
@@ -112,6 +115,10 @@ self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
       if (msg.type === 'init' && msg.abdominalField) {
         setAbdominalAtlas(msg.abdominalField);
         setThoracicAtlas(msg.thoracicField);
+      }
+      if (msg.type === 'init' && anatomyBundle.person === 's0028') {
+        if (!msg.wall || !msg.skin) throw new Error('Worker s0028 sin pared/piel');
+        setS0028Wall(msg.wall, msg.skin);
       }
       // Exact fitted wall from the acquisition, not a second fit without ribs.
       const scene = new AnatomyScene(msg.patient, msg.referenceProfile);

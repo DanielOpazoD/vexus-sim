@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { bootWithoutErrors, budget, withinFrames } from './support';
 
 interface WorkerEvidence {
-  initializations: Array<{ person: unknown; abdominalBytes: number; thoracicBytes: number }>;
+  initializations: Array<{ person: unknown; abdominalBytes: number; thoracicBytes: number; wallBytes: number; skinBytes: number }>;
   maps: number;
   errors: string[];
 }
@@ -43,6 +43,8 @@ test('s0028 carga una sola persona, dibuja y rechaza procedencia corrupta', asyn
           abdominalBytes:
             'abdominalField' in message && message.abdominalField instanceof Uint16Array ? message.abdominalField.byteLength : 0,
           thoracicBytes: 'thoracicField' in message && message.thoracicField instanceof Uint16Array ? message.thoracicField.byteLength : 0,
+          wallBytes: 'wall' in message && message.wall instanceof ArrayBuffer ? message.wall.byteLength : 0,
+          skinBytes: 'skin' in message && message.skin instanceof ArrayBuffer ? message.skin.byteLength : 0,
         });
       }
       return post.call(this, message, Array.isArray(transferOrOptions) ? { transfer: transferOrOptions } : transferOrOptions);
@@ -56,7 +58,13 @@ test('s0028 carga una sola persona, dibuja y rechaza procedencia corrupta', asyn
   const worker = await page.evaluate(() => window.s0028WorkerEvidence);
   expect(worker.initializations.length).toBeGreaterThan(0);
   for (const init of worker.initializations)
-    expect(init).toEqual({ person: 's0028', abdominalBytes: 132_572_160, thoracicBytes: 59_234_016 });
+    expect(init).toEqual({
+      person: 's0028',
+      abdominalBytes: 132_572_160,
+      thoracicBytes: 59_234_016,
+      wallBytes: 5_671_296,
+      skinBytes: 2_813_952,
+    });
   expect(worker.errors).toEqual([]);
   expect(assets.filter((u) => /abdominal-atlas|thoracic-atlas|abdominal-surface|thoracic-surface/.test(u))).toEqual([]);
   expect(errors).toEqual([]);

@@ -2,6 +2,7 @@ import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { maskContours } from './anatomyContour';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
 import { thoracicAtlas } from '../anatomy/thoracicAtlas';
+import { s0028Auxiliary } from '../anatomy/loadS0028';
 import type { Simulator } from '../app/simulator';
 import type { ProbeCompression } from '../anatomy/compression';
 import type { PhysiologySample } from '../physiology/engine';
@@ -482,6 +483,8 @@ export class CutMapView {
       patient: sim.patient,
       abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
       thoracicField: first ? thoracicAtlas : undefined,
+      wall: first && sim.scene.identity.person === 's0028' ? s0028Auxiliary?.capacity : undefined,
+      skin: first && sim.scene.identity.person === 's0028' ? s0028Auxiliary?.skin : undefined,
     };
     worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
       const message = ev.data;

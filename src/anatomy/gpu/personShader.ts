@@ -1,5 +1,6 @@
 import { ABDOMINAL_FIELDS } from '../abdominalAtlasData';
 import type { PersonDescriptors } from '../anatomyBundle';
+import { s0028WallShader } from './s0028Wall.glsl';
 
 /** Preflight r2: una fuente por persona. No instala clasificador ni carga de producto. */
 export function personShader(source: string, selection: { person: 'current' } | { person: 's0028'; bundle: PersonDescriptors }): string {
@@ -99,7 +100,21 @@ vec2 thoracicValue(vec3 p){
   );
   changed = changed.replace(/gut\.y\s*==\s*3\.0\s*&&\s*gut\.x\s*<\s*16\.0\s*&&\s*gut\.x\s*<\s*dLiverBase/, 'false');
   changed = changed.replace(/label\s*>=\s*5\.0\s*&&\s*label\s*<=\s*9\.0/g, 'label==4.0');
-  return changed;
+  const extra = ['sacrum', 'posteriorMuscle', 'cartilage', 'lung', 'heart']
+    .map((name) => {
+      const f = fields.find((f) => f.name === name);
+      if (!f) throw new Error('Falta campo s0028 ' + name);
+      const sampler = f.asset === 'abdominal' ? 'uAbdominalAtlas' : 'uThoracicAtlas';
+      return `vec2 s28_${name}(vec3 p){
+      vec3 q=(p-${vec(f.originMm)})/1.5,off=${vec(f.offset)},dim=${vec(f.dimensions)};
+      if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,dim-1.0)))return vec2(16.0,0.0);
+      float d=textureLod(${sampler},(off+q+0.5)/vec3(textureSize(${sampler},0)),0.0).r;
+      return vec2(d,texelFetch(${sampler},ivec3(off+floor(q+0.5)),0).g);
+    }`;
+    })
+    .join('\n');
+  changed = changed.replace('float respWeight(vec3 m)', extra + '\nfloat respWeight(vec3 m)');
+  return s0028WallShader(changed, replaceFunction);
 }
 
 function replaceFunction(source: string, type: string, name: string, replacement: string): string {

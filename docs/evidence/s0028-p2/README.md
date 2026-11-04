@@ -51,7 +51,7 @@ El candidato final sólo elimina 29 celdas E. `subset-proof.json` demuestra igua
 los intervalos retenidos e inclusión exacta; conserva el cero. 124.392 es el recuento medido de
 banda del superconjunto, no un nuevo recuento final. Las máscaras fuente se conservan intactas.
 
-`contacts.json` distingue 199 contactos limitados por órgano entre 1.084 celdas con banda <2 mm. Posterior U/P3, sin anillo renal; intercostal
+`contacts.json` distingue 199 contactos limitados por órgano entre 1131 celdas con banda <2 mm. Posterior U/P3, sin anillo renal; intercostal
 bloqueada/P8. Identidad alba/rectos/oblicuos/transverso U. Piel E 1,5 mm; fascias/peritoneo U.
 La interfaz interna E coincide con la cara interna, sin sumar 2 mm hacia la víscera.
 Los negativos se recalculan: diez anclas 700 píxeles de invasión; anillo 18–28 mm contradice

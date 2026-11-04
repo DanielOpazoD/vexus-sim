@@ -10200,7 +10200,7 @@ La primera prueba de celda finita detectó 1 conflicto visceral y 333 esqueléti
 La envolvente fuente corregida da cero en el raster de 5.110.328 vóxeles corporales
 y en 262.733 vóxeles del shell de separación de un vóxel. El candidato final sólo elimina
 29 E; la prueba exacta de subconjunto conserva ese cero sin recortar órganos.
-Hay 199 contactos limitados por órgano entre 1.084 celdas con banda menor de 2 mm, listadas en la evidencia externa.
+Hay 199 contactos limitados por órgano entre 1131 celdas con banda menor de 2 mm, listadas en la evidencia externa.
 
 El paquete externo mide 20.243.190 B, +90.919 B sobre 20.152.271 B; metadatos 2.160 B.
 Payload 757.844 B dentro de la reserva. Atlas, reserva RAW y tórax crecen 0 B.

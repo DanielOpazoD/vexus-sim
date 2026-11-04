@@ -366,7 +366,8 @@ Cuatro soportes válidos y residual de carta bilineal ≤0,1 mm, normal EDT con 
 U rotulado, sin interpolar a través del hueco. Una cara interna desconocida no
 comprime ni desplaza por respiración; su NaN/centinela −1000 no son anatomía.
 La cúpula E/P7 se conserva fuera de las máscaras fuente, sin recorte hepático.
-Si el stencil toca U, su normal está ausente. La inversa tiene pliegues y no se acredita
+Si el stencil toca U, su normal está ausente. Un conjunto sin semillas geométricas
+devuelve U explícita, sin banda NaN. La inversa tiene pliegues y no se acredita
 paridad global con la referencia offline. Es una política conservadora explícita, no una segmentación completa. El perfil
 se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas
 1,5/3 mm ni se añaden excepciones a la umbilical de 317. GPU/Worker/mapa/3D,

@@ -10250,6 +10250,8 @@ Si el stencil del gradiente toca U, no se inventa una normal: NaN/null explícit
 El interior no identificado queda tejido blando no segmentado rotulado U, nunca
 se deduce aire, órgano, anillo uniforme o músculo de la ausencia de datos.
 Las máscaras fuente conservan identidad propia, incluso donde la pared es U.
+Un paquete enteramente U no tiene semillas: devuelve coverage U con profundidad finita,
+sin banda NaN ni cara interna; prueba roja y mutante de guarda ausente rechazado.
 
 Diez planos de 75.027 píxeles físicos: dependencia U efectiva = consulta de celda U
 que termina en clasificación U, dividida por todos los píxeles del plano.
@@ -10268,10 +10270,10 @@ Diez láminas TAC/main/CPU abiertas, seis casillas del propietario vacías y has
 Cobertura offline r1c 90,98%; decisión 320 y revisión del propietario siguen pendientes.
 Intercostal/P8 y posterior U/P3 permanecen fuera de esta ronda.
 
-Descarga 20.318.825/25.000.000 B; JS 1.041.698/1.070.080 B,
-margen 28.382 B. Cache derivado separado; techo torácico 60.413.664 B,
+Descarga 20.318.825/25.000.000 B; JS 1.041.773/1.070.080 B,
+margen 28.307 B. Cache derivado separado; techo torácico 60.413.664 B,
 margen 0 y+1 B rechazado. Ocho GLSL actual/s0028 idénticos a main; techos intactos.
-Pruebas rojas de cero/perfil corporal, cúpula e inversa13 mm→verdes; diez mutantes
+Pruebas rojas de cero/perfil corporal, cúpula e inversa13 mm→verdes; once mutantes
 rechazados. Default idéntico a main 8ee9fbd en 82.251 puntos y diez marcos.
 GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 GB quedan
 para r2b. No ecografía, validación clínica, PR, push ni CI remota.

@@ -146,6 +146,31 @@ it('posterior U no es aire, órgano ni anillo muscular; sus interfaces finas est
   expect(scene.respiratoryWeight(m)).toBe(0);
 });
 
+it('un paquete enteramente U mantiene el fondo rotulado y nunca produce una banda NaN', () => {
+  const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
+  const capacity = raw('annotation-capacity'),
+    skin = raw('skin-polar');
+  const unknown = capacity.slice(0),
+    words = new Uint16Array(unknown, 4096);
+  const page = 65 * 91 * 2;
+  for (let tile = 0; tile < 16; tile++)
+    for (let cell = 0; cell < 65 * 91; cell++) {
+      const k = tile * page * 2 + cell * 2;
+      words[k] = words[k + 1] = words[k + page] = 0x7e00;
+      words[k + page + 1] = 0;
+    }
+  try {
+    setS0028Wall(unknown, skin);
+    const p: Vec3 = [0, 109.03521552681923, -90];
+    expect(s0028WallAt(p)).toMatchObject({ kind: 'unknown', reason: 'coverage' });
+    expect(scene.classify(p, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.UnsegmentedSoftTissue, wall: 'U', boundaryDistance: 0 });
+    expect(s0028InsideWall(p)).toBeNull();
+    expect(scene.respiratoryWeight(p)).toBe(0);
+  } finally {
+    setS0028Wall(capacity, skin);
+  }
+});
+
 it('el contacto no usa W del hábito y un haz exterior nunca acopla', () => {
   const pose = { phi: Math.PI / 2, z: -90, yaw: 0, rock: 0, tilt: 0, lift: 25 };
   const a = probeContact(pose, CONVEX_C35, scene.torso);

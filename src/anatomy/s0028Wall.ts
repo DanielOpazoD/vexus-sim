@@ -300,6 +300,7 @@ export function s0028WallAt(p: Vec3): S0028WallSample | undefined {
   if (!buffers || !abdominalAtlas) return { kind: 'unknown', reason: 'unloaded', depthMm: -(s0028Depth(p) ?? 0) };
   const nodes = chartNodes(),
     { seeds, order, middle, skinOrder } = chart!;
+  if (order.length === 0) return { kind: 'unknown', reason: 'coverage', depthMm: -s0028Depth(p)! };
   const index = seeds[nearestSeed(p, order, (i, axis) => seeds[i * 4 + axis]) * 4 + 3];
   let q = solveChart(p, Math.floor(index / 512), index % 512, nodes);
   if (q.error > 0.001) {

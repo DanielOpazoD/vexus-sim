@@ -21,6 +21,18 @@ export type S0028WallSample =
     };
 
 let buffers: { tiles: Uint16Array; skin: Uint16Array } | undefined;
+/** Vistas del payload verificado, para texSubImage sobre los huecos del atlas P1. */
+export function s0028WallUploads(): ReadonlyArray<{ offset: readonly number[]; size: readonly number[]; data: Uint16Array }> {
+  if (!buffers) throw new Error('Pared s0028 no cargada');
+  return [
+    ...B.wall.placements.map((offset, tile) => ({
+      offset,
+      size: B.wall.tileSize,
+      data: buffers!.tiles.subarray(tile * TILE_WORDS, (tile + 1) * TILE_WORDS),
+    })),
+    { offset: B.wall.centerOffset, size: [1, 181, 1], data: buffers.tiles.subarray(16 * TILE_WORDS) },
+  ];
+}
 let chart:
   | {
       skin: ArrayBufferLike;
@@ -147,7 +159,7 @@ export function s0028WallSurface(phi: number, z: number, depthMm = 0): S0028Wall
 }
 
 /** Carta del cero común y normales con el soporte declarado por el paquete. */
-function chartNodes(): Float32Array {
+export function s0028WallChart(): Float32Array {
   if (chart?.skin === buffers!.skin.buffer && chart.atlas === abdominalAtlas && chart.tiles === buffers!.tiles) return chart.nodes;
   const nodes = new Float32Array(512 * 181 * 6);
   const h = B.wall.surfaceGeometry.normal.includes('13 mm') ? 6.5 : 1.5;
@@ -298,7 +310,7 @@ function solveChart(p: Vec3, row: number, col: number, nodes: Float32Array): { r
 export function s0028WallAt(p: Vec3): S0028WallSample | undefined {
   if (anatomyBundle.person !== 's0028') return undefined;
   if (!buffers || !abdominalAtlas) return { kind: 'unknown', reason: 'unloaded', depthMm: -(s0028Depth(p) ?? 0) };
-  const nodes = chartNodes(),
+  const nodes = s0028WallChart(),
     { seeds, order, middle, skinOrder } = chart!;
   if (order.length === 0) return { kind: 'unknown', reason: 'coverage', depthMm: -s0028Depth(p)! };
   const index = seeds[nearestSeed(p, order, (i, axis) => seeds[i * 4 + axis]) * 4 + 3];

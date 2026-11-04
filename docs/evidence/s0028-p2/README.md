@@ -98,7 +98,7 @@ cruza U. [Diez planos, fracciones U, negativos, presupuestos y códigos seriales
 Las 117 máscaras, mallas fuente y reposo compartido permanecen. La inversa tiene
 pliegues:32.108 parches comparados,4 soportes diferentes y7 ramas alternativas,
 0 cambios grasa/banda/interior donde ambas conocidas; sin promesa de paridad global.
-GPU/Worker/mapa/3D/JIT/Metal son r2b. Decisión320 pendiente del propietario.
+GPU/Worker/mapa/3D/JIT/Metal son r2b. Decisión 320 aceptada por el propietario el 04-11-2026.
 
 ## Ronda r2b: GPU, Worker y 3D con la regla directa
 
@@ -127,12 +127,12 @@ r2a 1.061, r2b 1.060 de 1.920; portal 11/192). Decisión del propietario en r2c.
 
 [Informe r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md),
 [láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/review.html) y
-[mediciones compactas](measurements.json). Decisión 320 pendiente del propietario;
+[mediciones compactas](measurements.json). Decisión 320 aceptada por el propietario el 04-11-2026;
 sin validación clínica.
 
 ## Ronda r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa
 
-Decisiones del propietario aplicadas (decisión 320, pendiente): acoplamiento por piel en todo el dominio; nodo U con
+Decisiones del propietario aplicadas (decisión 320, aceptada el 04-11-2026): acoplamiento por piel en todo el dominio; nodo U con
 la cara interna E del conocido más cercano a ≤12 mm o sólo piel; respiración U smoothstep(p10, p90, −τ) por fila.
 Bloque derivado offline en la reserva de pared tras el payload r1c intacto (`tools/anatomy/s0028-wall-derived.py`,
 contrato sintético): mapa E por nodo (contacto, CPU) y rampa por fila (CPU y GPU, columna [0,0,653] del atlas).

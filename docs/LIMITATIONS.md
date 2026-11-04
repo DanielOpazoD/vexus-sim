@@ -673,7 +673,7 @@ Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por
 ## Candidato experimental s0028 (317/318)
 
 `s0028-wall-direct`: P2 r2b integra la pared regional en CPU, Worker del corte, 3D y GPU con la regla directa; se
-usa logical-surface-v2, cobertura offline 90,98 %, revisión humana pendiente (decisión 320); no es pared ni
+usa logical-surface-v2, cobertura offline 90,98 %, aceptada por el propietario el 04-11-2026 (decisión 320); no es pared ni
 adquisición aprobada. Los huecos quedan como tejido no segmentado U, sin cara interna para la clasificación. Para la
 sonda (r2b-U), un nodo U toma la cara E estimada del nodo conocido más cercano a ≤12 mm o acopla sólo por la piel, sin
 compresión; la respiración U es una rampa por fila (p10/p90 de la cara interna conocida), no la cara local, y salta en

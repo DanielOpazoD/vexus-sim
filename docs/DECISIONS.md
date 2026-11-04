@@ -10173,7 +10173,7 @@ en [evidencia 319](evidence/s0028-mesh/README.md); la CI remota sigue pendiente.
 Revisar propiedad exclusiva/descodificación única del buffer y aritmética entera del formato.
 Sin delegación, push, PR, stash ni gh. No es validación clínica ni aceptación P2–P8.
 
-## 320. Completar la anotación continua de pared s0028 antes del runtime [Estado: pendiente de revisión del propietario]
+## 320. Completar la anotación continua de pared s0028 antes del runtime
 
 **Contexto.** P2 r1 dejó sólo 364 celdas D de 92.672, con 62 píxeles de conflicto
 visceral en diez planos. R1c reemplaza los nueve barridos por 92.672 perfiles propios
@@ -10267,7 +10267,7 @@ Auditoría independiente de 32.108 parches frente a inversa offline: 4 diferenci
 de soporte y 7 ramas de coordenadas alternativas; 0 cambios grasa/banda/interior donde
 ambas soluciones son conocidas. Se declara el límite, sin afirmar paridad global.
 Diez láminas TAC/main/CPU abiertas, seis casillas del propietario vacías y hashes.
-Cobertura offline r1c 90,98%; decisión 320 y revisión del propietario siguen pendientes.
+Cobertura offline r1c 90,98%; decisión 320 aceptada por el propietario el 04-11-2026 (r2c).
 Intercostal/P8 y posterior U/P3 permanecen fuera de esta ronda.
 
 Descarga 20.318.825/25.000.000 B; JS 1.041.773/1.070.080 B,
@@ -10327,3 +10327,13 @@ Quietos al respirar sólo 8 vértices de hígado y 4 de bazo (celda D/E, dentro 
 bajarían a 0–68: medido, no instalado). Paridad Metal con respiración profunda ≤0,043 % interior y ≤0,036 % en U; la
 de r2b corrió en apnea. Pico Metal 1,732 GB respirando (main 1,857). Diez láminas abiertas, casillas vacías.
 [Informe r2b-U y códigos del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md).
+
+**Aceptación del propietario (04-11-2026, r2c).** El propietario revisó las láminas v2 de r1c (seis casillas: sí) y, tras
+las decisiones de r2b-U, delegó el cierre y la fusión de P2 sin nueva revisión por PR. Se aceptan la anotación
+`logical-surface-v2`, la regla directa CPU = Worker = GPU y el contacto/respiración sobre U de r2b-U. Quedan fuera de P2
+y se difieren con nombre: la zona portal/intercostal con pulmón detrás es pared torácica (P7/P8); la cara E en la
+respiración (medida, no instalada); los bordes oscuros por pared D/E doblada con la presión en su tope; la desviación
+previa de normales en Metal de `s0028WallGpu` (presente en `1f6868e`, puerta en SwiftShader). Cierre serial local sobre
+`f121ae0`: nueve etapas en 0 y `check` en 1 por un único timeout de 180 s en `examChainScalePatterns.test.ts`
+(86 s en el cierre r2b; carga 20–25 ajena durante la corrida), repetido aislado en r2c
+(`u-round/logs/rerun-examChainScalePatterns.log`). La puerta de fusión es el recibo de CI de la PR. No es validación clínica.

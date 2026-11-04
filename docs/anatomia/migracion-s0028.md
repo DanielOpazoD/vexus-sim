@@ -1,7 +1,7 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, pendiente de revisión del propietario).**
+**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
@@ -9,7 +9,7 @@ La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, defaul
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
 
-## P2 r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa, revisión pendiente (320)
+## P2 r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa, aceptada (320)
 
 Decisiones del propietario (04-11-2026) sobre el hallazgo de las láminas r2b. La clasificación no cambia: una celda U
 sigue sin identidad ni interfaces.
@@ -54,7 +54,7 @@ Resultado en esta máquina (Low Power Mode, carga ajena registrada en la evidenc
 
 [Evidencia r2b-U](../evidence/s0028-p2/README.md).
 
-## P2 r2b: GPU, Worker y 3D con la regla directa, revisión pendiente (320)
+## P2 r2b: GPU, Worker y 3D con la regla directa, aceptada (320)
 
 Sólo `?abdomen=s0028`; default conservado (hash GLSL por variante y 82.251 puntos idénticos a main 8ee9fbd).
 Regla de runtime idéntica en CPU, Worker del corte y GPU: superficie `p − τ·∇τ/|∇τ|²` sobre la EDT común,
@@ -99,7 +99,7 @@ Puertas r2b con el HEAD final (Low Power Mode activo; cifras de esta máquina, n
 
 [Evidencia r2b](../evidence/s0028-p2/README.md).
 
-## P2 r2a: cero y consumidores CPU, revisión pendiente (320)
+## P2 r2a: cero y consumidores CPU, aceptada (320)
 
 Sólo `?abdomen=s0028`; default conservado.
 Se instala la revisión `logical-surface-v2` exportada por r1c, conservando el ID
@@ -144,7 +144,7 @@ Auditoría independiente de 32.108 parches frente a inversa offline: 4 diferenci
 de soporte y 7 ramas de coordenadas alternativas; 0 cambios grasa/banda/interior donde
 ambas soluciones son conocidas. Se declara el límite, sin afirmar paridad global.
 Diez láminas TAC/main/CPU abiertas, seis casillas del propietario vacías y hashes.
-Cobertura offline r1c 90,98%; decisión 320 y revisión del propietario siguen pendientes.
+Cobertura offline r1c 90,98%; decisión 320 aceptada por el propietario el 04-11-2026 (r2c).
 Intercostal/P8 y posterior U/P3 permanecen fuera de esta ronda.
 
 Descarga 20.318.825/25.000.000 B; JS 1.041.773/1.070.080 B,
@@ -156,7 +156,7 @@ GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 G
 para r2b. No ecografía, validación clínica, PR, push ni CI remota.
 [Informe y códigos del cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
 
-## P2 r1c: superficie continua offline, revisión pendiente (320)
+## P2 r1c: superficie continua offline, aceptada (320)
 
 **Pendiente de revisión del propietario.** `logical-surface-v2` del mismo ID
 `s0028-P2-R1C-surface-v1` resuelve las alternancias entre tabique superficial y

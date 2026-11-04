@@ -10303,7 +10303,9 @@ s0028WallGpu, cutMapRafStall, aortaPulse ×4) con gpu-ready 55–79 s y BOOT_MS 
 Pliegues de la proyección: 0,35–5,88 % de los píxeles de banda por ventana; interior con signo
 frágil y plegado ≤86 px. Con U a cualquier profundidad quedan quietos al respirar 38 % del
 hígado, 60 % del bazo, 86/96 % de los riñones y 85 % de la VCI (costuras dentro de órganos).
-Ocho techos especializados dentro (RAWFIELD 441.631/1.385.000 tokens), samplers ≤16, ranuras ≤138;
+Ocho techos especializados dentro (RAWFIELD 441.631/1.385.000 tokens), samplers ≤16, ranuras ≤138 (variantes steered
+139–140, límite 179; la guarda estática cubre 8 de los 24 programas especializados, los 16 restantes medidos en la
+revisión de la PR #330 sin bucles ni samplers extra);
 JS 1.052.043/1.070.080 B; descarga s0028 20.318.825/25.000.000 B; atlas, reserva y tórax +0 B.
 Láminas TAC/CPU/GPU/ecografía antes y después en los mismos puntos, abiertas, con las casillas vacías.
 Hallazgo heredado de r2a: el contacto regional deja sin acoplar la línea cuya entrada de piel o recorrido
@@ -10316,10 +10318,12 @@ daría 1.717 (ensayo aislado, compresión de esos nodos sin validar): decisión 
 Decisiones del propietario sobre el hallazgo anterior, sin cambiar la clasificación (U sigue sin identidad ni
 interfaces): la sonda acopla donde toca piel, sea cual sea la celda de la carta; un nodo cuya entrada cae en celda U
 comprime contra la cara interna E (rotulada) del nodo conocido más cercano a ≤12 mm y, sin él, sólo por la piel y sin
-resistencia de pared; la celda U respira por profundidad, smoothstep(p10, p90, −τ) con la cara interna conocida de su
+resistencia de pared (nodo [s₀, s₀, 1,5 mm]: la piel y el tejido bajo ella se trasladan con la cara y el empuje se
+apaga en S = max(2L, κ·|s₀|); corregido en r2c: con D = 0 la piel bajaba y el tejido de debajo no, cota 32); la celda U respira por profundidad, smoothstep(p10, p90, −τ) con la cara interna conocida de su
 fila, y la D/E como antes. Bloque derivado offline (`tools/anatomy/s0028-wall-derived.py`) en la reserva de pared tras
 el payload r1c intacto: mapa E por nodo (sólo CPU, contacto) y rampa por fila (CPU y GPU, una lectura filtrada en un
-hueco con halo finito). La carga lo verifica contra el payload; atlas, RAW de reserva y tórax +0 B; descarga +74.945 B.
+hueco con halo finito). El instalador y el contrato Python verifican radio ≤12 mm y nodo más cercano; la carga comprueba
+rango de códigos y rampas y el hash del bloque, fijado por sha256; atlas, RAW de reserva y tórax +0 B; descarga +74.945 B.
 Lecturas: pared 17, peso respiratorio 18. Líneas acopladas 1.607/1.920 (main 1.558, r2b 1.060); por debajo de main,
 intercostal, subcostal, tronco portal y hepatorrenal por pared D/E doblada en un borde con la presión en su tope.
 Quietos al respirar sólo 8 vértices de hígado y 4 de bazo (celda D/E, dentro de su banda); costuras 0↔≥0,5 dentro de
@@ -10337,3 +10341,12 @@ previa de normales en Metal de `s0028WallGpu` (presente en `1f6868e`, puerta en 
 `f121ae0`: nueve etapas en 0 y `check` en 1 por un único timeout de 180 s en `examChainScalePatterns.test.ts`
 (86 s en el cierre r2b; carga 20–25 ajena durante la corrida), repetido aislado en r2c
 (`u-round/logs/rerun-examChainScalePatterns.log`). La puerta de fusión es el recibo de CI de la PR. No es validación clínica.
+
+Revisión adversarial de la PR #330 (contexto limpio, sin bloqueantes). I1, corregido en r2c con prueba roja/verde: los
+nodos sólo piel usaban D = 0 y la presión del usuario abría un salto en la cara (la piel bajaba 8 mm y el tejido a
+0,01 mm no; cota de deformación 32 en renal entre dos nodos de piel y uno D/E). I2, declarado: la anatomía por defecto
+no cambia de comportamiento ni de GLSL, pero sí de bundle, +30.140 B de JS (bootstrap +11.749 B por el GLSL s0028;
+chunks `anatomyScene` 21.567 B y `s0028Wall` 7.737 B importados en el arranque; `query` −17.006 B), dentro del techo
+(margen 12.037 B). Diferido con nombre: lectura GPU de los campos fuente s0028 (`s28_*`) con filtro de hardware sin
+`sourceDistancePrecise` (decisión 223); guarda estática sólo en 8 de 24 programas; mutantes sin consumidor en runtime
+(`region`/`provenance` de la carta, cara DeepFascia s0028, pesos c0/c1 sólo detectables en la e2e GPU).

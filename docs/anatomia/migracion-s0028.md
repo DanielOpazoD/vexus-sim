@@ -30,7 +30,7 @@ fuente, una fuente U u otra cara. Sólo el contacto (CPU) usa el mapa E; la GPU 
 en la columna [0,0,653] del atlas, cuyo halo es relleno finito (sin NaN·0 de las teselas). Lecturas por consulta: pared
 17; peso respiratorio y su gradiente 18 (negativo con dos texelFetch: 19). Reserva de pared 1.129.256/2.113.536 B;
 atlas, RAW de reserva y tórax +0 B; descarga 20.393.770/25.000.000 B (+74.945); JS 1.058.034/1.070.080 B; manifiesto
-37.502/38.617 B; ocho techos especializados dentro, samplers ≤16, ranuras ≤138.
+37.502/38.617 B; ocho techos especializados dentro, samplers ≤16, ranuras ≤138 (steered 139–140, límite 179).
 
 Resultado en esta máquina (Low Power Mode, carga ajena registrada en la evidencia):
 
@@ -84,7 +84,7 @@ Puertas r2b con el HEAD final (Low Power Mode activo; cifras de esta máquina, n
 
 - SwiftShader x64: s0028Load, s0028WallGpu (10/20/60 mm y normales epigástrica/subcostal, 0 caras distintas),
   cutMapRafStall y aortaPulse ×4 con `?abdomen=s0028`: 7/7, gpu-ready 55–79 s, BOOT_MS y techos intactos.
-- Estática: ocho programas especializados bajo techo, samplers ≤16, ranuras ≤138; JS 1.052.043/1.070.080 B;
+- Estática: ocho programas especializados bajo techo, samplers ≤16, ranuras ≤138 (steered 139–140, límite 179); JS 1.052.043/1.070.080 B;
   descarga 20.318.825/25.000.000 B; atlas, reserva y tórax +0 B.
 - Paridad viva Metal: desacuerdo interior 0,000 % (0,002 % = 1 px de frontera U en subcostal y portal);
   Worker = CPU 100 %; mismo muro en Worker y 3D. Bordes: grasa/banda, piel/grasa, cápsulas, U/D-E.

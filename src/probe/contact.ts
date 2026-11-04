@@ -62,6 +62,13 @@ export const CONTACT = {
 
 /** La cara interna de la pared se busca hasta este múltiplo de W a lo largo de la línea. */
 const WALL_SEARCH_FACTOR = 3;
+/**
+ * s0028, nodo sólo piel (celda U sin cara E conocida a ≤12 mm): no hay pared que empujar, así que la piel
+ * (E 1,5 mm) y el tejido bajo ella se trasladan con la cara, s_D = s₀ a esta profundidad, y el empuje se apaga en
+ * S = max(2L, κ·|s₀|) como bajo cualquier pared. D = 0 con s_D = 0 dejaba un salto en la cara: la piel bajaba y el
+ * tejido de debajo no (cota de deformación 32 entre dos nodos de piel y uno D/E; revisión de la PR #330).
+ */
+const SKIN_ONLY_DEPTH_MM = 1.5;
 /** Con la pared doblada (r_W > D*) el empuje se apaga dentro de la pared, a lo sumo a D* + esto (acota el alcance). */
 const WALL_FADE_MAX_MM = 20;
 /** Iteraciones de la búsqueda de δ (falsa posición de Illinois). */
@@ -366,14 +373,16 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   for (const g of face.nodes) {
     const localTarget = g.regionalTarget ?? target;
     if (g.rs === null) {
-      nodes.push([0, 0, anatomyBundle.person === 's0028' ? 0 : target]);
+      nodes.push([0, 0, anatomyBundle.person === 's0028' ? SKIN_ONLY_DEPTH_MM : target]);
       hover.push(0);
       parallel.push(0);
       continue;
     }
     if (g.regionalTarget === null) {
-      // s0028 sólo piel (exp-coupling-u-skin): acopla por la piel; sin pared no hay cara que doblar ni que empujar
-      nodes.push([Math.min(0, g.rs), 0, 0]);
+      // s0028 sólo piel (exp-coupling-u-skin): acopla por la piel; sin pared no hay cara que doblar: la piel y el
+      // tejido bajo ella se trasladan con la cara y el empuje se apaga bajo la piel (perfil continuo, D > 0)
+      const skin = Math.min(0, g.rs);
+      nodes.push([skin, skin, SKIN_ONLY_DEPTH_MM]);
       hover.push(1 - smoothstep(CONTACT.gelMm, CONTACT.gelMm + CONTACT.gelRampMm, Math.max(g.rs, g.gapElevation)));
       parallel.push(1);
       continue;

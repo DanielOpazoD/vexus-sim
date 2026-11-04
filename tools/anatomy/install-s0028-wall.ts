@@ -77,8 +77,13 @@ if (
   derived.offsetBytes !== 757844 ||
   derived.bytes !== 512 * 181 * 4 + 181 * 4 ||
   derived.sha256 !== hash(raw.subarray(derivedStart, derivedStart + 371412)) ||
+  !object(derived.eMap) ||
+  derived.eMap.bytes !== 512 * 181 * 4 ||
+  derived.eMap.radiusMm !== 12 ||
   !object(derived.ramps) ||
-  JSON.stringify(derived.ramps.placement) !== '[0,0,653]'
+  derived.ramps.offsetBytes !== 757844 + 512 * 181 * 4 ||
+  JSON.stringify(derived.ramps.placement) !== '[0,0,653]' ||
+  JSON.stringify(derived.ramps.size) !== '[181,1,1]'
 )
   throw new Error('Bloque derivado de pared distinto o de otro payload');
 writeFileSync(

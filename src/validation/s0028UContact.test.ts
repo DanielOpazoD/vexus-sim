@@ -21,7 +21,7 @@ import {
 } from '../anatomy/s0028Wall';
 import { HALF } from '../anatomy/halfFloat';
 import { CONTACT, probeContact, type ProbeContact } from '../probe/contact';
-import { nodeSin } from '../anatomy/compression';
+import { nodeSin, warpAt, warpBound } from '../anatomy/compression';
 import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
 import { smoothstep, type Vec3 } from '../core/vec3';
 import { indexedSurfaces } from '../anatomy/s0028Surface';
@@ -246,12 +246,49 @@ it('sin nodo conocido a ≤12 mm: sólo piel, sin resistencia de pared, y la car
   expect(sources.every((s) => s === 'skin' || s === 'none')).toBe(true);
   sources.forEach((s, n) => {
     if (s !== 'skin') return;
-    expect(k.nodes[n]).toEqual([Math.min(0, k.summary.skinAlongMm[n]), 0, 0]);
+    const skin = Math.min(0, k.summary.skinAlongMm[n]);
+    expect(k.nodes[n]).toEqual([skin, skin, 1.5]);
   });
   // Sin cara no hay presión que conseguir: la sonda no se hunde y acopla lo que toca la piel.
   expect(k.summary.indentMm).toBe(0);
   const coupled = k.contact.filter((c) => c >= 0.5).length;
   expect(coupled).toBeGreaterThan(8);
+});
+
+it('sólo piel bajo presión: la piel y el tejido de debajo se trasladan juntos, sin salto en la cara ni cota desbocada', () => {
+  // Revisión de la PR #330: con D = 0 la piel bajaba −8 mm y el tejido a 0,01 mm por debajo no se movía (cota 32).
+  const start = (id: string): ProbePose => poseOf(startPointsFor(scene.torso, B).find((sp) => sp.id === id)!);
+  const poses: ProbePose[] = [
+    poseOf({ phi: 4.7, z: -110, yaw: 0, lift: -3 }),
+    poseOf({ phi: 4.7, z: -110, yaw: 0, lift: -8 }),
+    { ...start('renal'), lift: 0 },
+    { ...start('portal'), lift: -6 },
+  ];
+  for (const pose of poses) {
+    const k = probeContact(pose, CONVEX_C35, scene.torso);
+    let pressed = 0;
+    for (let i = 0; i < 64; i++) {
+      const sigma = -k.halfAngle + (2 * k.halfAngle * i) / 63;
+      const ca = Math.cos(sigma),
+        sa = Math.sin(sigma);
+      const dir: Vec3 = [k.axial[0] * ca + k.lateral[0] * sa, k.axial[1] * ca + k.lateral[1] * sa, k.axial[2] * ca + k.lateral[2] * sa];
+      const at = (d: number): Vec3 => [
+        k.center[0] + dir[0] * (k.radiusMm + d),
+        k.center[1] + dir[1] * (k.radiusMm + d),
+        k.center[2] + dir[2] * (k.radiusMm + d),
+      ];
+      const above = warpAt(at(-0.01), k).shift,
+        below = warpAt(at(0.01), k).shift;
+      expect(Math.abs(above - below), `pose ${JSON.stringify(pose)} línea ${i}`).toBeLessThan(0.05);
+      if (above < -0.5) pressed++;
+      for (let d = 0; d <= 40; d += 0.5) {
+        const w = warpAt(at(d), k);
+        expect(warpBound(w), `pose ${JSON.stringify(pose)} línea ${i} d ${d}`).toBeLessThanOrEqual(4.5);
+        expect(w.shift).toBeLessThanOrEqual(1e-9);
+      }
+    }
+    if (pose.lift < 0) expect(pressed, JSON.stringify(pose)).toBeGreaterThan(8);
+  }
 });
 
 it('celda U: el peso respiratorio es la rampa por profundidad de su fila; celda D/E, como siempre', () => {

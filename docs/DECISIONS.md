@@ -10186,11 +10186,11 @@ por HU suavizados ni por SDF saturado. Las máscaras fuente permanecen intactas.
 
 **Decisión.** `s0028-P2-R1C-surface-v1`, revisión `logical-surface-v2`, conserva
 el estado pendiente de revisión del propietario. La anotación offline cumple sus
-umbrales: 34446 D + 565 E de 38.478 celdas (90.99%), diez huellas≥90%.
-D exige frontera del perfil propio; E sólo huecos 2D≤5.986 mm incluyendo esquinas.
+umbrales: 34446 D + 562 E de 38.478 celdas (90.98%), diez huellas≥90%.
+D exige frontera del perfil propio; E sólo huecos 2D≤5.782 mm incluyendo esquinas.
 Región φ[−0,35;3,55],z[−180;0] mm; rejilla 512×181,D=[−210,+60],paso 0,5 mm.
 La mediana robusta ajusta confianza y las superficies se regularizan juntas, con
-límite≤3 mm ordinario. Las 1601 aristas excepcionales del reborde (máximo 12 mm)
+límite≤3 mm ordinario. Las 1600 aristas excepcionales del reborde (máximo 12 mm)
 tienen ambos extremos≤6 mm de costilla/esternón/cartílago fuente; se listan y cotejan
 contra 26 máscaras específicas. No se permiten excepciones de otro hueso.
 
@@ -10203,19 +10203,19 @@ tienen fuente costal. El anterior 76,57%/máximo 28 mm se conserva como candidat
 Portal central 3,19 frente a 9,75 mm del diseño se explica con la normal propia y el
 tope hepático; intercostal 8,48 frente a 3 mm incluye O y no acredita músculo intercostal.
 
-La inversión continua recupera 100% de 35,011 centros propios. El paquete reabierto
-se verifica en una envolvente analítica de todos los parches,387,467 vóxeles
+La inversión continua recupera 100% de 35,008 centros propios. El paquete reabierto
+se verifica en una envolvente analítica de todos los parches,387,455 vóxeles
 nativos: visceral 0, shell de un vóxel 0, músculo sobre esqueleto 0 y posterior 0.
 Las máscaras se preservan. Un toque previo del shell se corrigió bajando controles
 de pared; no se ocultó por precedencia ni recorte. `contacts.json` lista contactos.
 
-Descarga externa 20,318,846 B (+166,575 B sobre 20.152.271); metadatos 2,459 B.
+Descarga externa 20,318,825 B (+166,554 B sobre 20.152.271); metadatos 2,459 B.
 Payload 757.844 B dentro de reserva; atlas/reserva RAW/tórax+0 B, +1 B torácico rechazado.
 Formato RG16F intacto, ocho estimaciones estáticas dentro de techos. No se instala
 este candidato ni se homologa su inversa en GPU/JIT/contacto/Metal. El CPU r2a
 preexistente/concurrente se conserva por separado; esta revisión no edita producto.
 
-**Verificación.** Doce pruebas Python sintéticas sin TAC, sólo numpy/biblioteca
+**Verificación.** Trece pruebas Python sintéticas sin TAC, sólo numpy/biblioteca
 estándar; `renal-reference.yml` ya las incluye. Se conservan negativos de diez
 anclas, anillo uniforme, invasión y posterior. Quince láminas finales abiertas,
 casillas vacías y hashes. Cierre serial, pmset/carga, exclusiones CGAL preexistentes

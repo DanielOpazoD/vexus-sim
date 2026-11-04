@@ -250,6 +250,34 @@ class WallContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'gradiente'):
             wall.require_logical_surface(surface, annotation)
 
+    def test_E_hole_must_include_U_across_periodic_seam_and_exact_corners(self):
+        surface = np.zeros(wall.SHAPE, '<f2')
+        surface[..., :3] = np.nan
+        phi = np.arange(512)*2*np.pi/512
+        region = np.zeros((181, 512), bool)
+        region[20:141, (phi <= 3.55) | (phi >= 2*np.pi-.35)] = True
+        surface[region] = [18, 29, 29, wall.encode_record(self.record())[3]]
+        for cell in [(50, 0), (50, 1)]:
+            surface[cell] = [np.nan, np.nan, np.nan, 0]
+        record = self.surface_record()
+        record['cell'] = [50, 511]
+        for boundary in record['boundaries'][:2]:
+            boundary['provenance'] = 'E'
+        record['boundaries'][2]['value'] = 29
+        surface[50, 511] = wall.encode_record(record)
+        cells = [[50, 511], [50, 0], [50, 1]]
+        corners = np.array([[x+dx, dy, 0] for x in [-1, 0, 1] for dx in [-.5, .5] for dy in [-.5, .5]])
+        span = float(np.max(np.linalg.norm(corners[:, None]-corners[None], axis=-1)))
+        record['surfaceEvidence'].update(holeCells=[[50, 511]], holeCornersLASmm=corners.tolist(), maxHoleSpanMm=span)
+        annotation = {'records': [record]}
+        with self.assertRaisesRegex(ValueError, 'periódico'):
+            wall.require_logical_surface(surface, annotation)
+        record['surfaceEvidence']['holeCells'] = cells
+        wall.require_logical_surface(surface, annotation)
+        record['surfaceEvidence']['holeCornersLASmm'][0][0] -= 10
+        with self.assertRaisesRegex(ValueError, 'físico'):
+            wall.require_logical_surface(surface, annotation)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -26,10 +26,11 @@ Huellas geodésicas de radio 26,5 mm: huella rígida 13 mm más 20 mm de margen.
 | hepatorenal     |  98.27 |       0.47/1.63/5.52 |            10.83 |       10.03/9.75 |
 | portalSubcostal |  95.42 |       0.50/2.22/6.89 |            11.03 |      12.86/12.00 |
 
-D=34446, E=565, U=3467: cobertura global 90.99%≥80%;
+D=34446, E=562, U=3470: cobertura global 90.98%≥80%;
 diez huellas≥90%. D exige dos fronteras del perfil propio, dentro de incertidumbre
-nativa±1,5 mm; E sólo huecos 2D de diámetro físico≤5.986 mm, incluyendo
-esquinas, con al menos tres soportes D. El resto queda U. HU no se suaviza.
+nativa±1,5 mm; E sólo huecos 2D periódicos completos de diámetro físico≤5.782 mm, incluyendo
+esquinas bilineales exactas, con al menos tres soportes D. La unión φ=0 se verifica
+en el contrato sin TAC; tres E de mitades falsas pasaron a U. El resto queda U. HU no se suaviza.
 
 HU[−29,150] y máscaras fuente separan panículo, complejo y víscera; se cierra sólo
 una muestra binaria aislada 0,5 mm. La masa estructural distingue el complejo profundo
@@ -38,7 +39,7 @@ acopladas conservan orden y tope visceral. El esqueleto es material O separado,
 nunca músculo ni motivo para borrar toda la geometría parietal.
 
 Salto global mediana/p95/máximo=0.516/2.531/12.00 mm.
-Todas las aristas ordinarias≤3 mm. Las 1601 excepciones>3 mm tienen ambos
+Todas las aristas ordinarias≤3 mm. Las 1600 excepciones>3 mm tienen ambos
 extremos≤6 mm de perfiles con costilla, esternón o cartílago fuente; máximo 12 mm.
 `costal-provenance.json` verifica las 26 máscaras específicas y `continuity.json`
 lista cada arista. Dos excepciones de otro hueso se retiraron antes del cierre.
@@ -56,18 +57,18 @@ Intercostal: geometría D/E visible, material U/P8; posterior U/P3, sin anillo r
 ## Comprobación de volumen y presupuesto
 
 La inversa continua usa la banda exportada como semilla y dos respaldos geométricos.
-Recupera 100% de los 35011 puntos centrales propios. Un envolvente analítico
+Recupera 100% de los 35008 puntos centrales propios. Un envolvente analítico
 de todos los parches contiene todos los puntos posibles de pared; se rasterizan
-sus 387,467 vóxeles nativos sin consultar órganos para ocultar conflictos.
+sus 387,455 vóxeles nativos sin consultar órganos para ocultar conflictos.
 Paquete reabierto: invasión visceral 0; envolvente de separación de un vóxel 0;
-músculo sobre esqueleto 0; pared posterior 0. Los 9,837 vóxeles óseos y
+músculo sobre esqueleto 0; pared posterior 0. Los 9,831 vóxeles óseos y
 9,240 cartilaginosos dentro del complejo son material O. Interior intercostal U
-20,369 vóxeles. Se corrigió un toque previo del shell bajando controles de pared;
+20,355 vóxeles. Se corrigió un toque previo del shell bajando controles de pared;
 las máscaras no se recortaron. Contactos y bandas<2 mm por órgano: `contacts.json`.
 Diez láminas TAC/propuesta a 0,75 mm, mismos puntos físicos y casillas sin rellenar.
 U conserva el TAC sin tinte; el contorno violeta señala material intercostal U/P8.
 
-Descarga 20,318,846 B, base 20.152.271 B, incremento 166,575 B≤850.000 B;
+Descarga 20,318,825 B, base 20.152.271 B, incremento 166,554 B≤850.000 B;
 metadatos 2,459 B≤4.096 B; payload 757.844 B. Atlas, reserva RAW y tórax+0 B.
 Formato RG16F intacto; el negativo torácico+1 B sigue fallando. Ocho estimaciones
 estáticas contra techos literales, sin homologar la nueva inversión en GPU/JIT/Metal.
@@ -77,7 +78,7 @@ Ninguna evidencia offline equivale a aceptación clínica ni a instalar este paq
 [mediciones compactas](measurements.json). Quince imágenes finales abiertas y hashes
 en `reviewed-images.json`. Negativos: diez anclas, anillo uniforme, invasión, posterior.
 Cierre serial y SHA en `checks.json`, pmset/carga antes y después de cada tiempo.
-`s0028-wall_test.py`:12 pruebas sintéticas, sólo biblioteca estándar y numpy; ya figura
+`s0028-wall_test.py`:13 pruebas sintéticas, sólo biblioteca estándar y numpy; ya figura
 en `renal-reference.yml`. Se excluyen explícitamente `diaphragm_relationships_test.py`,
 `diaphragm_source_repair_test.py` y `posterior_source_test.py`: CGAL ausente, condición
 ambiental preexistente; CI no las ejecuta. No hay agentes ni operaciones remotas.

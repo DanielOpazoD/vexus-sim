@@ -20,10 +20,10 @@
     "profiles": 92672,
     "regionCells": 38478,
     "D": 34446,
-    "E": 565,
-    "U": 3467,
-    "coveragePercent": 90.99,
-    "maxEHoleSpanMm": 5.986
+    "E": 562,
+    "U": 3470,
+    "coveragePercent": 90.982,
+    "maxEHoleSpanMm": 5.782
   },
   "windows": {
     "columns": [
@@ -59,17 +59,17 @@
     "p95Mm": 2.531,
     "maxMm": 12.0,
     "ordinaryMaxMm": 3.0,
-    "edges": 67239,
-    "sourceCostalEdgesOver3": 1601,
+    "edges": 67231,
+    "sourceCostalEdgesOver3": 1600,
     "unexplainedEdgesOver3": 0
   },
   "native": {
-    "nativeBodyVoxelsTested": 387467,
+    "nativeBodyVoxelsTested": 387455,
     "visceralConflictVoxels": 0,
     "oneVoxelEnvelopeConflictVoxels": 0,
     "muscleBoneConflictVoxels": 0,
     "posteriorGrossBandVoxels": 0,
-    "grossEmbeddedBoneVoxels": 9837,
+    "grossEmbeddedBoneVoxels": 9831,
     "grossEmbeddedCartilageVoxels": 9240,
     "ownMidpointRecoveryPercent": 100.0,
     "geometricSuperset": "all normal-chart patches, analytic convex bounds; no organ priority"
@@ -78,15 +78,15 @@
   "thinByOrganContactCells": 428,
   "budget": {
     "baselineDownloadBytes": 20152271,
-    "candidateDownloadBytes": 20318846,
-    "incrementBytes": 166575,
+    "candidateDownloadBytes": 20318825,
+    "incrementBytes": 166554,
     "metadataBytes": 2459,
     "payloadBytes": 757844,
     "atlasIncrementBytes": 0,
     "rawReservationIncrementBytes": 0,
     "thoracicIncrementBytes": 0
   },
-  "payloadSha256": "50158df95e3832e8b51275010a770ed63b47478c50deb730b21ef5c7aa0d79ed",
+  "payloadSha256": "92091898ad47a9ecf3435f2abea34b40a54d7c60cdce5dd363a4a7dff5aa3107",
   "shaderEstimateAllPass": true,
   "evidenceRoot": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2",
   "files": [

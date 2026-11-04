@@ -54,24 +54,24 @@ No ecografía, CI remota, PR ni validación clínica.
 
 **Pendiente de revisión del propietario.** `logical-surface-v2` del mismo ID
 `s0028-P2-R1C-surface-v1` resuelve las alternancias entre tabique superficial y
-complejo profundo. D=34446, E=565, U=3467 de 38.478 celdas: cobertura 90.99%,
+complejo profundo. D=34446, E=562, U=3470 de 38.478 celdas: cobertura 90.98%,
 y las diez huellas superan 90%. Rejilla 512×181, D=[−210,+60] mm, paso 0,5 mm;
 misma piel/EDT, soporte normal 13 mm y poses intactas.
 
 Saltos globales mediana/p95/máximo=0.516/2.531/12 mm. Aristas
-ordinarias≤3 mm;1601 excepciones del reborde fuente enumeradas, con ambos
+ordinarias≤3 mm;1600 excepciones del reborde fuente enumeradas, con ambos
 extremos≤6 mm de costilla/esternón/cartílago observados. No hay excepción sin fuente.
-E interpola sólo huecos físicos≤5.986 mm. Identidades y capas finas U/E;
+E interpola sólo huecos físicos≤5.782 mm. Identidades y capas finas U/E;
 esqueleto O independiente, material intercostal U/P8 y posterior U/P3.
 
-Paquete reabierto, inversa que recupera 100% de 35,011 centros propios y envolvente
+Paquete reabierto, inversa que recupera 100% de 35,008 centros propios y envolvente
 geométrica de todos los parches: invasión visceral 0, shell de separación de un
-vóxel 0, músculo sobre O0 y relleno posterior 0 en 387,467 vóxeles candidatos
+vóxel 0, músculo sobre O0 y relleno posterior 0 en 387,455 vóxeles candidatos
 nativos. Las 117 máscaras fuente permanecen intactas. Diez planos tienen los mismos
 puntos físicos y casillas vacías. Portal e intercostal conservan explicación de las
 diferencias>3 mm frente al diseño en perfiles y máscaras, sin cambiar la pose.
 
-Descarga offline 20,318,846 B, incremento 166,575 B; metadatos 2,459 B.
+Descarga offline 20,318,825 B, incremento 166,554 B; metadatos 2,459 B.
 Payload 757.844 B, atlas/reserva RAW/tórax+0 B. Formato RG16F intacto; ocho costes
 estáticos dentro de los techos. No acredita GPU/contacto/JIT/Metal de la nueva geometría.
 El trabajo CPU r2a preexistente/concurrente se conserva por separado; esta ronda

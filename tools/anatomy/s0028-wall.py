@@ -5,6 +5,7 @@ interna E. No se llaman fascia/transversalis observadas. El cuarto componente
 RG16F guarda región y procedencia independiente de los cuatro valores.
 """
 import argparse
+from collections import deque
 import gzip
 import hashlib
 import importlib.util
@@ -125,8 +126,47 @@ def require_logical_surface_record(record):
             raise ValueError('D sin frontera leída en su propio perfil')
 
 
+def require_periodic_surface_gaps(surface, annotation):
+    """E se mide sobre el hueco completo, también a través de phi=0."""
+    code = surface[..., 3].astype(int)//8 % 4
+    estimated = code == 3
+    if not estimated.any():
+        return
+    phi = np.arange(512)*2*np.pi/512
+    region = np.zeros((181, 512), bool)
+    region[20:141, (phi <= 3.55) | (phi >= 2*np.pi-.35)] = True
+    hole = region & (code != 2)
+    records = {tuple(r['cell']): r for r in annotation.get('records', [])}
+    visited = set()
+    for start in map(tuple, np.argwhere(estimated)):
+        if start in visited:
+            continue
+        pending, cells = deque([start]), {start}
+        while pending:
+            r, c = pending.popleft()
+            for rr, cc in [(r+1, c), (r-1, c), (r, (c+1) % 512), (r, (c-1) % 512)]:
+                if 0 <= rr < 181 and hole[rr, cc] and (rr, cc) not in cells:
+                    cells.add((rr, cc))
+                    pending.append((rr, cc))
+        visited.update(cells)
+        for cell in cells:
+            if not estimated[cell]:
+                continue
+            evidence = records.get(cell, {}).get('surfaceEvidence', {})
+            declared = {tuple(c) for c in evidence.get('holeCells', [])}
+            corners = np.asarray(evidence.get('holeCornersLASmm', []), dtype=float)
+            if (declared != cells or corners.shape != (4*len(cells), 3) or
+                    not np.isfinite(corners).all()):
+                raise ValueError('hueco E periódico incompleto o sin esquinas físicas')
+            diameter = max(float(np.max(np.linalg.norm(corners[i:i+128, None]-corners[None], axis=-1)))
+                           for i in range(0, len(corners), 128))
+            if diameter > 6 or abs(diameter-evidence.get('maxHoleSpanMm', np.inf)) > 1e-5:
+                raise ValueError('hueco E físico mayor de 6 mm o diámetro distinto')
+
+
 def require_logical_surface(surface, annotation):
     """Límite 2D; cada excepción costal queda ligada a evidencia fuente externa."""
+    require_periodic_surface_gaps(surface, annotation)
     exceptions = {}
     for edge in annotation.get('transitionEdges', []):
         cells = tuple(tuple(c) for c in edge['cells'])

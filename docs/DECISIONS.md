@@ -10173,43 +10173,47 @@ en [evidencia 319](evidence/s0028-mesh/README.md); la CI remota sigue pendiente.
 Revisar propiedad exclusiva/descodificación única del buffer y aritmética entera del formato.
 Sin delegación, push, PR, stash ni gh. No es validación clínica ni aceptación P2–P8.
 
-## 320. Preparar el contrato de pared s0028 y conservar la frontera de anotación P2 [Estado: pendiente de revisión del propietario]
+## 320. Anotar la superficie de pared s0028 y conservar las puertas P2 pendientes [Estado: pendiente de revisión del propietario]
 
-**Contexto.** Ronda 1 de P2, sólo fuente/contrato y anotación antes de runtime. Base
-`d5a8fc0`, apilada sobre #329 (319), sin fusionar. El diseño previo recomienda piel/EDT
-común y fronteras regionales en la reserva existente; rechaza la interpolación desde diez
-anclas por invasión y falta de pertenencia. Se fija protocolo antes de medir y se registran
-carga y modo de bajo consumo. Objetivos 3, 7 y 8; no es validación clínica.
+**Contexto.** P2 r1 dejó sólo 364 celdas D de 92.672, con 62 píxeles de conflicto
+visceral en diez planos. R1c reemplaza los nueve barridos por 92.672 perfiles propios
+sobre cero y normal EDT común, a 0,5 mm. Base local `caca4a6`, ya rebasada sobre
+`origin/main` `8ee9fbd`. Objetivos 3, 7 y 8. No es validación clínica.
 
-**Opciones.** No se instalan anillo fijo, volúmenes nuevos ni fronteras interpoladas desde
-las diez ventanas. No se identifica músculo/fascia por HU ni se recortan órganos para
-ocultar invasiones. Las bandas no separables y las identidades no demostradas permanecen U.
+**Opciones.** Se conservan como negativos la interpolación de diez anclas, el anillo
+uniforme, la invasión visceral y el anillo renal posterior. No se rellena una banda
+por HU suavizados ni por SDF saturado. Las máscaras fuente permanecen intactas.
 
-**Decisión.** Borrador pendiente del propietario. `s0028-wall.py` exporta y reabre un
-candidato externo con procedencia por valor, tres fronteras y región codificadas en
-16 tiles RG16F con halos, dentro de la reserva P1. `s0028-wall_test.py`, `s0028-case.json`
-y `s0028-capacity.py` fijan identidad, unidades, ausencia, orden, no solapamiento y +0 B
-para atlas/reserva RAW/tórax. `s0028-wall-cost.ts` estima el lector sobre ocho fuentes P1
-con helpers/techos literales de `shaderLimits.test.ts`; no hay cableado de producto.
+**Decisión.** `s0028-P2-R1C-surface-v1` sigue pendiente del propietario y no está lista
+para runtime. La región fija tiene 38.478 celdas: 28.929 D, 535 E, 1.950 O y 7.064 U.
+D lee su perfil. E interpola huecos de hasta 5.945 mm físicos. El filtro 2D selecciona
+corridas existentes; las ambiguas quedan U. Identidades musculares U, piel E 1,5 mm,
+fascias y peritoneo U. Posterior U/P3 e intercostal bloqueada/P8.
 
-**Consecuencias.** El paso 1 queda implementado; el paso 2 **no queda completado**.
-363 perfiles/nueve pares: 15→116 sin banda identificable y salto 9→1,6667 mm en el soporte
-restante, sin afirmar mejora de continuidad. Sólo 364/92.672 celdas con geometría local D;
-identidad alba→vaina→oblicuos→intercostales aún U. Quedan 62 píxeles de conflicto visceral
-visibles en diez planos de 2,25 mm²/píxel; no son un volumen. Posterior abierto U/P3,
-intercostal bloqueada P8. Piel E 1,5 mm; fascias/peritoneo E/U; Scarpa 0,4 y 35/35/30 E.
+**Consecuencias.** La cobertura D+E global 76,57 % no alcanza 80 % y cinco huellas
+no alcanzan 90 %. El salto global mediana/p95/máximo es 1/3,5/28 mm, con 2.780 aristas
+sobre 3 mm sin excepción anatómica acreditada. El máximo refleja cambios de corrida,
+no una transición aprobada. Las láminas muestran los fallos. No se demuestra que el
+TAC haga imposible completar la anotación; se conserva la limitación del detector.
 
-El paquete parcial externo mide 20.157.056 B (+4.785 B frente a 319), payload 757.844 B,
-metadatos 1.919 B; atlas/reserva RAW/tórax +0 B. No predice la descarga de una anotación
-completa. Ocho estimaciones bajo techo, máximo 16 samplers/138 slots, sin nuevos samplers;
-clasificador regional/JIT/pico Metal pendientes. Referencia de 319 ≈1,68 GB y techo 2 GB,
-sin medición GPU nueva en esta ronda. Default, estructuras, resolución y poses intactos.
+La primera prueba de celda finita detectó 1 conflicto visceral y 333 esqueléticos.
+La envolvente fuente corregida da cero en el raster de 5.110.328 vóxeles corporales
+y en 262.733 vóxeles del shell de separación de un vóxel. El candidato final sólo elimina
+29 E; la prueba exacta de subconjunto conserva ese cero sin recortar órganos.
+Hay 199 contactos limitados por órgano entre 1.084 celdas con banda menor de 2 mm, listadas en la evidencia externa.
 
-**Verificación.** Rojo inicial antes de implementar; ocho contratos Python nuevos
-con mutaciones de persona/affine/unidades, U→O, fronteras, ausencia→cero, halo/campo ajeno,
-+1 B torácico y exportación reabierta. Dos TS comprueban los ocho programas y negativos
-sampler 17/uniforms. Los 363 perfiles del diseño se reproducen exactamente; negativo de
-las diez anclas recalculado sigue fallando (700 píxeles). Treinta y una imágenes abiertas,
-ID y lista sí/no del propietario aún sin completar. Cierre serial, evidencias y pendientes
-en [P2 ronda 1](evidence/s0028-p2/README.md). Los pasos 3–4 quedan detenidos hasta resolver
-la anotación y revisión humana. Sin delegación, push, PR, stash, gh ni puerto 5174.
+El paquete externo mide 20.243.190 B, +90.919 B sobre 20.152.271 B; metadatos 2.160 B.
+Payload 757.844 B dentro de la reserva. Atlas, reserva RAW y tórax crecen 0 B.
+El formato RG16F no cambia. Ocho estimaciones estáticas pasan, con hasta 16 samplers
+y 138 slots. El clasificador finito, la GPU, el contacto, el JIT y el pico Metal no se
+homologan. El producto, las poses, las estructuras y la resolución se conservan.
+
+**Verificación.** Diez contratos Python sintéticos pasan, con rojo inicial conservado.
+Se amplían para exigir perfil propio, E corto, tope de órgano/esqueleto y posterior U,
+y para reabrir los metadatos de la envolvente finita. `renal-reference.yml` los incluye
+con sus dependencias actuales, sin TAC ni CGAL. Los negativos de r1 se conservan;
+diez anclas vuelven a dar 700 píxeles de invasión y el anillo fijo contradice 28.480
+perfiles propios. Quince láminas finales y dos diagnósticas abiertas, con lista sí/no
+vacía y hashes registrados. Cierre serial, exclusiones CGAL preexistentes, mediciones
+y rutas en [evidencia P2](evidence/s0028-p2/README.md). No hay agentes, push, PR, gh,
+stash, puerto 5174 ni avance al runtime.

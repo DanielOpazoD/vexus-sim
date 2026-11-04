@@ -533,10 +533,12 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
 
   it('s0028: una consulta de pared lee ≤ 20 texturas y cada gradiente de cara o respiración hace una sola consulta', () => {
     const graph = glslCallGraph(personShader(PASSES.FRAG_RAWFIELD, S0028));
-    // 7 EDT (profundidad y gradiente central), 1 centro de fila, 4 códigos nearest y 2 fronteras bilineales.
-    expect(expandedTextureReads(graph, 's28WallAt')).toBe(14);
-    // Con la pendiente de la celda: dos lecturas más a medio texel.
-    expect(expandedTextureReads(graph, 's28FaceGradient')).toBe(16);
+    // 7 EDT (profundidad y gradiente central), 2 centros de fila y las 8 esquinas de las dos páginas de la celda.
+    expect(expandedTextureReads(graph, 's28WallAt')).toBe(17);
+    // La pendiente bilineal sale de las mismas esquinas: ninguna lectura más.
+    expect(expandedTextureReads(graph, 's28FaceGradient')).toBe(17);
+    // Sin filtro del hardware sobre la carta: los huecos U son NaN y el corte z vecino es otra tesela.
+    for (const fn of ['s28Project', 's28WallSurface', 's28FaceGradient']) expect(graph.get(fn), fn).not.toMatch(/\btextureLod\s*\(/);
     for (const fn of ['wallFaceGradient', 'respWeightGradient']) {
       expect(expandedTextureReads(graph, fn), fn).toBeLessThanOrEqual(20);
       expect(inlinedCopies(graph, fn, 's28Project'), fn).toBe(1);

@@ -115,12 +115,18 @@ function chartCell(col: number, row: number) {
   const codes = [at(0, 0, 1, 1), at(1, 0, 1, 1), at(0, 1, 1, 1), at(1, 1, 1, 1)];
   const fx = col - x,
     fy = row - y;
-  const mix = (page: number, k: number, u = fx, v = fy) => {
-    const a = at(0, 0, page, k) + u * (at(1, 0, page, k) - at(0, 0, page, k));
-    const b = at(0, 1, page, k) + u * (at(1, 1, page, k) - at(0, 1, page, k));
-    return a + v * (b - a);
+  const mix = (page: number, k: number) => {
+    const a = at(0, 0, page, k) + fx * (at(1, 0, page, k) - at(0, 0, page, k));
+    const b = at(0, 1, page, k) + fx * (at(1, 1, page, k) - at(0, 1, page, k));
+    return a + fy * (b - a);
   };
-  return { codes, known: !codes.some((c) => [8, 32, 128].some((f) => Math.floor(c / f) % 4 === 0)), fx, fy, mix };
+  /** (∂/∂columna, ∂/∂fila) exacta de la misma bilineal, con sus cuatro esquinas (gemela de `s28Slope`). */
+  const slope = (page: number, k: number): [number, number] => {
+    const dx0 = at(1, 0, page, k) - at(0, 0, page, k),
+      dx1 = at(1, 1, page, k) - at(0, 1, page, k);
+    return [dx0 + fy * (dx1 - dx0), at(0, 1, page, k) + fx * dx1 - (at(0, 0, page, k) + fx * dx0)];
+  };
+  return { codes, known: !codes.some((c) => [8, 32, 128].some((f) => Math.floor(c / f) % 4 === 0)), fx, fy, mix, slope };
 }
 
 const columnOf = (phi: number) => ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 512;
@@ -199,8 +205,8 @@ const PAGE_CHANNEL = [
 
 /**
  * Gradiente analítico de `profundidad − frontera` (gemelo de `s28FaceGradient` en GLSL): −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f),
- * P = I − ∇τ∇τᵀ/|∇τ|² (la proyección sin su curvatura; el centro de fila se toma constante en z). La celda es
- * bilineal: la diferencia de medio texel dentro de ella es su derivada exacta, dos lecturas. null en U o fuera.
+ * P = I − ∇τ∇τᵀ/|∇τ|² (la proyección sin su curvatura; el centro de fila se toma constante en z). La pendiente es la
+ * de la celda bilineal, con sus mismas cuatro esquinas: ninguna lectura más. null en U o fuera.
  */
 export function s0028WallFaceGradient(p: Vec3, boundary: S0028Boundary): { sd: number; gradient: Vec3 } | null {
   if (anatomyBundle.person !== 's0028') return null;
@@ -210,10 +216,7 @@ export function s0028WallFaceGradient(p: Vec3, boundary: S0028Boundary): { sd: n
   if (!cell.known) return null;
   const [page, k] = PAGE_CHANNEL[boundary];
   const b = cell.mix(page, k),
-    hc = cell.fx < 0.5 ? 0.5 : -0.5,
-    hr = cell.fy < 0.5 ? 0.5 : -0.5;
-  const dc = (cell.mix(page, k, cell.fx + hc, cell.fy) - b) / hc,
-    dr = (cell.mix(page, k, cell.fx, cell.fy + hr) - b) / hr;
+    [dc, dr] = cell.slope(page, k);
   const a = ((512 / (2 * Math.PI)) * dc) / Math.max(q.x * q.x + q.y * q.y, 0.000001);
   const v: Vec3 = [-q.y * a, q.x * a, dr / 1.5],
     g = q.g;

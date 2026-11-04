@@ -4,16 +4,21 @@ const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3
 
 /**
  * Regla directa P2 (gemela de `s0028Wall.ts`): proyección EDT `p − τ·∇τ/|∇τ|²`, semilla polar y carta bilineal en la
- * reserva P1; identidad nearest independiente de la geometría D/E. Consulta: 7 EDT + 1 centro + 4 códigos + 2 fronteras
- * = 14 lecturas; con gradiente analítico, 2 más. Sin bucles: el Newton S−dN queda offline.
+ * reserva P1; identidad nearest independiente de la geometría D/E. La carta y los centros se leen con texelFetch y se
+ * interpolan aquí, en el orden de la CPU: los huecos U son NaN y el filtro del hardware mezcla el corte z vecino (otra
+ * tesela) aun con peso 0 (NaN·0 = NaN). Consulta: 7 EDT + 2 centros + 8 esquinas = 17 lecturas; el gradiente analítico
+ * usa las mismas esquinas. Sin bucles: el Newton S−dN queda offline.
  */
 export const S0028_WALL_GLSL = /* glsl */ `
 const ivec3 S28_WALL_OFF[16]=ivec3[](${offsets(B.wall.placements)});
 vec2 s28Project(vec3 p,out float depth,out vec3 g,out vec3 s,out vec2 xy){
   depth=torsoDepth(p);g=s28DepthGradient(p);
   s=p-depth*g/max(dot(g,g),0.000001);
-  float row=clamp((s.z+210.0)/1.5,0.0,180.0);
-  xy=vec2(s.x,s.y-textureLod(uAbdominalAtlas,(vec3(${B.wall.centerOffset[0]}.0,row,${B.wall.centerOffset[2]}.0)+0.5)/vec3(textureSize(uAbdominalAtlas,0)),0.0).g);
+  float row=clamp((s.z+210.0)/1.5,0.0,180.0),t=row-floor(row);
+  int lo=int(floor(row)),hi=min(180,lo+1);
+  float c0=texelFetch(uAbdominalAtlas,ivec3(${B.wall.centerOffset[0]},lo,${B.wall.centerOffset[2]}),0).g;
+  float c1=texelFetch(uAbdominalAtlas,ivec3(${B.wall.centerOffset[0]},hi,${B.wall.centerOffset[2]}),0).g;
+  xy=vec2(s.x,s.y-(c0*(1.0-t)+c1*t));
   return vec2(mod(atan(xy.y,xy.x),6.283185307179586)*81.48733086305042,row);
 }
 bool s28WallKnown(vec4 codes){
@@ -21,49 +26,46 @@ bool s28WallKnown(vec4 codes){
     all(greaterThan(mod(floor(codes/32.0),4.0),vec4(0.0)))&&
     all(greaterThan(mod(floor(codes/128.0),4.0),vec4(0.0)));
 }
-ivec3 s28Cell(vec2 rc,out vec2 f){
-  rc.x=mod(rc.x,512.0);ivec2 ij=ivec2(floor(rc));ij.y=min(179,ij.y);
-  f=rc-vec2(ij);int band=ij.y/90;
-  return S28_WALL_OFF[band*8+ij.x/64]+ivec3(ij.x%64,ij.y-band*90,0);
-}
+// Esquinas 00,10,01,11 de la celda: la misma interpolación y la misma pendiente que chartCell (CPU).
+float s28Mix(vec4 v,vec2 f){float a=v.x+f.x*(v.y-v.x),b=v.z+f.x*(v.w-v.z);return a+f.y*(b-a);}
+vec2 s28Slope(vec4 v,vec2 f){float a=v.x+f.x*(v.y-v.x),b=v.z+f.x*(v.w-v.z);return vec2(v.y-v.x+f.y*((v.w-v.z)-(v.y-v.x)),b-a);}
 // xyz=fronteras, w=código nearest; U: w=-1 y fronteras NaN, sin fabricar una superficie.
-vec4 s28WallSurface(vec2 rc){
+vec4 s28WallSurface(vec2 rc,out vec4 outer,out vec4 inner,out vec4 iface,out vec2 f){
   float nan=uintBitsToFloat(0x7fc00000u);
-  if(rc.y<0.0||rc.y>180.0)return vec4(nan,nan,nan,-1.0);
-  vec2 f;ivec3 at=s28Cell(rc,f),inside=at+ivec3(0,0,1);
-  vec4 codes=vec4(texelFetch(uAbdominalAtlas,inside,0).g,texelFetch(uAbdominalAtlas,inside+ivec3(1,0,0),0).g,
-    texelFetch(uAbdominalAtlas,inside+ivec3(0,1,0),0).g,texelFetch(uAbdominalAtlas,inside+ivec3(1,1,0),0).g);
+  outer=vec4(nan);inner=vec4(nan);iface=vec4(nan);
+  rc.x=mod(rc.x,512.0);rc.y=clamp(rc.y,0.0,180.0);
+  ivec2 ij=ivec2(floor(rc));ij.y=min(179,ij.y);
+  f=rc-vec2(ij);int band=ij.y/90;
+  ivec3 at=S28_WALL_OFF[band*8+ij.x/64]+ivec3(ij.x%64,ij.y-band*90,0);
+  vec4 e0=texelFetch(uAbdominalAtlas,at+ivec3(0,0,1),0),e1=texelFetch(uAbdominalAtlas,at+ivec3(1,0,1),0);
+  vec4 e2=texelFetch(uAbdominalAtlas,at+ivec3(0,1,1),0),e3=texelFetch(uAbdominalAtlas,at+ivec3(1,1,1),0);
+  vec4 codes=vec4(e0.g,e1.g,e2.g,e3.g);
   if(!s28WallKnown(codes))return vec4(nan,nan,nan,-1.0);
-  vec3 size=vec3(textureSize(uAbdominalAtlas,0)),uv=(vec3(at)+vec3(f,0.0)+0.5)/size;
-  vec2 ft=textureLod(uAbdominalAtlas,uv,0.0).rg;
-  float pe=textureLod(uAbdominalAtlas,uv+vec3(0.0,0.0,1.0/size.z),0.0).r;
-  return vec4(ft,pe,codes[(f.y>=0.5?2:0)+(f.x>=0.5?1:0)]);
+  vec4 a=texelFetch(uAbdominalAtlas,at,0),b=texelFetch(uAbdominalAtlas,at+ivec3(1,0,0),0);
+  vec4 c=texelFetch(uAbdominalAtlas,at+ivec3(0,1,0),0),d=texelFetch(uAbdominalAtlas,at+ivec3(1,1,0),0);
+  outer=vec4(a.r,b.r,c.r,d.r);inner=vec4(a.g,b.g,c.g,d.g);iface=vec4(e0.r,e1.r,e2.r,e3.r);
+  return vec4(s28Mix(outer,f),s28Mix(inner,f),s28Mix(iface,f),codes[(f.y>=0.5?2:0)+(f.x>=0.5?1:0)]);
 }
 bool s28Valid(vec3 g,vec3 s,float depth,vec4 b){return dot(g,g)>0.000001&&s.z>=-210.0&&s.z<=60.0&&depth<=6.0&&b.w>=0.0;}
 // xyzw = outer/inner/interface/depth; con celda D/E vale a cualquier profundidad, nunca exige identidad muscular.
 vec4 s28WallAt(vec3 p,out bool valid){
-  float depth;vec3 g,s;vec2 xy;
-  vec4 b=s28WallSurface(s28Project(p,depth,g,s,xy));
+  float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;
+  vec4 b=s28WallSurface(s28Project(p,depth,g,s,xy),o,i,e,f);
   valid=s28Valid(g,s,depth,b);
   return vec4(b.xyz,-depth);
 }
 float s28Inside(vec3 m){bool valid;vec4 q=s28WallAt(m,valid);return valid?q.w-q.z:-1000.0;}
 // ∇(profundidad − frontera k), k: 0 externa, 1 interna, 2 interfaz: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|²;
-// k=3, piel E a 1,5 mm: −∇τ. La celda es bilineal: medio texel dentro de ella da su derivada exacta con dos lecturas.
-// Gemelo: s0028WallFaceGradient.
+// k=3, piel E a 1,5 mm: −∇τ. La pendiente bilineal sale de las mismas cuatro esquinas. Gemelo: s0028WallFaceGradient.
 vec3 s28FaceGradient(vec3 p,int k,out float sd,out bool valid){
-  float depth;vec3 g,s;vec2 xy;
+  float depth;vec3 g,s;vec2 xy,f;vec4 o,i,e;
   vec2 rc=s28Project(p,depth,g,s,xy);
   if(k==3){sd=-depth-1.5;valid=true;return -g;}
-  vec4 b=s28WallSurface(rc);
+  vec4 b=s28WallSurface(rc,o,i,e,f);
   valid=s28Valid(g,s,depth,b);sd=-1000.0;
   if(!valid)return vec3(0.0);
-  float v=k==0?b.x:k==1?b.y:b.z;sd=-depth-v;
-  vec2 f;ivec3 at=s28Cell(rc,f)+ivec3(0,0,k/2);
-  vec3 size=vec3(textureSize(uAbdominalAtlas,0)),uv=vec3(at)+vec3(f,0.0)+0.5;
-  vec2 h=mix(vec2(0.5),vec2(-0.5),greaterThanEqual(f,vec2(0.5)));
-  vec2 dc=textureLod(uAbdominalAtlas,(uv+vec3(h.x,0.0,0.0))/size,0.0).rg,dr=textureLod(uAbdominalAtlas,(uv+vec3(0.0,h.y,0.0))/size,0.0).rg;
-  vec2 slope=(vec2(k==1?dc.y:dc.x,k==1?dr.y:dr.x)-v)/h;
+  vec4 v=k==0?o:k==1?i:e;sd=-depth-s28Mix(v,f);
+  vec2 slope=s28Slope(v,f);
   vec3 w=vec3(vec2(-xy.y,xy.x)*(81.48733086305042*slope.x/max(dot(xy,xy),0.000001)),slope.y/1.5);
   return -g-w+g*(dot(g,w)/dot(g,g));
 }

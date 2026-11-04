@@ -63,7 +63,19 @@ const paces = new WeakMap<Page, { bootMs: number; t0: number; f0: number }>();
  * usuario) y espera dos vueltas JS y la finalización GPU del primer cuadro. Devuelve la lista de errores de página y de consola, que cada prueba
  * exige vacía al final.
  */
+/**
+ * Repite una prueba con otra persona del abdomen (`E2E_ABDOMEN=s0028`): fija ese `abdomen` en la consulta del
+ * arranque. Sin la variable, la consulta del spec sin cambios.
+ */
+export function withAbdomen(query: string, abdomen = process.env.E2E_ABDOMEN): string {
+  if (!abdomen) return query;
+  const params = new URLSearchParams(query.replace(/^\?/, ''));
+  params.set('abdomen', abdomen);
+  return `?${params.toString()}`;
+}
+
 export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=legacy'): Promise<string[]> {
+  query = withAbdomen(query);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {

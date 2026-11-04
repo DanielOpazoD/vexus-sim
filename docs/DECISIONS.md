@@ -10278,3 +10278,36 @@ rechazados. Default idéntico a main 8ee9fbd en 82.251 puntos y diez marcos.
 GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 GB quedan
 para r2b. No ecografía, validación clínica, PR, push ni CI remota.
 [Informe y códigos del cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+
+**Ronda P2 r2b, GPU/Worker/3D (04-11-2026).** Sigue pendiente del propietario; r2c la cierra.
+Regla de runtime idéntica en CPU, Worker del corte y GPU: proyección EDT directa `p − τ·∇τ/|∇τ|²`,
+semilla polar y carta bilineal; profundidad −τ. El Newton S−dN en GLSL reventaba SwiftShader x64
+(bisección 59f27ff/a26fe4a): la inversa queda offline y la GPU deja de subir su carta S/N.
+Testigos regenerados: |Δ| ≤0,484 mm frontera, ≤0,433 mm profundidad, 3,76 columnas.
+Con celda D/E la consulta vale a cualquier profundidad; U sólo por celda U o fuera de z
+(el corte por profundidad dejaba el cruce sin nodos válidos y se descarta).
+Normal analítica CPU = GPU: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|², pendiente de las
+cuatro esquinas; una consulta por gradiente de cara o de respiración, 17 lecturas (≤20).
+SwiftShader destapó NaN U del corte z vecino en la lectura trilineal (NaN·0 = NaN): carta y
+centros por texelFetch e interpolación en el orden de la CPU; normales GPU/CPU p05 = 1,0.
+El enlace respiratorio 3D (un peso por vértice, 890.828) bajaba el hilo principal 7,8 s:
+EDT e inside sin reservas, bit a bit iguales, 1,39 µs/vértice.
+Paridad viva en Metal (respiración+compresión, rejilla 192×256, diez ventanas): desacuerdo interior
+0,000 % en ocho y 0,002 % (1 px, frontera de celda U float32/float64) en subcostal y portal; Worker = CPU
+100 %; pared 99,83–99,99 %. En GPU el suelo cardíaco usaba la normal (0,1,0) (44 px): `sdDome` la escribe
+antes del tórax. La reverberación tras gas usaba `pow` de base negativa (NaN en Metal, bloques negros):
+cuadrado explícito sólo en s0028; el default conserva su `pow` (riesgo latente, sin NaN medido en main).
+Metal con la app completa: pico 1,683 GB en apnea y 1,768/1,766 GB con respiración tranquila (main
+1,789/1,851), sin pérdida de contexto ni tareas >1 s. SwiftShader x64: 7/7 specs (s0028Load,
+s0028WallGpu, cutMapRafStall, aortaPulse ×4) con gpu-ready 55–79 s y BOOT_MS intacto.
+Pliegues de la proyección: 0,35–5,88 % de los píxeles de banda por ventana; interior con signo
+frágil y plegado ≤86 px. Con U a cualquier profundidad quedan quietos al respirar 38 % del
+hígado, 60 % del bazo, 86/96 % de los riñones y 85 % de la VCI (costuras dentro de órganos).
+Ocho techos especializados dentro (RAWFIELD 441.631/1.385.000 tokens), samplers ≤16, ranuras ≤138;
+JS 1.052.043/1.070.080 B; descarga s0028 20.318.825/25.000.000 B; atlas, reserva y tórax +0 B.
+Láminas TAC/CPU/GPU/ecografía antes y después en los mismos puntos, abiertas, con las casillas vacías.
+Hallazgo heredado de r2a: el contacto regional deja sin acoplar la línea cuya entrada de piel o recorrido
+hasta la cara interna cae en celda U, y la ecografía sale negra ahí: 1.060/1.920 líneas acopladas en las
+diez poses (r2a 1.061, main 1.558; portal 11/192). Acoplar los nodos U por la piel, sin exigir presión,
+daría 1.717 (ensayo aislado, compresión de esos nodos sin validar): decisión de r2c.
+[Informe y códigos del cierre serial r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md).

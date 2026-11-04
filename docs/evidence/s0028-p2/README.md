@@ -100,17 +100,32 @@ pliegues:32.108 parches comparados,4 soportes diferentes y7 ramas alternativas,
 0 cambios grasa/banda/interior donde ambas conocidas; sin promesa de paridad global.
 GPU/Worker/mapa/3D/JIT/Metal son r2b. Decisión320 pendiente del propietario.
 
-## Proyección directa: testigos r2b en curso
+## Ronda r2b: GPU, Worker y 3D con la regla directa
 
-El contrato de runtime solicitado proyecta `p − torsoDepth(p)·∇/|∇|²`, usa la
-semilla polar y lee la carta bilineal; la profundidad es `−torsoDepth(p)`. Los
-cuatro testigos en `src/validation/fixtures/s0028-wall-chart.json` conservan los
-valores originales de la inversa offline `S−dN` y añaden los de proyección directa.
-En esos cuatro puntos, el máximo |Δ| frente a la inversa es 0,484492 mm en
-frontera y 0,433234 mm en profundidad; el desplazamiento angular máximo es
-3,755395 columnas. Las diferencias de distancia son menores al vóxel nativo de
-1,5 mm; no acreditan paridad por ventana ni validación clínica. Los nuevos
-fixtures exigen error <0,005 mm para profundidad y fronteras. Datos y script:
-`migration-p2-r2b/logs/direct-projection-fixtures-v2.jsonl` y
-`migration-p2-r2b/scripts/direct-projection-fixtures.ts` en la carpeta externa de
-la ronda. Las normales analíticas y las restantes puertas de r2b siguen pendientes.
+Regla única en CPU, Worker del corte y GPU: proyección `p − τ·∇τ/|∇τ|²`, semilla
+polar y carta bilineal; la inversa S−dN queda offline. Los cuatro testigos de
+`src/validation/fixtures/s0028-wall-chart.json` conservan la inversa y añaden la
+regla directa (|Δ| ≤0,484 mm frontera, ≤0,433 mm profundidad, 3,76 columnas;
+tolerancia 0,005 mm contra los valores nuevos). Celda D/E válida a 0, 20 y 60 mm;
+celda U inválida a todas. Normal analítica CPU = GPU con la pendiente de las cuatro
+esquinas; 17 lecturas por consulta, también con gradiente. GPU por texelFetch: el
+filtro trilineal mezclaba el corte z de otra tesela con huecos U en NaN.
+
+Con el HEAD final, en esta máquina (Low Power Mode activo): SwiftShader x64 7/7
+(s0028Load, s0028WallGpu, cutMapRafStall, aortaPulse ×4; gpu-ready 55–79 s).
+Paridad viva Metal: desacuerdo interior ≤0,002 % (1 px de frontera U), Worker = CPU
+100 %, pared 99,83–99,99 %. Pico Metal 1,683 GB en apnea y 1,768 GB respirando
+(main 1,789/1,851). Ocho techos especializados dentro, samplers ≤16, JS
+1.052.043/1.070.080 B, descarga 20.318.825/25.000.000 B, atlas/reserva/tórax +0 B.
+Pliegues de banda 0,35–5,88 % por ventana; quietos al respirar 38 % del hígado y
+85 % de la VCI.
+
+Diez láminas TAC/CPU main/CPU r2b/GPU y ecografía real antes y después, abiertas,
+casillas vacías. Las ecografías r2b salen negras donde la línea no acopla: el
+contacto regional de r2a no acopla sobre celdas U (líneas acopladas: main 1.558,
+r2a 1.061, r2b 1.060 de 1.920; portal 11/192). Decisión del propietario en r2c.
+
+[Informe r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md),
+[láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/review.html) y
+[mediciones compactas](measurements.json). Decisión 320 pendiente del propietario;
+sin validación clínica.

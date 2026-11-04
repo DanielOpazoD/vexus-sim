@@ -5,7 +5,7 @@
  * resuelve, se borra de aquí y del documento en el mismo cambio.
  */
 export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
-  's0028-wall-cpu-only',
+  's0028-wall-direct',
   'abdominal-atlas-reference-adult',
   'abdominal-viscera-internals-estimated',
   'abdominal-vascular-branches-estimated',

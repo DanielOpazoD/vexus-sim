@@ -98,5 +98,46 @@
     "negatives.json",
     "checks.json",
     "report.md"
-  ]
+  ],
+  "r2b": {
+    "rule": "direct EDT projection p − τ∇τ/|∇τ|², polar seed, bilinear chart; CPU = Worker = GPU",
+    "readsPerQuery": 17,
+    "ownerReview": "pending (decision 320)",
+    "parityInteriorDisagreementMax": 2.494387627837366e-5,
+    "workerAgreementMin": 1,
+    "bandFoldedFraction": {
+      "subxiphoid": 0.0588,
+      "epigastric": 0.0077,
+      "intercostal": 0.0178,
+      "subcostal": 0.0216,
+      "flank": 0.0317,
+      "portal": 0.0148,
+      "portalTrunk": 0.0118,
+      "renal": 0.0153,
+      "hepatorenal": 0.0035,
+      "portalSubcostal": 0.0154
+    },
+    "stillVertexFraction": {
+      "liver": 0.3828,
+      "spleen": 0.5959,
+      "pancreas": 0.4135,
+      "kidneyRight": 0.8629,
+      "kidneyLeft": 0.9622,
+      "gallbladder": 0.3982,
+      "inferior_vena_cava": 0.8537,
+      "portal_vein_and_splenic_vein": 0.3356
+    },
+    "jsBytes": 1052043,
+    "downloadBytes": 20318825,
+    "metalPeakBytes": [1683001640, 1767837872, 1765626056],
+    "swiftshaderSpecsPassed": "7/7",
+    "coupledLinesTotal": {
+      "main": 1558,
+      "r2a-59f27ff": 1061,
+      "r2b": 1060,
+      "exp-u-skin": 1717,
+      "of": 1920
+    },
+    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md"
+  }
 }

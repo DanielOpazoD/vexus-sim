@@ -360,18 +360,22 @@ si estuvieran calibrados. La formulación, protocolo, negativos y frontera está
 
 ### s0028: paquete B y candidato experimental (317/318)
 
-P2 r2a (320) instala únicamente la pared CPU del candidato r1c. La banda blanda
-D/E no identifica músculo; piel E1,5 mm, fascias/peritoneo e identidad muscular U.
-Cuatro soportes válidos y residual de carta bilineal ≤0,1 mm, normal EDT con soporte13 mm; fuera de ese contrato queda
-U rotulado, sin interpolar a través del hueco. Una cara interna desconocida no
-comprime ni desplaza por respiración; su NaN/centinela −1000 no son anatomía.
-La cúpula E/P7 se conserva fuera de las máscaras fuente, sin recorte hepático.
-Si el stencil toca U, su normal está ausente. Un conjunto sin semillas geométricas
-devuelve U explícita, sin banda NaN. La inversa tiene pliegues y no se acredita
-paridad global con la referencia offline. Es una política conservadora explícita, no una segmentación completa. El perfil
-se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas
-1,5/3 mm ni se añaden excepciones a la umbilical de 317. GPU/Worker/mapa/3D,
-paridad y pico corresponden a r2b; [migración](anatomia/migracion-s0028.md).
+P2 r2b (320) lleva la pared regional r1c a CPU, Worker del corte, 3D y GPU con una sola regla: proyección EDT
+directa `p − τ·∇τ/|∇τ|²`, semilla polar y carta bilineal; la inversa S−dN sólo existe offline. La banda blanda
+D/E no identifica músculo; piel E1,5 mm, fascias/peritoneo e identidad muscular U. Con celda D/E la consulta vale
+a cualquier profundidad (más allá de la cara interna es interior del cuerpo); U sólo si algún soporte de la celda es
+U o fuera de z. La proyección directa no es la inversa: en los testigos |Δ| ≤0,484 mm de frontera y ≤0,433 mm de
+profundidad. Pliegues: el 0,35–5,88 % de los píxeles de banda por ventana cae en triángulos de orientación negativa
+de la inversa, casi todos a más de 20 mm; en el interior sólo importa el signo de inside y sólo ≤86 píxeles
+plegados por ventana tienen una celda vecina que lo invertiría. Normal de cara analítica −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f),
+sin curvatura de la proyección ni pendiente del centro de fila: frente a diferencias finitas de la propia consulta,
+p50 8,3°/p90 25,5° en la fascia, mejor que la normal cutánea sola (21,4°/51,2°). La GPU lee carta y centros por
+texelFetch e interpola como la CPU; sus normales coinciden (p05 = 1,0). Una cara interna U no comprime, no acopla
+la sonda (ecografía negra en esas líneas) ni desplaza por respiración: con U a cualquier profundidad quedan quietos el 38 % de los vértices hepáticos, 60 % del bazo,
+86/96 % de los riñones y 85 % de la VCI, con costuras del peso 0↔1 dentro de órganos. La cúpula E/P7 se conserva
+fuera de las máscaras fuente, sin recorte hepático. Es una política conservadora explícita, no una segmentación
+completa. El perfil se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas 1,5/3 mm ni se añaden
+excepciones a la umbilical de 317; [migración](anatomia/migracion-s0028.md).
 
 Una persona, registro rígido único, sin HU→brillo ni etiquetas exteriores→histología. La piel
 se deriva del componente corporal mayor >−400 HU por corte, con huecos rellenos y brazos

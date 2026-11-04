@@ -1,13 +1,58 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline con cobertura y continuidad medidas (320, pendiente de revisión del propietario).**
+**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU y r2b GPU/Worker/3D con la regla directa (320, pendiente de revisión del propietario).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## P2 r2b: GPU, Worker y 3D con la regla directa, revisión pendiente (320)
+
+Sólo `?abdomen=s0028`; default conservado (hash GLSL por variante y 82.251 puntos idénticos a main 8ee9fbd).
+Regla de runtime idéntica en CPU, Worker del corte y GPU: superficie `p − τ·∇τ/|∇τ|²` sobre la EDT común,
+semilla polar respecto del centro de fila y carta bilineal; profundidad −τ. La inversa S−dN con Newton queda
+offline (anotación r1c): en GPU hacía estallar SwiftShader x64 (bisección 59f27ff ✓ / a26fe4a ✘) y se retira,
+junto con la carta auxiliar S/N que sólo él leía. Los cuatro testigos se regeneran con la regla directa:
+|Δ| máximo frente a la inversa 0,484 mm en frontera, 0,433 mm en profundidad y 3,76 columnas.
+
+Con celda D/E la consulta vale a cualquier profundidad: `inside = profundidad − cara interna` positivo es
+interior del cuerpo más allá de la pared, que necesitan contacto, peso respiratorio, cruce y clasificación.
+U sólo cuando la celda es U (algún soporte de las cuatro esquinas sin identidad geométrica) o fuera del dominio
+z. Contrato: celda conocida válida a 0, 20 y 60 mm; celda U inválida a todas. El corte por profundidad que se
+ensayó antes dejaba el cruce sin nodos válidos y se descarta.
+
+Normal de cara analítica, igual en CPU y GPU: −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f), P = I − ∇τ∇τᵀ/|∇τ|², con la
+pendiente exacta de la celda bilineal desde sus cuatro esquinas. `wallFaceGradient`, `respWeightGradient` y la
+piel E (−∇τ) hacen una sola consulta; el contacto usa la huella rígida de cinco puntos del cero y una búsqueda
+1D del cruce, sin normales de pared. Lecturas por consulta: 7 EDT + 2 centros + 8 esquinas = 17, también con
+gradiente (≤20). Aproximación medida: sin curvatura de la proyección ni dcy/dz.
+
+SwiftShader destapó un defecto propio de la GPU: la lectura trilineal de la interfaz (página 1) entraba en el
+corte z siguiente, la página 0 de otra tesela con huecos U en NaN, y NaN·0 = NaN convertía un punto interior en
+banda. Carta y centros se leen por texelFetch y se interpolan en el orden de la CPU; prueba de datos del
+peligro (10.108 texeles D/E con el corte z siguiente U en NaN) y guarda «sin textureLod en la carta».
+
+Puertas r2b con el HEAD final (Low Power Mode activo; cifras de esta máquina, no de CI):
+
+- SwiftShader x64: s0028Load, s0028WallGpu (10/20/60 mm y normales epigástrica/subcostal, 0 caras distintas),
+  cutMapRafStall y aortaPulse ×4 con `?abdomen=s0028`: 7/7, gpu-ready 55–79 s, BOOT_MS y techos intactos.
+- Estática: ocho programas especializados bajo techo, samplers ≤16, ranuras ≤138; JS 1.052.043/1.070.080 B;
+  descarga 20.318.825/25.000.000 B; atlas, reserva y tórax +0 B.
+- Paridad viva Metal: desacuerdo interior 0,000 % (0,002 % = 1 px de frontera U en subcostal y portal);
+  Worker = CPU 100 %; mismo muro en Worker y 3D. Bordes: grasa/banda, piel/grasa, cápsulas, U/D-E.
+- Pico Metal: 1,683 GB en apnea, 1,768/1,766 GB con respiración (main 1,789/1,851).
+- Pliegues por ventana (píxeles de banda en triángulos negativos): subxifoidea 5,88 %, epigástrica 0,77 %,
+  intercostal 1,78 %, subcostal 2,16 %, flanco 3,17 %, portal 1,48 %, tronco portal 1,18 %, renal 1,53 %,
+  hepatorrenal 0,35 %, portal subcostal 1,54 %; no bloquean.
+- Láminas: las ecografías r2b salen negras donde la línea no acopla. Es el contacto regional de r2a (cara
+  desconocida ⇒ sin compresión ni acoplamiento; el cruce no atraviesa huecos U), no la proyección: líneas
+  acopladas main 1.558, r2a 1.061, r2b 1.060 de 1.920; portal 11/192, subcostal 70, intercostal 67.
+  Decisión del propietario en r2c.
+
+[Evidencia r2b](../evidence/s0028-p2/README.md).
 
 ## P2 r2a: cero y consumidores CPU, revisión pendiente (320)
 

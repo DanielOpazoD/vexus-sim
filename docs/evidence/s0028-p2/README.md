@@ -1,92 +1,90 @@
-# P2: pared s0028, revisión del propietario pendiente
+# P2: pared s0028, anotación superficial continua offline
 
-## R2a: cero y consumidores CPU
+**Pendiente de revisión del propietario.** El candidato `s0028-P2-R1C-surface-v1`,
+revisión `logical-surface-v2`, cumple cobertura y gradiente con excepciones costales
+fuente enumeradas. No es validación clínica. Esta ronda sólo modifica contratos y
+documentación; el trabajo CPU r2a preexistente/concurrente se conserva por separado.
 
-El paso CPU usa el formato r1c como paquete reemplazable. No incorpora GPU ni
-declara aprobada su anotación. [Informe r2a, diez láminas y códigos del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md),
-[métricas por ventana](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/metrics.json),
-[imágenes abiertas y hashes](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/reviewed-images.json).
-Los contratos iniciales rojos, ocho mutantes rechazados y comparación main se
-conservan allí. Descarga 20.243.190 B; JS 1.037.124 B; atlas/reserva RAW/tórax +0 B.
-U no se convierte en aire ni órgano ni anillo uniforme. Worker/GPU/mapa/3D y pico
-Metal corresponden a r2b. Casillas del propietario vacías; cobertura/continuidad
-de r1c y revisión humana siguen pendientes. Sin PR ni validación clínica.
+## Cobertura y anatomía
 
-## R1c: superficie completa procesada, continuidad pendiente
+Se leen 92.672 perfiles propios a 0,5 mm, sobre el mismo cero EDT. El gradiente EDT
+usa soporte simétrico 13 mm para evitar alternar normales nodales. TAC, 117 máscaras,
+resolución y las diez poses permanecen intactos; subxiphoid z−60/rock 0,3/tilt−0,1.
+Rejilla 512×181, D=[−210,+60] mm; región anterior/lateral φ[−0,35;3,55],z[−180;0] mm.
+Huellas geodésicas de radio 26,5 mm: huella rígida 13 mm más 20 mm de margen.
 
-**Pendiente de revisión del propietario. La anotación continua no está completada.**
-ID `s0028-P2-R1C-surface-v1`, base `caca4a6`. Sólo herramientas y evidencia offline.
-No hay cambios de producto, poses, resolución ni órganos. No es validación clínica.
+| Ventana         |  D+E % | Salto med/p95/máx mm | Banda mediana mm | Centro/diseño mm |
+| --------------- | -----: | -------------------: | ---------------: | ---------------: |
+| subxiphoid      |  91.78 |       0.42/1.30/2.88 |             4.95 |        5.02/6.00 |
+| epigastric      |  97.89 |       0.52/1.33/2.88 |             6.52 |        3.67/3.75 |
+| intercostal     |  95.71 |       0.78/2.97/5.64 |             9.24 |        8.48/3.00 |
+| subcostal       |  93.88 |       0.44/1.62/2.89 |             9.65 |      10.81/11.25 |
+| flank           |  98.65 |       0.61/2.11/4.33 |             9.21 |       10.77/9.75 |
+| portal          |  92.80 |      0.72/4.22/11.38 |             6.47 |        3.19/9.75 |
+| portalTrunk     |  98.49 |       0.59/2.09/3.53 |             9.74 |       10.42/9.75 |
+| renal           | 100.00 |       0.44/1.00/2.09 |            10.48 |      10.09/10.50 |
+| hepatorenal     |  98.27 |       0.47/1.63/5.52 |            10.83 |       10.03/9.75 |
+| portalSubcostal |  95.42 |       0.50/2.22/6.89 |            11.03 |      12.86/12.00 |
 
-La ronda r1 queda intacta en la evidencia externa. Sus 364 celdas D y 62 píxeles de conflicto
-se sustituyen como candidato por 92.672 perfiles propios, a 0,5 mm sobre cero y normal EDT común.
-La región fija contiene 38.478 celdas: φ[-0,35;3,55] rad y z[-180;0] mm.
-La rejilla conserva 512×181 y D=[-210;+60] mm. Las diez huellas usan radio geodésico 26,5 mm.
+D=34446, E=565, U=3467: cobertura global 90.99%≥80%;
+diez huellas≥90%. D exige dos fronteras del perfil propio, dentro de incertidumbre
+nativa±1,5 mm; E sólo huecos 2D de diámetro físico≤5.986 mm, incluyendo
+esquinas, con al menos tres soportes D. El resto queda U. HU no se suaviza.
 
-## Cobertura y espesor medidos
+HU[−29,150] y máscaras fuente separan panículo, complejo y víscera; se cierra sólo
+una muestra binaria aislada 0,5 mm. La masa estructural distingue el complejo profundo
+de tabiques superficiales. Mediana robusta 2D ajusta confianza; dos superficies
+acopladas conservan orden y tope visceral. El esqueleto es material O separado,
+nunca músculo ni motivo para borrar toda la geometría parietal.
 
-| Ventana         | D+E % | Salto med/p95/máx mm | Banda mediana mm | Centro r1c/diseño mm |
-| --------------- | ----: | -------------------: | ---------------: | -------------------: |
-| subxiphoid      | 78.77 |              0.5/3/7 |                5 |                  4/6 |
-| epigastric      | 91.54 |            0.5/2.5/6 |                7 |             3.5/3.75 |
-| intercostal     | 60.43 |              1/4.5/9 |              4.5 |                  U/3 |
-| subcostal       | 90.01 |            0.5/3/7.5 |               10 |              8/11.25 |
-| flank           | 78.92 |            0.5/3/7.5 |              6.5 |             9.5/9.75 |
-| portal          | 67.84 |                1/4/9 |                5 |             1.5/9.75 |
-| portalTrunk     | 85.80 |            0.5/3/7.5 |             7.25 |               9/9.75 |
-| renal           | 94.90 |              0.5/3/5 |             10.5 |            10.5/10.5 |
-| hepatorenal     | 92.51 |              1/3/7.5 |             10.5 |              10/9.75 |
-| portalSubcostal | 93.42 |            0.5/3/7.5 |              8.5 |              11.5/12 |
+Salto global mediana/p95/máximo=0.516/2.531/12.00 mm.
+Todas las aristas ordinarias≤3 mm. Las 1601 excepciones>3 mm tienen ambos
+extremos≤6 mm de perfiles con costilla, esternón o cartílago fuente; máximo 12 mm.
+`costal-provenance.json` verifica las 26 máscaras específicas y `continuity.json`
+lista cada arista. Dos excepciones de otro hueso se retiraron antes del cierre.
+`costal-transitions.png` muestra los ocho peores perfiles y `coverage.png` los localiza.
 
-La cobertura cuenta celdas D/E; O no cuenta como músculo. D 28.929, E 535, O 1.950 y U 7.064.
-D+E global=76.57% frente a 80%; cinco ventanas superan 90%.
-La mediana global del salto es 1 mm, p95 3,5 mm y máximo 28 mm; 2.780 aristas superan 3 mm.
-**Fallan cobertura global, cinco huellas y continuidad.** No hay excepciones anatómicas aprobadas.
-El detector cambia de corrida en algunos perfiles. `discontinuities.png` muestra ambos extremos.
-Estos fallos no demuestran que el TAC haga imposible completar la anotación.
+Intercostal central 8,48 mm frente a 3 mm del diseño: ahora se mide el complejo que
+contiene O; los 3 mm del diseño son la primera banda extracostal, no interior intercostal.
+Portal central 3,19 mm frente a 9,75 mm: la normal del perfil y la envolvente hepática
+fuente delimitan la banda antes del órgano. `thickness-comparison.json` cuantifica
+normales, desplazamiento de celda, HU, O y topes; `profiles.png` permite cotejarlos.
+Las medianas de huella son magnitudes distintas al centro del diseño. Identidad
+alba/rectos/oblicuos/transverso U; fascias/peritoneo U, piel E1,5 mm e interfaz E offset 0.
+Intercostal: geometría D/E visible, material U/P8; posterior U/P3, sin anillo renal.
 
-El centro subcostal difiere −3,25 mm del diseño por la normal EDT y la frontera HU del perfil
-propio. Portal difiere −8,25 mm al terminar antes del órgano/esqueleto con el margen físico.
-`profiles.png` muestra ambos casos. La mediana de huella y el centro del diseño son medidas
-distintas; el JSON conserva ambas. Intercostal central U, sin sustituirlo por un vecino.
+## Comprobación de volumen y presupuesto
 
-## Geometría y procedencia
+La inversa continua usa la banda exportada como semilla y dos respaldos geométricos.
+Recupera 100% de los 35011 puntos centrales propios. Un envolvente analítico
+de todos los parches contiene todos los puntos posibles de pared; se rasterizan
+sus 387,467 vóxeles nativos sin consultar órganos para ocultar conflictos.
+Paquete reabierto: invasión visceral 0; envolvente de separación de un vóxel 0;
+músculo sobre esqueleto 0; pared posterior 0. Los 9,837 vóxeles óseos y
+9,240 cartilaginosos dentro del complejo son material O. Interior intercostal U
+20,369 vóxeles. Se corrigió un toque previo del shell bajando controles de pared;
+las máscaras no se recortaron. Contactos y bandas<2 mm por órgano: `contacts.json`.
+Diez láminas TAC/propuesta a 0,75 mm, mismos puntos físicos y casillas sin rellenar.
+U conserva el TAC sin tinte; el contorno violeta señala material intercostal U/P8.
 
-D usa fronteras del perfil propio. Una mediana robusta 2D selecciona corridas existentes;
-no suaviza HU. Los outliers quedan U. E interpola huecos cuyo diámetro físico incluye las
-esquinas de sus celdas: máximo 5.945 mm. 29 celdas antes E pasan a U al corregir
-la estimación entre centros. No se declara cerrado el límite de gradiente de 3 mm.
+Descarga 20,318,846 B, base 20.152.271 B, incremento 166,575 B≤850.000 B;
+metadatos 2,459 B≤4.096 B; payload 757.844 B. Atlas, reserva RAW y tórax+0 B.
+Formato RG16F intacto; el negativo torácico+1 B sigue fallando. Ocho estimaciones
+estáticas contra techos literales, sin homologar la nueva inversión en GPU/JIT/Metal.
+Ninguna evidencia offline equivale a aceptación clínica ni a instalar este paquete.
 
-Conflictos viscerales y esqueléticos: 0 vóxeles. La primera prueba de celda finita detectó 1 visceral y 333 esqueléticos;
-se conserva. Se añadió una envolvente fuente de 2 vóxeles viscerales y 1 esquelético, con
-residual normal máximo 1,5 mm. Raster nativo del candidato corregido: 5.110.328 vóxeles corporales;
-la envolvente de un vóxel se comprueba en 262.733 vóxeles de la envolvente, con 0 conflictos.
-El candidato final sólo elimina 29 celdas E. `subset-proof.json` demuestra igualdad de todos
-los intervalos retenidos e inclusión exacta; conserva el cero. 124.392 es el recuento medido de
-banda del superconjunto, no un nuevo recuento final. Las máscaras fuente se conservan intactas.
+[Evidencia completa](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2/report.md), [review navegable](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2/review.html),
+[mediciones compactas](measurements.json). Quince imágenes finales abiertas y hashes
+en `reviewed-images.json`. Negativos: diez anclas, anillo uniforme, invasión, posterior.
+Cierre serial y SHA en `checks.json`, pmset/carga antes y después de cada tiempo.
+`s0028-wall_test.py`:12 pruebas sintéticas, sólo biblioteca estándar y numpy; ya figura
+en `renal-reference.yml`. Se excluyen explícitamente `diaphragm_relationships_test.py`,
+`diaphragm_source_repair_test.py` y `posterior_source_test.py`: CGAL ausente, condición
+ambiental preexistente; CI no las ejecuta. No hay agentes ni operaciones remotas.
 
-`contacts.json` distingue 199 contactos limitados por órgano entre 1131 celdas con banda <2 mm. Posterior U/P3, sin anillo renal; intercostal
-bloqueada/P8. Identidad alba/rectos/oblicuos/transverso U. Piel E 1,5 mm; fascias/peritoneo U.
-La interfaz interna E coincide con la cara interna, sin sumar 2 mm hacia la víscera.
-Los negativos se recalculan: diez anclas 700 píxeles de invasión; anillo 18–28 mm contradice
-28.480 perfiles; invasión y posterior fallan sus contratos. Python 10/10, sin TAC ni CGAL.
+## Evidencia anterior conservada
 
-## Paquete, límites y reproducción
-
-Paquete reabierto=20.243.190 B, base 20.152.271 B, incremento 90.919 B≤850.000 B.
-Metadatos 2160 B≤4.096 B; payload 757.844 B dentro de la reserva. Atlas, reserva RAW y tórax+0 B.
-El negativo torácico+1 B sigue fallando. Ocho estimaciones estáticas pasan los techos literales;
-samplers≤16, slots≤138. El formato no cambia. El clasificador de prismas finitos y su integración
-GPU/contacto/JIT no se homologan. No hay HTTP, memoria pico ni validación clínica nueva.
-
-Evidencia externa: `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c`. `progress.md` permite reanudar cada subpaso; `scripts/` reproduce
-perfiles, anotación, pruebas, exportación y láminas. `review.html` navega 15 láminas finales;
-17 imágenes abiertas contando las 2 diagnósticas, con hashes en `reviewed-images.json`.
-La lista sí/no permanece vacía. [Mediciones compactas](measurements.json).
-
-El cierre serial y sus códigos quedan en `checks.json`, sobre su SHA. `pmset` y carga se
-registran antes y después de cada tiempo. El sistema informó `lowpowermode 0` durante esta ronda.
-`renal-reference.yml` incorpora `s0028-wall_test.py`, que requiere sólo biblioteca estándar y numpy.
-Se excluyen de la ejecución Python local `diaphragm_relationships_test.py`,
-`diaphragm_source_repair_test.py` y `posterior_source_test.py`: CGAL ausente, condición ambiental
-preexistente indicada por el propietario. No se atribuye a P2. No se ejecutan agentes ni operaciones remotas.
+R1 y el primer candidato r1c quedan intactos. R1 c anterior tenía 76,57% de cobertura,
+salto máximo 28 mm y cinco huellas bajo 90%; no se presenta como aceptado. Sus informes
+están en la raíz externa `migration-p2-r1c`; esta revisión vive en `logical-surface-v2`.
+R2 a CPU preexistente permanece documentada en [su informe](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).

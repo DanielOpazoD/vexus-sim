@@ -10173,7 +10173,7 @@ en [evidencia 319](evidence/s0028-mesh/README.md); la CI remota sigue pendiente.
 Revisar propiedad exclusiva/descodificación única del buffer y aritmética entera del formato.
 Sin delegación, push, PR, stash ni gh. No es validación clínica ni aceptación P2–P8.
 
-## 320. Anotar la superficie de pared s0028 y conservar las puertas P2 pendientes [Estado: pendiente de revisión del propietario]
+## 320. Completar la anotación continua de pared s0028 antes del runtime [Estado: pendiente de revisión del propietario]
 
 **Contexto.** P2 r1 dejó sólo 364 celdas D de 92.672, con 62 píxeles de conflicto
 visceral en diez planos. R1c reemplaza los nueve barridos por 92.672 perfiles propios
@@ -10184,39 +10184,43 @@ sobre cero y normal EDT común, a 0,5 mm. Base local `caca4a6`, ya rebasada sobr
 uniforme, la invasión visceral y el anillo renal posterior. No se rellena una banda
 por HU suavizados ni por SDF saturado. Las máscaras fuente permanecen intactas.
 
-**Decisión.** `s0028-P2-R1C-surface-v1` sigue pendiente del propietario y no está lista
-para runtime. La región fija tiene 38.478 celdas: 28.929 D, 535 E, 1.950 O y 7.064 U.
-D lee su perfil. E interpola huecos de hasta 5.945 mm físicos. El filtro 2D selecciona
-corridas existentes; las ambiguas quedan U. Identidades musculares U, piel E 1,5 mm,
-fascias y peritoneo U. Posterior U/P3 e intercostal bloqueada/P8.
+**Decisión.** `s0028-P2-R1C-surface-v1`, revisión `logical-surface-v2`, conserva
+el estado pendiente de revisión del propietario. La anotación offline cumple sus
+umbrales: 34446 D + 565 E de 38.478 celdas (90.99%), diez huellas≥90%.
+D exige frontera del perfil propio; E sólo huecos 2D≤5.986 mm incluyendo esquinas.
+Región φ[−0,35;3,55],z[−180;0] mm; rejilla 512×181,D=[−210,+60],paso 0,5 mm.
+La mediana robusta ajusta confianza y las superficies se regularizan juntas, con
+límite≤3 mm ordinario. Las 1601 aristas excepcionales del reborde (máximo 12 mm)
+tienen ambos extremos≤6 mm de costilla/esternón/cartílago fuente; se listan y cotejan
+contra 26 máscaras específicas. No se permiten excepciones de otro hueso.
 
-**Consecuencias.** La cobertura D+E global 76,57 % no alcanza 80 % y cinco huellas
-no alcanzan 90 %. El salto global mediana/p95/máximo es 1/3,5/28 mm, con 2.780 aristas
-sobre 3 mm sin excepción anatómica acreditada. El máximo refleja cambios de corrida,
-no una transición aprobada. Las láminas muestran los fallos. No se demuestra que el
-TAC haga imposible completar la anotación; se conserva la limitación del detector.
+**Consecuencias.** La pared sigue un complejo estructural, no la primera corrida
+HU ni diez anclas. El esqueleto O queda incrustado sin llamarlo músculo ni borrar
+el plano entre costillas; material intercostal U/P8, posterior U/P3 y sin anillo renal.
+Identidades musculares y fascias/peritoneo U; piel E1,5 mm e interfaz E offset 0.
+El salto mediana/p95/máximo es 0.516/2.531/12 mm; todas las aristas>3 mm
+tienen fuente costal. El anterior 76,57%/máximo 28 mm se conserva como candidato fallido.
+Portal central 3,19 frente a 9,75 mm del diseño se explica con la normal propia y el
+tope hepático; intercostal 8,48 frente a 3 mm incluye O y no acredita músculo intercostal.
 
-La primera prueba de celda finita detectó 1 conflicto visceral y 333 esqueléticos.
-La envolvente fuente corregida da cero en el raster de 5.110.328 vóxeles corporales
-y en 262.733 vóxeles del shell de separación de un vóxel. El candidato final sólo elimina
-29 E; la prueba exacta de subconjunto conserva ese cero sin recortar órganos.
-Hay 199 contactos limitados por órgano entre 1131 celdas con banda menor de 2 mm, listadas en la evidencia externa.
+La inversión continua recupera 100% de 35,011 centros propios. El paquete reabierto
+se verifica en una envolvente analítica de todos los parches,387,467 vóxeles
+nativos: visceral 0, shell de un vóxel 0, músculo sobre esqueleto 0 y posterior 0.
+Las máscaras se preservan. Un toque previo del shell se corrigió bajando controles
+de pared; no se ocultó por precedencia ni recorte. `contacts.json` lista contactos.
 
-El paquete externo mide 20.243.190 B, +90.919 B sobre 20.152.271 B; metadatos 2.160 B.
-Payload 757.844 B dentro de la reserva. Atlas, reserva RAW y tórax crecen 0 B.
-El formato RG16F no cambia. Ocho estimaciones estáticas pasan, con hasta 16 samplers
-y 138 slots. El clasificador finito, la GPU, el contacto, el JIT y el pico Metal no se
-homologan. El producto, las poses, las estructuras y la resolución se conservan.
+Descarga externa 20,318,846 B (+166,575 B sobre 20.152.271); metadatos 2,459 B.
+Payload 757.844 B dentro de reserva; atlas/reserva RAW/tórax+0 B, +1 B torácico rechazado.
+Formato RG16F intacto, ocho estimaciones estáticas dentro de techos. No se instala
+este candidato ni se homologa su inversa en GPU/JIT/contacto/Metal. El CPU r2a
+preexistente/concurrente se conserva por separado; esta revisión no edita producto.
 
-**Verificación.** Diez contratos Python sintéticos pasan, con rojo inicial conservado.
-Se amplían para exigir perfil propio, E corto, tope de órgano/esqueleto y posterior U,
-y para reabrir los metadatos de la envolvente finita. `renal-reference.yml` los incluye
-con sus dependencias actuales, sin TAC ni CGAL. Los negativos de r1 se conservan;
-diez anclas vuelven a dar 700 píxeles de invasión y el anillo fijo contradice 28.480
-perfiles propios. Quince láminas finales y dos diagnósticas abiertas, con lista sí/no
-vacía y hashes registrados. Cierre serial, exclusiones CGAL preexistentes, mediciones
-y rutas en [evidencia P2](evidence/s0028-p2/README.md). No hay agentes, push, PR, gh,
-stash, puerto 5174 ni avance al runtime.
+**Verificación.** Doce pruebas Python sintéticas sin TAC, sólo numpy/biblioteca
+estándar; `renal-reference.yml` ya las incluye. Se conservan negativos de diez
+anclas, anillo uniforme, invasión y posterior. Quince láminas finales abiertas,
+casillas vacías y hashes. Cierre serial, pmset/carga, exclusiones CGAL preexistentes
+y rutas en [evidencia P2](evidence/s0028-p2/README.md). Sin agentes ni operaciones remotas.
+No es validación clínica ni aceptación del propietario.
 
 **Ronda P2 r2a, CPU (03-11-2026).** Se autoriza por separado el paso de cero y
 consumidores CPU, manteniendo el candidato reemplazable y esta decisión pendiente
@@ -10244,7 +10248,8 @@ En diez planos de 75.027 píxeles, U de celdas ocupa 6,82–15,46 %; geometría 
 acreditada total 63,28–78,57 % al incluir proyección/dominio y zonas profundas.
 La pared ocupa cero píxeles de máscaras viscerales o esqueléticas en cada plano;
 no acredita todo el volumen. Las diez láminas TAC/main/CPU están abiertas, con
-casillas vacías. Cobertura/continuidad r1c siguen fallidas, intercostal P8 bloqueada.
+casillas vacías. Su paquete r1c anterior conserva los fallos de cobertura/continuidad;
+la revisión offline nueva no está instalada. Intercostal P8 bloqueada.
 Descarga 20.243.190 B; build CPU 1.037.124/1.070.080 B JS. Dos contratos iniciales
 rojos y ocho mutantes rechazados; default idéntico a main en 82.251 puntos y diez
 marcos. Ocho fuentes GLSL por variante idénticas a main; sus techos no cambian.

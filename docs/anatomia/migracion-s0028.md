@@ -1,7 +1,7 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c con cobertura y continuidad pendientes (320, pendiente de revisión del propietario).**
+**Estado vigente (03-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline con cobertura y continuidad medidas (320, pendiente de revisión del propietario).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
@@ -45,39 +45,39 @@ RAW y tórax +0 B, sin mover techos ni resolución. Ocho fuentes GLSL por varian
 idénticas a main; tests y ocho mutantes negativos en la evidencia. La integración
 GPU, la distribución de pared/piel al Worker y el mapa/3D común, paridad,
 primer cuadro/JIT y pico Metal ≤2 GB son trabajo r2b. Esta entrega CPU no acepta
-la anotación: cobertura/continuidad r1c y revisión del propietario siguen pendientes.
+la nueva anotación offline: conserva el candidato r1c anterior, con sus fallos.
+La revisión del propietario sigue pendiente.
 [Láminas abiertas, hashes, métricas y cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
 No ecografía, CI remota, PR ni validación clínica.
 
-## P2 r1c: superficie procesada y puertas pendientes (320)
+## P2 r1c: superficie continua offline, revisión pendiente (320)
 
-**Pendiente de revisión del propietario. La anotación continua sigue incompleta.**
-La rejilla 512×181 conserva D=[−210,+60] mm. Se muestrean 92.672 perfiles propios
-sobre el cero y la normal EDT común, a 0,5 mm. En la región anterior y lateral fija
-hay 28.929 celdas D y 535 E de 38.478: **76,57 %**, inferior al 80 % requerido.
-Cinco huellas alcanzan 90 %. Los saltos globales mediana/p95/máximo son 1/3,5/28 mm;
-2.780 aristas superan 3 mm sin excepción anatómica acreditada.
+**Pendiente de revisión del propietario.** `logical-surface-v2` del mismo ID
+`s0028-P2-R1C-surface-v1` resuelve las alternancias entre tabique superficial y
+complejo profundo. D=34446, E=565, U=3467 de 38.478 celdas: cobertura 90.99%,
+y las diez huellas superan 90%. Rejilla 512×181, D=[−210,+60] mm, paso 0,5 mm;
+misma piel/EDT, soporte normal 13 mm y poses intactas.
 
-Las máscaras viscerales fuente limitan la pared, incluido el contacto hepático.
-La primera rasterización de prismas detectó 1 conflicto visceral y 333 esqueléticos.
-La envolvente de celda corregida da cero en 5.110.328 vóxeles nativos y en el shell
-adicional de separación de un vóxel. El candidato final elimina 29 celdas E sobredimensionadas;
-una prueba exacta de subconjunto conserva ese cero. Las máscaras de órganos no cambian.
-E mide como máximo 5.945 mm incluyendo las esquinas físicas del hueco.
-Posterior U/P3, sin anillo renal; intercostal bloqueada/P8. Identidades musculares U.
+Saltos globales mediana/p95/máximo=0.516/2.531/12 mm. Aristas
+ordinarias≤3 mm;1601 excepciones del reborde fuente enumeradas, con ambos
+extremos≤6 mm de costilla/esternón/cartílago observados. No hay excepción sin fuente.
+E interpola sólo huecos físicos≤5.986 mm. Identidades y capas finas U/E;
+esqueleto O independiente, material intercostal U/P8 y posterior U/P3.
 
-Paquete externo reabierto: **20.243.190 B, +90.919 B** sobre 20.152.271 B.
-Payload 757.844 B, metadatos 2.160 B; atlas, reserva RAW y tórax +0 B.
-Los ocho costes estáticos del lector caben, con hasta 16 samplers y 138 slots.
-El formato RG16F sigue igual. No hay cableado de pared, esqueleto, acústica, GPU,
-contacto o poses, ni aprobación del clasificador geométrico finito en runtime.
+Paquete reabierto, inversa que recupera 100% de 35,011 centros propios y envolvente
+geométrica de todos los parches: invasión visceral 0, shell de separación de un
+vóxel 0, músculo sobre O0 y relleno posterior 0 en 387,467 vóxeles candidatos
+nativos. Las 117 máscaras fuente permanecen intactas. Diez planos tienen los mismos
+puntos físicos y casillas vacías. Portal e intercostal conservan explicación de las
+diferencias>3 mm frente al diseño en perfiles y máscaras, sin cambiar la pose.
 
-Las diez láminas, ortogonales, mapa y trazados tienen el ID `s0028-P2-R1C-surface-v1`.
-Los hashes de las imágenes abiertas, los negativos, la tabla completa y los límites
-están en [evidencia P2](../evidence/s0028-p2/README.md). Las casillas del propietario
-siguen vacías. La cobertura y el límite de gradiente requieren reconciliar la anotación
-antes de los pasos 3–4; la revisión humana no sustituye esos controles fallidos.
-La evidencia r1 se conserva sin modificar fuera del repositorio. No es validación clínica.
+Descarga offline 20,318,846 B, incremento 166,575 B; metadatos 2,459 B.
+Payload 757.844 B, atlas/reserva RAW/tórax+0 B. Formato RG16F intacto; ocho costes
+estáticos dentro de los techos. No acredita GPU/contacto/JIT/Metal de la nueva geometría.
+El trabajo CPU r2a preexistente/concurrente se conserva por separado; esta ronda
+no instala el candidato ni cambia sus consumidores. R1 y r1c anterior, incluidos sus fallos, se conservan como historia.
+[Tabla, láminas abiertas, contactos, negativos y cierre](../evidence/s0028-p2/README.md).
+No es validación clínica; la revisión humana no reemplaza las medidas.
 
 ## Compactación de descarga tras P1 (319)
 

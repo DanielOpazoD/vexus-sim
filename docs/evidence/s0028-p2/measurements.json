@@ -1,33 +1,29 @@
 {
   "annotationId": "s0028-P2-R1C-surface-v1",
-  "baseHead": "caca4a6",
-  "implementationHead": "6d0a1f3",
+  "geometryRevision": "logical-surface-v2",
   "ownerReview": "pending",
-  "runtimeInstalled": false,
+  "runtimeInstalledByThisRound": false,
+  "runtimeOwnership": "preexisting/concurrent work preserved; these changes are tools/docs only",
   "clinicalValidation": false,
-  "globalAnatomyAnnotated": false,
   "source": {
-    "person": "s0028",
     "ctSha256": "d11b8acbf137277d157930f7d0cb3a5f259364a5e5af18dafcd3cac0ecf4168c",
     "poseBlockSha256": "0f3131ca373676fcbfd24bf5228792df7840cc1c23f949721a5593c7f19c02b1",
-    "originLASmm": [-219.48527431275116, -230.21478450019774, -395.98879268882285],
-    "sharedEDTVerifiedAgainstCurrentP1": true
+    "normalSupportMm": 13,
+    "masks": 117
   },
   "grid": {
     "dimensions": [512, 181],
     "zMm": [-210, 60],
-    "profileStepMm": 0.5,
-    "profiles": 92672,
     "regionPhiRad": [-0.35, 3.55],
     "regionZMm": [-180, 0],
+    "profileStepMm": 0.5,
+    "profiles": 92672,
     "regionCells": 38478,
-    "D": 28929,
-    "E": 535,
-    "O": 1950,
-    "U": 7064,
-    "coveragePercent": 76.5736264878632,
-    "coverage80Pass": false,
-    "maxEPhysicalPatchDiameterMm": 5.9451979980991645
+    "D": 34446,
+    "E": 565,
+    "U": 3467,
+    "coveragePercent": 90.99,
+    "maxEHoleSpanMm": 5.986
   },
   "windows": {
     "columns": [
@@ -35,200 +31,72 @@
       "cells",
       "D",
       "E",
-      "O",
       "U",
       "coveragePercent",
       "jumpMedianMm",
       "jumpP95Mm",
       "jumpMaxMm",
+      "sourceCostalEdgesOver3",
       "bandMedianMm",
       "centerMm",
       "designCenterMm"
     ],
     "rows": [
-      ["subxiphoid", 815, 631, 11, 0, 173, 78.77300613496932, 0.5, 3.0, 7.0, 5.0, 4.0, 6.0],
-      ["epigastric", 804, 729, 7, 0, 68, 91.54228855721394, 0.5, 2.5, 6.0, 7.0, 3.5, 3.75],
-      ["intercostal", 652, 391, 3, 141, 117, 60.42944785276074, 1.0, 4.5, 9.0, 4.5, null, 3.0],
-      ["subcostal", 801, 692, 29, 0, 80, 90.01248439450687, 0.5, 3.0, 7.5, 10.0, 8.0, 11.25],
-      ["flank", 669, 524, 4, 82, 59, 78.9237668161435, 0.5, 3.0, 7.5, 6.5, 9.5, 9.75],
-      ["portal", 597, 402, 3, 95, 97, 67.8391959798995, 1.0, 4.0, 9.0, 5.0, 1.5, 9.75],
-      ["portalTrunk", 662, 563, 5, 43, 51, 85.80060422960725, 0.5, 3.0, 7.5, 7.25, 9.0, 9.75],
-      ["renal", 725, 685, 3, 0, 37, 94.89655172413794, 0.5, 3.0, 5.0, 10.5, 10.5, 10.5],
-      ["hepatorenal", 694, 630, 12, 0, 52, 92.507204610951, 1.0, 3.0, 7.5, 10.5, 10.0, 9.75],
-      ["portalSubcostal", 699, 644, 9, 7, 39, 93.41917024320458, 0.5, 3.0, 7.5, 8.5, 11.5, 12.0]
+      ["subxiphoid", 815, 740, 8, 67, 91.779, 0.422, 1.304, 2.875, 0, 4.953, 5.016, 6.0],
+      ["epigastric", 804, 780, 7, 17, 97.886, 0.516, 1.328, 2.875, 0, 6.516, 3.672, 3.75],
+      ["intercostal", 652, 611, 13, 28, 95.706, 0.781, 2.969, 5.641, 56, 9.242, 8.484, 3.0],
+      ["subcostal", 801, 724, 28, 49, 93.883, 0.438, 1.625, 2.891, 0, 9.648, 10.812, 11.25],
+      ["flank", 669, 656, 4, 9, 98.655, 0.609, 2.109, 4.328, 9, 9.211, 10.766, 9.75],
+      ["portal", 597, 552, 2, 43, 92.797, 0.719, 4.216, 11.375, 87, 6.469, 3.188, 9.75],
+      ["portalTrunk", 662, 634, 18, 10, 98.489, 0.594, 2.094, 3.531, 4, 9.742, 10.422, 9.75],
+      ["renal", 725, 725, 0, 0, 100.0, 0.438, 1.0, 2.094, 0, 10.484, 10.094, 10.5],
+      ["hepatorenal", 694, 668, 14, 12, 98.271, 0.469, 1.634, 5.516, 11, 10.828, 10.031, 9.75],
+      ["portalSubcostal", 699, 646, 21, 32, 95.422, 0.5, 2.219, 6.891, 26, 11.031, 12.859, 12.0]
     ]
   },
   "continuity": {
-    "medianMm": 1.0,
-    "p95Mm": 3.5,
-    "maxMm": 28.0,
-    "edges": 51814,
-    "edgesOver3Mm": 2780
+    "medianMm": 0.516,
+    "p95Mm": 2.531,
+    "maxMm": 12.0,
+    "ordinaryMaxMm": 3.0,
+    "edges": 67239,
+    "sourceCostalEdgesOver3": 1601,
+    "unexplainedEdgesOver3": 0
   },
-  "geometry": {
+  "native": {
+    "nativeBodyVoxelsTested": 387467,
     "visceralConflictVoxels": 0,
-    "skeletalConflictVoxels": 0,
     "oneVoxelEnvelopeConflictVoxels": 0,
-    "nativeBodyVoxelsTested": 5110328,
-    "envelopeShellVoxelsTested": 262733,
-    "finalProof": "native raster of verified superset + bit-identical retained intervals after 29 E->U cells; subset-proof.json",
-    "contactCellsWithBandUnder2Mm": 1131,
-    "organLimitedThinContacts": 199,
-    "contactsFile": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/contacts.json",
-    "posteriorKnownCells": 0,
-    "posterior": "U/P3",
-    "intercostal": "blocked/P8",
-    "regionalIdentity": "U",
-    "skinMm": {
-      "value": 1.5,
-      "provenance": "E"
-    },
-    "thinFasciaPeritoneum": "U",
-    "innerInterfaceOffsetMm": {
-      "value": 0,
-      "provenance": "E"
-    }
+    "muscleBoneConflictVoxels": 0,
+    "posteriorGrossBandVoxels": 0,
+    "grossEmbeddedBoneVoxels": 9837,
+    "grossEmbeddedCartilageVoxels": 9240,
+    "ownMidpointRecoveryPercent": 100.0,
+    "geometricSuperset": "all normal-chart patches, analytic convex bounds; no organ priority"
   },
-  "negative": {
-    "tenAnchorCollisionPixels": 700,
-    "uniformRingOwnProfileRejects": 28480,
-    "organInvasion": "REJECT",
-    "posteriorRenalRing": "REJECT",
-    "fullResults": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/negatives.json"
-  },
+  "contactCells": 4618,
+  "thinByOrganContactCells": 428,
   "budget": {
     "baselineDownloadBytes": 20152271,
-    "candidateDownloadBytes": 20243190,
-    "incrementBytes": 90919,
-    "gzipCapacityBytes": 95837,
+    "candidateDownloadBytes": 20318846,
+    "incrementBytes": 166575,
+    "metadataBytes": 2459,
     "payloadBytes": 757844,
-    "metadataBytes": 2160,
-    "metadataDeltaBytes": 2081,
     "atlasIncrementBytes": 0,
     "rawReservationIncrementBytes": 0,
-    "thoracicIncrementBytes": 0,
-    "additionalTemporaryBudgetBytes": 16000000,
-    "peakMetalMeasured": false,
-    "offlineOnly": true,
-    "ownerReview": "pending",
-    "globalAnatomyAnnotated": false
+    "thoracicIncrementBytes": 0
   },
-  "packageFiles": [
-    {
-      "file": "abdominal-direct.gzip.bin",
-      "bytes": 8567375,
-      "sha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd"
-    },
-    {
-      "file": "annotation-capacity.gzip.bin",
-      "bytes": 95837,
-      "sha256": "f58e581f62b5eab1294d7591f2a8f953014cb4f4394098c503ea2725ae0e5fbf"
-    },
-    {
-      "file": "candidate-manifest.bin",
-      "bytes": 36602,
-      "sha256": "f6ec22708be80bb259f1073d9094c3526d201ba9d78babe04e439ed533f217e4"
-    },
-    {
-      "file": "skin-polar.gzip.bin",
-      "bytes": 947509,
-      "sha256": "12fb2f290b66349b54bc4aaa9e6285c237c3a09aaabfc7792b60dc02955fe69e"
-    },
-    {
-      "file": "surfaces.gzip.bin",
-      "bytes": 5340216,
-      "sha256": "10c45ed5a468d0a53e96aac8f426923abbbd735b9a0eb1618317639bfee97406"
-    },
-    {
-      "file": "thoracic-direct.gzip.bin",
-      "bytes": 5252011,
-      "sha256": "01ac3e1c81fff7eba99a610026999b9b9e37d8261918590dd0b78b53d3eb9c0d"
-    },
-    {
-      "file": "abdominal-body.bin",
-      "bytes": 3640,
-      "sha256": "47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323"
-    }
-  ],
-  "shaders": {
-    "allPass": true,
-    "formatUnchanged": true,
-    "scope": "static reader estimate only; finite-prism classifier, JIT, contact and runtime not proved",
-    "rows": [
-      {
-        "name": "FRAG_RAWFIELD",
-        "tokens": 1183460,
-        "branches": 8956,
-        "samplers": 10,
-        "slots": 136,
-        "pass": true
-      },
-      {
-        "name": "FRAG_RAWFIELD_ECHO",
-        "tokens": 516201,
-        "branches": 3861,
-        "samplers": 16,
-        "slots": 137,
-        "pass": true
-      },
-      {
-        "name": "FRAG_RAWFIELD_CLASS",
-        "tokens": 423774,
-        "branches": 3370,
-        "samplers": 10,
-        "slots": 136,
-        "pass": true
-      },
-      {
-        "name": "FRAG_RAWFIELD_ELEVATION",
-        "tokens": 423914,
-        "branches": 3372,
-        "samplers": 15,
-        "slots": 137,
-        "pass": true
-      },
-      {
-        "name": "FRAG_RAWFIELD_GRADIENT",
-        "tokens": 298780,
-        "branches": 2201,
-        "samplers": 15,
-        "slots": 138,
-        "pass": true
-      },
-      {
-        "name": "FRAG_TRANS_HITS",
-        "tokens": 479482,
-        "branches": 3921,
-        "samplers": 6,
-        "slots": 101,
-        "pass": true
-      },
-      {
-        "name": "FRAG_TRANS_HITS_GRID",
-        "tokens": 234307,
-        "branches": 1949,
-        "samplers": 11,
-        "slots": 102,
-        "pass": true
-      },
-      {
-        "name": "FRAG_COLOR",
-        "tokens": 229542,
-        "branches": 1920,
-        "samplers": 7,
-        "slots": 110,
-        "pass": true
-      }
-    ]
-  },
-  "images": {
-    "count": 17,
-    "manifest": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/reviewed-images.json",
-    "sha256": "832ca80d123df5ca7b5794c20e4ad7b295cf86775ae7d69c55561703fb5f3eda",
-    "allOpened": true,
-    "ownerChecklist": "unanswered"
-  },
-  "externalEvidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c",
-  "checks": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/checks.json",
-  "pythonCGALExcluded": ["diaphragm_relationships_test.py", "diaphragm_source_repair_test.py", "posterior_source_test.py"]
+  "payloadSha256": "50158df95e3832e8b51275010a770ed63b47478c50deb730b21ef5c7aa0d79ed",
+  "shaderEstimateAllPass": true,
+  "evidenceRoot": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2",
+  "files": [
+    "review.html",
+    "reviewed-images.json",
+    "native-audit.json",
+    "costal-provenance.json",
+    "contacts.json",
+    "negatives.json",
+    "checks.json",
+    "report.md"
+  ]
 }

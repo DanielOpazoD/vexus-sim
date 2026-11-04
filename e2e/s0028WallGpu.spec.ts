@@ -32,5 +32,15 @@ test('la GPU s0028 conserva la banda D/E con identidad U y el panículo regional
     normals.push({ startPoint, ...n });
   }
   await test.info().attach('normales-pared-s0028', { body: JSON.stringify(normals, null, 2), contentType: 'application/json' });
+  // r2b-U: el peso respiratorio GLSL es el de la CPU en celdas D/E y en la rampa U por fila (una lectura filtrada).
+  const resp = await page.evaluate(() => window.__vexusTest!.respirationParity());
+  const respTag = `respiración: ${JSON.stringify(resp)}`;
+  expect(resp.u, respTag).toBeGreaterThan(1000);
+  expect(resp.uMoving, respTag).toBeGreaterThan(300);
+  expect(resp.p99WeightDiffU, respTag).toBeLessThan(0.005);
+  expect(resp.maxWeightDiffU, respTag).toBeLessThan(0.05);
+  expect(resp.maxWeightDiffKnown, respTag).toBeLessThan(0.05);
+  expect(resp.maxGradientDiff, respTag).toBeLessThan(0.01);
+  await test.info().attach('respiracion-s0028', { body: JSON.stringify(resp, null, 2), contentType: 'application/json' });
   expect(errors).toEqual([]);
 });

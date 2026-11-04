@@ -92,6 +92,7 @@ import {
   FRAG_QUERY,
   FRAG_QUERY_CLASS,
   FRAG_QUERY_GRADIENT,
+  FRAG_RESP_QUERY,
   FRAG_TRIAD_QUERY,
   FRAG_TRANS_HITS,
   FRAG_TRANS_HITS_GRID,
@@ -409,6 +410,7 @@ export class UltrasoundRenderer {
   private pQuery: GLProgram | null = null;
   private pQueryGrad: GLProgram | null = null;
   private pTriadQuery: GLProgram | null = null;
+  private pRespQuery: GLProgram | null = null;
   /** Tiempo de GPU por pasada (asíncrono; null sin la extensión). */
   private readonly timer: GpuPassTimer<PassId>;
   private sceneValues: SceneUniformValues = [];
@@ -759,6 +761,7 @@ export class UltrasoundRenderer {
     this.pQuery?.dispose();
     this.pQueryGrad?.dispose();
     this.pTriadQuery?.dispose();
+    this.pRespQuery?.dispose();
     this.timer.dispose();
     for (const t of [
       this.tHits,
@@ -2093,6 +2096,31 @@ export class UltrasoundRenderer {
       }
     }
     return { tissue, vessel, velocity, iface, ifd, ...(normal ? { normal, gradNorm } : {}) };
+  }
+
+  /** `respWeight` y su gradiente GLSL (xyzw por punto) en puntos MATERIALES. Solo pruebas: lectura bloqueante. */
+  queryRespiration(points: Float32Array, inputs: FrameInputs): Float32Array {
+    const gl = this.gl;
+    const [pts, target] = this.queryTarget(points, 1);
+    try {
+      this.pRespQuery ??= GLProgram.link(
+        gl,
+        VERT,
+        specializeAbdominalShader(FRAG_RESP_QUERY, this.currentScene.hasAbdominalAtlas),
+        'respQuery',
+      );
+      this.updateSceneDynamic(inputs, true);
+      bindTarget(gl, target);
+      this.pRespQuery.use();
+      this.setSceneUniforms(this.pRespQuery, inputs);
+      this.pRespQuery.tex('uPoints', 0, pts);
+      drawFullscreen(gl);
+      return this.readRgba(target, 0);
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      deleteTarget(gl, target);
+      gl.deleteTexture(pts);
+    }
   }
 
   /**

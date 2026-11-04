@@ -409,6 +409,24 @@ export class Simulator {
     );
   }
 
+  /** `respWeight` y su gradiente GLSL en puntos MATERIALES (xyzw por punto): sólo la e2e de paridad s0028. */
+  gpuRespiration(points: Float32Array): Float32Array {
+    const s = this.sample;
+    return this.renderer.queryRespiration(points, {
+      sample: s,
+      frame: this.frame,
+      pose: this.pose,
+      compression: this.#lastContact,
+      transducer: this.transducer,
+      caliber: this.anatomy.caliberFor(s),
+      probeVelocity: [0, 0, 0],
+      bmode: this.bmode,
+      color: this.color,
+      updateColor: false,
+      seed: this.patient.seed,
+    });
+  }
+
   /** Velocidad de Nyquist rotulada (cm/s) para la escala PW actual. */
   pwNyquistCms(): number {
     return nyquistVelocityCms(this.pw.prfHz, this.transducer.f0Doppler, this.pw.angleCorrection);

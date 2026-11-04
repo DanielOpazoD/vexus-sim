@@ -118,8 +118,8 @@ it('el bloque derivado sale del payload fijado: cada nodo conocido lleva su cara
       farthest = Math.max(farthest, Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]));
       withE++;
     }
-  expect(withE).toBe(B.wallDerived.stats.uNodesWithE);
-  expect(without).toBe(B.wallDerived.stats.uNodesWithoutE);
+  expect(withE).toBe(B.wallDerived.eMap.nodesWithE);
+  expect(withE + without).toBe(57664);
   expect(farthest).toBeLessThan(12.5);
   expect(farthest).toBeGreaterThan(11);
 });

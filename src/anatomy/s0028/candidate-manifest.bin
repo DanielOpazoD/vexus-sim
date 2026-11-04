@@ -1245,35 +1245,13 @@
     "bytes": 371412,
     "sha256": "ccaef97e027de4d95c830a9778afec63b8c7b30e8733b04c2ec3882b9a129043",
     "eMap": {
-      "dimensions": [
-        512,
-        181
-      ],
       "bytes": 370688,
-      "layout": "row-major (row*512+col)*2",
-      "channels": [
-        "nearestKnownInterfaceE",
-        "sourceOffsetCode"
-      ],
-      "code": "(drow+8)*32+(dcol+16); 272 = own known node; NaN = no known node within radius",
       "radiusMm": 12.0,
-      "metric": "euclidean distance between skin seeds of both nodes",
-      "tieBreak": "|drow|, |dcol|, drow, dcol",
-      "consumer": "CPU probe contact only"
+      "nodesWithE": 9280
     },
     "ramps": {
-      "dimensions": [
-        181
-      ],
-      "bytes": 724,
       "offsetBytes": 1128532,
-      "channels": [
-        "p10InterfaceMm",
-        "p90InterfaceMm"
-      ],
       "minKnownNodes": 32,
-      "fill": "symmetric row window until minKnownNodes",
-      "minSpanMm": 1.0,
       "placement": [
         0,
         0,
@@ -1283,41 +1261,7 @@
         181,
         1,
         1
-      ],
-      "halo": {
-        "offset": [
-          0,
-          0,
-          652
-        ],
-        "size": [
-          182,
-          2,
-          3
-        ]
-      },
-      "gpuRead": "one linear texture() read along x (rows lo/hi), halo is finite atlas padding",
-      "consumer": "CPU and GPU respiratory weight in U cells"
-    },
-    "stats": {
-      "knownNodes": 35008,
-      "uNodes": 57664,
-      "uNodesWithE": 9280,
-      "uNodesWithoutE": 48384,
-      "eDistanceMm": {
-        "p50": 3.922872963980246,
-        "p90": 10.31545852152709,
-        "max": 12.0
-      },
-      "rampRowsBorrowed": 60,
-      "rampMaxReachRows": 40,
-      "rampMm": {
-        "p10Min": 23.21875,
-        "p10Max": 43.15625,
-        "p90Min": 34.40625,
-        "p90Max": 73.3125
-      }
-    },
-    "review": "pending-owner"
+      ]
+    }
   }
 }

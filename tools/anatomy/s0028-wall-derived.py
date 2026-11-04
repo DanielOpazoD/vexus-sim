@@ -230,22 +230,14 @@ def derive(package_dir, out):
     with gzip.GzipFile(fileobj=io.BytesIO(capacity)) as stream:
         if stream.read() != bytes(raw):
             raise ValueError('capacidad reabierta corrupta')
+    # Descriptor mínimo (el manifiesto tiene techo de bytes): el significado de cada canal está en la cabecera de este
+    # archivo y las cifras en budget-derived.json.
     derived = {
         'format': FORMAT, 'provenance': 'E', 'payloadSha256': descriptor['payloadSha256'],
-        'offsetBytes': descriptor['payloadBytes'], 'bytes': len(block),
-        'sha256': hashlib.sha256(block).hexdigest(),
-        'eMap': {'dimensions': [512, 181], 'bytes': E_MAP_BYTES, 'layout': 'row-major (row*512+col)*2',
-                 'channels': ['nearestKnownInterfaceE', 'sourceOffsetCode'],
-                 'code': '(drow+8)*32+(dcol+16); 272 = own known node; NaN = no known node within radius',
-                 'radiusMm': RADIUS_MM, 'metric': 'euclidean distance between skin seeds of both nodes',
-                 'tieBreak': '|drow|, |dcol|, drow, dcol', 'consumer': 'CPU probe contact only'},
-        'ramps': {'dimensions': [181], 'bytes': RAMP_BYTES, 'offsetBytes': descriptor['payloadBytes']+E_MAP_BYTES,
-                  'channels': ['p10InterfaceMm', 'p90InterfaceMm'], 'minKnownNodes': MIN_RAMP_NODES,
-                  'fill': 'symmetric row window until minKnownNodes', 'minSpanMm': MIN_RAMP_SPAN_MM,
-                  'placement': RAMP_OFFSET, 'size': [181, 1, 1], 'halo': {'offset': RAMP_HALO[0], 'size': RAMP_HALO[1]},
-                  'gpuRead': 'one linear texture() read along x (rows lo/hi), halo is finite atlas padding',
-                  'consumer': 'CPU and GPU respiratory weight in U cells'},
-        'stats': stats, 'review': 'pending-owner',
+        'offsetBytes': descriptor['payloadBytes'], 'bytes': len(block), 'sha256': hashlib.sha256(block).hexdigest(),
+        'eMap': {'bytes': E_MAP_BYTES, 'radiusMm': RADIUS_MM, 'nodesWithE': stats['uNodesWithE']},
+        'ramps': {'offsetBytes': descriptor['payloadBytes']+E_MAP_BYTES, 'minKnownNodes': MIN_RAMP_NODES,
+                  'placement': RAMP_OFFSET, 'size': [181, 1, 1]},
     }
     manifest['wallP2Derived'] = derived
     manifest['capacity'].update(downloadBytes=len(capacity), sha256=hashlib.sha256(bytes(raw)).hexdigest(),

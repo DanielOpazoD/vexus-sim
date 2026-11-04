@@ -19,6 +19,9 @@ import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
+import { torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
+import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
+import { s0028InsideWall } from '../anatomy/s0028Wall';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import { rayAttenuationDb } from '../ultrasound/transmission';
 import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
@@ -138,6 +141,11 @@ export interface TestHooks {
    * plano a 0,02–0,4 mm de la cara que dibujan según la CPU. Ver `WallNormalStats`.
    */
   wallNormals: (opts: { startPoint: StartPoint['id']; pose?: { rockDeg?: number; tiltDeg?: number; zMm?: number } }) => WallNormalStats;
+  /**
+   * Peso respiratorio GLSL (`respWeight`, `respWeightGradient`) frente al gemelo CPU en una rejilla del tronco s0028
+   * (17 alturas × 32 ángulos × 6 profundidades bajo la piel), separado por celda D/E y U (r2b-U).
+   */
+  respirationParity: () => RespirationParityStats;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
@@ -538,6 +546,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       if (opts.pose) offsetPose(sim, opts.pose);
       return wallNormalStats(sim);
     },
+    respirationParity: () => respirationParityStats(getSim()),
     frameCostMs: (n, opts) => {
       const measure = frameMeasureOptions(opts);
       if (!Number.isInteger(n) || n < 1) throw new RangeError(`frameCostMs: n ${n} (entero ≥ 1)`);
@@ -1666,4 +1675,66 @@ function speckleCorrelation(
     syy += (y[i] - my) ** 2;
   }
   return sxy / Math.sqrt(sxx * syy);
+}
+
+/** Ver `TestHooks.respirationParity`: diferencias GPU − CPU del peso y de su gradiente, por tipo de celda. */
+export interface RespirationParityStats {
+  points: number;
+  known: number;
+  u: number;
+  /** Puntos U con peso CPU > 0 (la rampa por profundidad los mueve). */
+  uMoving: number;
+  maxWeightDiffKnown: number;
+  maxWeightDiffU: number;
+  p99WeightDiffU: number;
+  /** Máximo |∇GPU − ∇CPU| (1/mm) donde el peso de ambos está en la rampa. */
+  maxGradientDiff: number;
+}
+
+function respirationParityStats(sim: Simulator): RespirationParityStats {
+  const scene = sim.scene,
+    points: number[] = [];
+  for (let z = -205; z <= 40; z += 15)
+    for (let k = 0; k < 32; k++) {
+      const skin = torsoSkinPoint((k / 32) * 2 * Math.PI, z, scene.torso),
+        g = torsoDepthGradient(skin, scene.torso),
+        n = Math.hypot(g[0], g[1], g[2]);
+      for (const d of [5, 15, 30, 45, 60, 90]) points.push(skin[0] - (d * g[0]) / n, skin[1] - (d * g[1]) / n, skin[2] - (d * g[2]) / n);
+    }
+  const gpu = sim.gpuRespiration(new Float32Array(points));
+  const diffsU: number[] = [];
+  const stats: RespirationParityStats = {
+    points: points.length / 3,
+    known: 0,
+    u: 0,
+    uMoving: 0,
+    maxWeightDiffKnown: 0,
+    maxWeightDiffU: 0,
+    p99WeightDiffU: 0,
+    maxGradientDiff: 0,
+  };
+  for (let i = 0; i < points.length / 3; i++) {
+    const m: Vec3 = [points[3 * i], points[3 * i + 1], points[3 * i + 2]];
+    const w = scene.respiratoryWeight(m),
+      dw = Math.abs(gpu[4 * i] - w);
+    if (s0028InsideWall(m) === null) {
+      stats.u++;
+      if (w > 0) stats.uMoving++;
+      diffsU.push(dw);
+      stats.maxWeightDiffU = Math.max(stats.maxWeightDiffU, dw);
+    } else {
+      stats.known++;
+      stats.maxWeightDiffKnown = Math.max(stats.maxWeightDiffKnown, dw);
+    }
+    if (w > 0.02 && w < 0.98) {
+      const g = respiratoryWeightGradient(scene, m);
+      stats.maxGradientDiff = Math.max(
+        stats.maxGradientDiff,
+        Math.hypot(gpu[4 * i + 1] - g[0], gpu[4 * i + 2] - g[1], gpu[4 * i + 3] - g[2]),
+      );
+    }
+  }
+  diffsU.sort((a, b) => a - b);
+  stats.p99WeightDiffU = diffsU[Math.floor(0.99 * (diffsU.length - 1))] ?? 0;
+  return stats;
 }

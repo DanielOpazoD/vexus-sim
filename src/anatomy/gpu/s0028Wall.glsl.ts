@@ -204,7 +204,26 @@ Cls classifyWith(vec3 m,bool withCurtain){
     'wallFaceDepth',
     'float wallFaceDepth(float u,float z,int face){return uintBitsToFloat(0x7fc00000u);}',
   );
-  changed = replace(changed, 'vec4', 'wallDepths', 'vec4 wallDepths(float u,float z){return vec4(uintBitsToFloat(0x7fc00000u));}');
+  // Sin capas procedurales en s0028: ningún consumidor encuentra una frontera. Antes NaN: la estriación del músculo
+  // posterior lo llevaba al eco del paso B y los filtros de la imagen apagaban bloques enteros (láminas r2b).
+  changed = replace(changed, 'vec4', 'wallDepths', 'vec4 wallDepths(float u,float z){return vec4(1000.0);}');
+  // Gemelo de la CPU s0028 (r2a): sin cortina pulmonar procedural. lungEdgeMm es null y el receso es el pulmón fuente;
+  // con el modelo por defecto A0 tomaba el cruce de la pared regional por pleura y B ponía aire bajo ella (láminas r2b).
+  if (/float\s+lungCurtainEdgeMm\s*\(/.test(changed))
+    changed = replace(changed, 'float', 'lungCurtainEdgeMm', 'float lungCurtainEdgeMm(vec3 m){return -1000.0;}');
+  if (/bool\s+inLungRecess\s*\(/.test(changed))
+    changed = replace(changed, 'bool', 'inLungRecess', 'bool inLungRecess(vec3 m,float insideWall){return s28_lung(m).x<0.0;}');
+  // Reverberación tras gas: pow con base negativa (r < k·gasHit) no está definido en GLSL ES y Metal devuelve NaN desde
+  // el gas hasta el final de la línea. El pulmón y el gas fuente de s0028 lo disparan en casi todas las ventanas; el
+  // cuadrado explícito es la misma gaussiana. El default no se toca (sus programas siguen idénticos a main).
+  changed = changed.replace(
+    /exp\(\s*-0\.5\s*\*\s*pow\(\s*\(r\s*-\s*rk\)\s*\/\s*1\.2\s*,\s*2\.0\s*\)\s*\)/g,
+    'exp(-0.5*((r-rk)/1.2)*((r-rk)/1.2))',
+  );
+  if (/pow\(\s*\(r\s*-\s*rk\)/.test(changed)) throw new Error('Reverberación s0028 con pow de base negativa');
+  // La banda D/E no es músculo identificado y el músculo posterior fuente no tiene capas: sin estriación.
+  if (/vec4\s+muscleStriation\s*\(/.test(changed))
+    changed = replace(changed, 'vec4', 'muscleStriation', 'vec4 muscleStriation(vec3 m){return vec4(0.0,1.0,0.0,0.0);}');
   changed = replace(
     changed,
     'float',

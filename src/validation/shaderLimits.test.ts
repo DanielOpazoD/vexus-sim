@@ -166,15 +166,22 @@ function expandedTextureReads(g: Map<string, string>, fn: string, memo = new Map
   return reads;
 }
 
-/** Funciones que la especialización añade o cambia y que traen un bucle que la fuente común no tenía (multiconjunto). */
+/**
+ * Funciones que la especialización añade o cambia y que traen un bucle que la fuente común no tenía (multiconjunto). Un
+ * bucle se identifica por su cabecera y por las funciones del shader que llama su cuerpo (lo que expande el JIT): la
+ * aritmética del cuerpo puede cambiar, una llamada nueva dentro del bucle no.
+ */
 function newLoops(base: string, specialized: string): string[] {
-  const before = glslCallGraph(base);
-  const loopsIn = (body: string) => {
+  const before = glslCallGraph(base),
+    after = glslCallGraph(specialized);
+  const loopsIn = (g: Map<string, string>, body: string) => {
     const loops: string[] = [];
     for (const match of body.matchAll(/\b(?:for|while)\s*\(/g)) {
       let i = match.index + match[0].length;
       for (let depth = 1; depth > 0 && i < body.length; i++) depth += body[i] === '(' ? 1 : body[i] === ')' ? -1 : 0;
+      const header = body.slice(match.index, i).replace(/\s+/g, '');
       while (/\s/.test(body[i] ?? '')) i++;
+      const start = i;
       if (body[i] === '{') {
         i++;
         for (let depth = 1; depth > 0 && i < body.length; i++) depth += body[i] === '{' ? 1 : body[i] === '}' ? -1 : 0;
@@ -182,14 +189,14 @@ function newLoops(base: string, specialized: string): string[] {
         const end = body.indexOf(';', i);
         i = end < 0 ? body.length : end + 1;
       }
-      loops.push(body.slice(match.index, i).replace(/\s+/g, ''));
+      loops.push(header + '|' + callsIn(g, body.slice(start, i)).sort().join(','));
     }
     return loops;
   };
-  return [...glslCallGraph(specialized)]
+  return [...after]
     .filter(([name, body]) => {
-      const old = loopsIn(before.get(name) ?? '');
-      return loopsIn(body).some((loop) => {
+      const old = loopsIn(before, before.get(name) ?? '');
+      return loopsIn(after, body).some((loop) => {
         const index = old.indexOf(loop);
         if (index < 0) return true;
         old.splice(index, 1);
@@ -529,6 +536,35 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
       expect(samplersOf(source).length, name).toBeLessThanOrEqual(16);
       expect(uniformSlots(source).slots, name).toBeLessThanOrEqual(SLOT_GUARD);
     }
+  });
+
+  it('s0028: ningún consumidor alcanzable lee capas procedurales sin definir ni devuelve NaN de pared al eco', () => {
+    // Las capas por defecto no existen en s0028: wallFaceDepth/wallPlaneDepth/wallFaceSlope no pueden alcanzarse
+    // desde main, y wallDepths es finita (la estriación con NaN apagaba bloques de la ecografía).
+    for (const [name, src] of FRAGMENT_SHADERS) {
+      if (!/vec2\s+abdominalAtlasValue\s*\(/.test(src)) continue;
+      const graph = glslCallGraph(personShader(src, S0028));
+      const reach = new Set(['main']);
+      const stack = ['main'];
+      while (stack.length)
+        for (const c of callsIn(graph, graph.get(stack.pop()!)!))
+          if (!reach.has(c)) {
+            reach.add(c);
+            stack.push(c);
+          }
+      for (const fn of ['wallFaceDepth', 'wallPlaneDepth', 'wallFaceSlope'])
+        expect(
+          [...reach].filter((f) => f !== fn && callsIn(graph, graph.get(f)!, f).includes(fn)),
+          `${name}: ${fn}`,
+        ).toEqual([]);
+      if (graph.has('wallDepths')) expect(graph.get('wallDepths'), name).not.toMatch(/0x7fc00000u/);
+    }
+    // Negativo: la sustitución anterior en NaN vuelve a estar al alcance de la estriación del paso B.
+    const nanLayers = personShader(PASSES.FRAG_RAWFIELD, S0028).replace(
+      'vec4 muscleStriation(vec3 m){return vec4(0.0,1.0,0.0,0.0);}',
+      'vec4 muscleStriation(vec3 m){vec4 w=wallDepths(0.0,m.z);return vec4(0.0,1.0,0.0,w.y);}',
+    );
+    expect(glslCallGraph(nanLayers).get('muscleStriation')).toContain('wallDepths');
   });
 
   it('s0028: una consulta de pared lee ≤ 20 texturas y cada gradiente de cara o respiración hace una sola consulta', () => {

@@ -70,3 +70,30 @@ it('el corazón s0028 usa la normal de la cúpula para su suelo, como heartFloor
     /if\(s28_heart\(m\)\.x<0\.0\)\{float dome=sdDome\(m,c\.n\),ifd;c\.tissue=thorax\(m,dome,c\.bd,ifd,c\.n\);return;\}/,
   );
 });
+
+it('sin cortina pulmonar procedural en s0028: A0 no toma la pared regional por pleura ni B pone aire bajo ella', () => {
+  // Gemelo de lungEdgeMm (null) e inLungRecess (pulmón fuente) de la CPU desde r2a.
+  for (const name of ['FRAG_TRANS_HITS', 'FRAG_TRANS_HITS_INITIAL', 'FRAG_RAWFIELD', 'FRAG_RAWFIELD_ECHO']) {
+    const source = Object.entries(PASSES).find(([key]) => key === name)?.[1];
+    if (typeof source !== 'string') throw new Error('Programa ausente');
+    const specialized = personShader(source, { person: 's0028', bundle });
+    if (/lungCurtainEdgeMm\s*\(/.test(source)) expect(specialized, name).toContain('float lungCurtainEdgeMm(vec3 m){return -1000.0;}');
+    if (/bool\s+inLungRecess\s*\(/.test(source)) expect(specialized, name).toContain('return s28_lung(m).x<0.0;');
+    expect(specialized, name).not.toMatch(/m\.z\s*-\s*min\(uCurtain\.x,\s*domeHeight/);
+  }
+});
+
+it('la reverberación tras gas de s0028 no eleva bases negativas: sin NaN detrás del pulmón o del gas', () => {
+  // pow(x, 2) con x < 0 es indefinido en GLSL ES; Metal da NaN y B lo extendía desde el gas hasta el final de la línea.
+  for (const [name, source] of Object.entries(PASSES)) {
+    if (typeof source !== 'string' || !/pow\(\(r - rk\) \/ 1\.2, 2\.0\)/.test(source)) continue;
+    const specialized = personShader(source, { person: 's0028', bundle });
+    expect(specialized, name).not.toMatch(/pow\(\s*\(r\s*-\s*rk\)/);
+    expect(specialized, name).toContain('exp(-0.5*((r-rk)/1.2)*((r-rk)/1.2))');
+    // El default conserva su texto (hash por variante idéntico a main).
+    expect(personShader(source, { person: 'current' }), name).toBe(source);
+  }
+  // También en el GLSL compactado de producción.
+  const compact = minifyGlslBody([PASSES.FRAG_RAWFIELD], [], undefined, 'join');
+  expect(personShader(compact, { person: 's0028', bundle })).not.toMatch(/pow\(\s*\(r\s*-\s*rk\)/);
+});

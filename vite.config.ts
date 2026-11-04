@@ -78,6 +78,8 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             { name: 'three', test: /node_modules[\\/]three[\\/]/ },
+            // Consultas CPU de la persona separadas: conservan el techo por chunk sin moverlo.
+            { name: 'anatomyScene', includeDependenciesRecursively: false, test: /src[\\/]anatomy[\\/]scene\.ts$/ },
             // Análisis PW y ventanas compartidas con Docente: una descarga, sin duplicar wrappers/imports.
             // Sigue dentro del total JS. Docente carga también este grupo al mostrar la verdad fisiológica.
             {

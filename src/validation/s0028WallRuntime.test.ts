@@ -19,6 +19,7 @@ import { firstRegionalWallCrossing, probeContact } from '../probe/contact';
 import { dot, cross, normalize, sub, type Vec3 } from '../core/vec3';
 import { s0028SourceValue } from '../anatomy/s0028Source';
 import { nodeSin } from '../anatomy/compression';
+import chartFixtures from './fixtures/s0028-wall-chart.json';
 
 let scene: AnatomyScene;
 beforeAll(() => {
@@ -45,19 +46,34 @@ it('s0028 desactiva hepaticCostalBody y la piel E mide 1,5 mm', () => {
   expect(scene.torso.skinMm).toBe(1.5);
 });
 
+it('recupera la carta bilineal v2 de normal cutánea con soporte de 13 mm', () => {
+  for (const f of chartFixtures) {
+    const p: Vec3 = [f.point[0], f.point[1], f.point[2]],
+      q = s0028WallAt(p);
+    expect(q?.kind).toBe('known');
+    if (q?.kind !== 'known') throw new Error('Carta sin inversa');
+    expect(Math.abs(q.z - (f.row * 1.5 - 210))).toBeLessThan(0.01);
+    expect(Math.abs(q.phi - (f.col * 2 * Math.PI) / 512)).toBeLessThan(0.0001);
+    expect(Math.abs(q.depthMm - f.depth)).toBeLessThan(0.01);
+    expect(Math.abs(q.outerMm - f.bounds[0])).toBeLessThan(0.01);
+    expect(Math.abs(q.innerMm - f.bounds[1])).toBeLessThan(0.01);
+  }
+});
+
 it('la banda propia y sus caras sustituyen W global sin llamar músculo a una identidad U', () => {
-  // Perfil r1c cell(80,128), misma persona/marco: piel [0,129.0352155,-90], normal [0,1,0].
-  const fat: Vec3 = [0, 109.03521552681923, -90];
-  const band: Vec3 = [0, 92.03521552681923, -90];
+  // Perfil propio v2, calculado independientemente con el exportador Python.
+  const f = chartFixtures[0];
+  const fat: Vec3 = [f.skin[0] - 20 * f.normal[0], f.skin[1] - 20 * f.normal[1], f.skin[2] - 20 * f.normal[2]];
+  const band: Vec3 = [f.point[0], f.point[1], f.point[2]];
   const q = s0028WallAt(band);
   expect(q?.kind).toBe('known');
   if (q?.kind !== 'known') throw new Error('Falta el perfil propio');
-  expect(q.outerMm).toBeCloseTo(34.25, 3);
-  expect(q.innerMm).toBeCloseTo(39.75, 3);
+  expect(q.outerMm).toBeCloseTo(f.bounds[0], 2);
+  expect(q.innerMm).toBeCloseTo(f.bounds[1], 2);
   expect(q.provenance[3]).toBe('U');
   expect(scene.classify(fat, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.Fat, wall: 'fat-D/E' });
   expect(scene.classify(band, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.UnsegmentedSoftTissue, wall: 'band-D/E' });
-  expect(scene.insideWallMm(band)).toBeCloseTo(37 - 39.75, 3);
+  expect(scene.insideWallMm(band)).toBeCloseTo(f.depth - f.bounds[1], 2);
   const before = [
     scene.classify(band, BASELINE_CALIBER),
     scene.respiratoryWeight(band),
@@ -219,7 +235,21 @@ it('el hígado fuente no se recorta con la W ni la cúpula procedurales de otra 
   ] satisfies Vec3[]) {
     expect(scene.liverInteriorMargin(p)).toBe(-scene.liverSdf(p));
     expect(scene.faceSdf(p, BASELINE_CALIBER, 'liverSurface')).toBe(scene.liverSdf(p));
-    expect(scene.faceSdf(p, BASELINE_CALIBER, 'dome')).toBeNull();
+    expect(Number.isFinite(scene.faceSdf(p, BASELINE_CALIBER, 'dome'))).toBe(true);
+  }
+});
+
+it('conserva la cúpula E/P7 donde no invade las estructuras fuente', () => {
+  const p: Vec3 = [-11.533855575900514, 71.59107619779334, 9.750919952095462];
+  expect(scene.classify(p, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.Diaphragm, approximation: 'diaphragm-P7' });
+  const before = scene.faceSdf(p, BASELINE_CALIBER, 'dome'),
+    { fatMm, muscleMm } = scene.torso;
+  try {
+    scene.torso.fatMm += 55;
+    scene.torso.muscleMm += 30;
+    expect(scene.faceSdf(p, BASELINE_CALIBER, 'dome')).toBe(before);
+  } finally {
+    Object.assign(scene.torso, { fatMm, muscleMm });
   }
 });
 

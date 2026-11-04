@@ -123,6 +123,8 @@ import {
  */
 
 export interface Classification {
+  /** E heredada, conservada hasta la anotación de cúpula/hiatos en P7. */
+  approximation?: 'diaphragm-P7';
   /** P2 CPU: geometría de pared; la identidad muscular y subcapas finas siguen U. */
   wall?: 'skin-E' | 'fat-D/E' | 'band-D/E' | 'U';
   tissue: Tissue;
@@ -694,13 +696,7 @@ export class AnatomyScene {
     }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
       // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
-      const liverFace = dDome > 0.5 * DIAPHRAGM_THICKNESS_MM;
-      return {
-        ...NONE,
-        tissue: Tissue.Diaphragm,
-        boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome),
-        ...(liverFace ? { interface: Interface.DiaphragmLiver, interfaceDistance: DIAPHRAGM_THICKNESS_MM - dDome } : {}),
-      };
+      return this.classifyDiaphragm(dDome);
     }
     const dGb = gallbladderSdf(m, this.gallbladder);
     if (dGb < 0)
@@ -733,6 +729,10 @@ export class AnatomyScene {
       const muscle = s0028SourceValue(m, 'posteriorMuscle');
       if (muscle.d < 0 && muscle.label > 0)
         return { ...NONE, tissue: muscle.label <= 2 ? Tissue.Psoas : Tissue.Muscle, boundaryDistance: -muscle.d };
+      // Conservar la cúpula E; la máscara de cada órgano ya ganó antes.
+      // No usar esta estimación P7 para cortar el hígado de la persona.
+      const dome = sdDiaphragm(m, this.diaphragm, this.torso);
+      if (dome >= 0 && dome < DIAPHRAGM_THICKNESS_MM) return this.classifyDiaphragm(dome, s0028InsideWall(m) ?? Infinity);
       return { ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' };
     }
     const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
@@ -764,6 +764,16 @@ export class AnatomyScene {
     };
   }
 
+  private classifyDiaphragm(d: number, inside = Infinity): Classification {
+    return {
+      ...NONE,
+      tissue: Tissue.Diaphragm,
+      boundaryDistance: Math.min(d, DIAPHRAGM_THICKNESS_MM - d, inside),
+      ...(d > 0.5 * DIAPHRAGM_THICKNESS_MM ? { interface: Interface.DiaphragmLiver, interfaceDistance: DIAPHRAGM_THICKNESS_MM - d } : {}),
+      ...(this.identity.person === 's0028' ? { approximation: 'diaphragm-P7' as const } : {}),
+    };
+  }
+
   /**
    * Distancia con signo (mm) de un punto MATERIAL a una cara geométrica, positiva fuera de lo que la
    * cara encierra (luz, hígado, abdomen bajo la cúpula, riñón, luz vesicular). Es la misma cantidad
@@ -790,7 +800,9 @@ export class AnatomyScene {
         return -Math.min(-this.liverSdf(m), dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
       }
       case 'dome':
-        if (this.identity.person === 's0028') return null;
+        if (this.identity.person === 's0028') {
+          return Math.max(sdDiaphragm(m, this.diaphragm, this.torso), -(s0028InsideWall(m) ?? Infinity));
+        }
         return sdDiaphragm(m, this.diaphragm, this.torso);
       case 'kidneyOuter':
         return Math.min(

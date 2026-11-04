@@ -1060,13 +1060,13 @@
     "guarantee": "fixed array capacity, not sufficient anatomy or future triangle count",
     "file": "annotation-capacity.gzip.bin",
     "rawBytes": 5671296,
-    "downloadBytes": 95837,
+    "downloadBytes": 171194,
     "abdominalBytes": 4491648,
     "thoracicBytes": 1179648,
-    "sha256": "51b3c6d3cef052c961e94c77cf64189ed6ad44357c4b7510270192b5df30e40f",
+    "sha256": "91fc5d88a1a91ac45e2cedb16ffdef9347adb7a1530cd9d35361bfdefbbaf442",
     "descriptorsDecoded": true,
-    "compressionCredit": 5575459,
-    "sha256Gzip": "f58e581f62b5eab1294d7591f2a8f953014cb4f4394098c503ea2725ae0e5fbf",
+    "compressionCredit": 5500102,
+    "sha256Gzip": "84cdb6f97094caae7151531b2b4ec1f40418721aeab10a8bcaa5a05cb0aafdf2",
     "downloadRule": "measure actual gzip again after every annotation phase"
   },
   "files": [
@@ -1082,8 +1082,8 @@
     },
     {
       "file": "annotation-capacity.gzip.bin",
-      "bytes": 95837,
-      "sha256": "f58e581f62b5eab1294d7591f2a8f953014cb4f4394098c503ea2725ae0e5fbf"
+      "bytes": 171194,
+      "sha256": "84cdb6f97094caae7151531b2b4ec1f40418721aeab10a8bcaa5a05cb0aafdf2"
     },
     {
       "file": "skin-polar.gzip.bin",
@@ -1105,7 +1105,7 @@
   "wallP2Offline": {
     "format": "s0028-wall-regional-v1",
     "annotationId": "s0028-P2-R1C-surface-v1",
-    "sourceSha256": "1e692c11d0a13819002987fb369cb86274411bc60d061e56b12e64f23195edfb",
+    "sourceSha256": "33956cae24479b6cef103735077a8175b97177a8bc7d81f607d7097144506b4d",
     "dimensions": [
       512,
       181
@@ -1207,7 +1207,7 @@
       398
     ],
     "payloadBytes": 757844,
-    "payloadSha256": "f8e87a81ef1a3298c9c59469e0a4e7e4f83318852afe256fa7cbf135d1f61f34",
+    "payloadSha256": "50158df95e3832e8b51275010a770ed63b47478c50deb730b21ef5c7aa0d79ed",
     "channels": [
       "grossBandOuter",
       "grossBandInner",
@@ -1224,10 +1224,15 @@
     "runtimeInstalled": false,
     "posterior": "U/P3",
     "surfaceGeometry": {
-      "normal": "unit common skin EDT gradient",
-      "prismResidualMaxMm": 1.5,
-      "organEnvelopeVoxels26": 2,
-      "skeletonEnvelopeVoxels26": 1,
+      "normal": "unit common skin EDT gradient; 13 mm symmetric support",
+      "inverse": "continuous bilinear normal chart; residual <=0.1 mm",
+      "organEnvelopeVoxels26": 1,
+      "sourceVoxelBackoffMm": 0.5,
+      "sourceConstraint": "all four bilinear nodes",
+      "skeleton": "source O material; never muscle; not a visceral stop",
+      "neighborLimitMm": 3,
+      "costalTransitionLimitMm": 12.0625,
+      "costalSourceDistanceMaxMm": 6,
       "innerInterfaceOffsetMm": 0,
       "runtimeProof": false
     }

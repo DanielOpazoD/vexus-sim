@@ -39,7 +39,7 @@ describe('selección anterior a escena y carga de una persona', () => {
       expect(fetched).toHaveLength(6);
       expect(fetched.filter((p) => p.endsWith('annotation-capacity.gzip.bin'))).toHaveLength(1);
       expect(s0028Auxiliary?.capacity.byteLength).toBe(5_671_296);
-      expect(s0028WallSurface(Math.PI / 2, -90)).toMatchObject({ kind: 'known', outerMm: 34.25, innerMm: 39.75 });
+      expect(s0028WallSurface(Math.PI / 2, -90)).toMatchObject({ kind: 'known', outerMm: 34.0625, innerMm: 39.9375 });
       expect(Math.abs(s0028Depth(s0028SkinPoint(Math.PI / 2, -90)!)!)).toBeLessThan(0.00001);
     } finally {
       vi.unstubAllGlobals();

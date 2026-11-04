@@ -54,7 +54,17 @@ it('profundidad B alimenta signo, magnitud, caras profundas y respiración, tamb
     for (const face of [Interface.SkinFat, Interface.DeepFascia, Interface.Peritoneum]) {
       if (face === Interface.SkinFat || s0028InsideWall(m) !== null) {
         expect(Number.isFinite(wallFaceSd(m, face, scene.torso))).toBe(true);
-        expect(wallFaceGradient(m, face, scene.torso).every(Number.isFinite)).toBe(true);
+        const supported = [0, 1, 2].every((axis) =>
+          [-1, 1].every((sign) => {
+            const p: Vec3 = [...m];
+            p[axis] += sign * 0.05;
+            return Number.isFinite(wallFaceSd(p, face, scene.torso));
+          }),
+        );
+        expect(wallFaceGradient(m, face, scene.torso).every(Number.isFinite)).toBe(supported);
+        // Una cara conocida junto a U no autoriza inventar una normal a través del hueco.
+        if (!supported && scene.classify(m, BASELINE_CALIBER).interface === face)
+          expect(scene.faceGradient(m, BASELINE_CALIBER)).toBeNull();
       } else expect(Number.isNaN(wallFaceSd(m, face, scene.torso))).toBe(true);
     }
   }

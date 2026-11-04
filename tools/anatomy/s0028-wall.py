@@ -20,6 +20,11 @@ PROVENANCE = ['U', 'O', 'D', 'E']
 REGIONS = [None, 'alba', 'sheath', 'obliques', 'intercostals']
 SHAPE = (181, 512, 4)
 TILE_SHAPE = (16, 2, 91, 65, 2)
+SURFACE_GEOMETRY = {
+    'normal': 'unit common skin EDT gradient', 'prismResidualMaxMm': 1.5,
+    'organEnvelopeVoxels26': 2, 'skeletonEnvelopeVoxels26': 1,
+    'innerInterfaceOffsetMm': 0, 'runtimeProof': False,
+}
 
 
 def load_capacity():
@@ -60,6 +65,34 @@ def require_record(record):
         raise ValueError('identidad U presentada como O; HU no identifica músculos')
     if p == 'D' and (record.get('regionEvidence') not in ['O', 'D'] or not region.get('source')):
         raise ValueError('identidad derivada sin fuente regional')
+
+
+def require_surface_record(record):
+    """Procedencia geométrica r1c independiente de la identidad muscular U."""
+    require_record(record)
+    row, col = record['cell']
+    phi = col*2*np.pi/512
+    if not (phi <= 3.55 or phi >= 2*np.pi-.35):
+        raise ValueError('posterior U/P3; no anillo renal')
+    evidence = record['surfaceEvidence']
+    if (evidence['profileCell'] != [row, col] or
+            record['sourceProfile'] != f'surface-profile:{row}:{col}' or
+            not 0 < evidence['profileStepMm'] <= .75):
+        raise ValueError('perfil propio o paso inválido')
+    provenance = [v['provenance'] for v in record['boundaries'][:2]]
+    if provenance == ['D', 'D']:
+        if evidence['method'] != 'own-profile':
+            raise ValueError('D requiere perfil propio, no anclas ni anillo')
+    elif provenance == ['E', 'E']:
+        span = evidence.get('maxHoleSpanMm', np.inf)
+        if (evidence['method'] != 'short-surface-gap' or not 0 < span <= 6 or
+                len(evidence.get('supportCells', [])) < 3):
+            raise ValueError('hueco superficial E sin soporte corto')
+    else:
+        raise ValueError('perfil de superficie requiere D/D o E/E')
+    stop = evidence['organSkeletonStopMm']
+    if not np.isfinite(stop) or record['boundaries'][2]['value'] > stop:
+        raise ValueError('órgano/esqueleto invade el intervalo de pared')
 
 
 def encode_record(record):
@@ -153,8 +186,13 @@ def export(annotation_dir, baseline_dir, out, case):
     annotation_dir, baseline_dir, out = map(Path, [annotation_dir, baseline_dir, out])
     annotation = json.loads((annotation_dir/'annotation.json').read_text())
     require_identity(annotation['source'], case)
+    if (annotation.get('method') == 'surface-own-profiles-v1' and
+            annotation.get('surfaceGeometry') != SURFACE_GEOMETRY):
+        raise ValueError('geometría superficial sin margen de celda finita')
     for record in annotation['records']:
         require_record(record)
+        if annotation.get('method') == 'surface-own-profiles-v1':
+            require_surface_record(record)
     tiles = np.frombuffer((annotation_dir/'tiles.f16').read_bytes(), '<f2').reshape(TILE_SHAPE)
     surface = untile_surface(tiles)
     expected = np.empty(SHAPE, '<f2')
@@ -219,6 +257,8 @@ def export(annotation_dir, baseline_dir, out, case):
         'skinMm': {'value': 1.5, 'provenance': 'E'},
         'review': 'pending-owner', 'runtimeInstalled': False, 'posterior': 'U/P3',
     }
+    if annotation.get('method') == 'surface-own-profiles-v1':
+        descriptor['surfaceGeometry'] = annotation['surfaceGeometry']
     meta = json.dumps(descriptor, separators=(',', ':')).encode()
     header_delta = max(0, len(encoded_header)-count)
     load_capacity().require_wall_budget(len(payload), len(meta)+header_delta, 0, 0, 0)

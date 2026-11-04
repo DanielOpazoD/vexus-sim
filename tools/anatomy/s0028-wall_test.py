@@ -150,6 +150,19 @@ class WallContract(unittest.TestCase):
             self.assertEqual(len(actual), len(original))
             end = 4096+report['payloadBytes']
             self.assertEqual(actual[end:], original[end:])
+            source.update(method='surface-own-profiles-v1', surfaceGeometry=copy.deepcopy(wall.SURFACE_GEOMETRY))
+            record.update(sourceProfile='surface-profile:0:0', surfaceEvidence={
+                'profileCell': [0, 0], 'method': 'own-profile', 'profileStepMm': .5,
+                'organSkeletonStopMm': 32.})
+            path.write_text(json.dumps(source))
+            wall.export(annotation, baseline, output, CASE)
+            reopened = json.loads((output/'candidate-manifest.bin').read_text())
+            self.assertEqual(reopened['wallP2Offline']['surfaceGeometry'], wall.SURFACE_GEOMETRY)
+            source['surfaceGeometry']['prismResidualMaxMm'] = 3.
+            path.write_text(json.dumps(source))
+            with self.assertRaisesRegex(ValueError, 'celda finita'):
+                wall.export(annotation, baseline, output, CASE)
+            source['surfaceGeometry'] = copy.deepcopy(wall.SURFACE_GEOMETRY)
             source['records'] = []
             path.write_text(json.dumps(source))
             with self.assertRaisesRegex(ValueError, 'muestra ausente'):
@@ -159,6 +172,45 @@ class WallContract(unittest.TestCase):
             path.write_text(json.dumps(source))
             with self.assertRaisesRegex(ValueError, 'campo ajeno'):
                 wall.export(annotation, baseline, output, CASE)
+
+    def surface_record(self):
+        record = self.record()
+        record.update(cell=[50, 128], sourceProfile='surface-profile:50:128',
+                      surfaceEvidence={'profileCell': [50, 128], 'method': 'own-profile',
+                                       'profileStepMm': .5, 'organSkeletonStopMm': 32.})
+        return record
+
+    def test_surface_D_requires_its_own_profile_and_preserves_posterior_U(self):
+        record = self.surface_record()
+        wall.require_surface_record(record)
+        for key, value in [('profileCell', [51, 128]), ('profileStepMm', 1.),
+                           ('method', 'ten-anchor-interpolation'), ('method', 'uniform-ring')]:
+            changed = copy.deepcopy(record)
+            changed['surfaceEvidence'][key] = value
+            with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'perfil'):
+                wall.require_surface_record(changed)
+        record['cell'] = [50, 384]
+        record['surfaceEvidence']['profileCell'] = record['cell']
+        record['sourceProfile'] = 'surface-profile:50:384'
+        with self.assertRaisesRegex(ValueError, 'posterior'):
+            wall.require_surface_record(record)
+
+    def test_surface_organ_limit_and_short_E_gap_are_hard_bounds(self):
+        record = self.surface_record()
+        record['surfaceEvidence']['organSkeletonStopMm'] = 30
+        with self.assertRaisesRegex(ValueError, 'órgano'):
+            wall.require_surface_record(record)
+        record = self.surface_record()
+        for boundary in record['boundaries'][:2]:
+            boundary['provenance'] = 'E'
+        record['surfaceEvidence'].update(method='short-surface-gap', maxHoleSpanMm=6.,
+                                         supportCells=[[49, 128], [50, 127], [51, 128]])
+        wall.require_surface_record(record)
+        for key, value in [('maxHoleSpanMm', 6.01), ('supportCells', [])]:
+            changed = copy.deepcopy(record)
+            changed['surfaceEvidence'][key] = value
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'hueco'):
+                wall.require_surface_record(changed)
 
 
 if __name__ == '__main__':

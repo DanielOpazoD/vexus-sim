@@ -1,0 +1,1503 @@
+/**
+ * Registro de gemelos (decisión 322, punto 5): cada par de implementaciones de lo mismo —TypeScript en la CPU (página o
+ * Worker del corte) y GLSL en la GPU, o la CPU de la página y la del Worker— con las pruebas que demuestran que dicen lo
+ * mismo. `src/validation/twinRegistry.test.ts` lo hace cumplir y `tools/twins/inventory.ts` escribe el inventario de
+ * `docs/engineering/gemelos.md`.
+ *
+ * Vive en `tools/` y no en `src/`: `glslMinify` reserva del renombrado todo identificador que aparezca en una cadena de un
+ * módulo de `src` (salvo las pruebas), y los nombres GLSL de este registro dejarían esas funciones sin renombrar.
+ *
+ * Convención (`docs/engineering/gemelos.md`):
+ * - un par se declara aquí con un `id` y se marca con `@twin <id>` en un comentario TS de cada lado (el JSDoc de la
+ *   función TS y el de la constante que lleva la GLSL); nunca dentro del texto GLSL, cuyos bytes fija
+ *   `s0028WallGpu.test.ts`;
+ * - la palabra «gemelo» en un comentario TS va con su `@twin`; en el texto GLSL, solo delante de una función registrada;
+ * - una función GLSL con el nombre de una exportación TS es un gemelo por nombre (decisión 46) y está en algún par;
+ * - cada par nombra sus pruebas: `gpu`/`worker` demuestran la paridad con números; `texto` solo la inspecciona.
+ */
+
+/** Cómo sostiene una prueba la paridad de un par. */
+export type EvidenceKind =
+  /** Ejecuta la GLSL en WebGL (la e2e de la CI, con SwiftShader) y la compara número a número con el gemelo TS. */
+  | 'gpu'
+  /** Compara la CPU de la página con el Worker del corte, número a número. */
+  | 'worker'
+  /** Lee el texto GLSL (constantes interpoladas, mismas expresiones o nombres) sin ejecutarlo. */
+  | 'texto';
+
+export interface TwinEvidence {
+  kind: EvidenceKind;
+  /** `src/validation/*.test.ts` (vitest) o `e2e/*.spec.ts` (Playwright en la CI). */
+  file: string;
+  /** Fragmento literal del título de la prueba (`it`/`test`). */
+  title: string;
+  /** Lo que la prueba cubre del par cuando no es todo. */
+  scope?: string;
+}
+
+export interface TwinSide {
+  file: string;
+  /** Funciones TS (exportadas o métodos), funciones GLSL de una plantilla `/* glsl *\/` o constantes exportadas. */
+  symbols: readonly string[];
+}
+
+export interface TwinPair {
+  id: string;
+  /** Una frase: qué calculan los dos lados. */
+  what: string;
+  kind: 'cpu-glsl' | 'cpu-worker';
+  /** Lado TS de la CPU (la página). */
+  cpu: readonly TwinSide[];
+  /** Lado GLSL (o el Worker del corte en `cpu-worker`). */
+  gpu: readonly TwinSide[];
+  evidence: readonly TwinEvidence[];
+  /** Por qué no hay paridad numérica, o qué queda fuera de ella. Obligatorio si ninguna prueba es `gpu`/`worker`. */
+  gap?: string;
+}
+
+export type TwinStatus = 'demostrada' | 'inspeccion' | 'sin-paridad';
+
+/** Paridad demostrada si una prueba compara números; inspección si solo lee el texto GLSL; si no, sin paridad. */
+export function twinStatus(pair: Pick<TwinPair, 'evidence'>): TwinStatus {
+  if (pair.evidence.some((e) => e.kind === 'gpu' || e.kind === 'worker')) return 'demostrada';
+  return pair.evidence.length > 0 ? 'inspeccion' : 'sin-paridad';
+}
+
+const E = {
+  equivalence: {
+    kind: 'gpu',
+    file: 'e2e/equivalence.spec.ts',
+    title: 'la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
+  },
+  reference: {
+    kind: 'gpu',
+    file: 'e2e/referenceAdult.spec.ts',
+    title: 'el adulto de referencia carga el mismo campo corporal para imagen y consulta TS/GPU',
+  },
+  atlas: { kind: 'gpu', file: 'e2e/abdominalAtlas.spec.ts', title: 'abdomen de producción: todos los campos y velocidades CPU/GPU' },
+  thoracic: {
+    kind: 'gpu',
+    file: 'e2e/thoracicAtlas.spec.ts',
+    title: 'all 24 registered ribs agree in production CPU/GPU and preserve intercostal spaces',
+  },
+  faceNormals: {
+    kind: 'gpu',
+    file: 'e2e/smoke.spec.ts',
+    title: 'las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que dan brillo',
+  },
+  transmission: {
+    kind: 'gpu',
+    file: 'e2e/smoke.spec.ts',
+    title: 'la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU; la de la imagen, la de sus gemelos',
+  },
+  steered: {
+    kind: 'gpu',
+    file: 'e2e/liverTexture.spec.ts',
+    title: 'composición espacial: más SNR con el mismo grano, sin huecos, y la mirada dirigida de la GPU igual a su gemelo',
+  },
+  facets: {
+    kind: 'gpu',
+    file: 'e2e/facetCompression.spec.ts',
+    title: 'facetas y espejo pleural conservan la paridad bajo compresión y respiración en WebGL2',
+  },
+  organNames: {
+    kind: 'texto',
+    file: 'src/validation/organs.test.ts',
+    title: 'cada función GLSL tiene su gemela TS exportada y el shader la incluye',
+  },
+} as const satisfies Record<string, TwinEvidence>;
+
+export const TWINS: readonly TwinPair[] = [
+  // ——— Anatomía: escena, primitivas y deformación (ANATOMY_GLSL) ———
+  {
+    id: 'clasificacion',
+    what: 'Tejido, vaso, cara y distancia de un punto material: `AnatomyScene.classify` y `classifyWith` en el mismo orden.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['classify', 'classifyWall', 'classifyInside'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['classify', 'classifyWith', 'classifyWall', 'classifyInside'] }],
+    evidence: [
+      E.equivalence,
+      E.reference,
+      E.atlas,
+      {
+        kind: 'texto',
+        file: 'src/validation/pleura.test.ts',
+        title: 'la GLSL: classify es classifyWith(m, true) y la cortina solo se mira con withCurtain',
+      },
+    ],
+    gap: 'La e2e compara la persona default (procedural y atlas); la clasificación s0028 en GPU llega con la r3 de P3.',
+  },
+  {
+    id: 'cara-gradiente',
+    what: 'Gradiente sin normalizar de la distancia de la cara que dibuja un punto (normal del eco de interfaz).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['faceGradient'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['faceGradient'] }],
+    evidence: [
+      E.faceNormals,
+      { kind: 'gpu', file: 'e2e/vertebralCortex.spec.ts', title: 'cortical vertebral: cara, normales y hueso CPU/GPU' },
+      {
+        kind: 'texto',
+        file: 'src/validation/faceGradient.test.ts',
+        title: 'GLSL: el gradiente sin normalizar de los tubos, la norma de las diferencias centrales y δ con |∇|',
+      },
+    ],
+  },
+  {
+    id: 'pared-interna',
+    what: 'Profundidad bajo la cara interna de la pared (0 en la pleura parietal), donde A0 busca el cruce de la pleura.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['insideWallMm'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['insideWallMm'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/pleura.test.ts',
+        title: 'la GLSL: classify es classifyWith(m, true) y la cortina solo se mira con withCurtain',
+        scope: 'fija el texto exacto de la función GLSL',
+      },
+    ],
+    gap: 'Ninguna e2e lee insideWallMm de la GPU: A0 la usa para el cruce de la pleura y la paridad de A2/A parte de los segmentos que A0 ya escribió.',
+  },
+  {
+    id: 'cortina-receso',
+    what: 'Cortina pulmonar bajo la pared y receso costodiafragmático en la escena (envoltorios de `organs/lungCurtain.ts`).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['inLungCurtain', 'inLungRecess', 'lungEdgeMm'] }],
+    gpu: [{ file: 'src/anatomy/organs/lungCurtain.ts', symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/pleura.test.ts',
+        title: 'la GLSL de A0 lleva la misma marcha que el gemelo',
+      },
+    ],
+    gap: 'Las usa A0 para el cruce de la pleura y la paridad e2e de A2/A parte de los segmentos que A0 ya escribió. El comentario de `scene.ts` nombra un gemelo GLSL `inLungCurtain` que no existe (la GPU usa `lungCurtainDistance` en `classifyInside`); se corrige cuando r3 libere `scene.ts`.',
+  },
+  {
+    id: 'tubos',
+    what: 'Vasos y conductos: ruido del radio con su hash, consulta del tubo que gana y gradiente analítico de su cara.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/primitives.ts', symbols: ['tubeHash', 'tubeNoise', 'tubeQuery', 'tubeFaceGradient'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['tubeHash', 'tubeNoise', 'tubeQuery', 'tubeFace'] }],
+    evidence: [
+      E.equivalence,
+      {
+        kind: 'texto',
+        file: 'src/validation/vesselShape.test.ts',
+        title: 'la GLSL es el gemelo: la forma viaja en el téxel H4 de cada tubo y el ruido usa el mismo hash, celda y sal',
+      },
+    ],
+  },
+  {
+    id: 'columna',
+    what: 'Cuerpos, discos y arco vertebrales, su unión y la curvatura de la cara cortical.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/anatomy/primitives.ts', symbols: ['sdSpine', 'spineBodySd', 'spineArchSd', 'spineDistances', 'spineFaceCurvature'] },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['spineSd', 'spineBodySd', 'spineArchSd', 'spineBodyParts', 'spineFaceCurvature'],
+      },
+    ],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/vertebralCortex.spec.ts', title: 'cortical vertebral: cara, normales y hueso CPU/GPU' },
+      {
+        kind: 'texto',
+        file: 'src/validation/spine.test.ts',
+        title: 'GLSL: la columna con las constantes de SPINE_SHAPE, la cara tras la clasificación y el eco de la cortical',
+      },
+    ],
+  },
+  {
+    id: 'tronco-primitivas',
+    what: 'Profundidad y normal del tronco, cuerpo de referencia, SDF genéricos (elipsoide, esfera, uniones suaves) y costillas.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/primitives.ts',
+        symbols: [
+          'torsoDepth',
+          'torsoNormal',
+          'torsoDepthGradient',
+          'sdEllipsoid',
+          'sdEllipsoidLocal',
+          'smoothMin',
+          'smoothMax',
+          'sdSphere',
+          'ribDistanceLowerBound',
+          'sdRib',
+        ],
+      },
+      { file: 'src/anatomy/referenceBody.ts', symbols: ['bodyGradient'] },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: [
+          'torsoDepth',
+          'torsoNormal',
+          'bodyGradient',
+          'sdEllipsoid',
+          'sdEllipsoidLocal',
+          'smoothMin',
+          'smoothMax',
+          'sdSphere',
+          'ribDistanceLowerBound',
+          'sdRib',
+        ],
+      },
+      { file: 'src/anatomy/organs/wall.ts', symbols: ['torsoDepthGrad'] },
+    ],
+    evidence: [E.equivalence, E.reference],
+  },
+  {
+    id: 'cupula',
+    what: 'Altura del diafragma: inserción costal y la hemicúpula más alta.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/primitives.ts', symbols: ['diaphragmHeight'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['domeHeight', 'domeLift', 'sdDome'] }],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/diaphragmAxis.spec.ts', title: 'eje diafragmático sin singularidad CPU/GPU' },
+      { kind: 'gpu', file: 'e2e/diaphragmJunction.spec.ts', title: 'unión diafragmática y tejidos vecinos CPU/GPU' },
+    ],
+  },
+  {
+    id: 'deformacion',
+    what: 'Mundo → material (compresión y respiración), velocidad del tejido y peso respiratorio con su gradiente exacto.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/anatomy/deformation.ts', symbols: ['toMaterial', 'tissueVelocity'] },
+      { file: 'src/anatomy/respiratoryNormals.ts', symbols: ['respiratoryWeightGradient'] },
+      { file: 'src/anatomy/scene.ts', symbols: ['respiratoryWeight'] },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['toMaterial', 'tissueVelocity', 'respWeight', 'respWeightGradient', 'anatomyWarpAt'],
+      },
+    ],
+    evidence: [
+      { ...E.equivalence, scope: 'mundo → material con respiración y compresión, en la clasificación' },
+      E.facets,
+      {
+        kind: 'gpu',
+        file: 'e2e/s0028WallGpu.spec.ts',
+        title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
+        scope: 'peso respiratorio y su gradiente (variante s0028)',
+      },
+    ],
+    gap: '`tissueVelocity` (velocidad del tejido para el Doppler) no se compara: la e2e compara la de la sangre.',
+  },
+  {
+    id: 'compresion',
+    what: 'Campo de compresión de la sonda: spline, elevación, inversa y jacobiana para las normales.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/compression.ts',
+        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/compression.ts',
+        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound', 'COMPRESSION_GLSL'],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/compressionSpline.spec.ts',
+        title: 'compresión cúbica: desplazamiento, jacobiana y normales TS/GLSL en nodos y extremos',
+      },
+      E.facets,
+      {
+        kind: 'texto',
+        file: 'src/validation/compression.test.ts',
+        title: 'la GLSL lleva las mismas constantes y funciones, y toMaterial deshace la compresión antes que la respiración',
+      },
+    ],
+  },
+  {
+    id: 'atlas-abdominal',
+    what: 'Campos del atlas abdominal (distancia y rótulo), su gradiente y la cúpula registrada.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/abdominalAtlas.ts',
+        symbols: [
+          'abdominalAtlasValue',
+          'abdominalAtlasSdf',
+          'abdominalAtlasGradient',
+          'registeredDomeValue',
+          'registeredDomeSample',
+          'hepaticDomeValue',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/abdominalAtlas.ts',
+        symbols: [
+          'abdominalAtlasValue',
+          'abdominalAtlasSdf',
+          'abdominalAtlasGradient',
+          'registeredDomeValue',
+          'registeredDomeSample',
+          'hepaticDomeValue',
+        ],
+      },
+    ],
+    evidence: [
+      E.atlas,
+      { kind: 'gpu', file: 'e2e/atlasQuadratusCaps.spec.ts', title: 'Atlas renal muscle ends agree in production through probe movement' },
+      { kind: 'gpu', file: 'e2e/hepaticContact.spec.ts', title: 'registered hepatic contact agrees across the production classifiers' },
+      {
+        kind: 'gpu',
+        file: 'e2e/registeredRoof.spec.ts',
+        title: 'techo registrado y vecinos mantienen tejidos, interfaces y normales CPU/GPU',
+      },
+    ],
+  },
+  {
+    id: 'atlas-toracico',
+    what: 'Campo óseo torácico registrado: distancia, material, gradiente y marco de la superficie ósea.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/thoracicAtlas.ts',
+        symbols: ['thoracicValue', 'thoracicSdf', 'thoracicMaterial', 'thoracicGradient', 'boneSurfaceFrame', 'thoracicFrame'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/thoracicAtlas.ts',
+        symbols: ['thoracicValue', 'thoracicSdf', 'thoracicMaterial', 'thoracicGradient', 'boneSurfaceFrame', 'thoracicFrame'],
+      },
+    ],
+    evidence: [
+      E.thoracic,
+      { kind: 'gpu', file: 'e2e/thoracicCoverage.spec.ts', title: 'doce pares, extremos libres y esternón: misma barrera CPU/GPU' },
+    ],
+  },
+  {
+    id: 'volumen-fuente',
+    what: 'Interpolación trilineal de los ocho nodos de un volumen fuente junto a las interfaces óseas.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/sourceVolume.ts', symbols: ['sourceDistance'] }],
+    gpu: [{ file: 'src/anatomy/sourceVolume.ts', symbols: ['sourceDistancePrecise', 'SOURCE_DISTANCE_GLSL'] }],
+    evidence: [E.thoracic, E.atlas],
+  },
+  {
+    id: 'cartilago-referencia',
+    what: 'Cartílago costal del adulto de referencia: distancia, tangente y curvatura.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/referenceCartilage.ts', symbols: ['referenceCartilage'] }],
+    gpu: [{ file: 'src/anatomy/gpu/referenceCartilage.glsl.ts', symbols: ['referenceCartilage', 'CARTILAGE_GLSL'] }],
+    evidence: [E.equivalence, E.reference],
+  },
+  {
+    id: 'moteado-anatomia',
+    what: 'Campo complejo de dispersores persistente en coordenadas materiales: hash, retícula y fundido trilineal.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/speckleField.ts', symbols: ['hash13', 'scattererField'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['hash13', 'latticeValueS', 'scattererFieldS', 'scattererField'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/parenchymaTexture.test.ts',
+        title: 'la retícula de la anatomía elige los nodos fuertes y reparte su fase como el gemelo',
+      },
+    ],
+    gap: 'El moteado solo se ve en la envolvente: la e2e mide su estadística (Rayleigh, persistencia), no el campo nodo a nodo frente al gemelo.',
+  },
+  {
+    id: 'geometria-sector',
+    what: 'Dirección de la línea y punto del sector a una profundidad.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/probe/probe.ts', symbols: ['pointOnLine'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['pointOnLine', 'lineDir'] }],
+    evidence: [
+      {
+        ...E.equivalence,
+        scope: '`FRAG_TISSUEMAP` sitúa cada celda con `lineDir`/`pointOnLine` de la GLSL y el barrido TS con `pointOnLine`',
+      },
+    ],
+  },
+
+  // ——— Módulos de órgano (decisión 46): TS y GLSL en el mismo archivo, mismos nombres ———
+  {
+    id: 'organo-abdomen',
+    what: 'Pared digestiva, tejido gástrico, frontera y plano del gas del abdomen.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/abdomen.ts',
+        symbols: ['digestiveWallMm', 'digestiveWallTissue', 'gastricWallTissue', 'gastricBoundary', 'digestiveGasPlane', 'abdomenQuery'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/abdomen.ts',
+        symbols: [
+          'digestiveWallMm',
+          'digestiveWallTissue',
+          'gastricWallTissue',
+          'gastricBoundary',
+          'digestiveGasPlane',
+          'abdomenQuery',
+          'ABDOMEN_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/gastricWall.spec.ts',
+        title: 'epigastric stomach: folded wall and contents agree on CPU/GPU, without flow or a black cavity',
+      },
+      { kind: 'texto', file: 'src/validation/gastricWall.test.ts', title: 'la GLSL usa las mismas capas y el mismo pliegue' },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-intestino',
+    what: 'Asas: luz, gas, pared y serosa.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/organs/bowel.ts', symbols: ['bowelQuery', 'bowelSdf', 'bowelGasSdf'] }],
+    gpu: [{ file: 'src/anatomy/organs/bowel.ts', symbols: ['bowelQuery', 'bowelSdf', 'bowelGasSdf', 'BOWEL_GLSL'] }],
+    evidence: [
+      { kind: 'gpu', file: 'e2e/bowel.spec.ts', title: 'asas: luz, gas, pared y serosa coinciden en CPU/GPU' },
+      { kind: 'gpu', file: 'e2e/bowel.spec.ts', title: 'asas: compresión local reversible y gemelo GPU' },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-esternon',
+    what: 'Esternón: semianchura y distancia.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/organs/sternum.ts', symbols: ['sternumHalfWidth', 'sternumSd'] }],
+    gpu: [{ file: 'src/anatomy/organs/sternum.ts', symbols: ['sternumHalfWidth', 'sternumSd', 'STERNUM_GLSL'] }],
+    evidence: [
+      { kind: 'gpu', file: 'e2e/thoracicCoverage.spec.ts', title: 'doce pares, extremos libres y esternón: misma barrera CPU/GPU' },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-pared',
+    what: 'Pared en capas con relieve, sus caras y costillas (decisiones 62 y 88).',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/wall.ts',
+        symbols: [
+          'ribSearchDepth',
+          'wallArc',
+          'wallPerimeter',
+          'wallWavenumber',
+          'wallDepths',
+          'wallPlaneDepth',
+          'wallPlaneGap',
+          'wallFace',
+          'wallFaceDepth',
+          'wallFaceSd',
+          'wallArcGradient',
+          'wallFaceSlope',
+          'wallFaceGradient',
+          'ribSd',
+          'nearestRib',
+          'ribTangent',
+          'ribCurvature',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/wall.ts',
+        symbols: [
+          'ribSearchDepth',
+          'wallArc',
+          'wallPerimeter',
+          'wallWavenumber',
+          'wallDepths',
+          'wallPlaneDepth',
+          'wallPlaneGap',
+          'wallFace',
+          'wallFaceDepth',
+          'wallFaceSd',
+          'wallArcGradient',
+          'wallFaceSlope',
+          'wallFaceGradient',
+          'ribSd',
+          'nearestRib',
+          'ribTangent',
+          'ribCurvature',
+          'WALL_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/smoke.spec.ts',
+        title: 'pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, músculo con estrías, cortical costal y sus normales',
+        scope: 'caras, normales y gradiente de la pared y de las costillas (`wallNormals`)',
+      },
+      { kind: 'gpu', file: 'e2e/atlasWallNormals.spec.ts', title: 'pared Atlas: caras y normales del modelo compartido coinciden con GPU' },
+      E.equivalence,
+      {
+        kind: 'texto',
+        file: 'src/validation/wall.test.ts',
+        title: 'la GLSL: un relieve por cara con los términos de la tabla, la fascia con el espesor de grasa del relieve lento',
+      },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-rinon',
+    what: 'Riñón: marco local, contorno (procedural y de atlas), grasa perirrenal, seno, pelvis y pirámides.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/kidney.ts',
+        symbols: [
+          'kidneyLocal',
+          'kidneyOuterSdf',
+          'kidneyAtlasPoint',
+          'atlasKidneyOuter',
+          'atlasKidneyOuterGradient',
+          'sdRoundCone',
+          'softRamp',
+          'perirenalThicknessMm',
+          'perirenalFromOuter',
+          'perirenalOuterSdf',
+          'hilumChannelSdf',
+          'interiorPoint',
+          'kidneySinusSdf',
+          'atlasDepthScale',
+          'kidneyQuery',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/kidney.ts',
+        symbols: [
+          'kidneyLocal',
+          'kidneyOuterSdf',
+          'kidneyAtlasPoint',
+          'atlasKidneyOuter',
+          'atlasKidneyOuterGradient',
+          'sdRoundCone',
+          'softRamp',
+          'perirenalThicknessMm',
+          'perirenalFromOuter',
+          'perirenalOuterSdf',
+          'hilumChannelSdf',
+          'interiorPoint',
+          'kidneySinusSdf',
+          'atlasDepthScale',
+          'kidneyQuery',
+          'KIDNEY_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/renalEnvelope.spec.ts', title: 'renal adipose/fascial volume agrees on CPU/GPU during probe movement' },
+      { kind: 'texto', file: 'src/validation/renalSinus.test.ts', title: 'la GLSL aplica las mismas fronteras que TS' },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-ligamentos',
+    what: 'Fisura umbilical y ligamento venoso del hígado.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/organs/liverLigaments.ts', symbols: ['umbilicalFissureSdf', 'ligamentumVenosumSdf'] }],
+    gpu: [
+      { file: 'src/anatomy/organs/liverLigaments.ts', symbols: ['umbilicalFissureSdf', 'ligamentumVenosumSdf', 'LIVER_LIGAMENTS_GLSL'] },
+    ],
+    evidence: [
+      E.equivalence,
+      {
+        kind: 'texto',
+        file: 'src/validation/organs.test.ts',
+        title: 'las constantes del shader salen del módulo, no de literales copiados',
+      },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-cortina',
+    what: 'Cortina pulmonar: distancia a su frontera, receso y borde.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/organs/lungCurtain.ts', symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/lungCurtain.ts',
+        symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm', 'LUNG_CURTAIN_GLSL'],
+      },
+    ],
+    evidence: [{ ...E.equivalence, scope: '`lungCurtainDistance` dentro de la clasificación' }, E.organNames],
+    gap: '`inLungRecess` y `lungCurtainEdgeMm` solo los usa A0 (cruce de la pleura): sin comparación numérica.',
+  },
+  {
+    id: 'organo-vesicula',
+    what: 'Vesícula: segmentos y unión suave con su gradiente exacto.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/organs/gallbladder.ts', symbols: ['gbSegment', 'gallbladderSdf'] }],
+    gpu: [{ file: 'src/anatomy/organs/gallbladder.ts', symbols: ['gbSegment', 'gallbladderSdf', 'GALLBLADDER_GLSL'] }],
+    evidence: [
+      { kind: 'gpu', file: 'e2e/gallbladderGradient.spec.ts', title: 'pared vesicular: gradiente de la unión suave CPU/GPU' },
+      E.equivalence,
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-higado',
+    what: 'Hígado: envolvente, cara visceral, recorte posteromedial y su normal.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/liver.ts',
+        symbols: [
+          'hepaticSpineEnvelopeSd',
+          'sminGrad',
+          'visceralHeight',
+          'visceralFaceDistance',
+          'medialCutDistance',
+          'medialCutNormal',
+          'liverSdf',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/liver.ts',
+        symbols: [
+          'hepaticSpineEnvelopeSd',
+          'sminGrad',
+          'visceralHeight',
+          'visceralFaceDistance',
+          'medialCutDistance',
+          'medialCutNormal',
+          'liverSdf',
+          'LIVER_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/hepaticBoundary.spec.ts', title: 'plano retrohepático: cápsula y tejido blando CPU/GPU' },
+      {
+        kind: 'texto',
+        file: 'src/validation/liverCapsuleMedium.test.ts',
+        title: 'el shader consulta hacia fuera pese al signo contrario de liverInner, con los mismos coeficientes',
+      },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-retroperitoneo',
+    what: 'Psoas, cuadrado lumbar y grasa retroperitoneal.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/retroperitoneum.ts',
+        symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/retroperitoneum.ts',
+        symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum', 'RETROPERITONEUM_GLSL'],
+      },
+    ],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/posteriorMuscles.spec.ts', title: 'production quadratus field closes at the wall in GPU as in CPU' },
+      {
+        kind: 'texto',
+        file: 'src/validation/retroperitoneum.test.ts',
+        title: 'el gemelo GLSL toma las constantes del módulo y classify lo llama tras el hígado',
+      },
+      E.organNames,
+    ],
+  },
+  {
+    id: 'organo-corazon',
+    what: 'Corazón y mediastino: marcos, aurícula derecha, cavidades, VCI que entra y tórax.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/organs/heart.ts',
+        symbols: ['heartShift', 'heartFrame', 'raFrame', 'raSdf', 'heartChambers', 'raInferiorZ', 'ivcAtrium', 'thorax'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/heart.ts',
+        symbols: ['heartShift', 'heartFrame', 'raFrame', 'raSdf', 'heartChambers', 'raInferiorZ', 'ivcAtrium', 'thorax', 'HEART_GLSL'],
+      },
+    ],
+    evidence: [
+      E.equivalence,
+      { kind: 'gpu', file: 'e2e/ivcAtrium.spec.ts', title: 'bloque cardíaco registrado conserva paridad CPU/GPU con suelo y vecinos' },
+      {
+        kind: 'texto',
+        file: 'src/validation/heart.test.ts',
+        title: 'el GLSL lleva las constantes del módulo y los tejidos y la cara nuevos',
+      },
+      E.organNames,
+    ],
+  },
+
+  // ——— Persona s0028 (decisiones 317–321) ———
+  {
+    id: 's0028-pared',
+    what: 'Pared continua s0028: proyección EDT, carta bilineal, cara interna con gradiente analítico, rampas y peso respiratorio.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/anatomy/s0028Wall.ts',
+        symbols: [
+          's0028WallAt',
+          's0028WallSurface',
+          's0028WallFaceGradient',
+          's0028InsideWall',
+          's0028RespiratoryWall',
+          's0028RespiratoryRamp',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/s0028Wall.glsl.ts',
+        symbols: [
+          's28Project',
+          's28WallKnown',
+          's28WallSurface',
+          's28WallAt',
+          's28Grad',
+          's28FaceGradient',
+          's28Ramp',
+          's28RespWall',
+          's28Inside',
+          's0028WallShader',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/s0028WallGpu.spec.ts',
+        title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/s0028WallGpu.test.ts',
+        title: 'la GPU s0028 pesa la celda U con la rampa por profundidad de su fila y la celda D/E como antes (gemelo de la CPU)',
+      },
+    ],
+  },
+  {
+    id: 's0028-lector',
+    what: 'Lector directo s0028 de los campos abdominal y torácico (distancia, rótulo, gas) y profundidad de la piel.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/anatomy/s0028Source.ts', symbols: ['s0028SourceValue'] },
+      { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['s0028Depth', 's0028DepthGradient'] },
+    ],
+    gpu: [{ file: 'src/anatomy/gpu/personShader.ts', symbols: ['personShader'] }],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/s0028WallGpu.spec.ts',
+        title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
+        scope: 'clasificación y normales en la banda de la pared',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/s0028P1Reader.test.ts',
+        title: 'emite los dos atlas reales y precisión ósea, sin añadir samplers',
+      },
+    ],
+    gap: 'El volumen s0028 completo no tiene gate CPU/GPU en la CI hasta la r3 de P3; el GLSL vive en cadenas sin `/* glsl */` (punto 4).',
+  },
+
+  // ——— CPU de la página ↔ Worker del corte ———
+  {
+    id: 'trabajador-corte',
+    what: 'Activos y estado que la página instala y el Worker del corte vuelve a instalar (atlas, cuerpo, pared y sólidos s0028).',
+    kind: 'cpu-worker',
+    cpu: [
+      { file: 'src/anatomy/loadS0028.ts', symbols: ['loadS0028'] },
+      { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['setAbdominalAtlas'] },
+    ],
+    gpu: [{ file: 'src/ui/cutMapWorker.ts', symbols: ['setAbdominalAtlas', 'setThoracicAtlas', 'setS0028Wall', 'setS0028Solids'] }],
+    evidence: [
+      {
+        kind: 'worker',
+        file: 'src/validation/s0028SolidsClassify.test.ts',
+        title: 'Worker real del corte: el riñón es U rotulado «Riñón derecho · interior U» y el mapa coincide con la CPU bit a bit',
+      },
+      {
+        kind: 'worker',
+        file: 'src/validation/s0028SolidsMotion.test.ts',
+        title: 'respiración: sólo los estímulos E de 10/20 mm del diseño, mismo material en CPU y Worker bit a bit',
+      },
+      {
+        kind: 'worker',
+        file: 'e2e/subcostalMovement.spec.ts',
+        title: 'the anatomical worker receives the exact acquisition wall and costal atlas',
+      },
+      {
+        kind: 'worker',
+        file: 'e2e/sharedWorker.spec.ts',
+        title: 'el trabajador modular conserva clasificación y estado separado al cambiar de caso',
+      },
+    ],
+  },
+
+  // ——— Ultrasonido: pasadas A0–K y su presentación ———
+  {
+    id: 'espejo-pleural',
+    what: 'Dirección reflejada del espejo diafragmático/pleural.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/transmission.ts', symbols: ['mirrorDirection'] }],
+    gpu: [{ file: 'src/ultrasound/transmission.ts', symbols: ['mirrorDirection', 'MIRROR_DIRECTION_GLSL'] }],
+    evidence: [E.facets],
+  },
+  {
+    id: 'transmision-a0',
+    what: 'A0: marcha de la línea recta, espejo y cruce de la pleura; interpolación de la transmisión entre filas.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/transmission.ts',
+        symbols: ['transmissionLerp', 'mirrorCrossing', 'transmissionHitsLine', 'pleuraCrossingLine'],
+      },
+    ],
+    gpu: [
+      { file: 'src/ultrasound/transmission.ts', symbols: ['transLerp'] },
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_HITS', 'a0Reflected'] },
+    ],
+    evidence: [
+      { kind: 'texto', file: 'src/validation/pleura.test.ts', title: 'la GLSL de A0 lleva la misma marcha que el gemelo' },
+      {
+        kind: 'texto',
+        file: 'src/validation/transmission.test.ts',
+        title: 'A0 hace la bisección con el número de pasos de TS y A2 publica el espejo exacto desde su alcance',
+      },
+    ],
+    gap: 'La paridad e2e de A2/A lee de la GPU los segmentos que escribió A0: compara lo que viene después, no la marcha de A0.',
+  },
+  {
+    id: 'prefijo-a2',
+    what: 'A2: prefijo de atenuación de cada línea (mirada 0 y dirigida), con hueso, gas, espejo y refracción Ψ̃.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/ultrasound/transmissionTwin.ts', symbols: ['prefixDb', 'steeredPrefixDb', 'refractionPsi', 'refractionSlope'] },
+      { file: 'src/ultrasound/transmission.ts', symbols: ['segmentDb'] },
+    ],
+    gpu: [
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_PREFIX', 'FRAG_TRANS_PREFIX_STEERED', 'segmentDb'] },
+      { file: 'src/ultrasound/transmission.ts', symbols: ['steeredPrefix', 'STEERED_PREFIX_GLSL'] },
+    ],
+    evidence: [
+      E.transmission,
+      E.steered,
+      {
+        kind: 'gpu',
+        file: 'e2e/dopplerTransmission.spec.ts',
+        title: 'GPU acoustic prefixes integrate tissue-specific Doppler loss without altering B',
+      },
+      { kind: 'texto', file: 'src/validation/transmission.test.ts', title: 'el GLSL dirigido de A2 interpola sus constantes de TS' },
+    ],
+  },
+  {
+    id: 'apertura-refraccion',
+    what: 'A: transmisión con apertura (conos de emisión y recepción), refracción de las luces y especulares.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/transmissionTwin.ts',
+        symbols: [
+          'apertureWindowIntegral',
+          'apertureCones',
+          'apertureEcho',
+          'apertureTransmission',
+          'steeredApertureEcho',
+          'steeredApertureTransmission',
+          'refractionGain',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/aperture.ts',
+        symbols: [
+          'apW',
+          'apCones',
+          'apEcho',
+          'apertureTransmission',
+          'steeredApertureTransmission',
+          'rfPsi',
+          'rfSlab',
+          'refractionGain',
+          'APERTURE_GLSL',
+          'REFRACTION_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      E.transmission,
+      E.steered,
+      {
+        kind: 'texto',
+        file: 'src/validation/aperture.test.ts',
+        title: 'el GLSL dirigido es el cono de la pasada A con el prefijo dirigido y el radio R·cos θ',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/refraction.test.ts',
+        title: 'la GLSL: A1 escribe el camino de más y el aire en negativo, A2 acumula Ψ̃ y A multiplica su transmisión con apertura',
+      },
+    ],
+  },
+  {
+    id: 'transmision-doppler',
+    what: 'Conversión de una transmisión de la imagen B a la frecuencia Doppler, con las barreras fijas aparte.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/dopplerTransmission.ts', symbols: ['dopplerTransmission'] }],
+    gpu: [{ file: 'src/ultrasound/dopplerTransmission.ts', symbols: ['dopplerTransmission', 'DOPPLER_TRANSMISSION_GLSL'] }],
+    evidence: [],
+    gap: 'Contrafactual de la decisión 174 conservado para pruebas históricas: ningún programa incluye `DOPPLER_TRANSMISSION_GLSL` y fuera de su prueba unitaria nadie llama a `dopplerTransmission`. El canal Doppler de A2 sí tiene paridad e2e (`prefijo-a2`).',
+  },
+  {
+    id: 'pleura',
+    what: 'Pleura y cortina en B: fracción de aire del haz, serie de reverberaciones, deslizamiento y transmisión de detrás.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/pleura.ts',
+        symbols: [
+          'normalCdf',
+          'curtainEdgeSigmaMm',
+          'curtainAirFraction',
+          'curtainAirFractionAt',
+          'curtainSteerWeight',
+          'pleuraCapMm',
+          'pleuraCoherence',
+          'pleuraRoundTrip',
+          'seriesPow',
+          'pleuraSeriesDepths',
+          'aLineOrder',
+          'slidingAmplitude',
+          'slidingField',
+          'pleuraTerms',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/pleura.ts',
+        symbols: [
+          'normalCdf',
+          'curtainEdgeSigmaMm',
+          'curtainAirFraction',
+          'curtainSteerWeight',
+          'pleuraCapMm',
+          'pleuraCoherence',
+          'pleuraRoundTrip',
+          'seriesPow',
+          'pleuraSeriesDepths',
+          'aLineOrder',
+          'slidingAmplitude',
+          'slidingField',
+          'mediumField',
+          'wallField',
+          'PLEURA_GLSL',
+          'CURTAIN_AIR_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/pleura.test.ts',
+        title: 'la GLSL calcula la fracción con el haz de dos vías y lo que ve del tejido de detrás con 1 − f',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/pleura.test.ts',
+        title: 'lleva las expresiones del gemelo: tope de la transmisión, réplicas, serie, deslizamiento y transmisión de detrás',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/compound.test.ts',
+        title: 'la GLSL de K pesa las dirigidas con la cortina de la mirada 0 (A0 h2 y la fracción de aire de B)',
+      },
+    ],
+    gap: 'La e2e de la pleura mide la imagen (línea pleural, neblina, líneas A) contra umbrales, no la GLSL de B frente a estas funciones.',
+  },
+  {
+    id: 'haz-psf',
+    what: 'PSF de la imagen B: anchura lateral y de elevación, ganancia focal y bajada de la frecuencia central.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/ultrasound/beamEcho.ts', symbols: ['focalGain', 'frequencyRatio'] },
+      { file: 'src/ultrasound/beamModel.ts', symbols: ['lateralSigmaMm'] },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/shaders/passes.glsl.ts',
+        symbols: ['focalGain', 'echoFrequency', 'lateralSigmaMm', 'beamFwhm', 'elevSigma', 'LATERAL_PSF_GLSL', 'ELEV_SIGMA_GLSL'],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/psfDepth.test.ts',
+        title: 'el GLSL lleva la misma PSF, la misma ganancia y el mismo pulso que el modelo',
+      },
+    ],
+    gap: 'La e2e del foco mide el brillo de la banda focal en la imagen; ninguna compara la PSF de la GPU con estas funciones.',
+  },
+  {
+    id: 'clutter-cd',
+    what: 'Pasadas C y D: núcleo lateral con pedestal, réplicas de reverberación y su puerta.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/clutter.ts', symbols: ['lateralKernel', 'reverbGains', 'reverbGateWeight'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/clutter.test.ts',
+        title: 'las pasadas C y D llevan las mismas fórmulas, constantes y pantalla de fase',
+      },
+    ],
+    gap: 'C y D solo se ejecutan dentro de la cadena de la imagen; no hay banco WebGL de sus núcleos.',
+  },
+  {
+    id: 'composicion-k',
+    what: 'Pasada K: media de las envolventes válidas de las miradas con su peso.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/compound.ts', symbols: ['compoundEnvelope', 'lookWeight'] }],
+    gpu: [
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_COMPOUND', 'lookEnvelope'] },
+      { file: 'src/ultrasound/compound.ts', symbols: ['lookWeight'] },
+    ],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/compound.test.ts',
+        title: 'el GLSL de K interpola el número de miradas y la rampa, y pesa 1 la mirada 0',
+      },
+    ],
+    gap: 'La e2e del compuesto mide SNR y grano en la imagen; la envolvente de K no se compara con `compoundEnvelope`.',
+  },
+  {
+    id: 'armonico',
+    what: 'Acumulación del haz armónico en el campo cercano.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/harmonic.ts', symbols: ['harmonicNearGain'] }],
+    gpu: [{ file: 'src/ultrasound/harmonic.ts', symbols: ['harmonicNearGain', 'HARMONIC_GLSL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/harmonic.test.ts',
+        title: 'el GLSL lleva las mismas fórmulas; el color no lee el haz armónico',
+      },
+    ],
+    gap: 'La e2e de la armónica mide el campo cercano y el ruido de la imagen, no la ganancia frente a `harmonicNearGain`.',
+  },
+  {
+    id: 'faceta-coseno',
+    what: 'Coseno de incidencia de la faceta inclinada.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/interfaceEcho.ts', symbols: ['facetCosine'] }],
+    gpu: [{ file: 'src/ultrasound/interfaceEcho.ts', symbols: ['facetCosine', 'FACET_COSINE_GLSL'] }],
+    evidence: [E.facets],
+  },
+  {
+    id: 'eco-interfaz',
+    what: 'Eco de interfaz en B: perfil de la cara, faceta especular, difusa, lóbulo de la cápsula del atlas y condiciones de cara.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/interfaceEcho.ts',
+        symbols: [
+          'interfaceEchoField',
+          'facetTilt',
+          'facetEchoField',
+          'diffuseEchoField',
+          'atlasCapsuleLobeNormal',
+          'faceDelta',
+          'faceLitFromProbe',
+          'fatAcrossWall',
+        ],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/interfaceEcho.ts',
+        symbols: [
+          'interfaceProfileEcho',
+          'facetTilt',
+          'faceEcho',
+          'faceShape',
+          'cachedFaceGradient',
+          'interfaceEcho',
+          'INTERFACE_ECHO_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/interfaceEcho.test.ts',
+        title: 'GLSL: las constantes interpoladas, la faceta, la difusa y su suma en los dos programas de B',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/interfaceEcho.test.ts',
+        title: 'uIface empaqueta (β·10^(K/20)·R_ef·s_ref/s, 2k0σz, 1/(4s²), dos lados) y el gemelo lo lee igual',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/atlasFaceNormals.test.ts',
+        title: 'la GPU usa ese lóbulo solo en la cápsula del atlas, con el mismo paso; el perfil sigue a la distancia local',
+      },
+    ],
+    gap: 'La e2e de los ecos de interfaz mide brillo y costuras en la imagen; la GLSL de B no se compara con `interfaceEchoField` punto a punto.',
+  },
+  {
+    id: 'ruido-receptor',
+    what: 'Ruido del receptor por línea de la pasada C: hash en float32 y amplitud por modo.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/receiver.ts', symbols: ['hash12b'] }],
+    gpu: [{ file: 'src/ultrasound/receiver.ts', symbols: ['hash12b', 'receiverNoise', 'RECEIVER_NOISE_GLSL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/receiver.test.ts',
+        title: 'la pasada B toma las constantes de TS y, antes del corte, suma el mismo transitorio que antes',
+        scope: 'constantes del receptor en B; el hash de C no se inspecciona',
+      },
+    ],
+    gap: 'El hash de la pasada C no tiene prueba frente a `hash12b`: el ruido solo se mide como estadística en la imagen.',
+  },
+  {
+    id: 'textura-retro',
+    what: 'Fascículos y septos del psoas, cuadrado lumbar y grasa retroperitoneal en B.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/retroTexture.ts', symbols: ['retroMuscleAxis', 'fascicleSeptum', 'retroTexture'] }],
+    gpu: [{ file: 'src/ultrasound/retroTexture.ts', symbols: ['retroMuscleAxis', 'fascicleSeptum', 'retroTexture', 'RETRO_TEXTURE_GLSL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/retroTexture.test.ts',
+        title: 'factor log-normal anclado, igual con cualquier haz, de potencia media 1 y ~3,2 dB de desviación',
+        scope: 'comprueba que los dos programas de B incluyen `RETRO_TEXTURE_GLSL` con sus constantes',
+      },
+    ],
+    gap: 'Sin banco WebGL: la textura solo se mide como estadística de la imagen.',
+  },
+  {
+    id: 'textura-pared',
+    what: 'Textura de la pared en B: orientación, septos de la grasa, estrías del músculo y eco de cara plana.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/wallTexture.ts',
+        symbols: ['wallOrientation', 'fatSeptum', 'muscleStriation', 'wallFaceGain', 'wallTexture', 'wallFaceEchoFlat'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/wallTexture.ts',
+        symbols: [
+          'wallOrientation',
+          'fatSeptum',
+          'muscleStriation',
+          'wallFaceGain',
+          'wallTexture',
+          'wallFaceEchoFlat',
+          'WALL_TEXTURE_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/wall.test.ts',
+        title: 'la GLSL: el mismo gradiente y el eco de cara plana en la pared que copia la serie, sin faceGradient',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/wallFaceContinuity.test.ts',
+        title: 'la GPU aplica el mismo tope a la variación de las caras',
+      },
+    ],
+    gap: 'Las e2e de estrías y septos (`muscleStriationNormals`, `wallSeptumNormals`) comparan la GLSL con un oráculo GLSL, no con estas funciones TS.',
+  },
+  {
+    id: 'moteado-campo',
+    what: 'Campo de dispersores de la pasada B por tejido: rebanada, fase de la mirada, ruido de valor, grumos y densidad.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/speckleField.ts',
+        symbols: ['speckleSliceField', 'latticeValuePh', 'scattererFieldPh', 'valueNoise', 'strongScatter', 'clumpGain', 'densityGain'],
+      },
+    ],
+    gpu: [
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['scattererFieldSlice', 'speckleField'] },
+      {
+        file: 'src/ultrasound/speckleField.ts',
+        symbols: [
+          'latticeValuePh',
+          'scattererFieldPh',
+          'valueNoise',
+          'strongScatter',
+          'clumpGain',
+          'densityGain',
+          'SPECKLE_LOOK_GLSL',
+          'SPECKLE_TISSUE_GLSL',
+        ],
+      },
+    ],
+    evidence: [
+      { kind: 'texto', file: 'src/validation/speckleField.test.ts', title: 'el GLSL de la mirada lleva la misma fórmula que el gemelo' },
+      { kind: 'texto', file: 'src/validation/parenchymaTexture.test.ts', title: 'las constantes por tejido salen de TS en float32 exacto' },
+    ],
+    gap: 'La e2e del moteado mide su estadística y su persistencia en la imagen, no el campo frente al gemelo.',
+  },
+  {
+    id: 'miradas-direccion',
+    what: 'Geometría de las miradas dirigidas: ángulo, elemento, fase y cobertura de cada mirada y la muestra dirigida de B.',
+    kind: 'cpu-glsl',
+    cpu: [
+      {
+        file: 'src/ultrasound/steering.ts',
+        symbols: ['steerBeta', 'alongLineMm', 'steeredElement', 'lookPhase', 'lookPhaseGrad', 'lookCoverage', 'steeredSample'],
+      },
+    ],
+    gpu: [
+      {
+        file: 'src/ultrasound/steering.ts',
+        symbols: ['steerBeta', 'alongLineMm', 'steeredElement', 'lookPhase', 'lookPhaseGrad', 'lookCoverage', 'STEERING_GLSL'],
+      },
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['steeredField', 'steeredT', 'steeredPleura', 'STEERED_FIELD_GLSL'] },
+    ],
+    evidence: [
+      { kind: 'texto', file: 'src/validation/steering.test.ts', title: 'el GLSL lleva las mismas fórmulas (sin constantes de TS sueltas)' },
+      { kind: 'texto', file: 'src/validation/steeredSample.test.ts', title: 'el GLSL lleva las mismas expresiones que el gemelo' },
+      { kind: 'texto', file: 'src/validation/steeredSample.test.ts', title: 'el GLSL lleva la misma pleura del camino que el gemelo' },
+    ],
+    gap: 'La geometría dirigida de A2/A sí entra en la paridad e2e de `prefijo-a2` y `apertura-refraccion`; la muestra dirigida de B no.',
+  },
+  {
+    id: 'triadas-portales',
+    what: 'Tríadas portales: hash entero PCG3D, números de la célula y brillo de la tríada.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/portalTriads.ts', symbols: ['pcg3d', 'cellRandoms', 'portalTriadGain'] }],
+    gpu: [{ file: 'src/ultrasound/portalTriads.ts', symbols: ['triadPcg', 'portalTriad', 'PORTAL_TRIADS_GLSL'] }],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/equivalence.spec.ts',
+        title: 'las tríadas portales de la GPU son las del gemelo TS, punto a punto (decisión 78)',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/portalTriads.test.ts',
+        title: 'el hash es entero y sin simetrías: cada célula y cada parámetro, su número; la GPU recibe los mismos',
+      },
+    ],
+  },
+  {
+    id: 'textura-reposo',
+    what: 'Perfil de la pared intestinal en reposo y su textura.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/restTexture.ts', symbols: ['bowelWallProfile', 'restTexture'] }],
+    gpu: [{ file: 'src/ultrasound/restTexture.ts', symbols: ['bowelWallProfile', 'restTexture', 'REST_TEXTURE_GLSL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/restTexture.test.ts',
+        title: 'el shader comparte parámetros y no genera asas con uSeed ni valueNoise',
+      },
+    ],
+    gap: 'Sin banco WebGL del perfil.',
+  },
+  {
+    id: 'filtro-pared-color',
+    what: 'Respuesta del filtro de pared del Color (dos biquads) y su fase, la misma que la del PW.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/ultrasound/colorWallFilter.ts', symbols: ['colorWallResponseHz'] },
+      { file: 'src/doppler/wallFilter.ts', symbols: ['WallFilter'] },
+    ],
+    gpu: [{ file: 'src/ultrasound/colorWallFilter.ts', symbols: ['colorWallResponseHz', 'colorPhase', 'COLOR_WALL_FILTER_GLSL'] }],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/colorWallFilter.spec.ts',
+        title: 'GPU color filter: sampled aliases and disabled stationary signal remain finite',
+      },
+    ],
+  },
+  {
+    id: 'mezcla-color',
+    what: 'Mezcla sangre/clutter/ruido del Color: autocorrelación por submuestra con la ganancia de potencia.',
+    kind: 'cpu-glsl',
+    cpu: [
+      { file: 'src/ultrasound/colorGain.ts', symbols: ['colorPowerGain'] },
+      { file: 'src/doppler/wallFilter.ts', symbols: ['WallFilter'] },
+    ],
+    gpu: [{ file: 'src/ultrasound/colorMixture.ts', symbols: ['COLOR_MIXTURE_GLSL'] }],
+    evidence: [
+      {
+        kind: 'gpu',
+        file: 'e2e/colorMixture.spec.ts',
+        title: 'Color suma autocorrelaciones de cada submuestra antes de estimar fase y potencia',
+      },
+    ],
+  },
+  {
+    id: 'mapa-color',
+    what: 'Paleta del Color: la barra de la UI y la de la GPU.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/colorMap.ts', symbols: ['colorMapRgb'] }],
+    gpu: [{ file: 'src/ultrasound/colorMap.ts', symbols: ['colorVelocityMap', 'COLOR_MAP_GLSL'] }],
+    evidence: [{ kind: 'gpu', file: 'e2e/colorMap.spec.ts', title: 'barra CPU y paleta GPU coinciden desde cero hasta Nyquist' }],
+  },
+  {
+    id: 'ganancia-campo-cercano',
+    what: 'Recta de ganancia del campo cercano en la presentación (`displayGrey`).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/renderer.ts', symbols: ['nearFieldTgcDb'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['tgcAt', 'displayDb'] }],
+    evidence: [{ kind: 'texto', file: 'src/validation/nearFieldDisplay.test.ts', title: 'la GPU usa la misma recta' }],
+    gap: 'La presentación se mide en la imagen; la recta de la GPU no se lee frente a `nearFieldTgcDb`.',
+  },
+
+  // ——— Gemelos de validación: cadenas de la GPU rehechas en TS, solo para pruebas y bancos ———
+  {
+    id: 'gemelo-interfaz',
+    what: 'Cadena B → C → D de los ecos de interfaz en 2D (banco de las caras, β y PSF).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/validation/support/interfaceTwin.ts', symbols: ['simulate', 'lineDir', 'elevSigma', 'calibrateBeta'] }],
+    gpu: [
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL', 'lineDir', 'elevSigma'] },
+    ],
+    evidence: [],
+    gap: 'Banco de diseño: calibra β y la PSF en 2D; la GPU se mide aparte con el banco de fidelidad, no frente a este gemelo.',
+  },
+  {
+    id: 'gemelo-pleura',
+    what: 'Pleura y cortina en 2D: la serie, la neblina y el deslizamiento de B → C → D.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/validation/support/pleuraTwin.ts', symbols: ['simulatePleura'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    evidence: [],
+    gap: 'Banco de diseño de la decisión 61; la imagen de la GPU se mide con `pleuraStats`, no frente al gemelo.',
+  },
+  {
+    id: 'gemelo-pared',
+    what: 'Eco de la pared en una línea con su textura y su PSF (banco de la decisión 62).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/validation/support/wallTwin.ts', symbols: ['wallTwin', 'classifyModel'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    evidence: [],
+    gap: 'Banco de diseño; la GPU se mide con el banco de fidelidad (`wallStats`).',
+  },
+  {
+    id: 'gemelo-compuesto',
+    what: 'Envolventes de las miradas en un parche (correlación entre miradas del compuesto).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/validation/support/compoundTwin.ts', symbols: ['lookPatchEnvelopes', 'elevSigmaMm'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD_STEERED', 'FRAG_COMPOUND'] }],
+    evidence: [],
+    gap: 'Banco de diseño de la decisión 58; la GPU mide la correlación entre miradas en su propia imagen.',
+  },
+  {
+    id: 'rejilla-segmentos',
+    what: 'Rejilla de segmentos de A0/A1 construida en TS desde la escena, sobre la que suman los gemelos de A2 y A.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/validation/support/segmentGrid.ts', symbols: ['segmentGridFromScene', 'lookTransmission'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_HITS', 'FRAG_TRANSMISSION'] }],
+    evidence: [],
+    gap: 'Las pruebas unitarias de A2/A la usan como entrada; la paridad e2e lee la rejilla real de la GPU (`readSegments`) en su lugar.',
+  },
+];
+
+/**
+ * Pares sin ninguna prueba de paridad, congelados el 05-11-2026 (decisión 322, punto 5). Un par nuevo sin prueba rompe
+ * la CI; esta lista solo puede encoger: un par que gane una prueba sale de ella.
+ */
+export const SIN_PARIDAD_ACEPTADA: readonly string[] = [
+  'transmision-doppler',
+  'gemelo-interfaz',
+  'gemelo-pleura',
+  'gemelo-pared',
+  'gemelo-compuesto',
+  'rejilla-segmentos',
+];
+
+/**
+ * Funciones homónimas cuyos literales GLSL están también escritos a mano en la TS (decisión 322, punto 5, inventario de
+ * constantes del 05-11-2026: 47 de 160). Generarlas desde una sola fuente cuesta hoy +16…+63 B minificados por función
+ * (`glslCompact` conserva el blanco junto a una interpolación) y el bundle no puede crecer: la prueba exige que sigan
+ * iguales en los dos lados hasta que la composición GLSL del punto 4 las interpole sin coste.
+ */
+export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = {
+  tubos: ['tubeNoise'],
+  columna: ['spineBodySd', 'spineArchSd', 'spineFaceCurvature'],
+  'tronco-primitivas': ['bodyGradient', 'sdEllipsoid', 'smoothMin', 'smoothMax', 'ribDistanceLowerBound'],
+  compresion: ['compressionSample'],
+  'atlas-abdominal': ['abdominalAtlasGradient'],
+  'atlas-toracico': ['thoracicValue', 'thoracicGradient', 'boneSurfaceFrame'],
+  'cartilago-referencia': ['referenceCartilage'],
+  'moteado-anatomia': ['hash13'],
+  'organo-abdomen': ['digestiveWallMm', 'digestiveWallTissue', 'digestiveGasPlane'],
+  'organo-intestino': ['bowelQuery', 'bowelGasSdf'],
+  'organo-esternon': ['sternumSd'],
+  'organo-pared': ['wallArc', 'wallFace', 'wallArcGradient', 'ribCurvature'],
+  'organo-rinon': ['perirenalThicknessMm', 'atlasDepthScale'],
+  'organo-vesicula': ['gallbladderSdf'],
+  'organo-higado': ['sminGrad', 'visceralHeight'],
+  'organo-retroperitoneo': ['psoasSdf', 'quadratusSdf', 'retroFrontY'],
+  'apertura-refraccion': ['refractionGain'],
+  'transmision-doppler': ['dopplerTransmission'],
+  pleura: ['normalCdf', 'seriesPow'],
+  'haz-psf': ['lateralSigmaMm'],
+  'ruido-receptor': ['hash12b'],
+  'textura-retro': ['fascicleSeptum'],
+  'textura-pared': ['fatSeptum'],
+  'moteado-campo': ['latticeValuePh', 'scattererFieldPh', 'valueNoise', 'clumpGain', 'densityGain'],
+};
+
+/**
+ * Funciones GLSL con el nombre de una exportación TS que no son su gemelo (nombre GLSL → motivo). Vacía hoy: cada
+ * homónimo está en un par.
+ */
+export const HOMONIMOS_NO_GEMELOS: Readonly<Record<string, string>> = {};
+
+/**
+ * Archivos que edita la ronda r3 de P3 (decisión 322, regla de colisión): sus comentarios «gemelo» aún no llevan
+ * `@twin` y los lados de los pares que viven en ellos quedan con el marcador pendiente. Se migran cuando r3 se fusione,
+ * junto con los puntos 1–4.
+ */
+export const ARCHIVOS_PENDIENTES: Readonly<Record<string, string>> = {
+  'src/anatomy/scene.ts': 'r3 de P3 (clasificación s0028 en GPU)',
+  'src/anatomy/gpu/s0028Wall.glsl.ts': 'r3 de P3 (GLSL de la pared s0028)',
+  'src/anatomy/gpu/personShader.ts': 'r3 de P3 (especialización por persona)',
+};

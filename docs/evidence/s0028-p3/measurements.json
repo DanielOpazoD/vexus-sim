@@ -391,7 +391,7 @@
     "clinicalValidation": false
   },
   "r4": {
-    "scope": "offline candidate; not installed; runtime/GPU unchanged",
+    "scope": "offline candidate (r4 + r4c fixes); not installed; runtime/GPU unchanged",
     "ctPhase": {
       "aortaHU": 137,
       "portalSplenicHU": 158,
@@ -417,31 +417,41 @@
     "volumesCm3": {
       "cortexE": [89.188, 90.177],
       "medullaE": [18.468, 18.11],
-      "sinusFatD": [3.308, 5.252],
+      "sinusFatD": [3.308, 5.221],
       "collectingD": [2.511, 2.147]
     },
-    "uFractionOfDomain": [0.0961, 0.0801],
+    "uFractionOfDomain": [0.0961, 0.0803],
     "payload": {
-      "sha256": "ed757c70a0da98bd7981ac3c3865a7584b47b1a00a4e2b24cd07915c5ca1a736",
+      "sha256": "a23b4a7753461c5f691fc3651d74e8374a15baca121bde6a68f0a5935a41901c",
       "pages": 46,
       "encodedBytes": 188416,
-      "parametersSha256": "34695a7d7f2b28931eaab4e78f52c8e4909ba7fb8b3784b6402030e51f38cb85"
+      "parametersSha256": "d0c5c640a8005fd20e42e1424beaf48fbee7895a763a3c10e8199bdf8caa27db",
+      "supersedes": "ed757c70a0da98bd7981ac3c3865a7584b47b1a00a4e2b24cd07915c5ca1a736",
+      "numpy": ["2.5.3", "2.5.4"],
+      "scipy": "1.18.1",
+      "nibabel": "5.4.2",
+      "python": "3.14.7"
     },
     "packagingMeasured": {
       "wallReserveEndBytes": 1633526,
       "wallReserveBytes": 2113536,
-      "capacityGzipDeltaBytes": 12372,
-      "downloadBytes": 20445316,
+      "capacityGzipDeltaBytes": 12366,
+      "downloadBytes": 20445310,
       "descriptorBytes": 612,
       "metadataMarginBytes": 308,
       "proposedCompactionSavingBytes": 1194
     },
     "contract": {
-      "tests": 8,
-      "mutantsKilled": 14,
-      "mutants": 14
+      "tests": 14,
+      "mutantsKilled": 26,
+      "mutants": 26,
+      "phantomPayloadSha256": "ddd0753d9a9c0ce06884fa86c715cc76c99f958b2c6134ed5b096ab137459bd2"
     },
     "ownerReview": "pending",
-    "clinicalValidation": false
+    "clinicalValidation": false,
+    "sinusRule": "cavity component holding the deepest cavity voxel (hilum), >= 3 mm; padded hull EDT (box border is exterior)",
+    "hullVoxelsOnBoxFaces": [310, 377],
+    "closureBandVoxels": [1330, 996],
+    "shallowConcavityFatVoxelsForR5": [52, 122]
   }
 }

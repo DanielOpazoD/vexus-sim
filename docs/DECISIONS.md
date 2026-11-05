@@ -10409,26 +10409,32 @@ el contorno acústico se decide en r3 junto con la GPU. Dueño `heart` puede sal
 heredado). Las rojas Python de r2 fallaron por una función ausente (`p2_used_bytes`), no por comportamiento; las siete
 rojas TS sí. Metadatos 3.788/4.096 B es el mismo presupuesto del manifiesto (38.309 − 34.521), no una medida aparte.
 
-**Ronda r4, interior renal desde el propio TAC (offline, pendiente de revisión del propietario).** El TAC s0028 está en
-fase portal venosa (núcleos: aorta 137 HU, porta/esplénica 158, VCI 97–119, hígado 109) y sin contraste excretado
-(vejiga 25 HU); ruido por vóxel ≈ 19 HU. La máscara O renal excluye el seno: profundidad interna 12,5/12,2 mm y sólo
-45/27 vóxeles < −30 HU (0,14 %/0,08 %), todos a ≤ 2,1 mm del borde. El seno es la cavidad de la envolvente convexa de la
-máscara no reclamada por ninguna otra máscara fuente (5.113/5.136 vóxeles D/I, hasta 23/22 mm de profundidad).
-Separables en este TAC: grasa del seno D (HU [−190, −30]) y luz del colector D (orina sin contraste: HU suavizado
-[−10, 40] sólo con vóxeles no grasos del seno, sin borde grasa/realce en su vecindad, ≥ 27 vóxeles). Quedan U la banda
-< 3 mm de la cara de la envolvente (boca hiliar: depende de la regla de cierre), los vasos realzados y los bordes del
-seno. Corteza y médula no son D: el parénquima profundo está 27/25 HU por debajo del superficial, d′ por vóxel
-1,43/1,33; tras suavizar 1,5 mm son 4,5/4,2 σ y dibujan cuñas hacia el seno, así que se entregan como hipótesis E
-(umbral de Otsu 142/140 HU del HU suavizado en el núcleo; médula subcapsular o en componentes < 27 vóxeles, U).
-Candidato reproducible `tools/anatomy/s0028-renal-interior.py` (payload `ed757c70…`; contrato sintético
-`s0028-renal-interior_test.py`, 8 pruebas, 14/14 mutantes tumbados): corteza E 89,2/90,2 cm³, médula E 18,5/18,1,
-seno graso D 3,3/5,3, colector D 2,5/2,1; U 9,6 %/8,0 % del dominio máscara ∪ seno; ninguna etiqueta fuera de él, en la
-banda ni sobre otro dueño (quiste izquierdo y duodeno conservan su máscara). La grasa del seno queda dentro de ±1 DE
-de Caglar et al. 2014 (control, no fuente). Empaquetado medido, no instalado: 46 páginas RG16F (188.416 B) tras la
-grasa P3 en la reserva de pared (1.633.526/2.113.536 B), +12.372 B gzip, descarga 20.445.316/25.000.000 B; una lectura
-nearest por evaluación en una columna fija de páginas del atlas (sin tabla, textura, sampler ni bucles). El descriptor
-(612 B) no cabe en los 308 B de margen de metadatos: exige escribir los descriptores P2 en una línea (−1.194 B, mismo
-JSON; 3.206/4.096 B). Láminas sí/no con seis casillas del propietario sin rellenar. Sin runtime ni GPU (r5); sin
+**Ronda r4, interior renal desde el propio TAC (offline, pendiente de revisión del propietario; corregida en r4c).**
+El TAC s0028 está en fase portal venosa (núcleos: aorta 137 HU, porta/esplénica 158, VCI 97–119, hígado 109) y sin
+contraste excretado (vejiga 25 HU); ruido por vóxel ≈ 19 HU. La máscara O renal excluye el seno: profundidad interna
+12,5/12,2 mm (dcho./izq.) y sólo 45/27 vóxeles < −30 HU (0,14 %/0,08 %), todos a ≤ 2,1 mm del borde. La profundidad es
+la EDT de la envolvente convexa con la caja acolchada: el borde del array es exterior (la envolvente toca 310/377
+vóxeles de las caras de la caja). El seno es la componente de la cavidad (envolvente − máscara − otras máscaras fuente)
+que contiene el vóxel de cavidad más profundo, el hilio, si llega a 3 mm (5.113/5.136 vóxeles, 22,9/22,0 mm); las demás
+componentes son concavidades someras y no son seno. Separables en este TAC: grasa del seno D (HU crudo [−190, −30]) y
+luz del colector D (orina sin contraste: HU suavizado [−10, 40] sólo con vóxeles no grasos del seno, HU crudo (−40, 80),
+sin borde grasa/realce en su vecindad, ≥ 27 vóxeles). Quedan U la banda < 3 mm del exterior de la envolvente (boca
+hiliar, depende de la regla de cierre; 1.330/996 vóxeles), los vasos realzados y los bordes del seno. Corteza y médula
+no son D: el parénquima profundo está 27/25 HU por debajo del superficial, d′ por vóxel 1,43/1,33; tras suavizar 1,5 mm
+son 4,5/4,2 σ y dibujan cuñas hacia el seno, así que se entregan como hipótesis E (umbral de Otsu 142/140 HU del HU
+suavizado en el núcleo; médula subcapsular o en componentes < 27 vóxeles, U). Candidato reproducible
+`tools/anatomy/s0028-renal-interior.py` (payload `a23b4a77…`, igual con numpy 2.5.3 y 2.5.4; sustituye a `ed757c70…`;
+contrato sintético `s0028-renal-interior_test.py`, 14 pruebas con bytes escritos a mano y hash fijado del fantasma,
+26/26 mutantes tumbados): corteza E 89,2/90,2 cm³, médula E 18,5/18,1, seno graso D 3,3/5,2, colector D 2,5/2,1; U
+9,6 %/8,0 % del dominio máscara ∪ seno; ninguna etiqueta fuera de él, en la banda ni sobre otro dueño. Con la banda
+excluida, la grasa del seno cae dentro de ±1 DE de Caglar et al. 2014 en ambos sexos (estereología con −100…−20 HU, no
+−190…−30; control, no fuente); con la banda (6,2/7,4 cm³) queda fuera del rango de las mujeres. Empaquetado medido, no
+instalado: 46 páginas RG16F (188.416 B) tras la grasa P3 en la reserva de pared (1.633.526/2.113.536 B), +12.366 B gzip,
+descarga 20.445.310/25.000.000 B; una lectura nearest por evaluación en una columna fija de páginas del atlas (sin
+tabla, textura, sampler ni bucles). El descriptor (612 B) no cabe en los 308 B de margen de metadatos: exige escribir
+los descriptores P2 en una línea (−1.194 B, mismo JSON; 3.206/4.096 B). Para r5: la grasa de las concavidades someras
+(52/122 vóxeles, hoy U) sólo vuelve a grasa compatible D al reexportar el paquete P3 instalado, que hoy excluye toda la
+envolvente convexa renal. Láminas sí/no con seis casillas del propietario sin rellenar. Sin runtime ni GPU (r5); sin
 validación clínica.
 
 Decisiones delegadas por el propietario (05-11-2026, «libertad, confía en ti»), para que r5 pueda instalar sin

@@ -13,31 +13,45 @@ no sustituyen la decisión 316 vigente de la pared cava.
 
 Offline: no se instala ni cambia el runtime, la GPU ni el paquete. Rejilla P1 de `kidneyRight`/`kidneyLeft` (1,5 mm, mismo
 marco), caja = crop de la máscara O (el campo sin su relleno de 6 nodos). Etiquetas 0 U, 1 corteza, 2 médula, 3 seno
-graso, 4 colector/pelvis; procedencia por vóxel U/D/E con los códigos de la pared P2.
+graso, 4 colector/pelvis; procedencia por vóxel U/D/E con los códigos de la pared P2. Cifras dcho./izq.
 
 Qué separa este TAC (fase portal venosa, sin contraste excretado, ruido ≈ 19 HU por vóxel): la máscara O renal **no
-contiene el seno** (profundidad interna 12,5/12,2 mm; 45/27 vóxeles < −30 HU, todos a ≤ 2,1 mm del borde). El seno es la
-cavidad de la envolvente convexa no reclamada por otra máscara fuente (5.113/5.136 vóxeles, hasta 23/22 mm). Dentro:
-grasa D (HU [−190, −30]) y luz del colector D (orina sin contraste, HU suavizado [−10, 40] sólo con vóxeles no grasos
-del seno, sin borde grasa/realce, ≥ 27 vóxeles); la banda < 3 mm de la cara de la envolvente (boca hiliar), los vasos y
-los bordes quedan U. Corteza/médula: el parénquima profundo está 27/25 HU por debajo del superficial (d′ por vóxel
-1,43/1,33: no D; 4,5/4,2 σ tras suavizar 1,5 mm, cuñas hacia el seno): hipótesis **E** por umbral de Otsu (142/140 HU)
-del HU suavizado en el núcleo; médula subcapsular o en componentes pequeños, U.
+contiene el seno** (profundidad interna 12,5/12,2 mm; 45/27 vóxeles < −30 HU, todos a ≤ 2,1 mm del borde). Profundidad:
+EDT de la envolvente convexa con la caja acolchada (el borde del array es exterior; la envolvente toca 310/377 vóxeles de
+las caras). El seno es la componente de la cavidad no reclamada por otra máscara fuente que contiene el vóxel de cavidad
+más profundo, el hilio, si llega a 3 mm (5.113/5.136 vóxeles, 22,9/22,0 mm); las demás componentes son concavidades
+someras, no seno. Dentro: grasa D (HU crudo [−190, −30]) y luz del colector D (orina sin contraste, HU suavizado
+[−10, 40] sólo con vóxeles no grasos del seno, HU crudo (−40, 80), sin borde grasa/realce, ≥ 27 vóxeles); la banda
+< 3 mm del exterior de la envolvente (boca hiliar), los vasos y los bordes quedan U. Corteza/médula: el parénquima
+profundo está 27/25 HU por debajo del superficial (d′ por vóxel 1,43/1,33: no D; 4,5/4,2 σ tras suavizar 1,5 mm, cuñas
+hacia el seno): hipótesis **E** por umbral de Otsu (142/140 HU) del HU suavizado en el núcleo; médula subcapsular o en
+componentes pequeños, U.
 
-Candidato `tools/anatomy/s0028-renal-interior.py`, reproducible byte a byte (payload `ed757c70…`), con contrato
-sintético `tools/anatomy/s0028-renal-interior_test.py` (formato, procedencia, dominio, puerta, lectura única;
-14/14 mutantes): corteza E 89,2/90,2 cm³, médula E 18,5/18,1, seno graso D 3,3/5,3, colector D 2,5/2,1; U 9,6 %/8,0 % del
-dominio máscara ∪ seno; nada fuera de él, en la banda ni sobre otro dueño. Estabilidad: corteza Dice ≥ 0,977 y colector
-≥ 0,92 frente a cada parámetro; médula 0,91–0,99 (Otsu ±5 HU mueve ±16–20 %); la grasa depende sobre todo de la banda de
-cierre (0,70–0,92 con 1,5/4,5 mm). Hilio anteromedial en ambos lados; sin máscaras de vena/arteria renal, el realce sin
-máscara une el seno con la VCI (D) y la aorta (D, I). Grasa del seno dentro de ±1 DE de Caglar et al. 2014 (control).
+Candidato `tools/anatomy/s0028-renal-interior.py`, reproducible byte a byte (payload `a23b4a77…`, igual con numpy 2.5.3
+de los requisitos y 2.5.4; sustituye a `ed757c70…` de r4), con contrato sintético
+`tools/anatomy/s0028-renal-interior_test.py` (bytes escritos a mano, hash fijado del fantasma, caja que toca la cara,
+concavidades someras, otro dueño invasor; 14 pruebas, 26/26 mutantes): corteza E 89,2/90,2 cm³, médula E 18,5/18,1, seno
+graso D 3,3/5,2, colector D 2,5/2,1; U 9,6 %/8,0 % del dominio máscara ∪ seno; nada fuera de él, en la banda ni sobre
+otro dueño. Estabilidad frente a cada parámetro: corteza Dice 0,977–1; colector 0,92–1; médula 0,91–1 (Otsu ±5 HU:
+−815…+1.057 vóxeles dcho., −893…+1.049 izq.); la grasa depende sobre todo de la banda de cierre (0,70/0,83 con 1,5 mm).
+Hilio anteromedial en ambos lados; sin máscaras de vena/arteria renal, el realce sin máscara une el seno con la VCI (dcho.)
+y la aorta (ambos). Con la banda excluida, grasa del seno dentro de ±1 DE de Caglar et al. 2014 (control, otra ventana HU).
 
 Empaquetado medido, sin instalar: 46 páginas RG16F (188.416 B) tras la grasa P3 en la reserva de pared, que pasaría a
-1.633.526/2.113.536 B; activo de capacidad +12.372 B gzip; descarga 20.445.316/25.000.000 B. Consumo GPU propuesto: una
+1.633.526/2.113.536 B; activo de capacidad +12.366 B gzip; descarga 20.445.310/25.000.000 B. Consumo GPU propuesto: una
 lectura nearest por evaluación en una columna fija y contigua de páginas del atlas abdominal (sin tabla, textura,
-sampler ni bucles). El descriptor (612 B) no cabe en el margen de metadatos (308 B): propuesta, escribir los descriptores
-P2 del manifiesto en una línea (mismo JSON, −1.194 B → 3.206/4.096 B). Láminas sí/no con seis casillas sin rellenar. La
-instalación CPU/Worker/GPU es r5. Sin validación clínica.
+sampler ni bucles). El descriptor (612 B) no cabe en el margen de metadatos (308 B): escribir los descriptores P2 del
+manifiesto en una línea (mismo JSON, −1.194 B → 3.206/4.096 B). Para r5: la grasa de las concavidades someras (52/122
+vóxeles, hoy U) vuelve a grasa compatible D sólo reexportando el paquete P3 instalado. Láminas sí/no con seis casillas
+sin rellenar. La instalación CPU/Worker/GPU es r5. Sin validación clínica.
+
+Reproducir (TAC y máscaras fuera de Git; `VEXUS_S0028_CASE_DIR` = carpeta del caso con `ct.nii.gz` y `segmentations/`,
+hashes de `tools/anatomy/s0028-case.json`; Python 3.14 con `tools/anatomy/paired-renal-review-requirements.txt`):
+
+```bash
+python -I tools/anatomy/s0028-renal-interior.py --case-dir "$VEXUS_S0028_CASE_DIR" --out <directorio nuevo>
+```
+
 [Evidencia P3](../evidence/s0028-p3/README.md).
 
 ## P3 r2: clasificador CPU/Worker de sólidos y posterior, pendiente (321)

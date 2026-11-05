@@ -10579,7 +10579,7 @@ del build idénticos salvo su procedencia (commit y hora; 1.061.770 B); en `src/
 porque `glslMinify` no renombra lo que aparece en cadenas. No es validación clínica.
 
 **Punto 7** (dieta de tiempo y cierre). El gancho de push corre sólo la capa rápida: `npm run feedback -- --all-fast`
-(formato y lint de lo que cambia frente a `origin/main`, tipos y las 1.920 pruebas rápidas de 276 archivos); las lentas
+(formato y lint de lo que cambia frente a `origin/main`, tipos y las 1.936 pruebas rápidas de 277 archivos); las lentas
 (266 pruebas en 33 archivos), matrices, cobertura, build y E2E quedan en `check` y en la CI con recibo. Medido alternando
 (ABBA) con la misma carga, 15–18 al empezar (no hubo ventana sin carga ajena en la jornada): gancho anterior (tipos +
 rápidas) 119 y 113 s, nuevo 122 y 120 s, dentro del tope de 180 s; con formato y lint de todo el repo había costado 265 s. Un push que sólo borra ramas no corre

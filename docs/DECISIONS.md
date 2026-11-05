@@ -10578,6 +10578,22 @@ sustitución s0028). Sin cambio de producto: 38 programas × 2 variantes y 85 co
 del build idénticos salvo su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B
 porque `glslMinify` no renombra lo que aparece en cadenas. No es validación clínica.
 
+**Punto 7** (dieta de tiempo y cierre). El gancho de push corre sólo la capa rápida: `npm run feedback -- --all-fast`
+(formato y lint de lo que cambia frente a `origin/main`, tipos y las 1.916 pruebas rápidas de 276 archivos); las lentas
+(266 pruebas en 33 archivos), matrices, cobertura, build y E2E quedan en `check` y en la CI con recibo. Medido alternando
+(ABBA) con la misma carga, 15–18 al empezar (no hubo ventana sin carga ajena en la jornada): gancho anterior (tipos +
+rápidas) 119 y 113 s, nuevo 122 y 120 s, dentro del tope de 180 s; con formato y lint de todo el repo había costado 265 s.
+Capas con presupuesto (`tools/ci/testTiers.ts`, regla única del marcador `// @tier slow`): cada archivo rápido ≤ 49 s con
+un trabajador, el doble del más lento medido (`equivalenceSweep`, 24,5 s). Un tiempo sólo vale con carga ≤ 5: con 4
+núcleos de rendimiento, la capa rápida serial pasó de 395 s (carga 4,9) a 541 s (carga 12), con inflación muy desigual
+por archivo; por encima, el presupuesto se declara no evaluable, nunca cumplido ni incumplido. Ninguna prueba cambia de
+capa: el gancho cabe sin moverlas, y lo que lo tumba con carga ajena son pruebas individuales cerca del plazo de 60 s
+(con carga 45, 43 s una de `s0028SolidsClassify`), que no se amplía. `npm run closure` sustituye los scripts de cierre
+de cada ronda: etapas nombradas, `nice` y un trabajador, `push-hook` como un push real con su presupuesto, carga y modo
+de energía por etapa, `--resume`, `--checkout`, `closure.json` y líneas «Cierre»; deja en cada cierre los quince archivos
+más lentos por capa. `check` no cambia de composición: 62 min en serie en el cierre del punto 8 (75–86 min en los cierres
+de P2 r2b-U y P3 r2, con más carga). Ningún archivo de producto cambia.
+
 **Punto 8** (mutantes reproducibles). `tools/mutants/` tiene un manifiesto por módulo (nombre, `from`/`to` exactos con una
 sola aparición, comportamiento que rompe, ronda de origen y pruebas focales) y un ejecutor, `npm run mutants`: corre las
 focales sobre el árbol original, aplica cada mutante solo con un trabajador, lo restaura byte a byte y escribe

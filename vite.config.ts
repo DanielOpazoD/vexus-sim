@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
@@ -11,25 +11,17 @@ import { glslPacking } from './tools/build/glslPacking';
 import { marchingTable } from './tools/build/marchingTable';
 import { sharedCutMapWorker } from './tools/build/sharedCutMapWorker';
 import { coverageFiles } from './tools/ci/coveragePartition';
+import { testFiles, testTierFiles } from './tools/ci/testTiers';
 import { buildProvenance } from './tools/build/provenance';
 
 /**
- * Niveles de prueba (práctica de EchoTwin): un archivo cuya PRIMERA línea es
+ * Niveles de prueba (práctica de EchoTwin; regla en tools/ci/testTiers.ts): un archivo cuya PRIMERA línea es
  * `// @tier slow` queda fuera de `npm test` y entra en `test:slow` / `test:all`.
  * Así una prueba pesada no se cuela en la suite rápida por omisión.
  */
 // Relativo a este archivo, no al cwd: el servidor puede arrancar desde otro directorio
 const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), 'src');
-function testFilesWithMarker(marker: string | null, dir = SRC_DIR): string[] {
-  const out: string[] = [];
-  for (const f of readdirSync(dir)) {
-    const p = join(dir, f);
-    if (statSync(p).isDirectory()) out.push(...testFilesWithMarker(marker, p));
-    else if (/\.test\.ts$/.test(f) && (marker === null || readFileSync(p, 'utf8').split('\n')[0].trim() === marker)) out.push(p);
-  }
-  return out;
-}
-const SLOW = testFilesWithMarker('// @tier slow');
+const SLOW = testTierFiles(SRC_DIR).slow;
 
 /** Versión y commit del build, visibles en la app y en el diagnóstico exportable. */
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +38,7 @@ function gitCommit(): string {
 const tier = process.env['VITEST_TIER'] ?? 'fast';
 const partition = process.env['VITEST_COVERAGE_PARTITION'] ?? 'all';
 // The default keeps glob discovery for watch mode; split coverage fails closed on invalid/missing files.
-const selected = partition === 'all' ? null : coverageFiles(testFilesWithMarker(null), partition, tier);
+const selected = partition === 'all' ? null : coverageFiles(testFiles(SRC_DIR), partition, tier);
 
 export default defineConfig({
   // Source modules expose tagged GLSL to the token-preserving compactor; no vendor fork.

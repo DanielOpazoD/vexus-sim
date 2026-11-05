@@ -1,7 +1,7 @@
 {
   "person": "s0028",
   "ownerReview": "pending",
-  "runtimeInstalledByP3": false,
+  "runtimeInstalledByP3": "r2: CPU/Worker only; GPU pending r3",
   "clinicalValidation": false,
   "sourceMasks": 117,
   "fatHU": [-190, -30],
@@ -301,5 +301,93 @@
     "spacingMm": 0.75,
     "scope": "liver SDF and direct P2 known band, single coronal plane, not source-mask voxel overlap or volume",
     "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/clash-coronal.json"
+  },
+  "r2": {
+    "package": {
+      "p3OffsetInWallBytes": 1129256,
+      "r1OffsetOverlappedP2Derived": true,
+      "payloadSha256": "deac8eb8b2190e8a82d728139cf48e817cf01ee46028b67a822e418351af0e43",
+      "downloadBytes": 20433526,
+      "downloadIncrementBytes": 39756,
+      "manifestBytes": 38309,
+      "manifestLimitBytes": 38617,
+      "metadataBytes": {
+        "p2": 2980,
+        "p3": 808,
+        "total": 3788,
+        "limit": 4096
+      },
+      "rawAtlasThoracicIncrementBytes": 0,
+      "placementsEqualR1": true
+    },
+    "r1ClashLiverWall": {
+      "liverSourceVoxelsInKnownBand": 4,
+      "spleenSourceVoxelsInKnownBand": 2,
+      "liverOverlapMm3At025": 11.28,
+      "spleenOverlapMm3At025": 5.8,
+      "digestiveOverlapMm3At025": 2.14,
+      "verdict": "real overlap in runtime fields; kept as conflict, not patched"
+    },
+    "conflictCensus15mm": {
+      "points": 5383219,
+      "conflict": 693,
+      "pairs": {
+        "compatible_fat+wall": 483,
+        "bone+cartilage": 136,
+        "bowel+gallbladder": 31,
+        "bowel+pancreas": 18,
+        "lung+wall": 11,
+        "bowel+kidney_right": 5,
+        "liver+wall": 5,
+        "spleen+wall": 4
+      },
+      "fatVoxelsInKnownWall": 454,
+      "fatVoxels": 229422
+    },
+    "uOracleRenalBox": {
+      "mainUnknownAsKnownRenalOrPerirenal": 2734,
+      "r2": 0
+    },
+    "plates": {
+      "count": 16,
+      "opened": 16,
+      "inventedRenalBefore": 75008,
+      "inventedRenalAfter": 0,
+      "ownerChecklist": "blank, six boxes"
+    },
+    "defaultParity": {
+      "points": 82251,
+      "hash": "3a6c5010a3904d08d7fe5002b23a4cf579300349e218a0d3bf05ceba25e003ee",
+      "frames": 10,
+      "contacts": 30,
+      "contactSha256": "a8b1b1dd367f1f5c958bfc2e0b71fe7dad00c348db133f757228483e88f318b9",
+      "equalToMain3c50b18": true
+    },
+    "glslProgramsEqual": 38,
+    "cpuWorkerPixels": {
+      "equal": 245760,
+      "total": 245760
+    },
+    "s0028ContactSha256": "56201065819f134067b4fbf53feb17cc43285558cd409731e6fb8d40b4a92d1c",
+    "mutantsKilled": [12, 12],
+    "jsBytes": 1061578,
+    "jsLimitBytes": 1070080,
+    "inheritedCompression": {
+      "boneMaxShiftMm": 19.39,
+      "boneMaxRadialStrain": 0.4,
+      "kidneyMaxShiftMm": 12.25,
+      "kidneyMaxRadialStrain": 0.25,
+      "changedByP3": false
+    },
+    "respirationSurfaceWeight": {
+      "liver": [0, 1],
+      "kidneyRight": [0.044, 1],
+      "kidneyLeft": [0.228, 1],
+      "spleen": [0, 1],
+      "pancreas": [1, 1],
+      "changedByP3": false
+    },
+    "gpu": "r3",
+    "clinicalValidation": false
   }
 }

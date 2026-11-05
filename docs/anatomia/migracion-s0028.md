@@ -1,13 +1,38 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026).**
+**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026); P3 r1 offline y r2 CPU/Worker, pendientes de revisión (321).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## P3 r2: clasificador CPU/Worker de sólidos y posterior, pendiente (321)
+
+Sólo `?abdomen=s0028`, CPU y Worker del corte; la GPU y su paridad son r3 y siguen dibujando el riñón analítico,
+así que la imagen y el corte s0028 difieren dentro del riñón hasta entonces. Paquete: los bits r1 (106.839/122.583
+vóxeles D/I) van tras el bloque derivado P2 final, que r1 pisaba; descarga 20.433.526/25.000.000 B (+39.756),
+manifiesto 38.309/38.617 B, metadatos P2+P3 3.788/4.096 B, RAW/atlas/tórax +0 B; el lector valida bytes y relleno.
+
+Reglas: dueños independientes antes de cualquier orden (campos P1 con SDF lineal < 0 e identidad nearest, banda P2
+conocida, grasa compatible D sólo donde ninguna máscara reclama el punto; hueso dentro de la pared es contenido P2).
+Dos o más dueños: conflicto, U, todos en `Classification.solids`. Un dueño: su material, salvo riñón (borde D,
+interior U, sin vasos procedurales dentro), quiste izquierdo (líquido E) y grasa D. Sin dueño: U o la cúpula E P7.
+Se retiran en s0028 la arquitectura renal, el estiramiento W 0,8, la grasa perirrenal/Gerota y el ligamento venoso
+analíticos de la otra persona. El corte rotula «Riñón · interior U» y «Conflicto sin resolver».
+
+Medidas (runtime TS, evidencia externa): el solape hígado/pared de r1 es real, 4 vóxeles hepáticos y 2 esplénicos
+dentro de la banda de la regla directa (≈11,3/5,8 mm³ a 0,25 mm, ≤2,2–2,6 mm); censo global a 1,5 mm: 693 puntos
+en conflicto, 483 grasa D+banda (454 vóxeles de grasa en la pared P2), 136 hueso+cartílago, 31 intestino+vesícula.
+En la caja renal main da 2.734 puntos U como tejido renal o perirrenal inventado; ahora 0. Láminas: 75.008 muestras
+inventadas → 0 en 16 planos. Default = main (82.251 puntos, 10 marcos, 30 contactos), 38 GLSL iguales, CPU = Worker
+245.760/245.760 px, contacto s0028 idéntico (30 casos), 12/12 mutantes; JS 1.061.578/1.070.080 B; corte 96×128
+sin coste añadido. La compresión P2 heredada desplaza y deforma hueso (≤19,4 mm; ∂s/∂r ≤0,40) y riñón (≤12,3 mm;
+≤0,25) y la respiración vigente no conserva la forma renal (w de superficie 0,044–1); P3 r2 no los cambia: r3.
+Vasos procedurales de la otra persona cruzan sólidos s0028 (P5). Sin validación clínica.
+[Evidencia P3](../evidence/s0028-p3/README.md).
 
 ## P3 r1: fuente de sólidos y posterior, evidencia parcial (321)
 

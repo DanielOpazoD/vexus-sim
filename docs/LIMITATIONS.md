@@ -683,6 +683,16 @@ La fracción U de celdas, los pliegues
 y las proyecciones sin prueba se registran por ventana en la [migración](anatomia/migracion-s0028.md). Intercostal
 sigue bloqueada/P8; posterior U/P3. No es validación clínica.
 
+`s0028-solids-cpu-only` (321, pendiente): P3 r2 clasifica sólidos y compartimento posterior sólo en CPU y Worker
+del corte; la GPU (r3) sigue dibujando en s0028 el riñón analítico con su grasa perirrenal, así que imagen y corte
+difieren dentro y alrededor del riñón hasta r3. El interior renal, Gerota, el cuadrado lumbar aislado, el diafragma
+posterior y los compartimentos perirrenal/pararrenal son U. Se conservan sin resolver los conflictos de dos dueños
+(693 puntos a 1,5 mm, casi todos grasa compatible D dentro de la banda P2 conocida y hueso+cartílago) y el solape
+real hígado/bazo con la banda P2 (4 y 2 vóxeles fuente). La compresión heredada (63/320) desplaza y deforma hueso
+(≤19,4 mm) y riñón (≤12,3 mm), y la respiración vigente no conserva la forma renal (peso de superficie 0,044–1): ni
+«hueso sin compresión» ni un movimiento rígido común de los sólidos están implementados. Vasos procedurales de la
+otra persona cruzan sólidos s0028 (P5) y el tórax E del corazón da distancias de frontera negativas (P7).
+
 P0 prepara herramientas; P1 r4c carga un candidato local sólo por `?abdomen=s0028`.
 Los identificadores de limitación del producto permanecen vigentes. [Migración](anatomia/migracion-s0028.md)
 distingue observado, derivado, estimado y desconocido: cámaras cardíacas, fascias, capas y

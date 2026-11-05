@@ -1,7 +1,36 @@
-# P3 r1: fuente y contrato offline s0028
+# P3: sólidos y compartimento posterior s0028 (321)
 
-**En curso; pendiente de revisión del propietario.** No hay integración de sólidos
-P3 en CPU/GPU, validación clínica ni aceptación de láminas en esta ronda.
+**Pendiente de revisión del propietario.** r1 dejó la fuente y el paquete offline; r2 integra la
+clasificación en CPU y Worker. La GPU y su paridad son r3. Sin validación clínica.
+
+## r2: CPU y Worker
+
+El paquete r1 escribía la grasa desde 4096+757.844 B, donde P2 final guarda el bloque derivado
+E+rampas: se reexportan los mismos bits (SHA deac8eb8…) tras ese bloque, con páginas comprobadas
+contra campos P1, EDT, teselas, centros y rampas; P2 y su derivado no cambian. Descarga
+20.433.526/25.000.000 B (+39.756), manifiesto 38.309/38.617 B, metadatos 3.788/4.096 B.
+
+`s0028Owners` reúne todos los dueños antes de cualquier orden; dos son conflicto, U y conservados.
+Riñón: borde D, interior U, sin vasos procedurales dentro; quiste izquierdo líquido E; grasa D.
+Se retiran en s0028 la arquitectura renal, el estiramiento W, la grasa perirrenal/Gerota y el
+ligamento venoso analíticos de la otra persona. En la caja renal, main daba 2.734 puntos U como
+tejido renal o perirrenal; ahora 0. Las láminas pasan de 75.008 muestras inventadas a 0.
+
+El solape hígado/pared de r1 es real: 4 vóxeles hepáticos y 2 esplénicos dentro de la banda
+directa P2, ≈11,3/5,8 mm³ a 0,25 mm; se conserva como conflicto. Censo global a 1,5 mm: 693
+puntos en conflicto (483 grasa D+banda, 136 hueso+cartílago, 31 intestino+vesícula, 18
+intestino+páncreas, 11 pulmón+banda, 5 intestino+riñón, 5 hígado+banda, 4 bazo+banda).
+
+Default = main 3c50b18 (82.251 puntos, 10 marcos, 30 contactos), 38 programas GLSL iguales,
+CPU = Worker 245.760/245.760 píxeles, contacto s0028 idéntico, 12/12 mutantes, JS 1.061.578 B.
+La compresión P2 heredada desplaza y deforma hueso (≤19,4 mm) y riñón (≤12,3 mm), y la
+respiración vigente no conserva la forma renal; r2 no los cambia. Vasos procedurales de la otra
+persona cruzan sólidos s0028 (P5). [Informe r2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/report.md) ·
+[láminas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/review.html) · [códigos](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/checks.json).
+
+## r1: fuente y contrato offline
+
+No hubo integración de sólidos P3 en CPU/GPU, validación clínica ni aceptación de láminas en r1.
 
 La fuente es exclusivamente s0028 con marco físico y hashes de P1. Máscaras automáticas
 son O, campos derivados D y desconocidos U; ni Gerota, QL aislado, diafragma posterior,

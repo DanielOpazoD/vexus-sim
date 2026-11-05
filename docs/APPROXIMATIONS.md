@@ -381,6 +381,13 @@ fuera de las máscaras fuente, sin recorte hepático. Es una política conservad
 completa. El perfil se prolonga como aproximado fuera del soporte EDT. No se relajan las cotas 1,5/3 mm ni se añaden
 excepciones a la umbilical de 317; [migración](anatomia/migracion-s0028.md).
 
+P3 r2 (321, pendiente; CPU y Worker): la clasificación s0028 reúne los dueños independientes antes de cualquier orden
+y no elige material en un conflicto (U). La grasa compatible D es composición por vóxel (HU [−190, −30], ≤30 mm del
+riñón, fuera de las 117 máscaras y de la envolvente renal) y se dibuja con el material genérico de grasa: no identifica
+Gerota ni compartimento perirrenal/pararrenal. El riñón conserva su borde D e interior U (sin corteza, médula, seno,
+cápsula ni vasos procedurales dentro) y el quiste izquierdo se trata como líquido de un quiste simple [ESTIMADO]. Fuera
+de los dueños P3 siguen los vasos procedurales (P5) y la cúpula E (P7). [Migración](anatomia/migracion-s0028.md).
+
 Una persona, registro rígido único, sin HU→brillo ni etiquetas exteriores→histología. La piel
 se deriva del componente corporal mayor >−400 HU por corte, con huecos rellenos y brazos
 conectados conservados. B almacena XY RG16F en 1.024 rayos cada 0,75 mm. Exactitud sólo bajo

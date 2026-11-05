@@ -6,6 +6,7 @@
  */
 export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   's0028-wall-direct',
+  's0028-solids-cpu-only',
   'abdominal-atlas-reference-adult',
   'abdominal-viscera-internals-estimated',
   'abdominal-vascular-branches-estimated',

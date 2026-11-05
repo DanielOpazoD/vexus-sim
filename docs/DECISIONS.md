@@ -10382,3 +10382,18 @@ ramas alternativas posibles impiden concluir ausencia global de choque. Las más
 C5–C7 existen en fuente y no tienen etiqueta en P1: no se presentan como atlas verificado.
 Véase [evidencia P3](evidence/s0028-p3/README.md). La aceptación visual del propietario,
 la paridad CPU/GPU, el arranque y los costes integrados siguen pendientes.
+
+**Ronda r2, CPU y Worker (sin GLSL).** El paquete r1 escribía la grasa sobre el bloque derivado
+E+rampas de P2 final; se reexportan los mismos bits (SHA deac8eb8…) tras ese bloque, con páginas
+validadas contra toda la ocupación P2. Sólo con s0028, `s0028Owners` reúne antes de cualquier orden
+los dueños independientes: campos P1 con SDF lineal < 0 e identidad nearest, banda P2 conocida y grasa
+compatible D donde ninguna máscara reclama el punto; el hueso dentro de la pared es contenido del
+complejo P2. Dos dueños son conflicto: U, sin material elegido y conservados en `solids`. El riñón
+tiene borde D e interior U: se retiran en s0028 la arquitectura renal, el estiramiento W 0,8, la grasa
+perirrenal/Gerota y el ligamento venoso analíticos de la otra persona, y los vasos procedurales no
+entran en el riñón U. El quiste izquierdo es líquido E. El solape hígado/pared de r1 es real: 4 vóxeles
+hepáticos y 2 esplénicos dentro de la banda P2 de la regla directa (≈11,3 y 5,8 mm³ a 0,25 mm); se
+conserva como conflicto. Default idéntico a main (82.251 puntos, 10 marcos, 30 contactos), 38 programas
+GLSL con hash igual, CPU = Worker 100 %, 12/12 mutantes. Descarga 20.433.526 B, JS 1.061.578 B,
+manifiesto 38.309 B, metadatos 3.788/4.096 B. La compresión P2 heredada desplaza y deforma hueso y
+riñón; P3 r2 no la cambia y la GPU sigue en r3. Sin validación clínica.

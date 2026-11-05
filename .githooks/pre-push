@@ -1,16 +1,14 @@
 #!/bin/sh
-# Antes de empujar, sólo la capa rápida (decisión 322, punto 7): formato, lint, tipos y pruebas rápidas,
-# presupuesto 180 s sin carga ajena (docs/TESTING.md). Lentas, matrices, cobertura, build y E2E quedan en
-# `npm run check` y en la CI protegida, cuyo recibo es la puerta de fusión.
+# Antes de empujar, sólo la capa rápida (decisión 322, punto 7): `npm run feedback -- --all-fast` comprueba formato y
+# lint de lo que cambia frente a origin/main, tipos y todas las pruebas rápidas; presupuesto 180 s sin carga ajena
+# (docs/TESTING.md). Lentas, matrices, cobertura, build y E2E quedan en `npm run check` y en la CI protegida, cuyo
+# recibo es la puerta de fusión.
 set -e
 hook_head=$(git rev-parse HEAD)
 hook_index=$(git write-tree)
 hook_config=$(git hash-object "$(git rev-parse --git-common-dir)/config")
 hook_start=$(date +%s)
-npm run format:check --silent
-npm run lint --silent
-npm run typecheck --silent
-npm test --silent
+npm run feedback --silent -- --all-fast
 if [ "$(git rev-parse HEAD)" != "$hook_head" ] ||
   [ "$(git write-tree)" != "$hook_index" ] ||
   [ "$(git hash-object "$(git rev-parse --git-common-dir)/config")" != "$hook_config" ]; then

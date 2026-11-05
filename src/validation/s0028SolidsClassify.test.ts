@@ -52,6 +52,8 @@ const NEVER = [
 ];
 /** Máscaras fuente P1 que P3 evalúa como dueños; los vasos fuente son de P5. */
 const SOURCES = B.fields.filter((f) => !['aorta', 'inferior_vena_cava', 'portal_vein_and_splenic_vein'].includes(f.name));
+/** Vasos fuente: no son dueños (P5), pero la grasa D no puede reclamar su interior; las demás máscaras ya excluyen la grasa por dueño. */
+const VESSELS = B.fields.filter((f) => ['aorta', 'inferior_vena_cava', 'portal_vein_and_splenic_vein'].includes(f.name));
 function brick(name: string, step: number, visit: (p: Vec3, d: number) => void): void {
   const f = B.fields.find((x) => x.name === name)!;
   for (let k = 0; k < f.dimensions[2]; k += step)
@@ -159,7 +161,7 @@ it('U nunca se clasifica como tejido conocido en el compartimento posterior y re
         // tampoco en la lámina subvóxel; dentro de la banda P2 conocida es conflicto (dos dueños), nunca pared sin más.
         if (ids(c).includes('compatible_fat')) {
           expect(ids(c).filter((id) => id !== 'wall')).toEqual(['compatible_fat']);
-          for (const f of B.fields) expect(s0028SourceValue(p, f.name).d >= 0, `${x},${y},${z} ${f.name}`).toBe(true);
+          for (const f of VESSELS) expect(s0028SourceValue(p, f.name).d >= 0, `${x},${y},${z} ${f.name}`).toBe(true);
           if (ids(c).includes('wall')) {
             fatInBand++;
             expect([c.solids?.state, c.tissue]).toEqual(['conflict', Tissue.UnsegmentedSoftTissue]);

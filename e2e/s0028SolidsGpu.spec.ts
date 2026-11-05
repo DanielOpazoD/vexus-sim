@@ -191,7 +191,7 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
     }
     // Testigos de conflicto (nueve pares del censo, fuera de las mitades de celda): U con los dos dueños, sin elegir material.
     out.push(compare('conflictos', 0, NO, a.conflicts));
-    // Tres planos por riñón (fuera de la rejilla del TAC), con respiración D = 0 y 20 mm.
+    // Tres planos por riñón (fuera de la rejilla del TAC), con respiración D = 0, 10 y 20 mm.
     for (const [ki, kb] of a.kidneys.entries()) {
       const c = kb.o.map((o, ax) => o + (1.5 * (kb.n[ax] - 1)) / 2 + [0.37, 0.29, 0.41][ax]);
       for (const [name, u, v] of [
@@ -207,10 +207,10 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
               t = -60 + 2 * j;
             pts.push(c[0] + s * u[0] + t * v[0], c[1] + s * u[1] + t * v[1], c[2] + s * u[2] + t * v[2]);
           }
-        for (const D of [0, 20]) out.push(compare(`riñón ${ki ? 'I' : 'D'} ${name}`, D, NO, pts, W));
+        for (const D of [0, 10, 20]) out.push(compare(`riñón ${ki ? 'I' : 'D'} ${name}`, D, NO, pts, W));
       }
     }
-    // Las diez ventanas: plano de imagen con la compresión del contacto de su pose y D = 0 y 20 mm.
+    // Las diez ventanas: plano de imagen con la compresión del contacto de su pose y D = 0, 10 y 20 mm.
     for (const id of [
       'subxiphoid',
       'epigastric',
@@ -242,7 +242,7 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
             R = tr.curvatureRadius + r;
           pts.push(f.curvatureCenter[0] + (d[0] / l) * R, f.curvatureCenter[1] + (d[1] / l) * R, f.curvatureCenter[2] + (d[2] / l) * R);
         }
-      for (const D of [0, 20]) out.push(compare(id, D, k, pts, W));
+      for (const D of [0, 10, 20]) out.push(compare(id, D, k, pts, W));
     }
     return out;
   }, ARGS);
@@ -254,7 +254,7 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
     expect(r.analyticGpu, tag(r)).toBe(0);
     if (r.interior) expect(1 - r.interiorSame / r.interior, tag(r)).toBeLessThanOrEqual(0.005);
     // Sin respiración: cada clase P3 de la CPU con el mismo tejido en la GPU y el contorno con su distancia y su normal.
-    // Con D = 20 mm la inversa respiratoria (la misma bisección en CPU y GPU) mueve fronteras ~1e-2 mm: sólo bordes.
+    // Con D = 10 y 20 mm la inversa respiratoria (la misma bisección en CPU y GPU) mueve fronteras ~1e-2 mm: sólo bordes.
     expect(r.points - r.same - r.ties, tag(r)).toBeLessThanOrEqual(Math.max(3, (still ? 0.005 : 0.01) * r.points));
     if (r.renalCpu >= 20) expect(r.renalBoth / r.renalCpu, tag(r)).toBeGreaterThanOrEqual(still ? 0.99 : 0.98);
     if (!still) continue;

@@ -22,6 +22,7 @@ import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWorker';
 import type { Vec3 } from '../core/vec3';
 import fat from './fixtures/s0028-fat-r1.json';
+import { HALF } from '../anatomy/halfFloat';
 
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
 let scene: AnatomyScene, capacity: ArrayBuffer, skin: ArrayBuffer;
@@ -145,7 +146,8 @@ it('U nunca se clasifica como tejido conocido en el compartimento posterior y re
   // Oráculo independiente de la implementación: sin máscara fuente (SDF < 0), sin bit de grasa D y fuera de la banda P2
   // conocida el punto es U. Caja de ambos riñones con 40 mm de margen, a 3 mm.
   let unknown = 0,
-    known = 0;
+    known = 0,
+    fatInBand = 0;
   for (let z = -225; z <= -35; z += 3)
     for (let y = -125; y <= 20; y += 3)
       for (let x = -130; x <= 130; x += 3) {
@@ -153,8 +155,22 @@ it('U nunca se clasifica como tejido conocido en el compartimento posterior y re
         if (torsoDepth(p, scene.torso) > -1.5) continue;
         const c = at(p);
         expect(NEVER, `${x},${y},${z}`).not.toContain(c.tissue);
-        // La grasa D es el complemento de las máscaras: nunca comparte punto con un dueño fuente.
-        if (ids(c).includes('compatible_fat')) expect(ids(c).filter((id) => id !== 'wall')).toEqual(['compatible_fat']);
+        // La grasa D es el complemento de las máscaras: nunca comparte punto con un dueño fuente ni con un vaso fuente (P5),
+        // tampoco en la lámina subvóxel; dentro de la banda P2 conocida es conflicto (dos dueños), nunca pared sin más.
+        if (ids(c).includes('compatible_fat')) {
+          expect(ids(c).filter((id) => id !== 'wall')).toEqual(['compatible_fat']);
+          for (const f of B.fields) expect(s0028SourceValue(p, f.name).d >= 0, `${x},${y},${z} ${f.name}`).toBe(true);
+          if (ids(c).includes('wall')) {
+            fatInBand++;
+            expect([c.solids?.state, c.tissue]).toEqual(['conflict', Tissue.UnsegmentedSoftTissue]);
+          }
+        }
+        // Certeza de la pared: D hasta la cara externa conocida, U de ahí a la interfaz (mutante D↔U).
+        for (const o of c.solids?.owners ?? [])
+          if (o.id === 'wall') {
+            const w = s0028WallAt(p);
+            expect(o.certainty, `${x},${y},${z}`).toBe(w?.kind === 'known' && w.depthMm < w.outerMm ? 'D' : 'U');
+          }
         const q = s0028WallAt(p);
         const owned =
           SOURCES.some((f) => s0028SourceValue(p, f.name).d < 0) ||
@@ -173,6 +189,7 @@ it('U nunca se clasifica como tejido conocido en el compartimento posterior y re
         expect(c.solids, `${x},${y},${z}`).toEqual({ state: 'U', owners: [] });
       }
   expect(unknown).toBeGreaterThan(1000);
+  expect(fatInBand).toBeGreaterThan(20);
   expect(known).toBeGreaterThan(10000);
 });
 
@@ -295,4 +312,100 @@ it('Worker real del corte: el riñón es U rotulado «Riñón derecho · interio
       }
     }
   expect(kidney).toBeGreaterThan(100);
+});
+
+it('grasa compatible D: nunca dentro de la lámina subvóxel de aorta, VCI o porta/esplénica (revisión r2)', () => {
+  // Punto de la revisión: SDF de la VCI −0,096 mm con bit de grasa; antes salía Fat.
+  const c = at([-16.56, 6.28, -184.82]);
+  expect(ids(c)).not.toContain('compatible_fat');
+  expect(c.tissue).not.toBe(Tissue.Fat);
+  let checked = 0;
+  for (const name of ['aorta', 'inferior_vena_cava', 'portal_vein_and_splenic_vein'])
+    brick(name, 1, (p, d) => {
+      if (!(d < 0) || s0028CompatibleFat(p) !== true) return;
+      // Nodo de la máscara del vaso con bit de grasa: la grasa no puede ser dueño; a 0,4 vóxel del nodo, tampoco si sigue dentro.
+      for (const q of [p, [p[0] + 0.6, p[1], p[2]], [p[0], p[1] - 0.6, p[2] + 0.6]] as Vec3[]) {
+        if (!(s0028SourceValue(q, name).d < 0)) continue;
+        checked++;
+        expect(ids(at(q)), `${name} ${q.join(',')}`).not.toContain('compatible_fat');
+      }
+    });
+  expect(checked).toBeGreaterThanOrEqual(0);
+});
+
+it('quiste renal izquierdo: líquido con dueño E en todos sus nodos; identidades 17/18/19 por literal', () => {
+  let nodes = 0;
+  brick('renalCysts', 1, (p, d) => {
+    if (!(d < 0)) return;
+    nodes++;
+    const c = at(p);
+    expect(c.tissue, p.join(',')).toBe(Tissue.Fluid);
+    expect(c.solids?.owners[0], p.join(',')).toEqual({ id: 'kidney_cyst_left', d, certainty: 'E' });
+  });
+  expect(nodes).toBeGreaterThan(20);
+  // El Worker compara contra esta misma función: aquí los rótulos van contra literales.
+  const liver = { id: 'liver', d: -1, certainty: 'O' } as const;
+  const conflict = { state: 'conflict', owners: [liver, { id: 'wall', d: -1, certainty: 'D' } as const] } as const;
+  const p: Vec3 = [0, 0, -100];
+  expect(structureIdentity(p, Tissue.UnsegmentedSoftTissue, Interface.None, scene, conflict)).toBe(17);
+  expect(STRUCTURE_LABELS[17]).toBe('Conflicto sin resolver · dos dueños');
+  for (const [id, label] of [
+    ['kidney_right', 18],
+    ['kidney_left', 19],
+    ['kidney_cyst_left', 19],
+  ] as const)
+    expect(
+      structureIdentity(p, Tissue.UnsegmentedSoftTissue, Interface.None, scene, {
+        state: 'known',
+        owners: [{ id, d: -1, certainty: 'U' }],
+      }),
+    ).toBe(label);
+  expect(structureIdentity(p, Tissue.Liver, Interface.None, scene, { state: 'known', owners: [liver] })).toBe(1);
+});
+
+it('grasa compatible D: vóxel nearest (redondeo), con las dos cajas en OR donde se solapan', () => {
+  const S = B.solids;
+  const words = new Uint16Array(capacity, 4096 + S.offsetBytes, S.encodedBytes / 2);
+  const bitOf = (b: (typeof S.boxes)[number], i: number, j: number, k: number) => {
+    const bit = (i * b.dimensions[1] + j) * b.dimensions[2] + k;
+    return (HALF[words[b.byteOffset + (bit >> 3)]] >> (bit & 7)) & 1;
+  };
+  const atCell = (b: (typeof S.boxes)[number], i: number, j: number, k: number): Vec3 => [
+    b.originMm[0] + 1.5 * i,
+    b.originMm[1] + 1.5 * j,
+    b.originMm[2] + 1.5 * k,
+  ];
+  let edges = 0;
+  for (const b of S.boxes)
+    for (let k = 0; k < b.dimensions[2]; k += 3)
+      for (let j = 0; j < b.dimensions[1]; j += 3)
+        for (let i = 0; i + 1 < b.dimensions[0]; i += 2) {
+          const a = bitOf(b, i, j, k),
+            c = bitOf(b, i + 1, j, k);
+          if (a === c) continue;
+          const p = atCell(b, i, j, k);
+          // ¿Cubre también la otra caja? Entonces el bit es el OR de ambas.
+          const other = S.boxes.find((o) => o !== b);
+          const inOther = (q: Vec3) => {
+            const x = (q[0] - other!.originMm[0]) / 1.5,
+              y = (q[1] - other!.originMm[1]) / 1.5,
+              z = (q[2] - other!.originMm[2]) / 1.5;
+            if (!(
+              x >= 0 &&
+              y >= 0 &&
+              z >= 0 &&
+              x <= other!.dimensions[0] - 1 &&
+              y <= other!.dimensions[1] - 1 &&
+              z <= other!.dimensions[2] - 1
+            ))
+              return 0;
+            return bitOf(other!, Math.round(x), Math.round(y), Math.round(z));
+          };
+          const near: Vec3 = [p[0] + 0.6, p[1], p[2]],
+            far: Vec3 = [p[0] + 0.9, p[1], p[2]];
+          edges++;
+          expect(s0028CompatibleFat(near), `${near.join(',')}`).toBe(Boolean(a | inOther(near)));
+          expect(s0028CompatibleFat(far), `${far.join(',')}`).toBe(Boolean(c | inOther(far)));
+        }
+  expect(edges).toBeGreaterThan(500);
 });

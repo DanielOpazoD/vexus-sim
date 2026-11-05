@@ -77,7 +77,7 @@ it('reposo y compresión: dueños evaluados en el material, invariantes de lími
           else if (state === 'U' && !tube && c.tissue !== Tissue.Diaphragm) expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
           else if (owners[0]?.id.startsWith('kidney_r')) {
             kidney++;
-            // Riñón sin aplastamiento supuesto: su material U no cambia con la presión de la sonda.
+            // El material del riñón sigue siendo U con y sin presión; la compresión heredada sí lo desplaza (r3).
             expect([c.tissue, c.vessel]).toEqual([Tissue.UnsegmentedSoftTissue, null]);
           } else if (owners[0]?.id === 'bone') {
             bone++;

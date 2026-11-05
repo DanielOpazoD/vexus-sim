@@ -26,7 +26,7 @@ CPU = Worker 245.760/245.760 píxeles, contacto s0028 idéntico, 12/12 mutantes,
 La compresión P2 heredada desplaza y deforma hueso (≤19,4 mm) y riñón (≤12,3 mm), y la
 respiración vigente no conserva la forma renal; r2 no los cambia. Vasos procedurales de la otra
 persona cruzan sólidos s0028 (P5). [Informe r2](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/report.md) ·
-[láminas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/review.html) · [códigos](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/checks.json).
+[láminas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/review.html) · [códigos](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r2/closure.json).
 
 ## r1: fuente y contrato offline
 
@@ -42,9 +42,9 @@ y los candidatos dentro de la envolvente convexa renal. Antes/después de esa ex
 108.724/106.839 vóxeles derechos y 124.892/122.583 izquierdos; los retirados quedan U.
 Las dos opciones no identifican una fascia ni demuestran un compartimento anatómico.
 
-Paquete exportado y reabierto: 77 páginas, 315.854 B de payload; metadatos contables
+Paquete exportado y reabierto en r1: 77 páginas, 315.854 B de payload; metadatos contables
 P2+P3 3.813/4.096 B; RAW, atlas y tórax +0 B. Descarga real 20.359.991/25.000.000 B,
-41.166 B más que P2. Los bits, la tabla y los bytes P2/otras reservas se compararon al
+41.166 B más que P2 (cifras sustituidas por las de r2, que recoloca el paquete tras el bloque derivado P2). Los bits, la tabla y los bytes P2/otras reservas se compararon al
 reabrir. [Detalle y hashes](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/representation.json).
 
 Las máscaras cervicales C5–C7 tienen vóxeles fuente y no aparecen como etiquetas P1;

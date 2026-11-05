@@ -31,7 +31,10 @@ inventadas → 0 en 16 planos. Default = main (82.251 puntos, 10 marcos, 30 cont
 245.760/245.760 px, contacto s0028 idéntico (30 casos), 12/12 mutantes; JS 1.061.578/1.070.080 B; corte 96×128
 sin coste añadido. La compresión P2 heredada desplaza y deforma hueso (≤19,4 mm; ∂s/∂r ≤0,40) y riñón (≤12,3 mm;
 ≤0,25) y la respiración vigente no conserva la forma renal (w de superficie 0,044–1); P3 r2 no los cambia: r3.
-Vasos procedurales de la otra persona cruzan sólidos s0028 (P5). Sin validación clínica.
+Vasos procedurales de la otra persona cruzan sólidos s0028 (P5). El «borde D» renal es de identidad, no una interfaz
+acústica (en ~la mitad de la superficie hay U a ambos lados): contorno acústico en r3. r2c (revisión): la grasa D excluye
+la lámina subvóxel de aorta, VCI y porta/esplénica; pruebas nuevas para grasa D+banda, quiste E, rótulos por literal y
+mitades de celda. Sin validación clínica.
 [Evidencia P3](../evidence/s0028-p3/README.md).
 
 ## P3 r1: fuente de sólidos y posterior, evidencia parcial (321)
@@ -43,8 +46,8 @@ Grasa compatible D: HU [−190,−30], soporte ≤30 mm y exclusión de las 117 
 y de la envolvente convexa renal. Antes/después de excluir la envolvente:
 108.724/106.839 vóxeles derechos y 124.892/122.583 izquierdos; no es fascia.
 
-El paquete reabierto ocupa 77 páginas y 315.854 B, con metadatos P2+P3 3.813/4.096 B;
-descarga 20.359.991/25.000.000 B, incremento 41.166 B y atlas/RAW/tórax +0 B.
+El paquete reabierto ocupaba 77 páginas y 315.854 B, con metadatos P2+P3 3.813/4.096 B y
+descarga 20.359.991/25.000.000 B (cifras de r1, sustituidas por las de r2: el paquete se recolocó tras el bloque derivado P2).
 Las máscaras cervicales C5–C7 están en la fuente, pero no se identifican en P1; el
 solape focal con ambos iliopsoas es cero. Diez pares sobre campos P1 reabiertos dan
 cero vóxeles cada uno. Carta P2 final: 0/0 centros en banda conocida, con

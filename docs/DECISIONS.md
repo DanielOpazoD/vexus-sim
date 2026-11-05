@@ -10354,8 +10354,8 @@ chunks `anatomyScene` 21.567 B y `s0028Wall` 7.737 B importados en el arranque; 
 ## 321. Conservar fuente y desconocidos de sólidos y posterior s0028 [Estado: pendiente de revisión del propietario]
 
 **Contexto.** P3 continúa la migración de una sola persona `s0028`, detrás del selector
-paralelo y sin cambiar poses ni el abdomen por defecto. La revisión de esta ronda es offline;
-el trabajo CPU/GPU de sólidos todavía no está instalado ni validado clínicamente.
+paralelo y sin cambiar poses ni el abdomen por defecto. La revisión de r1 fue offline; r2 instala
+el clasificador en CPU y Worker (abajo); la GPU es r3. Nada está validado clínicamente.
 
 **Decisión propuesta.** Reutilizar los campos P1, consultar etiquetas categóricas nearest y
 conservar todos los propietarios independientes ante un conflicto. O identifica máscara
@@ -10370,8 +10370,8 @@ y permanecen U; no son prueba de seno renal o fascia. Ninguna tabla P3 ni sus he
 pueden requerir bucles: inversas y correcciones se precalculan offline; su cobertura y
 presupuesto siguen sin demostrar.
 
-**Evidencia parcial.** Paquete real reabierto: 77 páginas, payload 315.854 B, metadatos
-P2+P3 3.813/4.096 B y descarga 20.359.991/25.000.000 B; atlas, RAW y tórax +0 B.
+**Evidencia parcial (r1; las cifras de paquete quedan sustituidas por las de r2).** Paquete real reabierto: 77 páginas,
+payload 315.854 B, metadatos P2+P3 3.813/4.096 B y descarga 20.359.991/25.000.000 B; atlas, RAW y tórax +0 B.
 Tras las exclusiones hay 106.839/122.583 vóxeles compatibles D/I, y 1.885/2.309
 candidatos interiores a la envolvente quedan U. Las pruebas sintéticas de conflicto,
 U, identidad, etiquetas, páginas, exclusiones y tórax +1 B pasan. La auditoría completa
@@ -10397,3 +10397,14 @@ conserva como conflicto. Default idéntico a main (82.251 puntos, 10 marcos, 30 
 GLSL con hash igual, CPU = Worker 100 %, 12/12 mutantes. Descarga 20.433.526 B, JS 1.061.578 B,
 manifiesto 38.309 B, metadatos 3.788/4.096 B. La compresión P2 heredada desplaza y deforma hueso y
 riñón; P3 r2 no la cambia y la GPU sigue en r3. Sin validación clínica.
+
+Revisión adversarial de r2 (contexto limpio, sin bloqueantes), atendida en r2c: la grasa compatible D podía reclamar
+la lámina subvóxel de aorta, VCI y porta/esplénica (9/800.000 muestras, ≈46 mm³; 5 salían Fat): ahora el interior de los
+tres vasos fuente la excluye, con prueba en el punto hallado y en los nodos. Cuatro mutantes sobrevivían a las focales
+(grasa sólo sin dueño, quiste como dueño cualquiera, rótulo 17 comparado contra la misma función, nearest por suelo):
+pruebas nuevas con literales, conflicto grasa D+banda exigido (>20 puntos a 3 mm), quiste Fluid/E en todos sus nodos,
+mitades de celda y OR de cajas. Limitación escrita: el «borde D» del riñón es un borde de identidad (dueño y rótulo), no
+una interfaz acústica: en el 51 %/46 % de la superficie renal D/I el tejido es U a ambos lados y `Interface.None` dentro;
+el contorno acústico se decide en r3 junto con la GPU. Dueño `heart` puede salir `Lung` por el tórax E de P7 (15/250.000,
+heredado). Las rojas Python de r2 fallaron por una función ausente (`p2_used_bytes`), no por comportamiento; las siete
+rojas TS sí. Metadatos 3.788/4.096 B es el mismo presupuesto del manifiesto (38.309 − 34.521), no una medida aparte.

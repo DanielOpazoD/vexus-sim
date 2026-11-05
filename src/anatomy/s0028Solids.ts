@@ -69,6 +69,11 @@ const TABLE: ReadonlyArray<readonly [string, S0028OwnerId | readonly S0028OwnerI
   ['heart', 'heart', 'E'],
 ];
 const FIELDS = TABLE.map(([name]) => B.fields.find((f) => f.name === name)!);
+// Vasos fuente (P5): no son dueños P3, pero la grasa compatible D tampoco puede reclamar su interior. Los nodos de grasa
+// nunca caen en un campo P1 (rejillas alineadas); la lámina subvóxel de los vasos sí (revisión r2: 9/800.000 muestras).
+const VESSELS = ['aorta', 'inferior_vena_cava', 'portal_vein_and_splenic_vein'].map((name) => B.fields.find((f) => f.name === name)!);
+const insideVessel = (p: Vec3): boolean =>
+  VESSELS.some((f) => sourceDistance(f.asset === 'abdominal' ? abdominalAtlas! : thoracicAtlas!, p, f, B[f.asset].textureDimensions) < 0);
 
 let fat: Uint16Array | undefined;
 /**
@@ -131,6 +136,7 @@ export function s0028Owners(p: Vec3, q: S0028WallSample | undefined): S0028Owner
   const skeleton = owners.some((o) => o.id === 'bone' || o.id === 'cartilage');
   if (q?.kind === 'known' && q.depthMm >= 1.5 && q.depthMm < q.interfaceMm && !skeleton)
     owners.push({ id: 'wall', d: -Math.min(q.depthMm - 1.5, q.interfaceMm - q.depthMm), certainty: q.depthMm < q.outerMm ? 'D' : 'U' });
-  if (!owners.some((o) => o.id !== 'wall') && s0028CompatibleFat(p)) owners.push({ id: 'compatible_fat', d: 0, certainty: 'D' });
+  if (!owners.some((o) => o.id !== 'wall') && s0028CompatibleFat(p) && !insideVessel(p))
+    owners.push({ id: 'compatible_fat', d: 0, certainty: 'D' });
   return { state: owners.length > 1 ? 'conflict' : owners.length ? 'known' : 'U', owners };
 }

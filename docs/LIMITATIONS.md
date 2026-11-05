@@ -685,7 +685,8 @@ sigue bloqueada/P8; posterior U/P3. No es validación clínica.
 
 `s0028-solids-cpu-only` (321, pendiente): P3 r2 clasifica sólidos y compartimento posterior sólo en CPU y Worker
 del corte; la GPU (r3) sigue dibujando en s0028 el riñón analítico con su grasa perirrenal, así que imagen y corte
-difieren dentro y alrededor del riñón hasta r3. El interior renal, Gerota, el cuadrado lumbar aislado, el diafragma
+difieren dentro y alrededor del riñón hasta r3. El «borde D» renal es un borde de identidad (dueño y rótulo del corte), no
+una interfaz acústica: donde el exterior es U no hay cambio de tejido ni cara. El interior renal, Gerota, el cuadrado lumbar aislado, el diafragma
 posterior y los compartimentos perirrenal/pararrenal son U. Se conservan sin resolver los conflictos de dos dueños
 (693 puntos a 1,5 mm, casi todos grasa compatible D dentro de la banda P2 conocida y hueso+cartílago) y el solape
 real hígado/bazo con la banda P2 (4 y 2 vóxeles fuente). La compresión heredada (63/320) desplaza y deforma hueso

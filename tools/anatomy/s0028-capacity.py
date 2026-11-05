@@ -39,6 +39,15 @@ def require_wall_budget(payload_bytes, metadata_bytes, atlas_increment, raw_incr
         raise ValueError('presupuesto P2: reserva pared/metadatos; atlas/RAW/tórax +0 B')
 
 
+def require_solids_budget(p2_payload_bytes, p3_payload_bytes, p2_metadata_bytes,
+                          p3_metadata_bytes, atlas_increment, raw_increment, thoracic_increment):
+    values = (p2_payload_bytes, p3_payload_bytes, p2_metadata_bytes, p3_metadata_bytes)
+    if any(not isinstance(value, int) or value < 0 for value in values):
+        raise ValueError('presupuesto P2/P3 inválido')
+    require_wall_budget(p2_payload_bytes+p3_payload_bytes, p2_metadata_bytes+p3_metadata_bytes,
+                        atlas_increment, raw_increment, thoracic_increment)
+
+
 def materialize_capacity(out, rows):
     plan = capacity_plan(rows)
     offset, parts = 4096, []

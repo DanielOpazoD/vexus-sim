@@ -10350,3 +10350,35 @@ chunks `anatomyScene` 21.567 B y `s0028Wall` 7.737 B importados en el arranque; 
 (margen 12.037 B). Diferido con nombre: lectura GPU de los campos fuente s0028 (`s28_*`) con filtro de hardware sin
 `sourceDistancePrecise` (decisión 223); guarda estática sólo en 8 de 24 programas; mutantes sin consumidor en runtime
 (`region`/`provenance` de la carta, cara DeepFascia s0028, pesos c0/c1 sólo detectables en la e2e GPU).
+
+## 321. Conservar fuente y desconocidos de sólidos y posterior s0028 [Estado: pendiente de revisión del propietario]
+
+**Contexto.** P3 continúa la migración de una sola persona `s0028`, detrás del selector
+paralelo y sin cambiar poses ni el abdomen por defecto. La revisión de esta ronda es offline;
+el trabajo CPU/GPU de sólidos todavía no está instalado ni validado clínicamente.
+
+**Decisión propuesta.** Reutilizar los campos P1, consultar etiquetas categóricas nearest y
+conservar todos los propietarios independientes ante un conflicto. O identifica máscara
+fuente automática; D identifica derivación reproducible; E una hipótesis acotada; U es
+desconocido. El interior renal, Gerota, cuadrado lumbar aislado, diafragma posterior y
+compartimentos perirrenal/pararrenal permanecen U. Iliopsoas y autóctonos derivan de sus
+máscaras; no se inventa un anillo muscular ni se asigna material por compartimento.
+
+El candidato D de grasa compatible usa HU [−190,−30], soporte a ≤30 mm del riñón y
+exclusión de las 117 máscaras. Los candidatos en la envolvente convexa renal se excluyen
+y permanecen U; no son prueba de seno renal o fascia. Ninguna tabla P3 ni sus helpers GPU
+pueden requerir bucles: inversas y correcciones se precalculan offline; su cobertura y
+presupuesto siguen sin demostrar.
+
+**Evidencia parcial.** Paquete real reabierto: 77 páginas, payload 315.854 B, metadatos
+P2+P3 3.813/4.096 B y descarga 20.359.991/25.000.000 B; atlas, RAW y tórax +0 B.
+Tras las exclusiones hay 106.839/122.583 vóxeles compatibles D/I, y 1.885/2.309
+candidatos interiores a la envolvente quedan U. Las pruebas sintéticas de conflicto,
+U, identidad, etiquetas, páginas, exclusiones y tórax +1 B pasan. La auditoría completa
+de las láminas y el cierre serial están pendientes. Los diez pares focales de
+campos P1 reabiertos muestran 0 vóxeles cada uno. La carta P2 final muestra 0/0
+centros renales en banda conocida, pero 5.506/4.548 inversiones no resueltas y
+ramas alternativas posibles impiden concluir ausencia global de choque. Las máscaras cervicales
+C5–C7 existen en fuente y no tienen etiqueta en P1: no se presentan como atlas verificado.
+Véase [evidencia P3](evidence/s0028-p3/README.md). La aceptación visual del propietario,
+la paridad CPU/GPU, el arranque y los costes integrados siguen pendientes.

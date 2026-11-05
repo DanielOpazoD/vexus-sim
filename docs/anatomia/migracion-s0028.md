@@ -9,6 +9,25 @@ La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, defaul
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
 
+## P3 r1: fuente de sólidos y posterior, evidencia parcial (321)
+
+La fuente y el paquete offline usan sólo s0028; no se cablea runtime P3. O/D/E/U
+son explícitos y los conflictos no se resuelven por precedencia. Gerota, QL aislado,
+diafragma posterior, interior renal y compartimentos perirrenal/pararrenal son U.
+Grasa compatible D: HU [−190,−30], soporte ≤30 mm y exclusión de las 117 máscaras
+y de la envolvente convexa renal. Antes/después de excluir la envolvente:
+108.724/106.839 vóxeles derechos y 124.892/122.583 izquierdos; no es fascia.
+
+El paquete reabierto ocupa 77 páginas y 315.854 B, con metadatos P2+P3 3.813/4.096 B;
+descarga 20.359.991/25.000.000 B, incremento 41.166 B y atlas/RAW/tórax +0 B.
+Las máscaras cervicales C5–C7 están en la fuente, pero no se identifican en P1; el
+solape focal con ambos iliopsoas es cero. Diez pares sobre campos P1 reabiertos dan
+cero vóxeles cada uno. Carta P2 final: 0/0 centros en banda conocida, con
+5.506/4.548 inversiones sin resolver D/I y posibles ramas alternativas; no se acredita
+ausencia global de choque. Láminas y cierre serial pendientes; no es aceptación del propietario ni validación
+clínica. Ninguna tabla P3 ni helper GPU debe exigir bucles; inversas offline pendientes
+de cobertura y presupuesto. [Evidencia y estado](../evidence/s0028-p3/README.md).
+
 ## P2 r2b-U: contacto por piel, cara E de los nodos U y respiración U por rampa, aceptada (320)
 
 Decisiones del propietario (04-11-2026) sobre el hallazgo de las láminas r2b. La clasificación no cambia: una celda U

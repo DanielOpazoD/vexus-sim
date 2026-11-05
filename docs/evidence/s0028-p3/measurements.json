@@ -1,0 +1,305 @@
+{
+  "person": "s0028",
+  "ownerReview": "pending",
+  "runtimeInstalledByP3": false,
+  "clinicalValidation": false,
+  "sourceMasks": 117,
+  "fatHU": [-190, -30],
+  "supportMm": 30,
+  "renalHull": "excluded; unknown",
+  "fat": [
+    {
+      "side": "right",
+      "candidateBeforeHullVoxels": 108724,
+      "insideHullMarkedUnknownVoxels": 1885,
+      "installedAfterHullExclusionVoxels": 106839,
+      "installedInsideHullVoxels": 0,
+      "sourceMasksExcluded": 117,
+      "box": {
+        "side": "right",
+        "originMm": [-108.48527431275116, -89.21478450019774, -202.48879268882285],
+        "dimensions": [81, 81, 96],
+        "byteOffset": 0,
+        "byteLength": 78732
+      }
+    },
+    {
+      "side": "left",
+      "candidateBeforeHullVoxels": 124892,
+      "insideHullMarkedUnknownVoxels": 2309,
+      "installedAfterHullExclusionVoxels": 122583,
+      "installedInsideHullVoxels": 0,
+      "sourceMasksExcluded": 117,
+      "box": {
+        "side": "left",
+        "originMm": [8.514725687248841, -83.21478450019774, -194.98879268882285],
+        "dimensions": [81, 74, 105],
+        "byteOffset": 78732,
+        "byteLength": 78672
+      }
+    }
+  ],
+  "metadataBytes": {
+    "p2": 2459,
+    "p3": 1354,
+    "total": 3813,
+    "limit": 4096
+  },
+  "payloadBytes": 315854,
+  "pageCount": 77,
+  "downloadBytes": 20359991,
+  "downloadIncrementBytes": 41166,
+  "rawIncrementBytes": 0,
+  "atlasIncrementBytes": 0,
+  "thoracicIncrementBytes": 0,
+  "sourceBoneNotInP1": ["vertebrae_C5", "vertebrae_C6", "vertebrae_C7"],
+  "cervicalIliopsoasSourceOverlapVoxels": 0,
+  "completeConflictAudit": "pending",
+  "plates": {
+    "count": 16,
+    "reviewedWithHashes": 16,
+    "ownerReview": "pending",
+    "path": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/review.html"
+  },
+  "serialClosure": "pending",
+  "p1FocalPairs": [
+    {
+      "a": "kidney_right",
+      "b": "liver",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_left",
+      "b": "spleen",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_left",
+      "b": "pancreas",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_left",
+      "b": "stomach",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_right",
+      "b": "iliopsoas_right",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_left",
+      "b": "iliopsoas_left",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_right",
+      "b": "autochthon_right",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "kidney_left",
+      "b": "autochthon_left",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "iliopsoas_right",
+      "b": "bone",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "iliopsoas_left",
+      "b": "bone",
+      "overlapVoxels": 0
+    }
+  ],
+  "p1IliopsoasVertebrae": [
+    {
+      "a": "iliopsoas_right",
+      "overlapVoxels": 0
+    },
+    {
+      "a": "iliopsoas_left",
+      "overlapVoxels": 0
+    }
+  ],
+  "labelsVerifiedAgainstSource": [
+    {
+      "name": "autochthon_left",
+      "field": "posteriorMuscle",
+      "label": 3,
+      "voxels": 125651
+    },
+    {
+      "name": "autochthon_right",
+      "field": "posteriorMuscle",
+      "label": 4,
+      "voxels": 118336
+    },
+    {
+      "name": "iliopsoas_left",
+      "field": "posteriorMuscle",
+      "label": 1,
+      "voxels": 60886
+    },
+    {
+      "name": "iliopsoas_right",
+      "field": "posteriorMuscle",
+      "label": 2,
+      "voxels": 58968
+    },
+    {
+      "name": "kidney_cyst_left",
+      "field": "renalCysts",
+      "label": 1,
+      "voxels": 53
+    },
+    {
+      "name": "kidney_left",
+      "field": "kidneyLeft",
+      "label": 1,
+      "voxels": 32125
+    },
+    {
+      "name": "kidney_right",
+      "field": "kidneyRight",
+      "label": 1,
+      "voxels": 32085
+    },
+    {
+      "name": "liver",
+      "field": "liver",
+      "label": 1,
+      "voxels": 398759
+    },
+    {
+      "name": "pancreas",
+      "field": "pancreas",
+      "label": 1,
+      "voxels": 22725
+    },
+    {
+      "name": "sacrum",
+      "field": "sacrum",
+      "label": 1,
+      "voxels": 42690
+    },
+    {
+      "name": "spleen",
+      "field": "spleen",
+      "label": 1,
+      "voxels": 28224
+    },
+    {
+      "name": "stomach",
+      "field": "digestiveTract",
+      "label": 1,
+      "voxels": 168540
+    },
+    {
+      "name": "vertebrae_L1",
+      "field": "lumbarSacralBone",
+      "label": 1,
+      "voxels": 10882
+    },
+    {
+      "name": "vertebrae_L2",
+      "field": "lumbarSacralBone",
+      "label": 2,
+      "voxels": 12021
+    },
+    {
+      "name": "vertebrae_L3",
+      "field": "lumbarSacralBone",
+      "label": 3,
+      "voxels": 13467
+    },
+    {
+      "name": "vertebrae_L4",
+      "field": "lumbarSacralBone",
+      "label": 4,
+      "voxels": 13288
+    },
+    {
+      "name": "vertebrae_L5",
+      "field": "lumbarSacralBone",
+      "label": 5,
+      "voxels": 14401
+    }
+  ],
+  "labelsVerifiedAgainstSourceCount": 53,
+  "labelsVerifiedAgainstSourceScope": "11 solids/muscles, 24 ribs, T1-T12, L1-L5 and sacrum; individual hashes in external evidence",
+  "p2InputMismatch": {
+    "boundaryValuesDifferent": 74034,
+    "provenanceCellsDifferent": 11193,
+    "maxNormalComponentDifference": 0.7012105584144592,
+    "exportedTilesEqualFinalAnnotation": true
+  },
+  "p2RightProbe1024": {
+    "renalVoxels": 1024,
+    "totalRenalVoxels": 32085,
+    "knownBandVoxels": 0,
+    "knownOutsideBandVoxels": 39,
+    "insideDomainUnknownVoxels": 645,
+    "outsideDomainBySelectedInverseVoxels": 306,
+    "unresolvedInverseVoxels": 34,
+    "inverseLimitation": "selected best seed; outside in this branch does not certify uniqueness or global absence of another inverse"
+  },
+  "p2WallVsKidneys": [
+    {
+      "side": "right",
+      "renalVoxels": 32085,
+      "knownBandVoxels": 0,
+      "knownOutsideBandVoxels": 39,
+      "insideDomainUnknownVoxels": 11867,
+      "outsideDomainBySelectedInverseVoxels": 14673,
+      "unresolvedInverseVoxels": 5506,
+      "inverseLimitation": "selected best seed; outside in this branch does not certify uniqueness or global absence of another inverse"
+    },
+    {
+      "side": "left",
+      "renalVoxels": 32125,
+      "knownBandVoxels": 0,
+      "knownOutsideBandVoxels": 238,
+      "insideDomainUnknownVoxels": 13156,
+      "outsideDomainBySelectedInverseVoxels": 14183,
+      "unresolvedInverseVoxels": 4548,
+      "inverseLimitation": "selected best seed; outside in this branch does not certify uniqueness or global absence of another inverse"
+    }
+  ],
+  "p2WallDirectVsKidneys": {
+    "method": "P2 direct EDT: p - torsoDepth(p)*gradient/|gradient|²; central differences 1.5 mm; polar about interpolated row center; depth=-torsoDepth; all four corners require all three boundaries known",
+    "wallPayloadSha256": "92091898ad47a9ecf3435f2abea34b40a54d7c60cdce5dd363a4a7dff5aa3107",
+    "abdominalAtlasSha256": "d73486d8ed95547375a623647f12d058e2cdb9f59eff4418de3929fa39f39bcd",
+    "rows": [
+      {
+        "side": "right",
+        "renalVoxels": 32085,
+        "knownBandVoxels": 0,
+        "knownOutsideBandVoxels": 2744,
+        "insideDomainUnknownVoxels": 29340,
+        "outsideDomainVoxels": 1,
+        "projectionUnknown": 0,
+        "zOutOfDomain": 1
+      },
+      {
+        "side": "left",
+        "renalVoxels": 32125,
+        "knownBandVoxels": 0,
+        "knownOutsideBandVoxels": 364,
+        "insideDomainUnknownVoxels": 31761,
+        "outsideDomainVoxels": 0,
+        "projectionUnknown": 0,
+        "zOutOfDomain": 0
+      }
+    ],
+    "clinicalValidation": false
+  },
+  "p2LiverCoronalPlateConflict": {
+    "interpolatedPlaneSamples": 3,
+    "spacingMm": 0.75,
+    "scope": "liver SDF and direct P2 known band, single coronal plane, not source-mask voxel overlap or volume",
+    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/clash-coronal.json"
+  }
+}

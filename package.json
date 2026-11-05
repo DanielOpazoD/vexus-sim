@@ -18,6 +18,7 @@
     "test:watch": "vitest",
     "calibrate": "node --import tsx tools/calibrate.ts",
     "docs:index": "node --import tsx tools/docs/decisions-index.ts",
+    "closure": "node --import tsx tools/workspace/closure.ts",
     "fidelity": "node --import tsx tools/fidelity/bench.ts",
     "fidelity:external": "node --import tsx tools/fidelity/externalEvidence.ts",
     "fidelity:psf": "node --import tsx tools/fidelity/independentPsf.ts",

@@ -145,6 +145,8 @@ cuando son términos técnicos de programación; comentarios en español.
 
 - `npm ci` activa el hook `.githooks/pre-push`: formato, lint, tipos y pruebas rápidas antes de empujar (≤3 min sin carga;
   qué corre dónde en `docs/TESTING.md`).
+- `npm run closure -- --evidence <carpeta>`: cierre serial de una ronda con etapas, reanudación (`--resume`), espera y
+  muestreo de carga, logs y `closure.json` (decisión 322).
 - Dependabot abre cada lunes una PR agrupada por ecosistema; entra si CI (check + e2e) está verde.
 - ESLint usa las reglas con información de tipos (`recommendedTypeChecked`).
 

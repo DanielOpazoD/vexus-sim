@@ -277,4 +277,6 @@ llega al bundle de producción a través de `app/testHooks.ts`; `app/speckle.ts`
   después, la e2e (arranque, casos, medición numérica, pérdida de contexto WebGL y gate de
   equivalencia TS ↔ GLSL en tejido, vaso y velocidad).
 - `tools/ci/bundle-budget.ts`: presupuestos de tamaño por patrón tras `vite build`.
-- Niveles de prueba por marcador `// @tier slow` (ver `vite.config.ts`).
+- Niveles de prueba por marcador `// @tier slow` (regla única en `tools/ci/testTiers.ts`). El gancho de push corre sólo la
+  capa rápida (formato, lint, tipos y pruebas rápidas, ≤180 s sin carga); `tools/workspace/closure.ts` mide ese
+  presupuesto y el de cada archivo rápido (decisión 322).

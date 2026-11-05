@@ -242,6 +242,20 @@ def install_payload(raw, wall_offset, wall_size, p2_bytes, p2_sha256, payload, p
                     'endOffset': end}
 
 
+def p2_used_bytes(part):
+    """Bytes P2 de la reserva de pared: payload y, desde P2 final, el bloque derivado E+rampas que lo sigue."""
+    if part.get('name') != 'wall' or 'p3Bytes' in part or part.get('derivedBytes', 0) < 0 or part['payloadBytes'] < 0:
+        raise ValueError('reserva de pared inválida o con P3 ya instalado')
+    return part['payloadBytes']+part.get('derivedBytes', 0)
+
+
+def install_after_p2(raw, part, p2_bytes, p2_sha256, payload, placements, occupied):
+    """`install_payload` sólo tras todo P2 (r1 lo escribió sobre el bloque derivado de P2 final)."""
+    if p2_bytes != p2_used_bytes(part):
+        raise ValueError('P3 no empieza tras el bloque derivado P2')
+    return install_payload(raw, part['offsetBytes'], part['bytes'], p2_bytes, p2_sha256, payload, placements, occupied)
+
+
 def require_budget(payload_bytes, metadata_bytes, atlas_increment, raw_increment, thoracic_increment):
     if (not 0 <= payload_bytes <= 344*256*8*3 or not 0 <= metadata_bytes <= 4096 or
             atlas_increment != 0 or raw_increment != 0 or thoracic_increment != 0):

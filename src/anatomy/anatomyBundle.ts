@@ -1,5 +1,6 @@
 import type { SourceVolume } from './sourceVolume';
 import { S0028_WALL_PACKAGE } from './s0028WallData';
+import { S0028_SOLIDS_PACKAGE } from './s0028SolidsData';
 export interface PersonField extends SourceVolume {
   readonly name: string;
   readonly asset: 'abdominal' | 'thoracic';
@@ -201,6 +202,7 @@ export const S0028_BUNDLE = freeze({
   manifest: S0028_WALL_PACKAGE.manifest,
   wall: S0028_WALL_PACKAGE.descriptor,
   wallDerived: S0028_WALL_PACKAGE.derived,
+  solids: S0028_SOLIDS_PACKAGE,
 } as const);
 export const CURRENT_BUNDLE = Object.freeze({ person: 'current', frameId: 'registered-las-v1', revision: 'current' } as const);
 export const LEGACY_BUNDLE = Object.freeze({ person: 'legacy', frameId: 'procedural-las-v1', revision: 'current' } as const);

@@ -11,6 +11,7 @@ import { setReferenceBody } from '../anatomy/referenceBody';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { setS0028Wall } from '../anatomy/s0028Wall';
+import { setS0028Solids } from '../anatomy/s0028Solids';
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -119,6 +120,8 @@ self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
       if (msg.type === 'init' && anatomyBundle.person === 's0028') {
         if (!msg.wall || !msg.skin) throw new Error('Worker s0028 sin pared/piel');
         setS0028Wall(msg.wall, msg.skin);
+        // El bloque P3 viaja en la misma reserva verificada: el Worker lo valida y lee igual que la CPU.
+        setS0028Solids(msg.wall);
       }
       // Exact fitted wall from the acquisition, not a second fit without ribs.
       const scene = new AnatomyScene(msg.patient, msg.referenceProfile);

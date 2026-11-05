@@ -1060,13 +1060,13 @@
     "guarantee": "fixed array capacity, not sufficient anatomy or future triangle count",
     "file": "annotation-capacity.gzip.bin",
     "rawBytes": 5671296,
-    "downloadBytes": 245518,
+    "downloadBytes": 284466,
     "abdominalBytes": 4491648,
     "thoracicBytes": 1179648,
-    "sha256": "21f2e068d6ba767be4db0c8c1e9cf54872a35473fd055b0bc8af8e070467a069",
+    "sha256": "b551085384a1588b0b664a9032da49204643805eb77a2ea23c6152f94ddbd729",
     "descriptorsDecoded": true,
-    "compressionCredit": 5425778,
-    "sha256Gzip": "dd4e3337d0fd06f8d2174b730d832bbfb07125b700d8f465329ac666ab1d4280",
+    "compressionCredit": 5386830,
+    "sha256Gzip": "12de9273bd95f78d2a4795f67dc01b7a0221c19ece370fd503883ddbedc4fe0b",
     "downloadRule": "measure actual gzip again after every annotation phase"
   },
   "files": [
@@ -1082,8 +1082,8 @@
     },
     {
       "file": "annotation-capacity.gzip.bin",
-      "bytes": 245518,
-      "sha256": "dd4e3337d0fd06f8d2174b730d832bbfb07125b700d8f465329ac666ab1d4280"
+      "bytes": 284466,
+      "sha256": "12de9273bd95f78d2a4795f67dc01b7a0221c19ece370fd503883ddbedc4fe0b"
     },
     {
       "file": "skin-polar.gzip.bin",
@@ -1263,5 +1263,6 @@
         1
       ]
     }
-  }
+  },
+  "p3Solids": {"format":"s0028-p3-fat-pages-v1","provenance":"D","boxes":[{"side":"right","originMm":[-108.48527431275116,-89.21478450019774,-202.48879268882285],"dimensions":[81,81,96],"byteOffset":0,"byteLength":78732},{"side":"left","originMm":[8.514725687248841,-83.21478450019774,-194.98879268882285],"dimensions":[81,74,105],"byteOffset":78732,"byteLength":78672}],"flatten":"C xyz, z fastest; little-endian bits","pitchMm":1.5,"fatHU":[-190,-30],"supportMm":30,"excluded":"117 source masks; renal convex hull U","compartments":"U","offsetBytes":1129256,"encodedBytes":315392,"pageTableBytes":462,"pageCount":77,"sha256":"deac8eb8b2190e8a82d728139cf48e817cf01ee46028b67a822e418351af0e43","p2DerivedSha256":"ccaef97e027de4d95c830a9778afec63b8c7b30e8733b04c2ec3882b9a129043","clinicalValidation":false}
 }

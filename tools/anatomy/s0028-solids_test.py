@@ -161,6 +161,25 @@ class SolidsContractTest(unittest.TestCase):
             solids.install_payload(raw, 16, 5000, len(p2), hashlib.sha256(p2).hexdigest(),
                                    payload, [[0, 0, 0], [32, 0, 0]], occupied)
 
+    def test_p3_starts_after_the_p2_derived_block(self):
+        # r1 escribió P3 en payloadBytes: en P2 final ahí empieza el bloque derivado E+rampas (371.412 B).
+        part = {'name': 'wall', 'offsetBytes': 4096, 'bytes': 2113536, 'payloadBytes': 757844, 'derivedBytes': 371412}
+        self.assertEqual(solids.p2_used_bytes(part), 757844+371412)
+        self.assertEqual(solids.p2_used_bytes({**part, 'derivedBytes': 0}), 757844)
+        for bad in ({**part, 'p3Bytes': 315854}, {**part, 'name': 'tubes'}, {**part, 'derivedBytes': -1}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                solids.p2_used_bytes(bad)
+        raw = bytes(64)*100
+        payload, _ = solids.pack_pages(np.array([True]))
+        small = {**part, 'offsetBytes': 16, 'bytes': 5000, 'payloadBytes': 16, 'derivedBytes': 16}
+        with self.assertRaises(ValueError):
+            solids.install_after_p2(raw, small, 16, hashlib.sha256(raw[16:32]).hexdigest(), payload, [[0, 0, 0]],
+                                    np.zeros((1, 32, 32), bool))
+        result, layout = solids.install_after_p2(raw, small, 32, hashlib.sha256(raw[16:48]).hexdigest(), payload,
+                                                 [[0, 0, 0]], np.zeros((1, 32, 32), bool))
+        self.assertEqual(layout['payloadOffsetBytes'], 48)
+        self.assertEqual(result[:48], raw[:48])
+
     def test_pages_roundtrip_and_corruption(self):
         bits = np.array([True, False, True, True, False]*1200, dtype=bool)
         payload, info = solids.pack_pages(bits)

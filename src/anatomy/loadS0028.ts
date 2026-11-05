@@ -5,6 +5,7 @@ import { loadPinnedGzip, sha256 } from './loadAbdominalAtlas';
 import { setAbdominalAtlas } from './abdominalAtlas';
 import { setThoracicAtlas } from './thoracicAtlas';
 import { setS0028Wall } from './s0028Wall';
+import { setS0028Solids } from './s0028Solids';
 
 let loading = false;
 export let s0028Auxiliary: { capacity: ArrayBuffer; skin: ArrayBuffer } | undefined;
@@ -47,6 +48,7 @@ export async function loadS0028(signal: AbortSignal): Promise<void> {
     setAbdominalAtlas(new Uint16Array(abdomen));
     setThoracicAtlas(new Uint16Array(thorax));
     setS0028Wall(capacity, skin);
+    setS0028Solids(capacity);
     s0028Auxiliary = { capacity, skin };
   } finally {
     loading = false;

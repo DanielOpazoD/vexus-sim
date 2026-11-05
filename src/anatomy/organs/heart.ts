@@ -100,7 +100,7 @@ export const MEDIASTINUM = {
  * [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION: no hay máscara de AD separada.
  */
 export const HEART_ATLAS_SHIFT: Vec3 = [0, 2, -25];
-/** Misma traslación estática que heartShift en GLSL, según el atlas cargado. */
+/** Misma traslación estática que heartShift en GLSL, según el atlas cargado. @twin organo-corazon */
 export function heartShift(): Vec3 {
   return abdominalAtlas ? HEART_ATLAS_SHIFT : [0, 0, 0];
 }

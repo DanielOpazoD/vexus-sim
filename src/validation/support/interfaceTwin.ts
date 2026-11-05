@@ -171,6 +171,7 @@ function echoAt(c: Cls, cosI: number, cosF: number, r: number, o: SimOpts, focus
   ];
 }
 
+/** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin gemelo-interfaz */
 export function simulate(scene: Scene, o: SimOpts): SimOut {
   const depth = o.depth ?? 180;
   const focus = o.focus ?? FOCUS;

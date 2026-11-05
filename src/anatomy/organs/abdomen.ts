@@ -4,6 +4,7 @@ import { Tissue } from '../tissues';
 import { Interface } from '../interfaces';
 import type { Vec3 } from '../../core/vec3';
 
+/** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin organo-abdomen */
 export function digestiveWallMm(label: number): number {
   return label === 1 ? 3 : (anatomyBundle.person === 's0028' ? label === 4 : label >= 5) ? 2.5 : 2;
 }
@@ -158,7 +159,7 @@ export {
   abdominalAtlasValue,
   abdominalAtlasGradient,
 } from '../abdominalAtlas';
-/** Gemelo GLSL de las funciones del abdomen (mismos nombres, decisión 46). @twin organo-abdomen */
+/** GLSL de las funciones del abdomen (mismos nombres, decisión 46). @twin organo-abdomen */
 export const ABDOMEN_GLSL = /* glsl */ `
 ${ABDOMINAL_ATLAS_GLSL}
 // Shared acoustic layers and static nondependent gas. No assigned flow in a hollow organ.

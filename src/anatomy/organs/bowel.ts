@@ -87,7 +87,9 @@ export const BOWEL_BOUNDS = Array.from({ length: BOWEL_GROUPS }, (_, k): [number
 });
 export const BOWEL_TEXELS = BOWEL_GROUPS + 2 * BOWEL_NODES.length;
 /** Campos de serosa y luz, uniones independientes; gradientes analíticos en el segmento ganador.
- * Los campos no son distancias euclídeas: su norma se conserva para el eco de interfaz. */
+ * Los campos no son distancias euclídeas: su norma se conserva para el eco de interfaz.
+ * @twin organo-intestino
+ */
 export function bowelQuery(m: Vec3, radii: ArrayLike<number> = BOWEL_REST_RADII) {
   let d = BOWEL_FIELD_REACH_MM,
     lumen = BOWEL_FIELD_REACH_MM + BOWEL_WALL_MM;

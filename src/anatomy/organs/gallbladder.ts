@@ -61,7 +61,7 @@ export function gallbladderAxis(g: GallbladderShape): Vec3 {
   return [d[0] / l, d[1] / l, d[2] / l];
 }
 
-/** Distancia con signo a un tramo de la luz: cono redondeado con el radio interpolado a lo largo del segmento. */
+/** Distancia con signo a un tramo de la luz: cono redondeado con el radio interpolado a lo largo del segmento. @twin organo-vesicula */
 export function gbSegment(m: Vec3, a: GallbladderNode, b: GallbladderNode): number {
   const abx = b.p[0] - a.p[0];
   const aby = b.p[1] - a.p[1];

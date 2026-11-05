@@ -34,6 +34,7 @@ export function frequencyRatio(rMm: number, p: BeamParams = CONVEX_BEAM): number
  * 65:30) mide 8,2 y 9,6 dB de señal entre la emisión enfocada a 40 mm y la enfocada en cada profundidad, a 10 y 95 mm
  * (sectorial de 19,2 mm a 2,98 MHz); con ese montaje y emisión uniforme el modelo da 10–13 y 7,5 dB (con la de Hann,
  * 7–9 y 3,5 dB). Solo el eco de la imagen B, no el ruido del receptor, el transitorio ni el Doppler.
+ * @twin haz-psf
  */
 export function focalGain(rMm: number, focusMm: number, p: BeamParams = CONVEX_BEAM): number {
   const ref = focalReferenceFwhmMm(p);

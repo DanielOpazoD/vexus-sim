@@ -168,7 +168,7 @@ export function lateralFwhmMm(rMm: number, focusMm: number, p: BeamParams = CONV
   return 1 / Math.sqrt(1 / (tx * tx) + 1 / (rx * rx));
 }
 
-/** σ lateral (mm) de la PSF de dos vías (gaussiana equivalente: FWHM / 2,355). */
+/** σ lateral (mm) de la PSF de dos vías (gaussiana equivalente: FWHM / 2,355). @twin haz-psf */
 export function lateralSigmaMm(rMm: number, focusMm: number, p: BeamParams = CONVEX_BEAM): number {
   return lateralFwhmMm(rMm, focusMm, p) / 2.3548;
 }

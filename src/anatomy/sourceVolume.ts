@@ -9,7 +9,7 @@ export interface SourceVolume {
   readonly pitchMm: number;
 }
 
-/** Trilinear interpolation of the same eight nodes as the GPU reader; no per-query arrays or closures. */
+/** Trilinear interpolation of the same eight nodes as the GPU reader; no per-query arrays or closures. @twin volumen-fuente */
 export function sourceDistance(data: Uint16Array, p: Vec3, f: SourceVolume, textureDimensions: readonly number[]): number {
   const qx = (p[0] - f.originMm[0]) / f.pitchMm,
     qy = (p[1] - f.originMm[1]) / f.pitchMm,

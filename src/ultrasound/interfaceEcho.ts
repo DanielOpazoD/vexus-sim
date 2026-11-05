@@ -375,7 +375,7 @@ export function facetCosine(n: readonly number[], dir: readonly number[], tilt: 
   return Math.abs(f[0] * dir[0] + f[1] * dir[1] + f[2] * dir[2]) / Math.hypot(f[0], f[1], f[2]);
 }
 
-/** Núcleo compartido por el renderer y la prueba WebGL: n y t materiales, dir del mundo. */
+/** Núcleo compartido por el renderer y la prueba WebGL: n y t materiales, dir del mundo. @twin faceta-coseno */
 export const FACET_COSINE_GLSL = /* glsl */ `
 float facetCosine(vec3 n, vec3 dir, vec3 t, Warp w) {
   vec3 f = warpNormal(w, n + t - dot(t, n) * n);
@@ -638,4 +638,5 @@ float pleuraEcho(float delta, vec3 d0, vec3 dR) {
 }
 `;
 }
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin eco-interfaz */
 export const INTERFACE_ECHO_GLSL = interfaceEchoGlsl();

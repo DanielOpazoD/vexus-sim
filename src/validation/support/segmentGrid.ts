@@ -46,6 +46,7 @@ export function emptyGrid(g: GridGeometry = GRID_GEOMETRY): SegmentGrid {
 /**
  * A1 sobre una escena sin espejo: cada segmento radial se clasifica en su centro con las reglas de
  * `FRAG_TRANS_SEGMENTS` (gas 60 dB/cm, resto 2·α(f)·paso) y sus marcas (aire, hueso, tipo de gas).
+ * @twin rejilla-segmentos
  */
 export function segmentGridFromScene(
   classify: (x: number, z: number) => Tissue,

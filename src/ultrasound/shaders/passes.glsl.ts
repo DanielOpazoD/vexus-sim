@@ -943,6 +943,7 @@ vec2 steeredField() {
 }
 `;
 }
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin miradas-direccion */
 export const STEERED_FIELD_GLSL = steeredFieldGlsl();
 
 /**
@@ -996,7 +997,7 @@ ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCur
 }
 `;
 type RawFieldStage = 'direct' | 'class' | 'elevation' | 'gradient' | 'echo' | 'cached';
-/** Programas de la pasada B; el campo de dispersores de su rebanada tiene su gemelo TS en `speckleField.ts`. @twin moteado-campo */
+/** Programas de la pasada B; el campo de dispersores de su rebanada tiene su lado TS en `speckleField.ts`. @twin moteado-campo */
 function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
   const mediumBody =
     stage === 'class'

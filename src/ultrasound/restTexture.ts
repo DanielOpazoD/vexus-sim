@@ -16,6 +16,7 @@ const smooth = (a: number, b: number, x: number): number => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
+/** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin textura-reposo */
 export function bowelWallProfile(depthMm: number): number {
   const p = REST_TEXTURE,
     e = p.edgeMm;
@@ -27,7 +28,7 @@ export function bowelWallProfile(depthMm: number): number {
 export function restTexture(m: Vec3, radii?: ArrayLike<number>): number {
   return bowelWallProfile(-bowelSdf(m, radii));
 }
-/** Gemelo GLSL de `bowelWallProfile` y `restTexture`. @twin textura-reposo */
+/** GLSL de `bowelWallProfile` y `restTexture`. @twin textura-reposo */
 export const REST_TEXTURE_GLSL = /* glsl */ `
 float bowelWallProfile(float d){
   float v=mix(${REST_TEXTURE.muscularisBack.toFixed(3)},${REST_TEXTURE.submucosaBack.toFixed(3)},smoothstep(${(REST_TEXTURE.muscularisEndMm - REST_TEXTURE.edgeMm).toFixed(3)},${(REST_TEXTURE.muscularisEndMm + REST_TEXTURE.edgeMm).toFixed(3)},d));

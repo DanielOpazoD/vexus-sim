@@ -15,7 +15,7 @@ export function setAbdominalAtlas(values?: Uint16Array): void {
   abdominalAtlas = values;
 }
 
-/** Distancia y rótulo del campo `field` del atlas abdominal en p (gemela TS del lector GLSL de este módulo). @twin atlas-abdominal */
+/** Distancia y rótulo del campo `field` del atlas abdominal en p (lado TS del lector GLSL de este módulo). @twin atlas-abdominal */
 export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label: number } {
   const data = abdominalAtlas,
     f =
@@ -170,6 +170,7 @@ export function sourceGas(p: Vec3): boolean {
   return sourceLabel(abdominalAtlas, p, f, anatomyBundle.abdominal.textureDimensions) >= 128;
 }
 
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin atlas-abdominal */
 export const ABDOMINAL_ATLAS_GLSL = /* glsl */ `
 vec4 registeredDomeSample(vec2 p){
   if(uAbdominalAtlasEnabled==0)return vec4(0.0);

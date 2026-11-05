@@ -149,7 +149,7 @@ export interface CompressionSample {
 
 const ZERO: Vec3 = [0, 0, 0];
 
-/** Eje de elevación de la cara: axial × lateral (el marco de la sonda es ortonormal y dextrógiro). */
+/** Eje de elevación de la cara: axial × lateral (el marco de la sonda es ortonormal y dextrógiro). @twin compresion */
 export function compressionElevation(k: ProbeCompression): Vec3 {
   const a = k.axial;
   const l = k.lateral;

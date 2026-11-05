@@ -19,6 +19,7 @@ export const STERNUM = {
   ribScale: 0.85,
 } as const;
 
+/** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin organo-esternon */
 export function sternumHalfWidth(z: number): number {
   if (z < STERNUM.zJunctionMm)
     return STERNUM.xiphoidHalfWidthMm * Math.max(0, Math.min(1, (z - STERNUM.zTipMm) / (STERNUM.zJunctionMm - STERNUM.zTipMm)));
@@ -37,7 +38,7 @@ export function sternumSd(m: Vec3, torso: Torso): number {
   return Math.hypot(...q.map((v) => Math.max(v, 0))) + Math.min(Math.max(...q), 0);
 }
 
-/** Gemelo GLSL de `sternumHalfWidth` y `sternumSd` (mismos nombres, decisión 46). @twin organo-esternon */
+/** GLSL de `sternumHalfWidth` y `sternumSd` (mismos nombres, decisión 46). @twin organo-esternon */
 export const STERNUM_GLSL = /* glsl */ `
 #define STERNUM_JUNCTION ${STERNUM.zJunctionMm.toFixed(8)}
 float sternumHalfWidth(float z) {

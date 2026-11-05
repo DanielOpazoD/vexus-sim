@@ -303,6 +303,7 @@ export function steeredSample(
 /**
  * Las mismas funciones en GLSL (a = R·sin θ, rCos = R·cos θ; θ ≠ 0: la mirada 0 sigue la rama de hoy y no
  * las llama). Funciones puras, sin uniforms: las incluyen A2, A, B y K (etapa 2 de la decisión 58).
+ * @twin miradas-direccion
  */
 export const STEERING_GLSL = /* glsl */ `
 float steerBeta(float rho, float a) { return asin(a / rho); }

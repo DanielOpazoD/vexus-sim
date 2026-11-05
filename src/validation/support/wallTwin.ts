@@ -172,7 +172,7 @@ export function normalFrame(
   return { center: [face[0] - axial[0] * R, face[1] - axial[1] * R, face[2] - axial[2] * R], axial, lateral, elevation, face };
 }
 
-/** Envolvente de la mirada 0 en un parche de la imagen (B → C → D con la transmisión de A). */
+/** Envolvente de la mirada 0 en un parche de la imagen (B → C → D con la transmisión de A). @twin gemelo-pared */
 export function wallTwin(
   scene: AnatomyScene,
   caliber: VesselCaliber,

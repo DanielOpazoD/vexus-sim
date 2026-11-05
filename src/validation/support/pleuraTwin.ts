@@ -197,6 +197,7 @@ function rng(seed: number): () => number {
   };
 }
 
+/** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin gemelo-pleura */
 export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
   const depth = o.depth ?? 180;
   const dr = depth / FINE;

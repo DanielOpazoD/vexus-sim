@@ -40,6 +40,7 @@ export class RespiratoryDeformation {
     return recompress([m[0] + d[0], m[1] + d[1], m[2] + d[2]], this.compression);
   }
 
+  /** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin deformacion */
   toMaterial(p: Vec3, resp: RespiratorySample): Vec3 {
     // Primero deshacer compresión; después resolver a = w(q − D·a·dir), a ∈ [0,1].
     const q = uncompress(p, this.compression);

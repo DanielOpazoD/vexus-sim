@@ -10,6 +10,7 @@ export function colorMapRgb(towardProbe: boolean, mag: number): [number, number,
 }
 
 const vector = (v: readonly number[]) => `vec3(${v.map((x) => x.toFixed(2)).join(', ')})`;
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin mapa-color */
 export const COLOR_MAP_GLSL = /* glsl */ `
 vec3 colorVelocityMap(float f, float mag) {
   float m = sqrt(clamp(mag, 0.0, 1.0));

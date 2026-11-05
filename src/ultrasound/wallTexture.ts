@@ -88,7 +88,7 @@ const norm3 = (v: Vec3): Vec3 => {
   return l > 0 ? [v[0] / l, v[1] / l, v[2] / l] : [0, 1, 0];
 };
 
-/** Brillo de una lámina según la incidencia: ε + (1 − ε)·|cosθ|⁴. */
+/** Brillo de una lámina según la incidencia: ε + (1 − ε)·|cosθ|⁴. @twin textura-pared */
 export function wallOrientation(n: Vec3, dir: Vec3): number {
   const c = Math.abs(n[0] * dir[0] + n[1] * dir[1] + n[2] * dir[2]);
   const eps = WALL_TEXTURE.orientationFloor;

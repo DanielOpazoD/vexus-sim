@@ -480,4 +480,5 @@ ${wallFieldBodyGlsl()}
 }
 `;
 }
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin pleura */
 export const PLEURA_GLSL = pleuraGlsl();

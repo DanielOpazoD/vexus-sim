@@ -9,7 +9,7 @@ export function setThoracicAtlas(data?: Uint16Array): void {
     throw new Error('Campo torácico incompleto');
   thoracicAtlas = data;
 }
-/** Distancia y rótulo del campo óseo torácico en p (gemela TS del lector GLSL de este módulo). @twin atlas-toracico */
+/** Distancia y rótulo del campo óseo torácico en p (lado TS del lector GLSL de este módulo). @twin atlas-toracico */
 export function thoracicValue(p: Vec3): { d: number; label: number } {
   if (!thoracicAtlas) return { d: 16, label: 0 };
   return {
@@ -88,6 +88,7 @@ export function boneSurfaceFrame(p: Vec3, distance: (p: Vec3) => number): { axis
 }
 export const thoracicFrame = (p: Vec3): { axis: Vec3; curvature: number } => boneSurfaceFrame(p, thoracicSdf);
 const vec = (a: readonly number[]) => a.map((v) => v.toFixed(3)).join(',');
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin atlas-toracico */
 export const THORACIC_GLSL = /* glsl */ `
 vec2 thoracicValue(vec3 p) {
   if (uAbdominalAtlasEnabled == 0) return vec2(16.0, 0.0);

@@ -19,7 +19,7 @@ export interface UmbilicalFissure {
 
 export const UMBILICAL_FISSURE: UmbilicalFissure = { x: 15, halfWidth: 4, depthMm: 14, zMax: -30, roundMm: 3 };
 
-/** Región de la fisura (negativa dentro): |x − xF| < hw, a < `depthMm` de la superficie, anterior y bajo zMax. */
+/** Región de la fisura (negativa dentro): |x − xF| < hw, a < `depthMm` de la superficie, anterior y bajo zMax. @twin organo-ligamentos */
 export function umbilicalFissureSdf(m: Vec3, dBase: number, f: UmbilicalFissure = UMBILICAL_FISSURE): number {
   return Math.max(Math.abs(m[0] - f.x) - f.halfWidth, -(dBase + f.depthMm), m[2] - f.zMax, -m[1]);
 }

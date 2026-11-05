@@ -113,7 +113,7 @@ export class ElevationAnchor {
 const f32 = Math.fround;
 const fract = (x: number): number => f32(x - Math.floor(x));
 
-/** `hash13` de `anatomy.glsl.ts`, en float32. */
+/** `hash13` de `anatomy.glsl.ts`, en float32. @twin moteado-anatomia */
 export function hash13(p: Vec3): number {
   let x = fract(f32(p[0] * 0.1031));
   let y = fract(f32(p[1] * 0.1031));

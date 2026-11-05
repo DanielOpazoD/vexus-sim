@@ -107,6 +107,7 @@ export interface TwinTexture {
  * el plano central (campo coherente, sin la mezcla de magnitudes: la referencia de la ley de
  * decorrelación). `texture`, la del hígado (decisión 89); sin ella, el moteado difuso. `detect`, el detector tras D (la
  * envolvente por defecto; la intensidad o |Re f| para los defectos que buscan las guardas).
+ * @twin gemelo-compuesto
  */
 export function lookPatchEnvelopes(
   frame: TwinFrame,

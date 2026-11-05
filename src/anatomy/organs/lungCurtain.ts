@@ -21,6 +21,7 @@ export const LUNG_CURTAIN = { z0: 18, thicknessMm: 3, xMax: -45, yMax: 40, pleur
 /**
  * Distancia a la frontera si el punto está dentro de la cortina, `null` si no. `insideWallMm` es
  * la profundidad bajo la cara interna de la pared; `caudalMm`, el descenso diafragmático.
+ * @twin organo-cortina
  */
 export function lungCurtainDistance(m: Vec3, insideWallMm: number, caudalMm: number): number | null {
   const c = LUNG_CURTAIN;

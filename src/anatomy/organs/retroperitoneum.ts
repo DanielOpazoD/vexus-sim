@@ -96,7 +96,7 @@ export const RETRO_FAT = {
 
 const smooth01 = (x: number): number => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
-/** Distancia con signo al psoas más cercano (mm; negativa dentro). */
+/** Distancia con signo al psoas más cercano (mm; negativa dentro). @twin organo-retroperitoneo */
 export function psoasSdf(m: Vec3): number {
   if (abdominalAtlas) return abdominalAtlasSdf(m, 9);
   const q: Vec3 = [Math.abs(m[0]), m[1], m[2]];

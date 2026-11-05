@@ -46,7 +46,7 @@ export interface KidneyHit {
   inner: number;
 }
 
-/** Coordenadas locales (u, v, w) de un punto respecto al riñón. */
+/** Coordenadas locales (u, v, w) de un punto respecto al riñón. @twin organo-rinon */
 export function kidneyLocal(p: Vec3, k: Kidney): Vec3 {
   const d: Vec3 = [p[0] - k.center[0], p[1] - k.center[1], p[2] - k.center[2]];
   return [

@@ -1048,7 +1048,7 @@ vec2 scattererField(vec3 m, float h, float salt) { return scattererFieldS(m, h, 
 `;
 }
 /**
- * La anatomía en GLSL de imagen y color; su gemela TS es `AnatomyScene` con `primitives.ts` y `deformation.ts`
+ * La anatomía en GLSL de imagen y color; su lado TS es `AnatomyScene` con `primitives.ts` y `deformation.ts`
  * (registro en `tools/twins/registry.ts`).
  * @twin clasificacion
  * @twin cara-gradiente

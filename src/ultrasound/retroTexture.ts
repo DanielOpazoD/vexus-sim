@@ -69,7 +69,7 @@ const norm3 = (v: Vec3): Vec3 => {
 /** Cuerda del psoas en (|x|, y, z): del primer al último nodo. */
 const PSOAS_CHORD: Vec3 = [0, 1, 2].map((i) => PSOAS_NODES[PSOAS_NODES.length - 1][i] - PSOAS_NODES[0][i]) as Vec3;
 
-/** Eje de las fibras del músculo retroperitoneal `tissue` en el lado del punto (unitario, marco del mundo). */
+/** Eje de las fibras del músculo retroperitoneal `tissue` en el lado del punto (unitario, marco del mundo). @twin textura-retro */
 export function retroMuscleAxis(m: Vec3, tissue: Tissue): Vec3 {
   const sx = m[0] < 0 ? -1 : 1;
   if (tissue === Tissue.Psoas) return norm3([sx * PSOAS_CHORD[0], PSOAS_CHORD[1], PSOAS_CHORD[2]]);

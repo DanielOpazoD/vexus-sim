@@ -259,6 +259,7 @@ export class CompoundRing {
 /**
  * Constantes y peso de la pasada K en GLSL (etapa 2 de la decisión 58). Va detrás de `STEERING_GLSL`.
  * El número de miradas dimensiona los arrays de uniforms de K (`uLookSteer`, `uLookValid`).
+ * @twin composicion-k
  */
 export const COMPOUND_GLSL = /* glsl */ `
 const int COMPOUND_LOOKS = ${COMPOUND.order.length};

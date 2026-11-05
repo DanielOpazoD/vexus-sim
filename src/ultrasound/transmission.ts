@@ -50,6 +50,7 @@ export function transmissionLerp(row: (k: number) => number, n: number, depthMm:
 /**
  * `transmissionLerp` en GLSL para la pasada B (necesita uDepth): el canal `ch` de la textura `t` de la pasada A en la
  * columna `line` a la profundidad r.
+ * @twin transmision-a0
  */
 export const TRANSMISSION_LERP_GLSL = /* glsl */ `
 float transLerp(sampler2D t, int ch, int line, float r) {
@@ -128,7 +129,7 @@ export function mirrorDirection(dir: Vec3, normal: Vec3, warp?: Warp): Vec3 {
   return [dir[0] - d * n[0], dir[1] - d * n[1], dir[2] - d * n[2]];
 }
 
-/** Núcleo de A0; se aplica solo en el impacto, no en cada muestra del rayo. */
+/** Núcleo de A0; se aplica solo en el impacto, no en cada muestra del rayo. @twin espejo-pleural */
 export const MIRROR_DIRECTION_GLSL = /* glsl */ `
 vec3 mirrorDirection(vec3 dir, vec3 normal, Warp w) {
   return reflect(dir, normalize(warpNormal(w, normal)));
@@ -316,7 +317,7 @@ export function transmissionHitsLine(
   return { mirrorSeg, gasSeg, boneSeg, gasKind, mirrorR: hitR, dir, pleura };
 }
 
-/** Pérdida ida y vuelta (dB) de un segmento con las reglas de A1 (gas 60 dB/cm; el resto 2·α(f)·paso). */
+/** Pérdida ida y vuelta (dB) de un segmento con las reglas de A1 (gas 60 dB/cm; el resto 2·α(f)·paso). @twin prefijo-a2 */
 export function segmentDb(t: Tissue, stepMm: number, fMHz: number): number {
   return TISSUES[t].gas ? GAS_DB_PER_CM * (stepMm / 10) : 2 * attenuationDbPerCm(t, fMHz) * (stepMm / 10);
 }
@@ -389,6 +390,7 @@ export interface SegmentGrid {
  * aire; camino de más en .y; gas en .w), uHits0 (espejo en .x), uHits1 (su r exacta en .w), uCoarseN, uDepth,
  * uCurvR, uHalfSector, uLinesF, uSteer (θ, R·sin θ, R·cos θ, k2) y `STEERING_GLSL`. Devuelve (dB, sGas, sBone,
  * sMirror) y, aparte, (tipo de gas, línea del espejo, Ψ̃ del camino y su pendiente: decisión 86).
+ * @twin prefijo-a2
  */
 export const STEERED_PREFIX_GLSL = /* glsl */ `
 vec4 steeredPrefix(int line, int k, out vec4 extra) {

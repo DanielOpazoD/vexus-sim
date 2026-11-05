@@ -17,6 +17,7 @@ export function colorWallResponseHz(frequencyHz: number, cutoffHz: number, prfHz
   return stage * stage;
 }
 
+/** Lado GLSL de un par TS/GLSL (`tools/twins/registry.ts`). @twin filtro-pared-color */
 export const COLOR_WALL_FILTER_GLSL = /* glsl */ `
 // Some highp drivers approximate built-in sin/cos too coarsely for R1.
 // Reduce to [-pi/2, pi/2]; degree-11 sine has remainder < 6e-8 there.

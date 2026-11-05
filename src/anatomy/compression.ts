@@ -199,7 +199,10 @@ const IDENTITY_RIGID: RigidNode = [1, 0, 0];
  * cara) no se puede dejar quieto sin aplastar la pared: sigue como antes (lo resuelve el contacto con hueso, P8).
  */
 const RIGID_KAPPA_MAX = 3;
-/** σ(d) y dσ/dd de un nodo rígido: d en la pared (d < D); bajo ella κ fuera del tramo renal [d₁, d₁ + L] y 0 dentro. */
+/**
+ * σ(d) y dσ/dd de un nodo rígido: d en la pared (d < D); bajo ella κ fuera del tramo renal [d₁, d₁ + L] y 0 dentro.
+ * @twin s0028-compresion-rigida
+ */
 function rigidDepth(d: number, [kappa, d1, L]: RigidNode, D: number): [number, number] {
   if (d < D) return [d, 1];
   return [D + kappa * (d - D - Math.min(Math.max(d - d1, 0), L)), d > d1 && d < d1 + L ? 0 : kappa];
@@ -348,7 +351,8 @@ export function warpAt(p: Vec3, k: ProbeCompression | null): Warp {
     return { shift: 0, rhat, rho, elevation: el, grad: ZERO };
   const sigma = dot(P, k.lateral) / rho;
   const { v, dv, tl, dtl, r } = tableAt(sigma, k);
-  // s0028: σ(d) de las zonas rígidas; su variación lateral entre nodos no entra en ∇s (gemelo GLSL igual).
+  // s0028: σ(d) de las zonas rígidas; su variación lateral entre nodos no entra en ∇s, igual que en la GLSL
+  // (@twin s0028-compresion-rigida).
   const [u, du] = rigidDepth(depth, r, v[2]);
   const pr = profile(u, v[0], v[1], v[2]);
   // la ventana elevacional es plana en ±E0 (toda muestra de la imagen cae ahí): su derivada no se lleva

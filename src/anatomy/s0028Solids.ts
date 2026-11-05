@@ -120,7 +120,8 @@ export function s0028SolidsUploads(): ReadonlyArray<{ offset: readonly number[];
  * Gradiente analítico (mm/mm) de la trilineal del riñón cuya caja contiene p (derecho si x < 10 mm): lineal en cada eje
  * dentro de la celda, su derivada es exactamente la diferencia de la trilineal en las dos caras de la celda que
  * contienen a p, entre 1,5 mm (los mismos ocho nodos; no un paso de diferencias finitas). null fuera de la caja.
- * Gemelo GLSL: s28PGrad.
+ * Par GLSL: `s28PGrad`.
+ * @twin s0028-gradiente-renal
  */
 export function s0028KidneyGradient(p: Vec3): Vec3 | null {
   const f = FIELDS[p[0] < 10 ? 3 : 4],
@@ -135,7 +136,10 @@ export function s0028KidneyGradient(p: Vec3): Vec3 | null {
   }) as Vec3;
 }
 
-/** Grasa compatible D del vóxel nearest (HU [−190, −30], ≤30 mm del riñón, sin máscara); null fuera de ambas cajas. */
+/**
+ * Grasa compatible D del vóxel nearest (HU [−190, −30], ≤30 mm del riñón, sin máscara); null fuera de ambas cajas.
+ * @twin s0028-duenos
+ */
 export function s0028CompatibleFat(p: Vec3): boolean | null {
   if (!fat) throw new Error('Paquete P3 s0028 no cargado');
   let covered = false;
@@ -193,6 +197,7 @@ export function s0028RigidSpan(E: Vec3, dir: Vec3, tMax: number): [number[], num
  * la banda P2 conocida (1,5 ≤ profundidad < interfaz) y la grasa compatible D, que por definición sólo existe donde ninguna
  * máscara fuente reclama el punto. El hueso dentro de la pared es contenido del complejo P2, no un choque. Sin precedencia:
  * dos o más dueños son conflicto y se conservan todos.
+ * @twin s0028-duenos
  */
 export function s0028Owners(p: Vec3, q: S0028WallSample | undefined): S0028Ownership {
   if (anatomyBundle.person !== 's0028' || !abdominalAtlas || !thoracicAtlas) throw new Error('Clasificador P3 sin s0028');

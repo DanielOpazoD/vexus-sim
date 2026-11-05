@@ -117,7 +117,20 @@ const E = {
     file: 'src/validation/organs.test.ts',
     title: 'cada función GLSL tiene su gemela TS exportada y el shader la incluye',
   },
+  s0028Solids: {
+    kind: 'gpu',
+    file: 'e2e/s0028SolidsGpu.spec.ts',
+    title: 'la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños, conflicto, riñón U con contorno, grasa D',
+  },
+  s0028Wall: {
+    kind: 'gpu',
+    file: 'e2e/s0028WallGpu.spec.ts',
+    title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
+  },
 } as const satisfies Record<string, TwinEvidence>;
+/** Lo que la e2e de los sólidos s0028 (r3 de P3) compara de la clasificación: tejido y cara, no los valores intermedios. */
+const S0028_CLASSIFICATION =
+  'resultado en la clasificación s0028 (tejido y cara) de nodos renales, cajas de grasa, conflictos, planos renales y diez ventanas';
 
 export const TWINS: readonly TwinPair[] = [
   // ——— Anatomía: escena, primitivas y deformación (ANATOMY_GLSL) ———
@@ -132,19 +145,21 @@ export const TWINS: readonly TwinPair[] = [
         symbols: ['classify', 'classifyWith', 'classifyWall', 'classifyInside'],
         templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
       },
-      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['classifyWall', 'classifyWith'], templates: ['s0028WallShader'] },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['classifyWall'], templates: ['s0028WallShader'] },
+      { file: 'src/anatomy/gpu/s0028Solids.glsl.ts', symbols: ['classifyWith', 'classifyInside'], templates: ['S0028_CLASSIFY_GLSL'] },
     ],
     evidence: [
       E.equivalence,
       E.reference,
       E.atlas,
+      { ...E.s0028Solids, scope: 'clasificación s0028 con los dueños P3: nodos, cajas de grasa, conflictos, planos y ventanas' },
+      { ...E.s0028Wall, scope: 'clasificación s0028 en la banda de la pared y testigos sólidos' },
       {
         kind: 'texto',
         file: 'src/validation/pleura.test.ts',
         title: 'la GLSL: classify es classifyWith(m, true) y la cortina solo se mira con withCurtain',
       },
     ],
-    gap: 'La e2e compara la persona default (procedural y atlas); la clasificación s0028 en GPU llega con la r3 de P3.',
   },
   {
     id: 'cara-gradiente',
@@ -200,7 +215,7 @@ export const TWINS: readonly TwinPair[] = [
         title: 'la GLSL de A0 lleva la misma marcha que el gemelo',
       },
     ],
-    gap: 'Las usa A0 para el cruce de la pleura y la paridad e2e de A2/A parte de los segmentos que A0 ya escribió. El comentario de `scene.ts` nombra un gemelo GLSL `inLungCurtain` que no existe (la GPU usa `lungCurtainDistance` en `classifyInside`); se corrige cuando r3 libere `scene.ts`.',
+    gap: 'Las usa A0 para el cruce de la pleura y la paridad e2e de A2/A parte de los segmentos que A0 ya escribió.',
   },
   {
     id: 'tubos',
@@ -291,8 +306,13 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/anatomy/organs/wall.ts', symbols: ['torsoDepthGrad'], templates: ['WALL_GLSL'] },
       { file: 'src/anatomy/gpu/personShader.ts', symbols: ['torsoDepth', 'torsoNormal', 'torsoDepthGrad'], templates: ['personShader'] },
     ],
-    evidence: [E.equivalence, E.reference],
-    gap: 'En s0028, `torsoDepth`, `torsoNormal` y `torsoDepthGrad` de `personShader` solo se comparan en la banda de la pared (`s0028WallGpu.spec.ts`).',
+    evidence: [
+      E.equivalence,
+      E.reference,
+      { ...E.s0028Wall, scope: 'banda de la pared s0028' },
+      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
+    ],
+    gap: 'En s0028, `torsoDepth`, `torsoNormal` y `torsoDepthGrad` de `personShader` se comparan por su resultado en la clasificación s0028 (`s0028WallGpu.spec.ts`, `s0028SolidsGpu.spec.ts`), no valor a valor.',
   },
   {
     id: 'cupula',
@@ -417,8 +437,9 @@ export const TWINS: readonly TwinPair[] = [
         file: 'e2e/registeredRoof.spec.ts',
         title: 'techo registrado y vecinos mantienen tejidos, interfaces y normales CPU/GPU',
       },
+      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
     ],
-    gap: 'El lector s0028 de `personShader` (`abdominalAtlasValue` y las cúpulas vacías) solo se compara en la banda de la pared (`s0028WallGpu.spec.ts`); el volumen llega con la r3 de P3.',
+    gap: 'El lector s0028 de `personShader` (`abdominalAtlasValue` y las cúpulas vacías) se compara por su resultado en la clasificación s0028 (`s0028SolidsGpu.spec.ts`, `s0028WallGpu.spec.ts`), no valor a valor.',
   },
   {
     id: 'atlas-toracico',
@@ -441,8 +462,9 @@ export const TWINS: readonly TwinPair[] = [
     evidence: [
       E.thoracic,
       { kind: 'gpu', file: 'e2e/thoracicCoverage.spec.ts', title: 'doce pares, extremos libres y esternón: misma barrera CPU/GPU' },
+      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
     ],
-    gap: 'La sustitución s0028 de `thoracicValue` y `thoracicMaterial` (`personShader`) no tiene comparación numérica hasta la r3 de P3.',
+    gap: 'La sustitución s0028 de `thoracicValue` y `thoracicMaterial` (`personShader`) se compara por su resultado en la clasificación s0028 (`s0028SolidsGpu.spec.ts`), no valor a valor.',
   },
   {
     id: 'volumen-fuente',
@@ -528,8 +550,9 @@ export const TWINS: readonly TwinPair[] = [
       },
       { kind: 'texto', file: 'src/validation/gastricWall.test.ts', title: 'la GLSL usa las mismas capas y el mismo pliegue' },
       E.organNames,
+      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
     ],
-    gap: 'La sustitución s0028 de `digestiveWallMm` y `digestiveGasPlane` (`personShader`) no tiene comparación numérica hasta la r3 de P3.',
+    gap: 'La sustitución s0028 de `digestiveWallMm` y `digestiveGasPlane` (`personShader`) se compara por su resultado en la clasificación s0028 (`s0028SolidsGpu.spec.ts`), no valor a valor.',
   },
   {
     id: 'organo-intestino',
@@ -784,8 +807,9 @@ export const TWINS: readonly TwinPair[] = [
         title: 'el shader consulta hacia fuera pese al signo contrario de liverInner, con los mismos coeficientes',
       },
       E.organNames,
+      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
     ],
-    gap: 'La sustitución s0028 de `visceralHeight` (`s0028WallShader`) no tiene comparación numérica hasta la r3 de P3.',
+    gap: 'La sustitución s0028 de `visceralHeight` (`s0028WallShader`) se compara por su resultado en la clasificación s0028 (`s0028SolidsGpu.spec.ts`), no valor a valor.',
   },
   {
     id: 'organo-retroperitoneo',
@@ -900,21 +924,64 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/anatomy/s0028Source.ts', symbols: ['s0028SourceValue'] },
       { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['s0028Depth', 's0028DepthGradient'] },
     ],
-    gpu: [{ file: 'src/anatomy/gpu/personShader.ts', symbols: ['s28Gas', 's28DepthGradient'], templates: ['personShader'] }],
-    evidence: [
+    gpu: [
+      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['s28Gas', 's28DepthGradient'], templates: ['personShader'] },
       {
-        kind: 'gpu',
-        file: 'e2e/s0028WallGpu.spec.ts',
-        title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
-        scope: 'clasificación y normales en la banda de la pared',
+        file: 'src/anatomy/gpu/s0028Solids.glsl.ts',
+        symbols: ['s28P', 's28PA', 's28PT', 's28PLA', 's28PLT'],
+        templates: ['S0028_READER_GLSL'],
       },
+    ],
+    evidence: [
+      { ...E.s0028Wall, scope: 'clasificación y normales en la banda de la pared' },
+      { ...E.s0028Solids, scope: 'distancias y rótulos P1 de los dueños P3 (r3), por su resultado en la clasificación' },
       {
         kind: 'texto',
         file: 'src/validation/s0028P1Reader.test.ts',
         title: 'emite los dos atlas reales y precisión ósea, sin añadir samplers',
       },
     ],
-    gap: 'El volumen s0028 completo no tiene gate CPU/GPU en la CI hasta la r3 de P3; el GLSL vive en cadenas sin `/* glsl */` (punto 4).',
+    gap: 'El gas (`s28Gas`) y el gradiente de la piel (`s28DepthGradient`) viven en cadenas sin `/* glsl */` de `personShader` (punto 4) y se comparan por su resultado en las e2e s0028, no valor a valor.',
+  },
+  {
+    id: 's0028-duenos',
+    what: 'Dueños P3 de un punto s0028 (campos P1, banda P2 y grasa compatible D por páginas), sin orden: dos o más son conflicto y U.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/s0028Solids.ts', symbols: ['s0028Owners', 's0028CompatibleFat'] }],
+    gpu: [{ file: 'src/anatomy/gpu/s0028Solids.glsl.ts', symbols: ['s28POwn', 's28PAdd', 's28PFat'], templates: ['S0028_SOLIDS_GLSL'] }],
+    evidence: [
+      { ...E.s0028Solids, scope: 'nodos y genéricos renales, cajas de grasa, 119 testigos de conflicto, planos renales y diez ventanas' },
+    ],
+  },
+  {
+    id: 's0028-gradiente-renal',
+    what: 'Normal de la cara renal s0028: gradiente analítico de la trilineal del riñón, con los ocho nodos de su celda.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/s0028Solids.ts', symbols: ['s0028KidneyGradient'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/s0028Solids.glsl.ts',
+        symbols: ['s28PGrad', 'renalAtlasFaceGradient'],
+        templates: ['S0028_SOLIDS_GLSL', 'RENAL_FACE_GLSL'],
+      },
+    ],
+    evidence: [{ ...E.s0028Solids, scope: 'normal y distancia de la cara renal en los nodos renales, D = 0' }],
+  },
+  {
+    id: 's0028-compresion-rigida',
+    what: 'Zonas rígidas por dueño en la compresión s0028: σ(d) por nodo (κ, d₁, L), interpolada entre nodos bajo la pared.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/compression.ts', symbols: ['rigidDepth', 'tableAt'] }],
+    gpu: [{ file: 'src/anatomy/gpu/s0028Solids.glsl.ts', symbols: [], templates: ['RIGID_PROFILE', 'RIGID_FETCH'] }],
+    evidence: [
+      { ...E.s0028Solids, scope: 'tejido y cara en las diez ventanas con la compresión de su contacto, D = 0/10/20 mm' },
+      {
+        kind: 'texto',
+        file: 'src/validation/s0028WallGpu.test.ts',
+        title: 'compresión rígida s0028 (r3): el perfil se evalúa sobre σ(d) con la tabla (κ, d₁, L) del tramo; el default no la lee',
+      },
+    ],
+    gap: 'La jacobiana con σ′ (las normales bajo compresión) no se compara: la e2e compara tejido y cara en las ventanas comprimidas.',
   },
 
   // ——— CPU de la página ↔ Worker del corte ———
@@ -1552,10 +1619,10 @@ export const SIN_PARIDAD_ACEPTADA: readonly string[] = [
 /**
  * Funciones GLSL cuyos literales están también escritos a mano en su homónima TS, por archivo GLSL (decisión 322, punto
  * 5; clases de `tools/twins/constants.ts`, inventario del 05-11-2026): `copiados`, la secuencia ordenada de literales con
- * signo de la GLSL aparece seguida en la de la TS (51). Generarlas desde una sola fuente cuesta hoy +16…+63 B
+ * signo de la GLSL aparece seguida en la de la TS (55). Generarlas desde una sola fuente cuesta hoy +16…+63 B
  * minificados por función (`glslCompact` conserva el blanco junto a una interpolación) y el bundle no puede crecer: la
  * prueba exige que cada una siga en su clase y que una copia nueva se registre, hasta que la composición GLSL del punto 4
- * las interpole sin coste. Los archivos pendientes de r3 se miden pero no se congelan. Para regenerar:
+ * las interpole sin coste. Los archivos pendientes se miden pero no se congelan (ninguno desde la r3 de P3). Para regenerar:
  * `node --import tsx tools/twins/constants.ts`.
  */
 export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = {
@@ -1572,6 +1639,8 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
     'scattererField',
   ],
   'src/anatomy/compression.ts': ['warpBound', 'smoothstepSlope'],
+  'src/anatomy/gpu/personShader.ts': ['registeredDomeSample', 'hepaticDomeValue'],
+  'src/anatomy/gpu/s0028Wall.glsl.ts': ['visceralHeight', 'muscleStriation'],
   'src/anatomy/organs/abdomen.ts': ['digestiveWallTissue', 'digestiveGasPlane'],
   'src/anatomy/organs/bowel.ts': ['bowelGasSdf'],
   'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
@@ -1590,7 +1659,7 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
 };
 
 /**
- * Como `CONSTANTES_COPIADAS`, las `reordenados` (21): cada literal de la GLSL, con su signo, está en la TS pero no en
+ * Como `CONSTANTES_COPIADAS`, las `reordenados` (22): cada literal de la GLSL, con su signo, está en la TS pero no en
  * ese orden (`max(x, 0.0)` frente a `Math.max(0, x)`, la cuenta repartida en varias líneas). Un literal nuevo o con
  * otro signo en un solo lado las saca de su clase; un intercambio entre literales que ya están en los dos lados, no.
  */
@@ -1599,6 +1668,7 @@ export const CONSTANTES_REORDENADAS: Readonly<Record<string, readonly string[]>>
   'src/anatomy/abdominalAtlas.ts': ['registeredDomeSample'],
   'src/anatomy/thoracicAtlas.ts': ['thoracicGradient', 'boneSurfaceFrame'],
   'src/anatomy/gpu/referenceCartilage.glsl.ts': ['referenceCartilage'],
+  'src/anatomy/gpu/personShader.ts': ['digestiveWallMm'],
   'src/anatomy/organs/abdomen.ts': ['digestiveWallMm', 'gastricBoundary'],
   'src/anatomy/organs/bowel.ts': ['bowelQuery'],
   'src/anatomy/organs/wall.ts': ['ribSearchDepth', 'ribCurvature'],
@@ -1619,12 +1689,8 @@ export const CONSTANTES_REORDENADAS: Readonly<Record<string, readonly string[]>>
 export const HOMONIMOS_NO_GEMELOS: Readonly<Record<string, string>> = {};
 
 /**
- * Archivos que edita la ronda r3 de P3 (decisión 322, regla de colisión): sus comentarios «gemelo» aún no llevan
- * `@twin` y los lados de los pares que viven en ellos quedan con el marcador pendiente. Se migran cuando r3 se fusione,
- * junto con los puntos 1–4.
+ * Archivos cuyos comentarios «gemelo» aún no llevan `@twin` y cuyos lados quedan con el marcador pendiente (decisión 322,
+ * regla de colisión). Vacía desde la r3 de P3, que migró `scene.ts`, `s0028Wall.glsl.ts` y `personShader.ts` y congeló sus
+ * constantes.
  */
-export const ARCHIVOS_PENDIENTES: Readonly<Record<string, string>> = {
-  'src/anatomy/scene.ts': 'r3 de P3 (clasificación s0028 en GPU)',
-  'src/anatomy/gpu/s0028Wall.glsl.ts': 'r3 de P3 (GLSL de la pared s0028)',
-  'src/anatomy/gpu/personShader.ts': 'r3 de P3 (especialización por persona)',
-};
+export const ARCHIVOS_PENDIENTES: Readonly<Record<string, string>> = {};

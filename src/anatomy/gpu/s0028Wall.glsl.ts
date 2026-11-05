@@ -4,7 +4,7 @@ import { s0028SolidsShader } from './s0028Solids.glsl';
 const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3(${v.join(',')})`).join(',');
 
 /**
- * Regla directa P2 (gemela de `s0028Wall.ts`): proyección EDT `p − τ·∇τ/|∇τ|²`, semilla polar y carta bilineal en la
+ * Regla directa P2 (par GLSL de `s0028Wall.ts`, @twin s0028-pared): proyección EDT `p − τ·∇τ/|∇τ|²`, semilla polar y carta bilineal en la
  * reserva P1; identidad nearest independiente de la geometría D/E. La carta y los centros se leen con texelFetch y se
  * interpolan aquí, en el orden de la CPU: los huecos U son NaN y el filtro del hardware mezcla el corte z vecino (otra
  * tesela) aun con peso 0 (NaN·0 = NaN). Consulta: 7 EDT + 2 centros + 8 esquinas = 17 lecturas; el gradiente analítico
@@ -94,6 +94,18 @@ float s28RespWall(vec3 m){
 `;
 
 type Replace = (source: string, type: string, name: string, replacement: string) => string;
+/**
+ * Especializa la fuente por defecto para s0028: pared P2 (regla directa, rampas U), su clasificación ligera, la cortina
+ * pulmonar retirada, la pleura y el hígado sobre los lectores P1, y los sólidos P3 (`s0028SolidsShader`, r3).
+ * @twin clasificacion
+ * @twin pared-interna
+ * @twin deformacion
+ * @twin organo-pared
+ * @twin organo-cortina
+ * @twin organo-higado
+ * @twin s0028-pared
+ * @twin textura-pared
+ */
 export function s0028WallShader(source: string, replace: Replace): string {
   let changed = replace(
     source,
@@ -187,8 +199,9 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
   // Sin capas procedurales en s0028: ningún consumidor encuentra una frontera. Antes NaN: la estriación del músculo
   // posterior lo llevaba al eco del paso B y los filtros de la imagen apagaban bloques enteros (láminas r2b).
   changed = replace(changed, 'vec4', 'wallDepths', 'vec4 wallDepths(float u,float z){return vec4(1000.0);}');
-  // Gemelo de la CPU s0028 (r2a): sin cortina pulmonar procedural. lungEdgeMm es null y el receso es el pulmón fuente;
-  // con el modelo por defecto A0 tomaba el cruce de la pared regional por pleura y B ponía aire bajo ella (láminas r2b).
+  // Como la CPU s0028 (r2a, @twin organo-cortina): sin cortina pulmonar procedural. lungEdgeMm es null y el receso es el
+  // pulmón fuente; con el modelo por defecto A0 tomaba el cruce de la pared regional por pleura y B ponía aire bajo
+  // ella (láminas r2b).
   if (/float\s+lungCurtainEdgeMm\s*\(/.test(changed))
     changed = replace(changed, 'float', 'lungCurtainEdgeMm', 'float lungCurtainEdgeMm(vec3 m){return -1000.0;}');
   if (/bool\s+inLungRecess\s*\(/.test(changed))

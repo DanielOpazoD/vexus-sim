@@ -32,7 +32,10 @@ const table = (prefix: string, names: readonly string[]) =>
     })
     .join('\n');
 
-/** Lectores P1 de P3, gemelos de sourceDistance/sourceLabel; también los usan la pared ligera y la pleura s0028. */
+/**
+ * Lectores P1 de P3, par GLSL de `s0028SourceValue` (distancia y rótulo); también los usan la pared ligera y la pleura.
+ * @twin s0028-lector
+ */
 export const S0028_READER_GLSL = /* glsl */ `
 ${table('S28A', ABDOMINAL)}
 ${table('S28T', THORACIC)}
@@ -52,11 +55,13 @@ float s28PLT(vec3 p,int k){return texelFetch(uThoracicAtlas,ivec3(S28T_OFF[k]+fl
 `;
 
 /**
- * Política P3 en la GPU (decisión 321, r3), gemela de `s0028Owners` y de la rama s0028 de `scene.ts`. Sin bucles en
+ * Política P3 en la GPU (decisión 321, r3), par GLSL de `s0028Owners` y de la rama s0028 de `scene.ts`. Sin bucles en
  * este código ni en lo que llama (las funciones `s28P*`): cada campo se lee por su caja y, a menos de un vóxel de su
  * frontera, con los mismos ocho nodos exactos de la CPU (`sourceDistancePrecise`). Dueños independientes antes de
  * cualquier orden; dos o más son conflicto y U; el riñón es U por dentro con su borde O como cara acústica; la grasa
  * compatible D sale de 77 páginas RG16F subidas a huecos del atlas abdominal (sin textura ni sampler nuevos).
+ * @twin s0028-duenos
+ * @twin s0028-gradiente-renal
  */
 export const S0028_SOLIDS_GLSL = /* glsl */ `
 const vec3 S28F_LO[2]=vec3[](${B.solids.boxes.map((b) => vec(b.originMm)).join(',')});
@@ -121,9 +126,10 @@ vec3 s28PGrad(vec3 p){
 `;
 
 /**
- * El resto de la clasificación s0028 con los dueños P3 (gemelo: classify/classifyInside de `scene.ts`). Un solo dueño da
- * su material actual; los tubos, el tórax E y la vesícula conservan su código; se retiran el riñón, la grasa
+ * El resto de la clasificación s0028 con los dueños P3 (par GLSL de `classify`/`classifyInside` de `scene.ts`). Un solo
+ * dueño da su material actual; los tubos, el tórax E y la vesícula conservan su código; se retiran el riñón, la grasa
  * perirrenal/Gerota y el ligamento venoso analíticos de la otra persona.
+ * @twin clasificacion
  */
 const S0028_CLASSIFY_GLSL = (tubes: string) => /* glsl */ `
 void classifyInside(vec3 m,int k,float od,vec3 e,inout Cls c){
@@ -184,9 +190,12 @@ Cls classifyWith(vec3 m,bool withCurtain){
   return c;
 }`;
 
+/** Cara renal s0028: la normal es el gradiente analítico del riñón (`s28PGrad`). @twin s0028-gradiente-renal */
 const RENAL_FACE_GLSL = /* glsl */ `vec3 renalAtlasFaceGradient(vec3 m,bool fat){return (2.0*FACE_GRAD_EPS)*s28PGrad(m);}`;
-// Zonas rígidas por dueño en la compresión (gemelas de rigidDepth y tableAt): (κ, d₁, L) por nodo, interpolados como la
-// CPU entre los dos nodos del tramo; la pared (d < D) no cambia; bajo ella σ = D + κ·(d − D − clamp(d − d₁, 0, L)).
+// Zonas rígidas por dueño en la compresión (par GLSL de `rigidDepth` y `tableAt`): (κ, d₁, L) por nodo, interpolados
+// como la CPU entre los dos nodos del tramo; la pared (d < D) no cambia; bajo ella
+// σ = D + κ·(d − D − clamp(d − d₁, 0, L)).
+// @twin s0028-compresion-rigida
 const RIGID_FETCH = (i: string, t: string) =>
   /* glsl */ `s28R=mix(sceneTexel(${RIGID_BASE}+${i}).xyz,sceneTexel(${RIGID_BASE}+${i}+1).xyz,${t});`;
 const RIGID_PROFILE = (f: string) => /* glsl */ `

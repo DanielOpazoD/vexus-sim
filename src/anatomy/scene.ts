@@ -203,8 +203,8 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
 }
 
 /**
- * Gradiente de la distancia de la cara que dibuja un punto (`AnatomyScene.faceGradient`, gemelo de
- * `faceGradient` en la GLSL; decisión 57).
+ * Gradiente de la distancia de la cara que dibuja un punto (`AnatomyScene.faceGradient`, par TS/GLSL de
+ * `faceGradient`; decisión 57). @twin cara-gradiente
  */
 export interface FaceGradient {
   /** Dirección del gradiente: la normal de la cara que usa el eco. */
@@ -549,7 +549,8 @@ export class AnatomyScene {
 
   /**
    * Profundidad (mm) de un punto MATERIAL bajo la cara interna de la pared: negativa en la pared, 0 en la
-   * pleura parietal (gemelo GLSL `insideWallMm`). A0 busca en ella el cruce exacto de la pleura (decisión 61).
+   * pleura parietal (en la GLSL, `insideWallMm`). A0 busca en ella el cruce exacto de la pleura (decisión 61).
+   * @twin pared-interna
    */
   insideWallMm(m: Vec3): number {
     // U no tiene cara interna: centinela negativo finito, sin afirmar una frontera a cero.
@@ -559,7 +560,9 @@ export class AnatomyScene {
 
   /**
    * El punto MATERIAL es pulmón de la cortina (la lámina bajo la pared), no del tórax bajo la cúpula
-   * (decisión 61; gemelo GLSL `inLungCurtain`). Solo tiene sentido donde `classify` da pulmón.
+   * (decisión 61). En la GPU no hay función propia: `classifyInside` mira `lungCurtainDistance`. Solo tiene sentido
+   * donde `classify` da pulmón.
+   * @twin cortina-receso
    */
   inLungCurtain(m: Vec3, caliber: VesselCaliber): boolean {
     if (this.identity.person === 's0028') return s0028SourceValue(m, 'lung').d < 0;
@@ -568,7 +571,8 @@ export class AnatomyScene {
 
   /**
    * El punto MATERIAL, si `classify` da pulmón, toca la pared en el receso (la cortina o el tórax por encima de
-   * la inserción del diafragma): ahí empieza la pleura parietal (decisión 61; gemelo GLSL `inLungRecess`).
+   * la inserción del diafragma): ahí empieza la pleura parietal (decisión 61; en la GLSL, `inLungRecess`).
+   * @twin cortina-receso
    */
   inLungRecess(m: Vec3): boolean {
     if (this.identity.person === 's0028') return s0028SourceValue(m, 'lung').d < 0;
@@ -577,8 +581,8 @@ export class AnatomyScene {
 
   /**
    * Distancia (mm) de un punto MATERIAL de la cara interna de la pared al borde del pulmón que la toca en el
-   * receso: z − min(borde de la cortina, inserción del diafragma); null fuera de la huella (gemelo GLSL
-   * `lungCurtainEdgeMm`, decisión 61).
+   * receso: z − min(borde de la cortina, inserción del diafragma); null fuera de la huella (en la GLSL,
+   * `lungCurtainEdgeMm`, decisión 61). @twin cortina-receso
    */
   lungEdgeMm(m: Vec3, caliber: VesselCaliber): number | null {
     if (this.identity.person === 's0028') return null;
@@ -588,6 +592,7 @@ export class AnatomyScene {
   /**
    * Peso del campo de desplazamiento respiratorio en un punto material: 1 en
    * las vísceras, 0 en pared, costillas y columna (B.4, [EXTRAPOLACIÓN PROPIA]).
+   * @twin deformacion
    */
   respiratoryWeight(m: Vec3): number {
     // s0028: celda D/E como la cara interna regional; U, la rampa por profundidad de su fila (s0028RespiratoryWall).
@@ -607,7 +612,7 @@ export class AnatomyScene {
    *
    * `withCurtain = false` es la variante sin la cortina pulmonar (decisión 61): lo que hay detrás de la
    * lámina de pulmón, igual que `classify` en todos los demás puntos. La usan el tejido que se ve en
-   * parte a través del borde blando de la cortina y su transmisión (gemelo GLSL `classifyWith(m, false)`).
+   * parte a través del borde blando de la cortina y su transmisión (en la GLSL, `classifyWith(m, false)`).
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
    * Fuera del hueso, la frontera cuenta hueso y disco. Los dueños corticales de PR139 y el disco de PR119 pueden
    * dibujar la cortical más cercana; las interfaces de órganos y sus caras suprimidas se conservan (`withSpineFace`).
@@ -616,6 +621,7 @@ export class AnatomyScene {
    * cualquier orden; dos o más son conflicto, U y conservados en `solids`. Un dueño único da su material, salvo el
    * riñón (interior U; su borde O es la cara acústica de la cápsula, r3) y la grasa compatible D; sin dueño, U. La GPU
    * hace lo mismo con los mismos dueños (`s0028Solids.glsl.ts`).
+   * @twin clasificacion
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const torso = this.torso;
@@ -860,8 +866,8 @@ export class AnatomyScene {
   }
 
   /**
-   * Gradiente de la distancia de la cara que dibuja un punto MATERIAL (gemelo de `faceGradient` en la
-   * GLSL, decisión 57), o null si el punto no dibuja ninguna. En los tubos es el analítico de su sección
+   * Gradiente de la distancia de la cara que dibuja un punto MATERIAL (par TS/GLSL de `faceGradient`,
+   * decisión 57; @twin cara-gradiente), o null si el punto no dibuja ninguna. En los tubos es el analítico de su sección
    * (`tubeFaceGradient`, con su curvatura circunferencial); en el resto, diferencias centrales de paso
    * `FACE_GRADIENT_EPS_MM` de la distancia de su cara (`faceSdf`), como la GPU. El eco de interfaz
    * divide `interfaceDistance` por su norma: así el perfil, muestreado a lo largo del rayo, integra 1
@@ -1366,7 +1372,7 @@ const KIDNEY_TISSUE: Readonly<Record<KidneyRegion, Tissue>> = {
 /**
  * s0028 P3 (r3): el borde O de la máscara renal es la cara de la cápsula para las muestras a menos de
  * `S0028_RENAL_FACE_MM` de él (dentro del riñón U, en el quiste, en la grasa D o en U), si no hay otra más cerca; el
- * tejido no cambia. Gemelo GLSL: el final de `classifyInside` s0028.
+ * tejido no cambia. En la GLSL: el final de `classifyInside` s0028 (@twin clasificacion).
  */
 function renalFace(c: Classification, solids: S0028Ownership): Classification {
   const d = Math.abs(solids.kidneyMm);
@@ -1391,7 +1397,7 @@ const NONE: Classification = Object.freeze({
 /**
  * Recuperación PR119: la frontera cuenta cuerpos y discos. Conserva los dueños de PR139 y admite el disco
  * intervertebral junto a sus platillos; nunca sustituye la cara de un órgano ni ilumina el arco provisional.
- * Gemelo del final de classifyWith (GLSL), con el alcance conservador de la decisión103.
+ * Par TS/GLSL del final de `classifyWith`, con el alcance conservador de la decisión 103 (@twin clasificacion).
  */
 function withSpineFace(c: Classification, dSpine: number, dBody: number, dDisc: number): Classification {
   // Conserva los dueños de PR139, también cuando una cápsula tiene su cara suprimida.

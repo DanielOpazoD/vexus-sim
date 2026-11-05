@@ -1,0 +1,51 @@
+# Mutantes reproducibles (decisión 322, punto 8). Fuera del veredicto protegido, que ya roza su techo de 25 min:
+# corre a mano o cuando cambian los módulos con manifiesto, sus pruebas focales o el ejecutor. Un mutante que
+# sobrevive, o un «from» que ya no aparece, pone este trabajo en rojo: se repara la prueba o el manifiesto.
+name: Mutantes reproducibles
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/probe/contact.ts'
+      - 'src/anatomy/s0028Wall.ts'
+      - 'src/anatomy/gpu/s0028Wall.glsl.ts'
+      - 'src/anatomy/s0028Solids.ts'
+      - 'src/anatomy/scene.ts'
+      - 'src/anatomy/structureIdentity.ts'
+      - 'src/ui/cutMapWorker.ts'
+      - 'src/validation/s0028UContact.test.ts'
+      - 'src/validation/s0028WallRuntime.test.ts'
+      - 'src/validation/s0028WallGpu.test.ts'
+      - 'src/validation/shaderLimits.test.ts'
+      - 'src/validation/s0028SolidsClassify.test.ts'
+      - 'src/validation/s0028SolidsPackage.test.ts'
+      - 'tools/mutants/**'
+      - '.github/workflows/mutants.yml'
+permissions:
+  contents: read
+concurrency:
+  group: mutants-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mutants:
+    name: mutantes de los manifiestos
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Línea base y mutantes, un trabajador
+        run: npm run mutants -- --out "$RUNNER_TEMP/mutants"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutantes
+          path: ${{ runner.temp }}/mutants
+          retention-days: 14
+          if-no-files-found: warn

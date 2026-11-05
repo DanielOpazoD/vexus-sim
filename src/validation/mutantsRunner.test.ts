@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { feedbackGitEnvironment } from '../../tools/workspace/feedbackPlan';
 import { applyMutant, manifestErrors, selectMutants, type MutantManifest } from '../../tools/mutants/manifest';
+import { MANIFESTS } from '../../tools/mutants/manifests';
 import { fsDeps, JOURNAL, recoverJournal, runMutants, sha256, type TestOutcome } from '../../tools/mutants/runner';
 
 /** Ejecutor de mutantes de la decisión 322 (punto 8) en un repositorio temporal con un ejecutor de pruebas falso. */
@@ -165,5 +166,17 @@ describe('Mutantes reproducibles', () => {
     } finally {
       cleanup();
     }
+  });
+
+  it('el workflow de mutantes vigila cada módulo con manifiesto, sus focales y el ejecutor, fuera del veredicto protegido', () => {
+    const root = join(import.meta.dirname, '../..');
+    const workflow = readFileSync(join(root, '.github/workflows/mutants.yml'), 'utf8');
+    const watched = [...workflow.matchAll(/^ {6}- '([^']+)'$/gm)].map((m) => m[1]);
+    for (const p of new Set(MANIFESTS.flatMap((m) => [m.module, ...m.mutants.flatMap((x) => x.tests)]))) expect(watched, p).toContain(p);
+    expect(watched).toEqual(expect.arrayContaining(['tools/mutants/**', '.github/workflows/mutants.yml']));
+    expect(workflow).toContain('workflow_dispatch');
+    expect(readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8')).not.toContain('mutants');
+    const scripts = (JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
+    expect(scripts['mutants']).toBe('node --import tsx tools/mutants/run.ts');
   });
 });

@@ -1,4 +1,5 @@
 import { S0028_BUNDLE as B } from '../anatomyBundle';
+import { s0028SolidsShader } from './s0028Solids.glsl';
 
 const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3(${v.join(',')})`).join(',');
 
@@ -172,56 +173,9 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
  c.iface=fat?IF_DEEP_FASCIA:IF_PERITONEUM;c.ifd=abs(inner-q.w);return true;
 }`,
   );
-  const start = changed.search(/void\s+classifyInside\s*\(/);
-  const body = changed.indexOf('{', start),
-    tailRelative = changed.slice(body).search(/float\s+bdBowel\s*=/);
-  if (start < 0 || body < 0 || tailRelative < 0) throw new Error('Falta clasificación interior s0028');
-  const tail = body + tailRelative;
-  let end = body + 1,
-    depth = 1;
-  for (; depth && end < changed.length; end++) depth += changed[end] === '{' ? 1 : changed[end] === '}' ? -1 : 0;
-  if (depth || tail >= end) throw new Error('Clasificación interior s0028 incompleta');
-  end--;
-  changed =
-    changed.slice(0, tail) +
-    `
-  vec2 muscle=s28_posteriorMuscle(m);
-  if(muscle.x<0.0&&muscle.y>0.0){c.tissue=muscle.y<=2.0?T_PSOAS:T_MUSCLE;c.bd=-muscle.x;return;}
-  float dome=sdDome(m,dn);
-  if(dome>=0.0&&dome<DIAPHRAGM_MM){c.tissue=T_DIAPHRAGM;c.bd=min(dome,DIAPHRAGM_MM-dome);c.n=dn;
-    if(dome>0.5*DIAPHRAGM_MM){c.iface=IF_DIAPHRAGM_LIVER;c.ifd=DIAPHRAGM_MM-dome;}return;}
-  c.tissue=T_UNSEGMENTED;c.bd=0.0;return;
-` +
-    changed.slice(end);
-  // Sin cortina ni tórax/cúpula procedurales (dDome=1000) nada vivo de classifyInside lee `wall`: sin segunda
-  // consulta de pared; −depth−wall=1000 es el «sin límite» de la CPU (wallMm de U).
-  changed = changed.replace(
-    /float\s+wall\s*=\s*uWall\.x\s*\+\s*uWall\.y\s*\+\s*uWall\.z\s*;/,
-    `
-  vec2 lung=s28_lung(m);if(lung.x<0.0){c.tissue=T_LUNG;c.bd=-lung.x;return;}
-  if(s28_heart(m).x<0.0){float dome=sdDome(m,c.n),ifd;c.tissue=thorax(m,dome,c.bd,ifd,c.n);return;}
-  float wall=-depth-1000.0;`,
-  );
-  changed = changed.replace(
-    /if\s*\(withCurtain\)\s*\{\s*float\s+dCurtain\s*=\s*lungCurtainDistance\(m,\s*-depth\s*-\s*wall\);\s*if\s*\(dCurtain\s*>=\s*0\.0\)\s*\{[^}]+\}\s*\}/,
-    '',
-  );
-  changed = changed.replace(/float\s+dDome\s*=\s*sdDome\(m,\s*dn\);/, 'dn=vec3(0.0,0.0,-0.5);float dDome=1000.0;');
-  changed = changed.replace(/float\s+inner\s*=\s*min\(-dLiver,\s*min\(dDia,\s*-depth\s*-\s*wall\)\);/, 'float inner = -dLiver;');
-  changed = replace(
-    changed,
-    'Cls',
-    'classifyWith',
-    `
-Cls classifyWith(vec3 m,bool withCurtain){
- Cls c;float depth;vec3 tn;if(classifyWall(m,c,depth,tn))return c;
- classifyInside(m,withCurtain,depth,tn,1000.0,c);
- vec2 q=thoracicValue(m);
- if(thoracicMaterial(q.y)==0&&q.x>=0.0&&q.x<1.3&&q.x<c.ifd&&c.tissue!=T_LUNG&&c.tissue!=T_FLUID&&c.tissue!=T_BLOOD){
-   c.bd=min(c.bd,q.x);c.iface=IF_RIB;c.ifd=q.x;thoracicFrame(m,c.tangent,c.kc);}
- return c;
-}`,
-  );
+  // P3 (decisión 321, r3): dueños independientes, conflicto U, riñón U con su contorno O, grasa D y tubos; sin cortina
+  // ni tórax/cúpula procedurales (dDome = 1000) y sin segunda consulta de pared.
+  changed = s0028SolidsShader(changed, replace);
   changed = replace(changed, 'float', 'liverInner', 'float liverInner(vec3 m){return -abdominalAtlasSdf(m,4);}');
   changed = replace(changed, 'vec3', 'visceralHeight', 'vec3 visceralHeight(vec2 p){return vec3(0.0);}');
   changed = replace(

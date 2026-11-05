@@ -1,7 +1,7 @@
 import { anatomyBundle } from './anatomyBundle';
 import { s0028InsideWall, s0028RespiratoryWall, s0028WallAt } from './s0028Wall';
 import { s0028SourceValue } from './s0028Source';
-import { s0028Owners, type S0028Ownership } from './s0028Solids';
+import { S0028_RENAL_FACE_MM, s0028KidneyGradient, s0028Owners, type S0028Ownership } from './s0028Solids';
 import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
@@ -614,7 +614,8 @@ export class AnatomyScene {
    *
    * s0028 (P3, decisión 321): tras la piel E se reúnen todos los dueños independientes (`s0028Owners`) antes de
    * cualquier orden; dos o más son conflicto, U y conservados en `solids`. Un dueño único da su material, salvo el
-   * riñón (borde D, interior U) y la grasa compatible D; sin dueño, U. Sólo CPU y Worker: la GPU sigue en r3.
+   * riñón (interior U; su borde O es la cara acústica de la cápsula, r3) y la grasa compatible D; sin dueño, U. La GPU
+   * hace lo mismo con los mismos dueños (`s0028Solids.glsl.ts`).
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const torso = this.torso;
@@ -722,11 +723,14 @@ export class AnatomyScene {
       };
     // El quiste izquierdo, líquido de un quiste simple (E rotulada en su dueño).
     if (renal)
-      return {
-        ...NONE,
-        tissue: owner === 'kidney_cyst_left' ? Tissue.Fluid : Tissue.UnsegmentedSoftTissue,
-        boundaryDistance: -solids!.owners[0].d,
-      };
+      return renalFace(
+        {
+          ...NONE,
+          tissue: owner === 'kidney_cyst_left' ? Tissue.Fluid : Tissue.UnsegmentedSoftTissue,
+          boundaryDistance: -solids!.owners[0].d,
+        },
+        solids!,
+      );
     const kidney = isS0028 ? NO_KIDNEY : this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
     if (this.hasAbdominalAtlas) {
@@ -748,12 +752,13 @@ export class AnatomyScene {
       if (muscle.d < 0 && muscle.label > 0)
         return { ...NONE, tissue: muscle.label <= 2 ? Tissue.Psoas : Tissue.Muscle, boundaryDistance: -muscle.d };
       // Grasa compatible D por vóxel (HU, ≤30 mm del riñón, sin máscara): composición, no compartimento.
-      if (owner === 'compatible_fat') return { ...NONE, tissue: Tissue.Fat, boundaryDistance: 0 };
+      if (owner === 'compatible_fat') return renalFace({ ...NONE, tissue: Tissue.Fat, boundaryDistance: 0 }, solids!);
       // Conservar la cúpula E; la máscara de cada órgano ya ganó antes.
       // No usar esta estimación P7 para cortar el hígado de la persona.
       const dome = sdDiaphragm(m, this.diaphragm, this.torso);
-      if (dome >= 0 && dome < DIAPHRAGM_THICKNESS_MM) return this.classifyDiaphragm(dome, s0028InsideWall(m) ?? Infinity);
-      return { ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' };
+      if (dome >= 0 && dome < DIAPHRAGM_THICKNESS_MM)
+        return renalFace(this.classifyDiaphragm(dome, s0028InsideWall(m) ?? Infinity), solids!);
+      return renalFace({ ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' }, solids!);
     }
     const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
     const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm, this.hasAbdominalAtlas ? m : retroPoint);
@@ -825,6 +830,7 @@ export class AnatomyScene {
         }
         return sdDiaphragm(m, this.diaphragm, this.torso);
       case 'kidneyOuter':
+        if (this.identity.person === 's0028') return Math.min(s0028SourceValue(m, 'kidneyRight').d, s0028SourceValue(m, 'kidneyLeft').d);
         return Math.min(
           kidneyOuterSdf(kidneyLocal(m, this.kidneyRight), this.kidneyRight),
           kidneyOuterSdf(kidneyLocal(m, this.kidneyLeft), this.kidneyLeft),
@@ -926,6 +932,12 @@ export class AnatomyScene {
     if (geometry === 'spine') {
       const frame = spineFaceFrame(m, this.spine);
       return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), frame.curvature), axis: frame.axis };
+    }
+    if (this.identity.person === 's0028' && geometry === 'kidneyOuter') {
+      // El borde O de la máscara renal: gradiente analítico de su trilineal, como la GPU (s28PGrad).
+      const g = s0028KidneyGradient(m),
+        norm = g ? Math.hypot(...g) : 0;
+      return norm > 0 ? { normal: scale(g!, 1 / norm), norm, curvature: 0 } : { normal: [0, 1, 0], norm: 1, curvature: 0 };
     }
     if (this.hasAbdominalAtlas && (geometry === 'kidneyOuter' || geometry === 'perirenalOuter')) {
       // Como la GPU: el gradiente del término que manda, y la grasa con el contorno en primer orden (decisión 309)
@@ -1350,6 +1362,16 @@ const KIDNEY_TISSUE: Readonly<Record<KidneyRegion, Tissue>> = {
   arcuate: Tissue.ArteryWall,
   cortex: Tissue.RenalCortex,
 };
+
+/**
+ * s0028 P3 (r3): el borde O de la máscara renal es la cara de la cápsula para las muestras a menos de
+ * `S0028_RENAL_FACE_MM` de él (dentro del riñón U, en el quiste, en la grasa D o en U), si no hay otra más cerca; el
+ * tejido no cambia. Gemelo GLSL: el final de `classifyInside` s0028.
+ */
+function renalFace(c: Classification, solids: S0028Ownership): Classification {
+  const d = Math.abs(solids.kidneyMm);
+  return d < S0028_RENAL_FACE_MM && d < c.interfaceDistance ? { ...c, interface: Interface.RenalCapsule, interfaceDistance: d } : c;
+}
 
 /** s0028 P3: sin arquitectura ni grasa perirrenal analíticas (Morison sin grasa inventada). */
 const NO_KIDNEY = { cls: null, dPeriMm: 1e3, periThin: false } as const;

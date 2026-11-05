@@ -44,7 +44,15 @@ export interface S0028Owner {
 export interface S0028Ownership {
   readonly state: 'known' | 'conflict' | 'U';
   readonly owners: readonly S0028Owner[];
+  /** Distancia con signo al borde O de la máscara renal más cercana (mm; 16 fuera de ambas cajas): su contorno acústico. */
+  readonly kidneyMm: number;
 }
+/**
+ * Contorno acústico renal (r3): el borde O de la máscara es la cara `RenalCapsule` aunque a ambos lados haya U. La
+ * dibujan las muestras a menos de esto de él (las que alcanza el perfil de la cara, ≤ 1,26 mm); dentro, sin corteza
+ * ni seno inventados.
+ */
+export const S0028_RENAL_FACE_MM = 1.5;
 
 // Campo P1, dueño (o dueños por etiqueta nearest 1…n) y certeza del interior. Los vasos fuente son de P5.
 const TABLE: ReadonlyArray<readonly [string, S0028OwnerId | readonly S0028OwnerId[], S0028Certainty]> = [
@@ -75,10 +83,18 @@ const VESSELS = ['aorta', 'inferior_vena_cava', 'portal_vein_and_splenic_vein'].
 const insideVessel = (p: Vec3): boolean =>
   VESSELS.some((f) => sourceDistance(f.asset === 'abdominal' ? abdominalAtlas! : thoracicAtlas!, p, f, B[f.asset].textureDimensions) < 0);
 
+/** Colocación xyz de cada página 32×32 RG16F de grasa en el atlas abdominal: x/32 + 6·y/32 + 48·z, tres cifras en base 36. */
+export const s0028FatPages = (): number[][] =>
+  Array.from({ length: B.solids.pages.length / 3 }, (_, i) => {
+    const c = parseInt(B.solids.pages.slice(3 * i, 3 * i + 3), 36);
+    return [(c % 6) * 32, (Math.floor(c / 6) % 8) * 32, Math.floor(c / 48)];
+  });
+
 let fat: Uint16Array | undefined;
 /**
  * Vista del bloque P3 de la reserva verificada (tras el derivado P2): un byte por half exacto, bits little-endian,
- * cajas xyz con z rápida. Ninguna copia; rechaza bytes no enteros, fuera de 0…255 o relleno no nulo.
+ * cajas xyz con z rápida. Ninguna copia; rechaza bytes no enteros, fuera de 0…255, relleno no nulo o una tabla de
+ * páginas distinta de la del descriptor (la que la GPU lleva como constante).
  */
 export function setS0028Solids(capacity: ArrayBuffer): void {
   const S = B.solids;
@@ -88,7 +104,37 @@ export function setS0028Solids(capacity: ArrayBuffer): void {
     const v = HALF[words[i]];
     if (i < S.byteCount ? !(v >= 0 && v <= 255 && v === Math.floor(v)) : words[i] !== 0) throw new Error('Grasa P3 corrupta');
   }
+  const table = new Uint16Array(capacity, 4096 + S.offsetBytes + S.encodedBytes, S.pageTableBytes / 2);
+  if (s0028FatPages().flat().join() !== table.join() || table.length !== (3 * S.encodedBytes) / 4096)
+    throw new Error('Tabla de páginas P3 distinta');
   fat = words;
+}
+
+/** Las páginas de grasa en sus colocaciones del atlas abdominal ya asignado: texSubImage, sin textura ni sampler nuevos. */
+export function s0028SolidsUploads(): ReadonlyArray<{ offset: readonly number[]; size: readonly number[]; data: Uint16Array }> {
+  if (!fat) throw new Error('Paquete P3 s0028 no cargado');
+  return s0028FatPages().map((offset, i) => ({ offset, size: [32, 32, 1], data: fat!.subarray(2048 * i, 2048 * (i + 1)) }));
+}
+
+/**
+ * Gradiente analítico (mm/mm) de la trilineal del riñón cuya caja contiene p (derecho si x < 10 mm): los mismos ocho
+ * nodos que su distancia, sin diferencias finitas. null fuera de la caja. Gemelo GLSL: s28PGrad.
+ */
+export function s0028KidneyGradient(p: Vec3): Vec3 | null {
+  const f = FIELDS[p[0] < 10 ? 3 : 4],
+    [W, H] = B.abdominal.textureDimensions,
+    q = p.map((v, k) => (v - f.originMm[k]) / 1.5);
+  if (q.some((v, k) => !(v >= 0 && v <= f.dimensions[k] - 1))) return null;
+  const a = q.map((v, k) => Math.min(f.dimensions[k] - 2, Math.floor(v))),
+    [tx, ty, tz] = q.map((v, k) => v - a[k]),
+    n = (x: number, y: number, z: number) =>
+      HALF[abdominalAtlas![2 * ((a[2] + z + f.offset[2]) * W * H + (a[1] + y + f.offset[1]) * W + a[0] + x + f.offset[0])]],
+    mix = (u: number, v: number, t: number) => u + t * (v - u);
+  return [
+    mix(mix(n(1, 0, 0) - n(0, 0, 0), n(1, 1, 0) - n(0, 1, 0), ty), mix(n(1, 0, 1) - n(0, 0, 1), n(1, 1, 1) - n(0, 1, 1), ty), tz) / 1.5,
+    mix(mix(n(0, 1, 0) - n(0, 0, 0), n(1, 1, 0) - n(1, 0, 0), tx), mix(n(0, 1, 1) - n(0, 0, 1), n(1, 1, 1) - n(1, 0, 1), tx), tz) / 1.5,
+    mix(mix(n(0, 0, 1) - n(0, 0, 0), n(1, 0, 1) - n(1, 0, 0), tx), mix(n(0, 1, 1) - n(0, 1, 0), n(1, 1, 1) - n(1, 1, 0), tx), ty) / 1.5,
+  ];
 }
 
 /** Grasa compatible D del vóxel nearest (HU [−190, −30], ≤30 mm del riñón, sin máscara); null fuera de ambas cajas. */
@@ -117,11 +163,13 @@ export function s0028CompatibleFat(p: Vec3): boolean | null {
 export function s0028Owners(p: Vec3, q: S0028WallSample | undefined): S0028Ownership {
   if (anatomyBundle.person !== 's0028' || !abdominalAtlas || !thoracicAtlas) throw new Error('Clasificador P3 sin s0028');
   const owners: S0028Owner[] = [];
+  let kidneyMm = 16;
   for (let i = 0; i < TABLE.length; i++) {
     const f = FIELDS[i],
       data = f.asset === 'abdominal' ? abdominalAtlas : thoracicAtlas,
       dims = B[f.asset].textureDimensions,
       d = sourceDistance(data, p, f, dims);
+    if (i === 3 || i === 4) kidneyMm = Math.min(kidneyMm, d);
     if (!(d < 0)) continue;
     const [, id, certainty] = TABLE[i];
     let owner = id as S0028OwnerId;
@@ -138,5 +186,5 @@ export function s0028Owners(p: Vec3, q: S0028WallSample | undefined): S0028Owner
     owners.push({ id: 'wall', d: -Math.min(q.depthMm - 1.5, q.interfaceMm - q.depthMm), certainty: q.depthMm < q.outerMm ? 'D' : 'U' });
   if (!owners.some((o) => o.id !== 'wall') && s0028CompatibleFat(p) && !insideVessel(p))
     owners.push({ id: 'compatible_fat', d: 0, certainty: 'D' });
-  return { state: owners.length > 1 ? 'conflict' : owners.length ? 'known' : 'U', owners };
+  return { state: owners.length > 1 ? 'conflict' : owners.length ? 'known' : 'U', owners, kidneyMm };
 }

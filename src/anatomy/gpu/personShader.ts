@@ -100,7 +100,7 @@ vec2 thoracicValue(vec3 p){
   );
   changed = changed.replace(/gut\.y\s*==\s*3\.0\s*&&\s*gut\.x\s*<\s*16\.0\s*&&\s*gut\.x\s*<\s*dLiverBase/, 'false');
   changed = changed.replace(/label\s*>=\s*5\.0\s*&&\s*label\s*<=\s*9\.0/g, 'label==4.0');
-  const extra = ['sacrum', 'posteriorMuscle', 'cartilage', 'lung', 'heart']
+  const extra = ['sacrum', 'cartilage', 'lung']
     .map((name) => {
       const f = fields.find((f) => f.name === name);
       if (!f) throw new Error('Falta campo s0028 ' + name);

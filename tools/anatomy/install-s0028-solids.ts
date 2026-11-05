@@ -91,6 +91,12 @@ const part = header.parts.find((x) => x.name === 'wall');
 if (!part || part.derivedBytes !== B.wallDerived.bytes || part.p3Bytes !== pages * 4096 + pages * 6)
   throw new Error('Cabecera P3 distinta');
 
+// La GPU (r3) lleva la tabla como constante GLSL: x/32 + 6·y/32 + 48·z en tres cifras base 36 por página.
+const code = (i: number) => {
+  const [x, y, z] = [placements[3 * i], placements[3 * i + 1], placements[3 * i + 2]];
+  if (x % 32 || y % 32 || x / 32 >= 6 || y / 32 >= 8) throw new Error('Página P3 fuera de la rejilla de 32');
+  return (x / 32 + (6 * y) / 32 + 48 * z).toString(36).padStart(3, '0');
+};
 const solids = {
   format: p.format,
   provenance: 'D',
@@ -100,6 +106,7 @@ const solids = {
   pageTableBytes: pages * 6,
   byteCount,
   sha256: p.sha256,
+  pages: Array.from({ length: pages }, (_, i) => code(i)).join(''),
 };
 const manifestPin = { bytes: manifest.length, sha256: hash(manifest) };
 const dataPath = 'src/anatomy/s0028WallData.ts';

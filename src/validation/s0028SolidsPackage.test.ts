@@ -4,7 +4,7 @@ import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
 import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { HALF } from '../anatomy/halfFloat';
-import { setS0028Solids, s0028CompatibleFat } from '../anatomy/s0028Solids';
+import { setS0028Solids, s0028CompatibleFat, s0028FatPages } from '../anatomy/s0028Solids';
 import type { Vec3 } from '../core/vec3';
 import fixture from './fixtures/s0028-fat-r1.json';
 
@@ -64,5 +64,16 @@ it('rechaza un byte no entero, fuera de 0…255, relleno no nulo o una reserva d
   expect(() => setS0028Solids(corrupt(17, 0xbc00))).toThrow(/corrupta/); // −1
   expect(() => setS0028Solids(corrupt(B.solids.byteCount + 3, 0x3c00))).toThrow(/corrupta/);
   expect(() => setS0028Solids(new ArrayBuffer(B.capacity.rawBytes - 2))).toThrow(/incompleto/);
+  setS0028Solids(raw());
+});
+
+it('la tabla de páginas que la GPU lleva como constante es la de la reserva verificada (r3)', () => {
+  const table = new Uint16Array(raw(), 4096 + B.solids.offsetBytes + B.solids.encodedBytes, B.solids.pageTableBytes / 2);
+  expect(s0028FatPages().flat()).toEqual([...table]);
+  expect(s0028FatPages()[0]).toEqual([0, 128, 248]);
+  // Una página movida en la reserva (o un descriptor distinto) ya no carga: la GPU leería otro sitio del atlas.
+  const r = raw();
+  new Uint16Array(r, 4096 + B.solids.offsetBytes + B.solids.encodedBytes, 3)[2] += 1;
+  expect(() => setS0028Solids(r)).toThrow(/Tabla de páginas/);
   setS0028Solids(raw());
 });

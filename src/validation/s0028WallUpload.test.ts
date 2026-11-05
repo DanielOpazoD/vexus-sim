@@ -4,6 +4,7 @@ import { expect, it, vi } from 'vitest';
 import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setS0028Wall, s0028WallUploads } from '../anatomy/s0028Wall';
+import { setS0028Solids, s0028FatPages } from '../anatomy/s0028Solids';
 import { HALF } from '../anatomy/halfFloat';
 import { createAbdominalTexture } from '../ultrasound/abdominalTexture';
 
@@ -14,6 +15,7 @@ it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin cop
     capacity = raw('annotation-capacity');
   setAbdominalAtlas(data);
   setS0028Wall(capacity, raw('skin-polar'));
+  setS0028Solids(capacity);
   const storage = vi.fn(),
     uploads: { x: number; y: number; z: number; w: number; h: number; d: number; input: Uint16Array }[] = [];
   const gl = {
@@ -58,6 +60,14 @@ it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin cop
   // Regla directa: sólo pared y centros; la carta S−dN del Newton descartado ya no se deriva ni se sube.
   expect(uploads.filter((u) => u.w === 65 && u.h === 91)).toHaveLength(16);
   expect(uploads.filter((u) => u.x === 65 && u.z >= 619)).toEqual([]);
+  // P3 r3: las 77 páginas de grasa D, vistas de la reserva tras el derivado P2, en las colocaciones de su tabla.
+  const pages = uploads.filter((u) => u.w === 32 && u.h === 32 && u.d === 1);
+  expect(pages.map((u) => [u.x, u.y, u.z])).toEqual(s0028FatPages());
+  pages.forEach((u, i) => {
+    expect(u.input.buffer).toBe(capacity);
+    expect([u.input.byteOffset, u.input.length]).toEqual([4096 + B.solids.offsetBytes + 4096 * i, 2048]);
+  });
+  expect(pages).toHaveLength(77);
   expect(data.every((x) => x === 0)).toBe(true);
 });
 

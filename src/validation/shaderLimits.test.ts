@@ -153,6 +153,29 @@ function loopBodies(g: Map<string, string>): string[] {
   return out;
 }
 
+/** Funciones alcanzables desde `root` por el grafo de llamadas (incluida ella). */
+function reachable(g: Map<string, string>, root: string): Set<string> {
+  const seen = new Set([root]),
+    stack = [root];
+  while (stack.length)
+    for (const c of callsIn(g, g.get(stack.pop()!)!))
+      if (!seen.has(c)) {
+        seen.add(c);
+        stack.push(c);
+      }
+  return seen;
+}
+/**
+ * P3 r3: las funciones `s28P*` (lectores, dueños, grasa, gradiente renal y material abdominal) y todo lo que llaman, sin
+ * `for`, `while` ni `do` en ninguna (el JIT de SwiftShader desenrolla incluso un bucle de cota constante: P2 r2b).
+ */
+function p3Loops(source: string): string[] {
+  const g = glslCallGraph(source),
+    seen = new Set<string>();
+  for (const root of [...g.keys()].filter((f) => /^s28P/.test(f))) for (const f of reachable(g, root)) seen.add(f);
+  return [...seen].filter((f) => /\b(?:for|while|do)\b/.test(g.get(f)!)).sort();
+}
+
 /** Lecturas de textura de `fn` con sus llamadas expandidas: las instrucciones que compila cada llamada. */
 function expandedTextureReads(g: Map<string, string>, fn: string, memo = new Map<string, number>()): number {
   const known = memo.get(fn);
@@ -546,6 +569,59 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
       expect(samplersOf(source).length, name).toBeLessThanOrEqual(16);
       expect(uniformSlots(source).slots, name).toBeLessThanOrEqual(SLOT_GUARD);
     }
+  });
+
+  it('s0028 P3: la política GLSL (s28P*) y todo lo que llama no tienen bucles, ni con cota constante', () => {
+    const sources = PASSES as unknown as Record<string, string>;
+    for (const name of Object.keys(limits)) {
+      const source = personShader(sources[name], S0028);
+      // GRADIENT no clasifica: recibe la muestra ya clasificada y sólo deriva su cara (la renal, s28PGrad).
+      expect(reachable(glslCallGraph(source), 'main').has(name === 'FRAG_RAWFIELD_GRADIENT' ? 's28PGrad' : 's28POwn'), name).toBe(true);
+      expect(p3Loops(source), name).toEqual([]);
+    }
+    // Negativos: un for de cota constante en el lector, un while en un helper compartido y un do en la grasa vuelven a rojo.
+    const base = personShader(PASSES.FRAG_RAWFIELD_CLASS, S0028);
+    const mutants = [
+      ['s28PA', base.replace('float s28PA(vec3 p,int k){', 'float s28PA(vec3 p,int k){for(int i=0;i<2;i++)p.x+=0.0;')],
+      [
+        'sourceDistancePrecise',
+        base.replace(/float sourceDistancePrecise\(([^)]*)\) \{/, 'float sourceDistancePrecise($1) {int w=0;while(w<1)w++;'),
+      ],
+      ['s28PFat', base.replace('bool s28PFat(vec3 p,int b){', 'bool s28PFat(vec3 p,int b){int w=0;do{w++;}while(w<1);')],
+    ] as const;
+    for (const [fn, mutant] of mutants) {
+      expect(mutant, fn).not.toBe(base);
+      expect(p3Loops(mutant), fn).toEqual([fn]);
+    }
+  });
+
+  it('s0028 P3: ningún programa alcanza el riñón, la grasa perirrenal, el ligamento venoso ni la búsqueda de cuatro campos analíticos', () => {
+    const legacy = [
+      'kidneyQuery',
+      'kidneySinusSdf',
+      'hilumChannelSdf',
+      'kidneyOuterNormal',
+      'perirenalFromOuter',
+      'perirenalOuterSdf',
+      'atlasKidneyOuterGradient',
+      'ligamentumVenosumSdf',
+      'abdomenQuery',
+    ];
+    let programs = 0;
+    for (const [name, src] of FRAGMENT_SHADERS) {
+      if (!/vec2\s+abdominalAtlasValue\s*\(/.test(src)) continue;
+      const graph = glslCallGraph(personShader(src, S0028));
+      if (!graph.has('main')) continue;
+      programs++;
+      const reach = reachable(graph, 'main');
+      expect(
+        legacy.filter((f) => reach.has(f)),
+        name,
+      ).toEqual([]);
+      // La clasificación de la otra persona sigue intacta en su variante.
+      if (name === 'FRAG_RAWFIELD_CLASS') expect(reachable(glslCallGraph(src), 'main').has('kidneyQuery')).toBe(true);
+    }
+    expect(programs).toBeGreaterThanOrEqual(20);
   });
 
   it('s0028: ningún consumidor alcanzable lee capas procedurales sin definir ni devuelve NaN de pared al eco', () => {

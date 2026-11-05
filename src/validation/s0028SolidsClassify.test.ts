@@ -72,8 +72,13 @@ it('riñón s0028: dueño propio con borde D e interior U, sin corteza, médula,
   ] as const) {
     const c = at([...p]);
     expect(c.tissue, id).toBe(Tissue.UnsegmentedSoftTissue);
+    // A más de 1,5 mm de su borde O no dibuja la cara de la cápsula (r3: sólo el contorno acústico).
     expect(c.interface).toBe(Interface.None);
-    expect(c.solids).toEqual({ state: 'known', owners: [{ id, d: expect.any(Number) as number, certainty: 'U' }] });
+    expect(c.solids).toEqual({
+      state: 'known',
+      owners: [{ id, d: expect.any(Number) as number, certainty: 'U' }],
+      kidneyMm: c.solids!.owners[0].d,
+    });
   }
   for (const [name, id] of [
     ['kidneyRight', 'kidney_right'],
@@ -107,7 +112,11 @@ it('hígado s0028: dueño O sin el ligamento venoso analítico de la otra person
   ] as Vec3[]) {
     const c = at(p);
     expect(c.tissue, p.join(',')).toBe(Tissue.Liver);
-    expect(c.solids).toEqual({ state: 'known', owners: [{ id: 'liver', d: expect.any(Number) as number, certainty: 'O' }] });
+    expect(c.solids).toEqual({
+      state: 'known',
+      owners: [{ id: 'liver', d: expect.any(Number) as number, certainty: 'O' }],
+      kidneyMm: expect.any(Number) as number,
+    });
   }
 });
 
@@ -140,7 +149,11 @@ it('hueso dentro de la banda P2: contenido del complejo de pared (O), no choque'
     expect(q?.kind === 'known' && q.depthMm > q.outerMm && q.depthMm < q.interfaceMm, p.join(',')).toBe(true);
     const c = at(p);
     expect(c.tissue).toBe(Tissue.Bone);
-    expect(c.solids).toEqual({ state: 'known', owners: [{ id: 'bone', d: expect.any(Number) as number, certainty: 'O' }] });
+    expect(c.solids).toEqual({
+      state: 'known',
+      owners: [{ id: 'bone', d: expect.any(Number) as number, certainty: 'O' }],
+      kidneyMm: expect.any(Number) as number,
+    });
   }
 });
 
@@ -210,7 +223,7 @@ it('U nunca se clasifica como tejido conocido en el compartimento posterior y re
           if (c.tissue === Tissue.Diaphragm) expect(c.approximation).toBe('diaphragm-P7');
           else expect(Tissue[c.tissue], `${x},${y},${z}`).toBe('UnsegmentedSoftTissue');
         }
-        expect(c.solids, `${x},${y},${z}`).toEqual({ state: 'U', owners: [] });
+        expect(c.solids, `${x},${y},${z}`).toEqual({ state: 'U', owners: [], kidneyMm: expect.any(Number) as number });
       }
   expect(unknown).toBeGreaterThan(1000);
   expect(fatInBand).toBeGreaterThan(20);
@@ -236,7 +249,7 @@ it('grasa compatible D: vóxel con bit y sin máscara es grasa D; la envolvente 
       }
     } else if (row.kind === 'envelope') {
       // Envolvente convexa renal (seno e hilio sin máscara): U aunque la cruce un vaso procedural E.
-      expect(c.solids, JSON.stringify(row)).toEqual({ state: 'U', owners: [] });
+      expect(c.solids, JSON.stringify(row)).toEqual({ state: 'U', owners: [], kidneyMm: expect.any(Number) as number });
       if (!tube) expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
       hull++;
     }
@@ -369,7 +382,7 @@ it('quiste renal izquierdo: líquido con dueño E en todos sus nodos; identidade
   expect(nodes).toBeGreaterThan(20);
   // El Worker compara contra esta misma función: aquí los rótulos van contra literales.
   const liver = { id: 'liver', d: -1, certainty: 'O' } as const;
-  const conflict = { state: 'conflict', owners: [liver, { id: 'wall', d: -1, certainty: 'D' } as const] } as const;
+  const conflict = { state: 'conflict', owners: [liver, { id: 'wall', d: -1, certainty: 'D' } as const], kidneyMm: 16 } as const;
   const p: Vec3 = [0, 0, -100];
   expect(structureIdentity(p, Tissue.UnsegmentedSoftTissue, Interface.None, scene, conflict)).toBe(17);
   expect(STRUCTURE_LABELS[17]).toBe('Conflicto sin resolver · dos dueños');
@@ -382,9 +395,10 @@ it('quiste renal izquierdo: líquido con dueño E en todos sus nodos; identidade
       structureIdentity(p, Tissue.UnsegmentedSoftTissue, Interface.None, scene, {
         state: 'known',
         owners: [{ id, d: -1, certainty: 'U' }],
+        kidneyMm: -1,
       }),
     ).toBe(label);
-  expect(structureIdentity(p, Tissue.Liver, Interface.None, scene, { state: 'known', owners: [liver] })).toBe(1);
+  expect(structureIdentity(p, Tissue.Liver, Interface.None, scene, { state: 'known', owners: [liver], kidneyMm: 16 })).toBe(1);
 });
 
 it('grasa compatible D: vóxel nearest (redondeo), con las dos cajas en OR donde se solapan', () => {
@@ -432,4 +446,55 @@ it('grasa compatible D: vóxel nearest (redondeo), con las dos cajas en OR donde
           expect(s0028CompatibleFat(far), `${far.join(',')}`).toBe(Boolean(c | inOther(far)));
         }
   expect(edges).toBeGreaterThan(500);
+});
+
+it('contorno acústico renal (r3): el borde O de la máscara es la cara de la cápsula a ambos lados, con gradiente analítico', () => {
+  const off: Vec3 = [0.37, 0.41, 0.29];
+  for (const name of ['kidneyRight', 'kidneyLeft']) {
+    let inside = 0,
+      outside = 0,
+      deep = 0;
+    brick(name, 1, (node) => {
+      const p: Vec3 = [node[0] + off[0], node[1] + off[1], node[2] + off[2]];
+      const d = s0028SourceValue(p, name).d;
+      if (d > 1.6 || (d < -1.6 && Math.round(node[0] + node[1] + node[2]) % 7)) return;
+      const c = at(p),
+        own = c.solids?.owners.map((o) => o.id) ?? [];
+      if (c.solids?.state === 'conflict' || c.vesselHit || c.interface === Interface.DuctLumen) return;
+      if (d < -1.5) {
+        // Interior U lejos del borde: sin cara inventada.
+        expect(c.interface, p.join(',')).toBe(Interface.None);
+        deep++;
+        return;
+      }
+      if (Math.abs(d) >= 1.5) return;
+      if (d < 0) inside++;
+      else if (own.length && !['compatible_fat', 'kidney_cyst_left'].includes(own[0])) return;
+      else outside++;
+      // Una cara más cercana (la cortical costal, por ejemplo) conserva la muestra.
+      if (c.interface !== Interface.RenalCapsule) {
+        expect(c.interfaceDistance, `${p.join(',')} d=${d} cara ${c.interface}`).toBeLessThan(Math.abs(d));
+        return;
+      }
+      expect(c.interfaceDistance, `${p.join(',')} d=${d}`).toBe(Math.abs(d));
+      expect(c.solids?.kidneyMm, p.join(',')).toBe(d);
+      expect(scene.faceSdf(p, BASELINE_CALIBER, 'kidneyOuter')).toBe(d);
+      // Gradiente analítico de la trilineal frente a diferencias centrales dentro de la misma celda.
+      const g = scene.faceGradient(p, BASELINE_CALIBER)!;
+      const h = 0.01,
+        fd = [0, 1, 2].map((k) => {
+          const a: Vec3 = [...p],
+            b: Vec3 = [...p];
+          a[k] += h;
+          b[k] -= h;
+          return (s0028SourceValue(a, name).d - s0028SourceValue(b, name).d) / (2 * h);
+        }),
+        n = Math.hypot(...fd);
+      expect(Math.abs(g.norm - n), p.join(',')).toBeLessThan(1e-6);
+      for (let k = 0; k < 3; k++) expect(Math.abs(g.normal[k] - fd[k] / n), p.join(',')).toBeLessThan(1e-6);
+    });
+    expect(inside, name).toBeGreaterThan(800);
+    expect(outside, name).toBeGreaterThan(800);
+    expect(deep, name).toBeGreaterThan(300);
+  }
 });

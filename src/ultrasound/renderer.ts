@@ -54,6 +54,7 @@ import {
   RIB_TEXELS,
   CARTILAGE_BASE,
   COMPRESSION_BASE,
+  RIGID_BASE,
   BOWEL_BASE,
   MAX_NODES,
   MAX_TUBES,
@@ -939,8 +940,10 @@ export class UltrasoundRenderer {
       this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4),
     );
     k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], n[2], k.radiusMm], (COMPRESSION_BASE + i) * 4));
+    // s0028 (r3): zonas rígidas por nodo (κ, d₁, L); identidad sin ellas (el GLSL por defecto no las lee).
+    k.nodes.forEach((_, i) => this.sceneData.set(k.rigid?.[i] ?? [1, 0, 0], (RIGID_BASE + i) * 4));
     const row0 = Math.floor(COMPRESSION_BASE / SCENE_TEX_W);
-    const row1 = Math.floor((BOWEL_BASE + BOWEL_GROUPS + 2 * BOWEL_NODES.length - 1) / SCENE_TEX_W);
+    const row1 = Math.floor((RIGID_BASE + k.nodes.length - 1) / SCENE_TEX_W);
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     gl.texSubImage2D(

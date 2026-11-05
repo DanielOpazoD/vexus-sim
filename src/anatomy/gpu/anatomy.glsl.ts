@@ -65,6 +65,9 @@ export const RIB_TEXELS = 3;
 export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * RIB_TEXELS;
 export const BOWEL_BASE = CARTILAGE_BASE + CARTILAGE_ROWS.length;
 export const SCENE_TEX_H = Math.ceil((BOWEL_BASE + BOWEL_TEXELS) / SCENE_TEX_W);
+/** s0028 (r3): (κ, d₁, L) de las zonas rígidas por nodo de la compresión, en los téxeles libres de la última fila. */
+export const RIGID_BASE = BOWEL_BASE + BOWEL_TEXELS;
+if (RIGID_BASE + PROBE_COMPRESSION.nodes > SCENE_TEX_W * SCENE_TEX_H) throw new Error('Tabla rígida fuera de la textura de escena');
 export { MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)

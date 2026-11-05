@@ -17,6 +17,8 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import { CONVEX_C35 } from '../probe/probe';
 import { probeContact } from '../probe/contact';
+import { compressionReachMm, compressionSample, uncompress } from '../anatomy/compression';
+import { s0028SourceValue } from '../anatomy/s0028Source';
 import { startPointsFor } from '../app/startPoints';
 import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWorker';
@@ -38,10 +40,16 @@ beforeAll(() => {
 });
 const poses = () => startPointsFor(scene.torso, B).map((p) => ({ ...p, rock: p.rock ?? 0, tilt: p.tilt ?? 0 }));
 
-it('contacto: P3 conserva la carta P2 y su U; los 30 contactos s0028 son los de main 3c50b18', () => {
+it('contacto: P3 conserva la carta P2 y su U; los 30 contactos s0028 son los de main 3c50b18 salvo la tabla rígida (r3)', () => {
   const values = [];
   for (const pose of poses())
-    for (const lift of [-3, 0, 10]) values.push({ id: pose.id, lift, contact: probeContact({ ...pose, lift }, CONVEX_C35, scene.torso) });
+    for (const lift of [-3, 0, 10]) {
+      const { rigid, ...contact } = probeContact({ ...pose, lift }, CONVEX_C35, scene.torso);
+      // r3 sólo añade las zonas rígidas por nodo; el alcance crece en el tramo renal más largo (σ' = 0 dentro).
+      expect(rigid).toHaveLength(64);
+      expect(contact.reachMm).toBe(compressionReachMm(contact.nodes) + Math.max(0, ...rigid!.map((r) => r[2])));
+      values.push({ id: pose.id, lift, contact: { ...contact, reachMm: compressionReachMm(contact.nodes) } });
+    }
   // SHA de main (script contact-s0028.mts de la evidencia P3 r2 sobre git archive 3c50b18).
   expect(createHash('sha256').update(JSON.stringify(values)).digest('hex')).toBe(
     '56201065819f134067b4fbf53feb17cc43285558cd409731e6fb8d40b4a92d1c',
@@ -151,4 +159,39 @@ it('respiración: sólo los estímulos E de 10/20 mm del diseño, mismo material
     expect(owned).toBeGreaterThan(1000);
   }
   vi.unstubAllGlobals();
+});
+
+it('compresión rígida por dueño (r3): el riñón se traslada entero y la columna no se mueve; el mapa sigue monótono', () => {
+  const sd = (m: Vec3, name: string) => s0028SourceValue(m, name);
+  for (const id of ['renal', 'hepatorenal', 'subcostal', 'flank']) {
+    const k = probeContact({ ...poses().find((p) => p.id === id)!, lift: 0 }, CONVEX_C35, scene.torso),
+      f = k.frame;
+    const strain: number[] = [],
+      vertebra: number[] = [];
+    let slope = Infinity;
+    for (let j = 0; j < 214; j += 2)
+      for (let i = 0; i < 267; i += 2) {
+        const p = f.skinPoint.map((x, c) => x + (-100 + 0.75 * i) * f.lateral[c] + 0.75 * j * f.axial[c]) as Vec3;
+        const s = compressionSample(p, k),
+          h = 0.05;
+        if (s.rho < 1e-6) continue;
+        const at = (t: number) => compressionSample(p.map((x, c) => x + t * s.rhat[c]) as Vec3, k).shift,
+          ds = (at(h) - at(-h)) / (2 * h);
+        // dr/dd = 1 + ∂s/∂d ≥ 1: nunca se pliega ni se estira a lo largo de la línea.
+        slope = Math.min(slope, ds);
+        const m = uncompress(p, k),
+          tb = sd(m, 'thoracicBone'),
+          lb = sd(m, 'lumbarSacralBone');
+        if (Math.min(sd(m, 'kidneyRight').d, sd(m, 'kidneyLeft').d) < -1.5) strain.push(Math.abs(ds));
+        if ((lb.d < -1.5 && lb.label <= 5) || (tb.d < -1.5 && tb.label >= 25 && tb.label <= 36)) vertebra.push(-s.shift);
+      }
+    const q = (v: number[], f: number) => [...v].sort((a, b) => a - b)[Math.floor(f * (v.length - 1))];
+    expect(slope, id).toBeGreaterThanOrEqual(-1e-6);
+    // main: ∂s/∂r ≈ 0,25 en todo el riñón y vértebras desplazadas hasta 1,4 mm (compression-owners-main.json).
+    if (strain.length > 50) {
+      expect(q(strain, 0.9), `${id} riñón`).toBeLessThanOrEqual(0.02);
+      expect(strain.length, id).toBeGreaterThan(100);
+    }
+    if (vertebra.length > 20) expect(q(vertebra, 0.95), `${id} vértebra`).toBeLessThanOrEqual(0.1);
+  }
 });

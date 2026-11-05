@@ -1,6 +1,7 @@
 import { S0028_BUNDLE as B } from '../anatomyBundle';
 import { S0028_RENAL_FACE_MM, s0028FatPages } from '../s0028Solids';
 import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
+import { RIGID_BASE } from './anatomy.glsl';
 
 /** Campos P3 de cada atlas, en el orden de los índices GLSL: los doce dueños abdominales y los tres vasos fuente (P5). */
 const ABDOMINAL = [
@@ -31,22 +32,10 @@ const table = (prefix: string, names: readonly string[]) =>
     })
     .join('\n');
 
-/**
- * Política P3 en la GPU (decisión 321, r3), gemela de `s0028Owners` y de la rama s0028 de `scene.ts`. Sin bucles en
- * este código ni en lo que llama (las funciones `s28P*`): cada campo se lee por su caja y, a menos de un vóxel de su
- * frontera, con los mismos ocho nodos exactos de la CPU (`sourceDistancePrecise`). Dueños independientes antes de
- * cualquier orden; dos o más son conflicto y U; el riñón es U por dentro con su borde O como cara acústica; la grasa
- * compatible D sale de 77 páginas RG16F subidas a huecos del atlas abdominal (sin textura ni sampler nuevos).
- */
-export const S0028_SOLIDS_GLSL = /* glsl */ `
+/** Lectores P1 de P3, gemelos de sourceDistance/sourceLabel; también los usan la pared ligera y la pleura s0028. */
+export const S0028_READER_GLSL = /* glsl */ `
 ${table('S28A', ABDOMINAL)}
 ${table('S28T', THORACIC)}
-const vec3 S28F_LO[2]=vec3[](${B.solids.boxes.map((b) => vec(b.originMm)).join(',')});
-const vec3 S28F_DIM[2]=vec3[](${B.solids.boxes.map((b) => vec(b.dimensions)).join(',')});
-const int S28F_AT[2]=int[](${B.solids.boxes.map((b) => b.byteOffset).join(',')});
-const ivec3 S28F_PAGE[${s0028FatPages().length}]=ivec3[](${s0028FatPages()
-  .map((p) => `ivec3(${p.join(',')})`)
-  .join(',')});
 // Distancia del campo (gemela de sourceDistance: 16 fuera de su caja). El filtro del hardware cuantiza los pesos y puede
 // cambiar el signo junto a la frontera: a menos de un vóxel, los mismos ocho nodos que la CPU.
 float s28P(highp sampler3D t,vec3 p,vec3 lo,vec3 dim,vec3 off){
@@ -60,6 +49,22 @@ float s28PT(vec3 p,int k){return s28P(uThoracicAtlas,p,S28T_LO[k],S28T_DIM[k],S2
 // Etiqueta nearest (gemela de sourceLabel): floor(q + 0,5) es Math.round para q ≥ 0.
 float s28PLA(vec3 p,int k){return texelFetch(uAbdominalAtlas,ivec3(S28A_OFF[k]+floor((p-S28A_LO[k])/1.5+0.5)),0).g;}
 float s28PLT(vec3 p,int k){return texelFetch(uThoracicAtlas,ivec3(S28T_OFF[k]+floor((p-S28T_LO[k])/1.5+0.5)),0).g;}
+`;
+
+/**
+ * Política P3 en la GPU (decisión 321, r3), gemela de `s0028Owners` y de la rama s0028 de `scene.ts`. Sin bucles en
+ * este código ni en lo que llama (las funciones `s28P*`): cada campo se lee por su caja y, a menos de un vóxel de su
+ * frontera, con los mismos ocho nodos exactos de la CPU (`sourceDistancePrecise`). Dueños independientes antes de
+ * cualquier orden; dos o más son conflicto y U; el riñón es U por dentro con su borde O como cara acústica; la grasa
+ * compatible D sale de 77 páginas RG16F subidas a huecos del atlas abdominal (sin textura ni sampler nuevos).
+ */
+export const S0028_SOLIDS_GLSL = /* glsl */ `
+const vec3 S28F_LO[2]=vec3[](${B.solids.boxes.map((b) => vec(b.originMm)).join(',')});
+const vec3 S28F_DIM[2]=vec3[](${B.solids.boxes.map((b) => vec(b.dimensions)).join(',')});
+const int S28F_AT[2]=int[](${B.solids.boxes.map((b) => b.byteOffset).join(',')});
+const ivec3 S28F_PAGE[${s0028FatPages().length}]=ivec3[](${s0028FatPages()
+  .map((p) => `ivec3(${p.join(',')})`)
+  .join(',')});
 // Bit de grasa compatible D del vóxel nearest de la caja b (gemelo: s0028CompatibleFat): un byte exacto por half en
 // páginas 32×32 RG16F (2.048 por página), bits little-endian, z rápida.
 bool s28PFat(vec3 p,int b){
@@ -180,6 +185,17 @@ Cls classifyWith(vec3 m,bool withCurtain){
 }`;
 
 const RENAL_FACE_GLSL = /* glsl */ `vec3 renalAtlasFaceGradient(vec3 m,bool fat){return (2.0*FACE_GRAD_EPS)*s28PGrad(m);}`;
+// Zonas rígidas por dueño en la compresión (gemelas de rigidDepth y tableAt): (κ, d₁, L) por nodo, interpolados como la
+// CPU entre los dos nodos del tramo; la pared (d < D) no cambia; bajo ella σ = D + κ·(d − D − clamp(d − d₁, 0, L)).
+const RIGID_FETCH = (i: string, t: string) =>
+  /* glsl */ `s28R=mix(sceneTexel(${RIGID_BASE}+${i}).xyz,sceneTexel(${RIGID_BASE}+${i}+1).xyz,${t});`;
+const RIGID_PROFILE = (f: string) => /* glsl */ `
+float ${f}(float depth,vec3 v,out float gd,out vec3 gp){
+  bool wall=depth<v.z;
+  float g=${f}0(wall?depth:v.z+s28R.x*(depth-v.z-clamp(depth-s28R.y,0.0,s28R.z)),v,gd,gp);
+  gd*=wall?1.0:depth>s28R.y&&depth<s28R.y+s28R.z?0.0:s28R.x;
+  return g;
+}`;
 
 type Replace = (source: string, type: string, name: string, replacement: string) => string;
 /** Sustituye en la fuente s0028 la clasificación interior y la de entrada por la política P3; el resto no cambia. */
@@ -215,5 +231,16 @@ export function s0028SolidsShader(source: string, replace: Replace): string {
   changed = replace(changed, 'Cls', 'classifyWith', S0028_CLASSIFY_GLSL(tubes));
   // La cara renal es el borde O de la máscara de esta persona: su gradiente analítico, no el del riñón de la otra.
   changed = replace(changed, 'vec3', 'renalAtlasFaceGradient', RENAL_FACE_GLSL);
+  // Compresión rígida: la tabla del tramo de nodos con la B-spline y el perfil sobre σ(d), sin escribir sus nombres.
+  const spline = changed.match(/vec4\s+\w+\s*\(\s*int\s+(\w+)\s*,\s*float\s+(\w+)\s*,\s*out\s+vec3\s+\w+\s*\)\s*\{/),
+    profile = changed.match(/float\s+(\w+)\s*\(\s*float\s+\w+\s*,\s*vec3\s+\w+\s*,\s*out\s+float\s+\w+\s*,\s*out\s+vec3\s+\w+\s*\)\s*\{/);
+  if (!spline || !profile) throw new Error('Falta el perfil de compresión que P3 hace rígido');
+  changed = changed.replace(spline[0], 'vec3 s28R;\n' + spline[0] + RIGID_FETCH(spline[1], spline[2]));
+  let close = changed.indexOf(profile[0]) + profile[0].length;
+  for (let depth = 1; depth; close++) depth += changed[close] === '{' ? 1 : changed[close] === '}' ? -1 : 0;
+  changed =
+    changed.slice(0, close).replace(profile[0], profile[0].replace(profile[1], profile[1] + '0')) +
+    RIGID_PROFILE(profile[1]) +
+    changed.slice(close);
   return changed;
 }

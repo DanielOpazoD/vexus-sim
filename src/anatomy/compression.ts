@@ -74,6 +74,8 @@ export const PROBE_COMPRESSION = {
 
 /** Un nodo de la cara: (s₀ mm, s_D mm, D mm). */
 export type CompressionNode = readonly [number, number, number];
+/** s0028 (r3), por nodo: (κ, d₁ mm, L mm) de σ(d) = D + κ·(d − D − clamp(d − d₁, 0, L)) bajo la pared; [1, 0, 0] identidad. */
+export type RigidNode = readonly [number, number, number];
 
 /**
  * Estado del contacto de un cuadro (lo calcula `probe/contact.ts` desde la pose): la geometría de la cara ya
@@ -100,6 +102,12 @@ export interface ProbeCompression {
   reachMm: number;
   /** Contacto conseguido por nodo (0–1): el acoplamiento de las líneas (`probe/contact.ts`). Solo CPU. */
   contact: readonly number[];
+  /**
+   * s0028 (r3): zonas rígidas por dueño. Bajo la cara interna de la pared el perfil se evalúa en σ(d) (`RigidNode`),
+   * interpolada linealmente entre nodos: el primer hueso bajo la pared queda quieto (s = 0 desde él) y el tramo renal se
+   * traslada entero (∂s/∂d = 0 dentro); dr/dd = 1 + g'(σ)·σ' ≥ 1. Ausente: σ = d.
+   */
+  rigid?: readonly RigidNode[];
 }
 
 /** Espesor total de la pared (mm): piel, grasa y músculo con la preperitoneal. */
@@ -184,9 +192,64 @@ function profile(depth: number, s0: number, sD: number, D: number): Profile {
   return { g: sD * f, gd: (sD * fu) / span, g0: 0, gD: f + sD * fu * uS, gDepth: (-sD * fu) / span };
 }
 
+const IDENTITY_RIGID: RigidNode = [1, 0, 0];
+/**
+ * Tope de κ. La pared (d < D, la solución del contacto P2) no se toca: sólo se reparametriza la caída del empuje bajo su
+ * cara interna, donde g' ≤ 1,5·|s_D|/S ≤ 0,25 y κ·g' ≤ 0,75. Un hueso o cartílago dentro de la pared (costillas bajo la
+ * cara) no se puede dejar quieto sin aplastar la pared: sigue como antes (lo resuelve el contacto con hueso, P8).
+ */
+const RIGID_KAPPA_MAX = 3;
+/** σ(d) y dσ/dd de un nodo rígido: d en la pared (d < D); bajo ella κ fuera del tramo renal [d₁, d₁ + L] y 0 dentro. */
+function rigidDepth(d: number, [kappa, d1, L]: RigidNode, D: number): [number, number] {
+  if (d < D) return [d, 1];
+  return [D + kappa * (d - D - Math.min(Math.max(d - d1, 0), L)), d > d1 && d < d1 + L ? 0 : kappa];
+}
+
+/**
+ * s0028 (r3): el nodo rígido de una línea (parámetros (s₀, s_D, D) ya suavizados por la B-spline, los que se evalúan en
+ * ella) con huesos o cartílagos a las profundidades rígidas `bones` y tramos renales `renal` ([entrada, salida], …). La
+ * caída del empuje acaba en Z: el primer hueso bajo la pared al que llega con κ ≤ 3 (queda quieto) o, sin él, donde ya
+ * acababa (D + S). El riñón delante de Z, de su primera entrada a su última salida, se traslada entero: κ = S/(Z − D − L)
+ * y d₁ resuelve d₁ + g(σ(d₁)) = entrada (monótona). Si el riñón cruza Z o no cabe con κ ≤ 3, la caída se retrasa tras él
+ * (κ = 1; el alcance crece en L).
+ */
+export function rigidNode(n: CompressionNode, bones: readonly number[], renal: readonly number[]): RigidNode {
+  const D = n[2],
+    S = compressionSpanMm(n[1]),
+    ahead = (limit: number): number => Math.max(0, ...renal.filter((x, i) => i % 2 && x <= limit)) - (renal[0] ?? 0);
+  let Z = D + S;
+  for (const bone of bones) {
+    if (bone - Math.max(0, ahead(bone)) >= D + S) break;
+    if (bone > D && S / Math.max(bone - D - Math.max(0, ahead(bone)), 1e-3) <= RIGID_KAPPA_MAX) {
+      Z = bone;
+      break;
+    }
+  }
+  let L = Math.max(0, ahead(Z)),
+    kappa = S / Math.max(Z - D - L, 1e-3);
+  if ((renal.length && renal[0] < Z && renal[renal.length - 1] > Z) || kappa > RIGID_KAPPA_MAX) {
+    kappa = 1;
+    L = renal.length ? renal[renal.length - 1] - renal[0] : 0;
+  }
+  if (!L) return [kappa, 0, 0];
+  const k1 = renal[0],
+    at = (m: number) => m + profile(rigidDepth(m, [kappa, Infinity, 0], D)[0], n[0], n[1], n[2]).g;
+  let lo = k1 - 1,
+    hi = k1 - n[0] + 1;
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2;
+    if (at(m) < k1) lo = m;
+    else hi = m;
+  }
+  return [kappa, Math.max(D, (lo + hi) / 2), L];
+}
+
 /** B-spline cúbica convexa: mantiene s₀ ≤ s_D ≤ 0, D > 0 y el alcance
  * acotado por los nodos, sin esquinas en la deformación entre elementos. */
-function tableAt(sigma: number, k: ProbeCompression): { v: CompressionNode; dv: CompressionNode; tl: number; dtl: number } {
+export function tableAt(
+  sigma: number,
+  k: ProbeCompression,
+): { v: CompressionNode; dv: CompressionNode; tl: number; dtl: number; r: RigidNode } {
   const C = PROBE_COMPRESSION;
   const h = Math.sin(k.halfAngle);
   const n = C.nodes;
@@ -215,9 +278,12 @@ function tableAt(sigma: number, k: ProbeCompression): { v: CompressionNode; dv: 
     v[j] = a[j] * w0 + b[j] * w1 + c[j] * w2 + d[j] * w3;
     dv[j] = (-0.5 * u * u * a[j] + (1.5 * t2 - 2 * t) * b[j] + (-1.5 * t2 + t + 0.5) * c[j] + 0.5 * t2 * d[j]) * inside;
   }
+  const r0 = k.rigid?.[i] ?? IDENTITY_RIGID,
+    r1 = k.rigid?.[i + 1] ?? IDENTITY_RIGID;
   return {
     v,
     dv,
+    r: [r0[0] + t * (r1[0] - r0[0]), r0[1] + t * (r1[1] - r0[1]), r0[2] + t * (r1[2] - r0[2])],
     tl: 1 - smoothstep(h, h + C.lateralTaperSin, Math.abs(sigma)),
     dtl: -smoothstepSlope(h, h + C.lateralTaperSin, Math.abs(sigma)) * Math.sign(sigma),
   };
@@ -236,9 +302,9 @@ export function compressionSample(p: Vec3, k: ProbeCompression | null): Compress
   const depth = rho - k.radiusMm;
   if (depth >= k.reachMm || Math.abs(e) >= k.halfElevationMm + PROBE_COMPRESSION.elevationTaperMm || dot(P, k.axial) <= 0)
     return { shift: 0, rhat, rho };
-  const { v, tl } = tableAt(dot(P, k.lateral) / rho, k);
+  const { v, tl, r } = tableAt(dot(P, k.lateral) / rho, k);
   const we = 1 - smoothstep(k.halfElevationMm, k.halfElevationMm + PROBE_COMPRESSION.elevationTaperMm, Math.abs(e));
-  return { shift: we * tl * profile(depth, v[0], v[1], v[2]).g, rhat, rho };
+  return { shift: we * tl * profile(rigidDepth(depth, r, v[2])[0], v[0], v[1], v[2]).g, rhat, rho };
 }
 
 /** Punto «sin comprimir» (el del tronco rígido, antes de deshacer la respiración): m' = p + s·r̂. */
@@ -281,11 +347,13 @@ export function warpAt(p: Vec3, k: ProbeCompression | null): Warp {
   if (depth >= k.reachMm || Math.abs(e) >= E0 + C.elevationTaperMm || dot(P, k.axial) <= 0)
     return { shift: 0, rhat, rho, elevation: el, grad: ZERO };
   const sigma = dot(P, k.lateral) / rho;
-  const { v, dv, tl, dtl } = tableAt(sigma, k);
-  const pr = profile(depth, v[0], v[1], v[2]);
+  const { v, dv, tl, dtl, r } = tableAt(sigma, k);
+  // s0028: σ(d) de las zonas rígidas; su variación lateral entre nodos no entra en ∇s (gemelo GLSL igual).
+  const [u, du] = rigidDepth(depth, r, v[2]);
+  const pr = profile(u, v[0], v[1], v[2]);
   // la ventana elevacional es plana en ±E0 (toda muestra de la imagen cae ahí): su derivada no se lleva
   const we = 1 - smoothstep(E0, E0 + C.elevationTaperMm, Math.abs(e));
-  const dDepth = we * tl * pr.gd;
+  const dDepth = we * tl * pr.gd * du;
   const dSigma = we * (dtl * pr.g + tl * (pr.g0 * dv[0] + pr.gD * dv[1] + pr.gDepth * dv[2]));
   // ∇σ = (lateral − σ·r̂)/ρ
   const q = dSigma / rho;

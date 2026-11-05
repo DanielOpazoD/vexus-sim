@@ -106,8 +106,7 @@ export function setS0028Solids(capacity: ArrayBuffer): void {
     if (i < S.byteCount ? !(v >= 0 && v <= 255 && v === Math.floor(v)) : words[i] !== 0) throw new Error('Grasa P3 corrupta');
   }
   const table = new Uint16Array(capacity, 4096 + S.offsetBytes + S.encodedBytes, S.pageTableBytes / 2);
-  if (s0028FatPages().flat().join() !== table.join() || table.length !== (3 * S.encodedBytes) / 4096)
-    throw new Error('Tabla de páginas P3 distinta');
+  if (s0028FatPages().flat().join() !== table.join()) throw new Error('Tabla de páginas P3 distinta');
   fat = words;
 }
 
@@ -118,24 +117,22 @@ export function s0028SolidsUploads(): ReadonlyArray<{ offset: readonly number[];
 }
 
 /**
- * Gradiente analítico (mm/mm) de la trilineal del riñón cuya caja contiene p (derecho si x < 10 mm): los mismos ocho
- * nodos que su distancia, sin diferencias finitas. null fuera de la caja. Gemelo GLSL: s28PGrad.
+ * Gradiente analítico (mm/mm) de la trilineal del riñón cuya caja contiene p (derecho si x < 10 mm): lineal en cada eje
+ * dentro de la celda, su derivada es exactamente la diferencia de la trilineal en las dos caras de la celda que
+ * contienen a p, entre 1,5 mm (los mismos ocho nodos; no un paso de diferencias finitas). null fuera de la caja.
+ * Gemelo GLSL: s28PGrad.
  */
 export function s0028KidneyGradient(p: Vec3): Vec3 | null {
   const f = FIELDS[p[0] < 10 ? 3 : 4],
-    [W, H] = B.abdominal.textureDimensions,
-    q = p.map((v, k) => (v - f.originMm[k]) / 1.5);
-  if (q.some((v, k) => !(v >= 0 && v <= f.dimensions[k] - 1))) return null;
-  const a = q.map((v, k) => Math.min(f.dimensions[k] - 2, Math.floor(v))),
-    [tx, ty, tz] = q.map((v, k) => v - a[k]),
-    n = (x: number, y: number, z: number) =>
-      HALF[abdominalAtlas![2 * ((a[2] + z + f.offset[2]) * W * H + (a[1] + y + f.offset[1]) * W + a[0] + x + f.offset[0])]],
-    mix = (u: number, v: number, t: number) => u + t * (v - u);
-  return [
-    mix(mix(n(1, 0, 0) - n(0, 0, 0), n(1, 1, 0) - n(0, 1, 0), ty), mix(n(1, 0, 1) - n(0, 0, 1), n(1, 1, 1) - n(0, 1, 1), ty), tz) / 1.5,
-    mix(mix(n(0, 1, 0) - n(0, 0, 0), n(1, 1, 0) - n(1, 0, 0), tx), mix(n(0, 1, 1) - n(0, 0, 1), n(1, 1, 1) - n(1, 0, 1), tx), tz) / 1.5,
-    mix(mix(n(0, 0, 1) - n(0, 0, 0), n(1, 0, 1) - n(1, 0, 0), tx), mix(n(0, 1, 1) - n(0, 1, 0), n(1, 1, 1) - n(1, 1, 0), tx), ty) / 1.5,
-  ];
+    d = (q: Vec3) => sourceDistance(abdominalAtlas!, q, f, B.abdominal.textureDimensions);
+  if (p.some((v, k) => !((v - f.originMm[k]) / 1.5 >= 0 && (v - f.originMm[k]) / 1.5 <= f.dimensions[k] - 1))) return null;
+  return p.map((v, k) => {
+    const lo: Vec3 = [...p],
+      hi: Vec3 = [...p];
+    lo[k] = f.originMm[k] + 1.5 * Math.min(f.dimensions[k] - 2, Math.floor((v - f.originMm[k]) / 1.5));
+    hi[k] = lo[k] + 1.5;
+    return (d(hi) - d(lo)) / 1.5;
+  }) as Vec3;
 }
 
 /** Grasa compatible D del vóxel nearest (HU [−190, −30], ≤30 mm del riñón, sin máscara); null fuera de ambas cajas. */
@@ -153,6 +150,42 @@ export function s0028CompatibleFat(p: Vec3): boolean | null {
     if ((HALF[fat[b.byteOffset + (bit >> 3)]] >> (bit & 7)) & 1) return true;
   }
   return covered ? false : null;
+}
+
+/**
+ * Zonas rígidas por dueño en la compresión (r3), a lo largo de la línea E + dir·t del tronco rígido (en apnea, material =
+ * rígido): la entrada de cada hueso o cartílago (hasta ocho) y los tramos renales [entrada, salida] (el quiste y el seno
+ * no son máscara renal: quedan entre dos tramos). Pasos de 0,75 mm afinados por bisección.
+ */
+export function s0028RigidSpan(E: Vec3, dir: Vec3, tMax: number): [number[], number[]] {
+  const inside = (t: number, kidney: boolean): boolean =>
+    (kidney ? [3, 4] : [9, 10, 11, 12]).some((i) => {
+      const f = FIELDS[i];
+      const p: Vec3 = [E[0] + dir[0] * t, E[1] + dir[1] * t, E[2] + dir[2] * t];
+      return sourceDistance(f.asset === 'abdominal' ? abdominalAtlas! : thoracicAtlas!, p, f, B[f.asset].textureDimensions) < 0;
+    });
+  const edge = (a: number, kidney: boolean): number => {
+    if (a < -2) return a + 0.75;
+    let b = a + 0.75;
+    const start = inside(a, kidney);
+    for (let i = 0; i < 7; i++) {
+      const m = (a + b) / 2;
+      if (inside(m, kidney) === start) a = m;
+      else b = m;
+    }
+    return (a + b) / 2;
+  };
+  const bones: number[] = [],
+    renal: number[] = [];
+  let bone = false;
+  for (let t = -2; t <= tMax; t += 0.75) {
+    const b = inside(t, false);
+    if (b && !bone && bones.length < 8) bones.push(edge(t - 0.75, false));
+    if (inside(t, true) !== renal.length % 2 > 0) renal.push(edge(t - 0.75, true));
+    bone = b;
+  }
+  if (renal.length % 2) renal.push(tMax);
+  return [bones, renal];
 }
 
 /**

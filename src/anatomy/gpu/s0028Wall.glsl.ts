@@ -163,9 +163,9 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
  if(bone.x<0.0){c.tissue=thoracicMaterial(bone.y)==2?T_VERTEBRA:T_BONE;c.bd=-bone.x;return true;}
  bone=abdominalAtlasValue(m,8);
  if(bone.x<0.0){c.tissue=bone.y<=5.0?T_VERTEBRA:T_BONE;c.bd=-bone.x;return true;}
- bone=s28_sacrum(m);if(bone.x<0.0){c.tissue=T_BONE;c.bd=-bone.x;return true;}
- vec2 cart=s28_cartilage(m);
- if(cart.x<0.0){c.tissue=T_CARTILAGE;c.bd=-cart.x;c.iface=IF_PERICHONDRIUM;c.ifd=-cart.x;return true;}
+ float s=s28PA(m,10);if(s<0.0){c.tissue=T_BONE;c.bd=-s;return true;}
+ s=s28PT(m,1);
+ if(s<0.0){c.tissue=T_CARTILAGE;c.bd=-s;c.iface=IF_PERICHONDRIUM;c.ifd=-s;return true;}
  bool valid;vec4 q=s28WallAt(m,valid);
  if(!valid||q.w>=q.z)return false;
  bool fat=q.w<q.x;float outer=fat?1.5:q.x,inner=fat?q.x:q.y;
@@ -192,7 +192,7 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
   if (/float\s+lungCurtainEdgeMm\s*\(/.test(changed))
     changed = replace(changed, 'float', 'lungCurtainEdgeMm', 'float lungCurtainEdgeMm(vec3 m){return -1000.0;}');
   if (/bool\s+inLungRecess\s*\(/.test(changed))
-    changed = replace(changed, 'bool', 'inLungRecess', 'bool inLungRecess(vec3 m,float insideWall){return s28_lung(m).x<0.0;}');
+    changed = replace(changed, 'bool', 'inLungRecess', 'bool inLungRecess(vec3 m,float insideWall){return s28PT(m,2)<0.0;}');
   // Reverberación tras gas: pow con base negativa (r < k·gasHit) no está definido en GLSL ES y Metal devuelve NaN desde
   // el gas hasta el final de la línea. El pulmón y el gas fuente de s0028 lo disparan en casi todas las ventanas; el
   // cuadrado explícito es la misma gaussiana. El default no se toca (sus programas siguen idénticos a main).
@@ -215,7 +215,7 @@ bool classifyWall(vec3 m,out Cls c,out float depth,out vec3 tn){
   changed = changed.replace(
     /}\s*else\s+if\s*\(c\.iface\s*==\s*IF_RIB\s*\|\|\s*c\.iface\s*==\s*IF_PERICHONDRIUM\)\s*\{/,
     `} else if(c.iface==IF_PERICHONDRIUM){
-    g=vec3(s28_cartilage(m+h.xyy).x-s28_cartilage(m-h.xyy).x,s28_cartilage(m+h.yxy).x-s28_cartilage(m-h.yxy).x,s28_cartilage(m+h.yyx).x-s28_cartilage(m-h.yyx).x);
+    g=vec3(s28PT(m+h.xyy,1)-s28PT(m-h.xyy,1),s28PT(m+h.yxy,1)-s28PT(m-h.yxy,1),s28PT(m+h.yyx,1)-s28PT(m-h.yyx,1));
   } else if(c.iface==IF_RIB){`,
   );
   changed = changed.replace(/float\s+lg\s*=\s*length\(g\);/, 'if(any(isnan(g)))return vec4(0.0);\n  float lg = length(g);');

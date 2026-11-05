@@ -2,14 +2,19 @@ import {
   PROBE_COMPRESSION,
   compressionPlateMm,
   compressionReachMm,
+  compressionSpanMm,
   nodeInterp,
   nodeSin,
+  rigidNode,
+  tableAt,
   type CompressionNode,
   type ProbeCompression,
+  type RigidNode,
 } from '../anatomy/compression';
 import { torsoDepth, torsoDepthGradient, type Torso } from '../anatomy/primitives';
 import { anatomyBundle } from '../anatomy/anatomyBundle';
 import { s0028ContactFace, s0028ContactInside, s0028WallAt } from '../anatomy/s0028Wall';
+import { s0028RigidSpan } from '../anatomy/s0028Solids';
 import { dot, length, smoothstep, type Vec3 } from '../core/vec3';
 import { probeFrame, skinSoftness, type ProbeFrame, type ProbePose, type Transducer } from './probe';
 
@@ -404,6 +409,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   const at = (v: number[], k: number): number => v[Math.min(n - 1, Math.max(0, k))];
   const eroded = hover.map((h, k) => h * Math.min(at(parallel, k - 1), parallel[k], at(parallel, k + 1)));
   const contact = eroded.map((c, k) => 0.25 * at(eroded, k - 1) + 0.5 * c + 0.25 * at(eroded, k + 1));
+  const rigidNodes = anatomyBundle.person === 's0028' ? s0028RigidNodes(frame, tr, nodes) : undefined;
   return {
     center: [frame.curvatureCenter[0], frame.curvatureCenter[1], frame.curvatureCenter[2]],
     radiusMm: tr.curvatureRadius,
@@ -413,8 +419,10 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
     halfElevationMm: tr.elevationMm / 2,
     plateMm: W,
     nodes,
-    reachMm: compressionReachMm(nodes),
+    // El tramo renal retrasa el perfil detrás de él (σ' = 0 dentro): el alcance crece en su longitud.
+    reachMm: compressionReachMm(nodes) + Math.max(0, ...(rigidNodes ?? []).map((r) => r[2])),
     contact,
+    ...(rigidNodes ? { rigid: rigidNodes } : {}),
     frame,
     summary: {
       indentMm: indent,
@@ -427,6 +435,35 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
       ...(anatomyBundle.person === 's0028' ? { wallSourceByNode: face.nodes.map((g) => g.wallSource ?? 'none') } : {}),
     },
   };
+}
+
+/**
+ * s0028 (r3): el nodo rígido de cada línea en el marco efectivo (`rigidNode`). Cada línea usa también los huesos de sus
+ * dos vecinas: entre dos líneas la tabla se interpola y el borde oblicuo de una vértebra que sólo corta una de ellas
+ * quedaba a medio fijar (hepatorrenal: 12 píxeles hasta 4,3 mm). Un nodo sin riñón toma la d₁ del vecino más cercano que
+ * lo tiene: entre ellos la interpolación lineal sólo adelgaza el tramo, sin moverlo.
+ */
+function s0028RigidNodes(frame: ProbeFrame, tr: Transducer, nodes: readonly CompressionNode[]): RigidNode[] {
+  // Los parámetros que se evalúan en la línea del nodo: los de la B-spline en su σ, no el control.
+  const smooth = nodes.map((_, k) => tableAt(nodeSin(k, tr.halfSector), { halfAngle: tr.halfSector, nodes } as ProbeCompression).v);
+  const spans = smooth.map((v, k) => {
+    const s = nodeSin(k, tr.halfSector),
+      c = Math.sqrt(1 - s * s),
+      dir = [0, 1, 2].map((i) => frame.axial[i] * c + frame.lateral[i] * s) as Vec3,
+      E = [0, 1, 2].map((i) => frame.curvatureCenter[i] + dir[i] * tr.curvatureRadius) as Vec3;
+    return s0028RigidSpan(E, dir, v[2] + compressionSpanMm(v[1]) + 120);
+  });
+  const out = smooth.map((v, k) =>
+    rigidNode(
+      v,
+      [k - 1, k, k + 1].flatMap((j) => spans[j]?.[0] ?? []).sort((x, y) => x - y),
+      spans[k][1],
+    ),
+  );
+  const renal = out.map((r, k) => (r[2] ? k : -1)).filter((k) => k >= 0);
+  return out.map((r, k) =>
+    r[2] || !renal.length ? r : [r[0], out[renal.reduce((a, b) => (Math.abs(b - k) < Math.abs(a - k) ? b : a))][1], 0],
+  );
 }
 
 /** Acoplamiento acústico de la línea θ (0–1): el contacto conseguido en su elemento. */

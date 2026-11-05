@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import { personShader } from '../anatomy/gpu/personShader';
+import { RIGID_BASE } from '../anatomy/gpu/anatomy.glsl';
 import { S0028_BUNDLE as bundle } from '../anatomy/anatomyBundle';
 import { shaderCosts } from '../../tools/anatomy/s0028-shader-metrics';
 import { minifyGlslBody } from '../../tools/build/glslMinify';
@@ -79,7 +80,7 @@ it('sin cortina pulmonar procedural en s0028: A0 no toma la pared regional por p
     if (typeof source !== 'string') throw new Error('Programa ausente');
     const specialized = personShader(source, { person: 's0028', bundle });
     if (/lungCurtainEdgeMm\s*\(/.test(source)) expect(specialized, name).toContain('float lungCurtainEdgeMm(vec3 m){return -1000.0;}');
-    if (/bool\s+inLungRecess\s*\(/.test(source)) expect(specialized, name).toContain('return s28_lung(m).x<0.0;');
+    if (/bool\s+inLungRecess\s*\(/.test(source)) expect(specialized, name).toContain('return s28PT(m,2)<0.0;');
     expect(specialized, name).not.toMatch(/m\.z\s*-\s*min\(uCurtain\.x,\s*domeHeight/);
   }
 });
@@ -116,4 +117,16 @@ it('la GPU s0028 pesa la celda U con la rampa por profundidad de su fila y la ce
   expect(source).toMatch(/if\(s28Valid\(g,s,depth,b\)\)gi=s28Grad\(e,f,g,xy\);\s*else\{ramp=s28Ramp\(rc\.y\);inside=-depth;gi=-g;\}/);
   // El default no cambia (hash por programa en la prueba de arriba).
   expect(personShader(PASSES.FRAG_RAWFIELD, { person: 'current' })).not.toContain('s28Ramp');
+});
+
+it('compresión rígida s0028 (r3): el perfil se evalúa sobre σ(d) con la tabla (κ, d₁, L) del tramo; el default no la lee', () => {
+  for (const name of ['FRAG_RAWFIELD', 'FRAG_TRANS_HITS', 'FRAG_RAWFIELD_CLASS', 'FRAG_COLOR'] as const) {
+    const source = personShader(PASSES[name], { person: 's0028', bundle });
+    expect(source, name).toContain(`s28R=mix(sceneTexel(${RIGID_BASE}+i).xyz,sceneTexel(${RIGID_BASE}+i+1).xyz,t);`);
+    expect(source, name).toContain(
+      'float g=compressionProfile0(wall?depth:v.z+s28R.x*(depth-v.z-clamp(depth-s28R.y,0.0,s28R.z)),v,gd,gp);',
+    );
+    expect(source, name).toContain('gd*=wall?1.0:depth>s28R.y&&depth<s28R.y+s28R.z?0.0:s28R.x;');
+    expect(PASSES[name], name).not.toContain('s28R');
+  }
 });

@@ -5,13 +5,19 @@ su relleno de 6 nodos). Etiquetas categóricas: 0 U, 1 corteza, 2 médula, 3 sen
 Procedencia por vóxel con los códigos de la pared P2: U = 0, D = 2, E = 3 (O no aparece dentro: la máscara O sólo
 da el borde). Ningún vóxel reclamado por otra máscara fuente recibe etiqueta.
 
-Seno: componentes de envolvente convexa − máscara − otras máscaras que alcanzan `minDepthMm` de profundidad; la banda
-a menos de `mouthBandMm` de la cara de la envolvente (boca hiliar y concavidades someras) es U porque depende de la
-regla de cierre. Dentro: grasa D por HU; luz del colector D por HU líquido suavizado sólo con los vóxeles no grasos del
-seno, sin borde grasa/realce en su vecindad 26 y con tamaño mínimo; vasos, bordes y restos U.
+Profundidad: EDT de la envolvente convexa con la caja acolchada (el borde del array es exterior, no interior).
+Seno: la componente de cavidad (envolvente − máscara − otras máscaras) que contiene el vóxel de cavidad más profundo
+(el hilio; en empate, el primero en orden C), si llega a `minDepthMm`; cualquier otra componente (concavidad somera)
+no es seno. La banda a menos de `mouthBandMm` del exterior (boca hiliar) es U porque depende de la regla de cierre.
+Dentro: grasa D por HU crudo; luz del colector D por HU líquido suavizado sólo con los vóxeles no grasos del seno, HU
+crudo acotado, sin borde grasa/realce en su vecindad 26 y con tamaño mínimo; vasos, bordes y restos U.
 Parénquima: corteza/médula sólo si el déficit del parénquima profundo supera el ruido (puerta medida); umbral de Otsu
 del HU suavizado en el núcleo renal; E si el d′ por vóxel no alcanza `nativeDPrimeForD`; médula subcapsular o en
 componentes pequeños, U. Nada de atlas ajenos ni formas analíticas. Python -I; numpy/scipy (nibabel sólo en E/S).
+
+Exportación (TAC y máscaras fuera de Git, versiones de `paired-renal-review-requirements.txt`):
+    python -I tools/anatomy/s0028-renal-interior.py --case-dir "$VEXUS_S0028_CASE_DIR" --out <directorio nuevo>
+con `VEXUS_S0028_CASE_DIR` = carpeta del caso s0028 (`ct.nii.gz` y `segmentations/`, hashes de `s0028-case.json`).
 """
 import argparse
 import copy
@@ -19,9 +25,12 @@ import gzip
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import platform
 
 import numpy as np
+import scipy
 from scipy import ndimage as ndi
 from scipy.spatial import ConvexHull, Delaunay
 
@@ -39,7 +48,9 @@ PARAMS = {
     'provenanceCodes': {'U': U, 'D': D, 'E': E},
     'nibble': 'bits 0-2 label; bit 3 = E (label>0); label 0 only U; 5-7 and 8-15 except 9-12 invalid',
     'flatten': 'C xyz, z fastest; even voxel low nibble; one byte per exact half; 2048 halves per 32x32 RG16F page',
-    'sinus': {'hullTolerance': 1e-9, 'connectivity': 26, 'minDepthMm': 6.0, 'mouthBandMm': 3.0},
+    'depth': 'EDT of the convex hull with the box padded by >= max depth + 1 voxel (array border is exterior)',
+    'sinus': {'hullTolerance': 1e-9, 'connectivity': 26, 'rule': 'cavity component holding the deepest cavity voxel',
+              'minDepthMm': 3.0, 'mouthBandMm': 3.0},
     'fatHU': [-190, -30],
     'collecting': {'sigmaMm': 1.5, 'smoothedHU': [-10, 40], 'rawHU': [-40, 80], 'interfaceLowHU': -60,
                    'interfaceHighHU': 100, 'minVoxels': 27},
@@ -71,6 +82,20 @@ def convex_hull_mask(mask, tolerance):
     return inside
 
 
+def depth_inside(region):
+    """Distancia (mm) de cada vóxel de `region` a su exterior, con la caja acolchada: fuera del array es exterior.
+
+    Sin acolchar, la EDT toma el borde del array por interior y sobreestima la profundidad donde la región toca la cara
+    de la caja (la envolvente renal la toca siempre: la caja es el crop de la máscara). El margen cubre la profundidad
+    máxima posible (mitad del lado menor) más un vóxel."""
+    region = _check_volume('región', region, dtype=bool)
+    pad = -(-min(region.shape)//2)+1
+    depth = ndi.distance_transform_edt(np.pad(region, pad), sampling=PITCH)[(slice(pad, -pad),)*3]
+    if depth.max(initial=0)+PITCH > pad*PITCH+1e-9:
+        raise ValueError('margen de la EDT insuficiente')
+    return depth
+
+
 def smooth_within(values, weights, sigma_mm):
     """Convolución gaussiana normalizada: sólo promedian los vóxeles de `weights`; NaN donde no llega ninguno."""
     weights = np.asarray(weights, bool)
@@ -95,18 +120,22 @@ def otsu_threshold(values, lo, hi, step):
 
 
 def sinus_region(mask, others, params):
-    """Cavidad de la envolvente no reclamada por ninguna máscara fuente; banda de cierre aparte (U)."""
+    """Seno = componente de cavidad con el vóxel más profundo (el hilio), si alcanza la profundidad mínima; banda U."""
     p = params['sinus']
     hull = convex_hull_mask(mask, p['hullTolerance'])
-    depth = ndi.distance_transform_edt(hull, sampling=PITCH)
+    depth = depth_inside(hull)
     cavity = hull & ~mask & ~others
     labels, count = ndi.label(cavity, structure=N26 if p['connectivity'] == 26 else N6)
-    deepest = ndi.maximum(depth, labels, index=np.arange(1, count+1)) if count else np.zeros(0)
-    keep = np.arange(1, count+1)[np.asarray(deepest) >= p['minDepthMm']]
-    sinus = np.isin(labels, keep)
+    sinus = np.zeros(mask.shape, bool)
+    deepest = 0.0
+    if count:
+        flat = int(np.argmax(np.where(cavity, depth, -1.0)))  # primer máximo en orden C: determinista en empates
+        deepest = float(depth.flat[flat])
+        if deepest >= p['minDepthMm']:
+            sinus = labels == labels.flat[flat]
     band = sinus & (depth < p['mouthBandMm'])
     return {'hull': hull, 'depth': depth, 'cavity': cavity, 'sinus': sinus, 'band': band,
-            'cavityComponents': int(count), 'sinusComponents': int(len(keep))}
+            'cavityComponents': int(count), 'sinusMaxDepthMm': round(deepest, 3)}
 
 
 def collecting_lumen(hu, inner, params):
@@ -126,15 +155,16 @@ def collecting_lumen(hu, inner, params):
                    'keptComponents': int(np.count_nonzero(sizes >= p['minVoxels'])), 'smallVoxels': int((candidate & ~lumen).sum())}
 
 
-def classify_parenchyma(hu, kidney, hull, sinus, params):
-    """Corteza/médula candidatas por Otsu del HU suavizado en el núcleo; la puerta decide U/E/D."""
+def classify_parenchyma(hu, kidney, d_out, sinus, params):
+    """Corteza/médula candidatas por Otsu del HU suavizado en el núcleo; la puerta decide U/E/D.
+
+    `d_out` es la profundidad acolchada de la envolvente (la misma de `sinus_region`), no una EDT de la caja."""
     p = params['parenchyma']
     core = ndi.binary_erosion(kidney, structure=N6, iterations=p['coreErosion6'])
     if not core.any():
         raise ValueError('núcleo renal vacío')
     smoothed = smooth_within(hu, core, p['sigmaMm'])
     threshold = otsu_threshold(smoothed[core], *p['otsuHU'])+p['otsuOffsetHU']
-    d_out = ndi.distance_transform_edt(hull, sampling=PITCH)
     d_sinus = ndi.distance_transform_edt(~sinus, sampling=PITCH) if sinus.any() else np.full(hu.shape, np.inf)
     finite = kidney & np.isfinite(smoothed)
     low = finite & (smoothed < threshold)
@@ -184,9 +214,10 @@ def annotate(hu, kidney, others, smoothed_noise_sd, params=PARAMS):
     own = kidney & ~others
     region = sinus_region(kidney, others, params)
     inner = region['sinus'] & ~region['band']
-    fat = inner & (hu >= params['fatHU'][0]) & (hu <= params['fatHU'][1])
+    fat_window = (hu >= params['fatHU'][0]) & (hu <= params['fatHU'][1])
+    fat = inner & fat_window
     lumen, lumen_info = collecting_lumen(hu, inner & ~fat, params)
-    par = classify_parenchyma(hu, own, region['hull'], region['sinus'], params)
+    par = classify_parenchyma(hu, own, region['depth'], region['sinus'], params)
     decision, gate_info = gate(par, smoothed_noise_sd, params)
     labels = np.zeros(hu.shape, np.uint8)
     provenance = np.zeros(hu.shape, np.uint8)
@@ -199,13 +230,17 @@ def annotate(hu, kidney, others, smoothed_noise_sd, params=PARAMS):
     labels[lumen] = 4
     provenance[fat | lumen] = D
     require_annotation(labels, provenance, kidney, others, region['sinus'], region['band'])
+    shallow = region['cavity'] & ~region['sinus']
     reasons = {'otherOwnerInMask': int((kidney & others).sum()), 'subcapsularLow': int(par['subcapsular'].sum()),
                'smallMedullaComponents': int(par['small'].sum()), 'unsmoothed': int(par['unsmoothed'].sum()),
                'mouthBand': int(region['band'].sum()), 'sinusVesselOrInterface': int((inner & ~fat & ~lumen).sum()),
                'parenchymaGateU': int(own.sum()) if decision == 'U' else 0}
     metrics = {'boxShape': list(hu.shape), 'maskVoxels': int(kidney.sum()), 'hullVoxels': int(region['hull'].sum()),
                'cavityVoxels': int(region['cavity'].sum()), 'cavityComponents': region['cavityComponents'],
-               'sinusVoxels': int(region['sinus'].sum()), 'sinusComponents': region['sinusComponents'],
+               'sinusVoxels': int(region['sinus'].sum()), 'sinusMaxDepthMm': region['sinusMaxDepthMm'],
+               'bandFatVoxels': int((region['band'] & fat_window).sum()),
+               # Fuera del seno y de su dominio (U aquí); r5 decide si vuelven a grasa compatible D del paquete P3.
+               'shallowConcavity': {'voxels': int(shallow.sum()), 'fatVoxels': int((shallow & fat_window).sum())},
                'parenchyma': {'decision': decision, **gate_info, 'otsuThresholdHU': par['threshold'],
                               'deltaDeepHU': round(par['deltaHU'], 2), 'nativeNoiseSdHU': round(par['nativeNoiseSdHU'], 2),
                               'smoothedNoiseSdHU': round(float(smoothed_noise_sd), 2), 'superficialVoxels': par['superficialVoxels'],
@@ -318,19 +353,9 @@ def box_frame(field, origin_las, crop_lo, crop_shape):
             'originMm': (expected+FIELD_PAD*PITCH).tolist()}
 
 
-def parameters_digest(params):
-    return hashlib.sha256(json.dumps(params, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-
-
-def _source():
-    spec = importlib.util.spec_from_file_location('s0028source', Path(__file__).with_name('s0028-source.py'))
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def _place(masks, names, lo, shape):
-    union = np.zeros(shape, bool)
+def place(masks, names, lo, shape):
+    """Unión de crops nativos `masks[name] = (origen, máscara)` reproyectada en la caja `lo`, `shape` del mismo marco."""
+    union = np.zeros(tuple(shape), bool)
     for name in names:
         p, data = masks[name]
         a = np.maximum(lo, p)
@@ -338,6 +363,31 @@ def _place(masks, names, lo, shape):
         if np.all(b > a):
             union[tuple(slice(x-y, z-y) for x, y, z in zip(a, lo, b))] |= data[tuple(slice(x-y, z-y) for x, y, z in zip(a, p, b))]
     return union
+
+
+def side_inputs(ct, masks, name):
+    """Caja de un riñón: su crop O, la unión de todas las demás máscaras fuente en esa caja y el HU de la misma caja."""
+    lo, kidney = masks[name]
+    others = place(masks, [n for n in masks if n != name], lo, kidney.shape)
+    hu = ct[tuple(slice(a, a+d) for a, d in zip(lo, kidney.shape))]
+    return np.asarray(lo), kidney, others, hu
+
+
+def parameters_digest(params):
+    return hashlib.sha256(json.dumps(params, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def environment():
+    import nibabel
+    return {'python': platform.python_version(), 'numpy': np.__version__, 'scipy': scipy.__version__,
+            'nibabel': nibabel.__version__}
+
+
+def _source():
+    spec = importlib.util.spec_from_file_location('s0028source', Path(__file__).with_name('s0028-source.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def export(case_dir, manifest, candidate, out, params=PARAMS):
@@ -359,24 +409,21 @@ def export(case_dir, manifest, candidate, out, params=PARAMS):
     smoothed_noise = float(np.nanstd(smooth_within(hu_liver, core, params['parenchyma']['sigmaMm'])[core]))
     boxes, codes, review = [], [], {}
     for side, field in (('right', 'kidneyRight'), ('left', 'kidneyLeft')):
-        name = 'kidney_'+side
-        crop_lo, kidney = masks[name]
+        crop_lo, kidney, others, hu = side_inputs(ct, masks, 'kidney_'+side)
         frame = box_frame(fields[field], origin, crop_lo, kidney.shape)
-        others = _place(masks, [n for n in masks if n != name], crop_lo, kidney.shape)
-        hu = ct[tuple(slice(a, a+d) for a, d in zip(crop_lo, kidney.shape))]
         labels, provenance, metrics, region = annotate(hu, kidney, others, smoothed_noise, params)
         codes.append(encode(labels, provenance))
         boxes.append({'side': side, **frame, 'metrics': metrics})
         review[side] = {'labels': labels, 'provenance': provenance, 'sinus': region['sinus'], 'band': region['band'],
-                        'hull': region['hull'], 'kidney': kidney, 'others': others, 'hu': hu.astype(np.int16),
-                        'cropLo': np.asarray(crop_lo)}
+                        'hull': region['hull'], 'depth': region['depth'].astype(np.float32), 'cavity': region['cavity'],
+                        'kidney': kidney, 'others': others, 'hu': hu.astype(np.int16), 'cropLo': crop_lo}
     payload, info = pack(codes)
     for box, row in zip(boxes, info['boxes']):
         box.update({k: row[k] for k in ('pageBase', 'pageCount', 'byteCount')})
     (out/'renal-interior.bin').write_bytes(payload)
     descriptor = {'format': params['format'], 'person': manifest['person'], 'physicalFrameSha256': source.physical_id(manifest),
-                  'parametersSha256': parameters_digest(params), 'parameters': params, 'boxes': boxes,
-                  'pageCount': info['pageCount'], 'encodedBytes': info['encodedBytes'], 'sha256': info['sha256'],
+                  'parametersSha256': parameters_digest(params), 'parameters': params, 'environment': environment(),
+                  'boxes': boxes, 'pageCount': info['pageCount'], 'encodedBytes': info['encodedBytes'], 'sha256': info['sha256'],
                   'gzipBytes': len(gzip.compress(payload, compresslevel=9, mtime=0)),
                   'runtimeInstalled': False, 'ownerReview': 'pending', 'clinicalValidation': False}
     (out/'renal-interior.json').write_text(json.dumps(descriptor, ensure_ascii=False, indent=1)+'\n')
@@ -386,15 +433,18 @@ def export(case_dir, manifest, candidate, out, params=PARAMS):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--case-dir', type=Path, required=True)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--case-dir', type=Path, default=os.environ.get('VEXUS_S0028_CASE_DIR'),
+                        help='carpeta del caso s0028; por defecto $VEXUS_S0028_CASE_DIR')
     parser.add_argument('--manifest', type=Path, default=Path(__file__).with_name('s0028-case.json'))
     parser.add_argument('--candidate', type=Path, default=Path(__file__).resolve().parents[2]/'src/anatomy/s0028/candidate-manifest.bin')
     parser.add_argument('--out', type=Path, required=True)
     args = parser.parse_args()
+    if args.case_dir is None:
+        parser.error('falta --case-dir o VEXUS_S0028_CASE_DIR')
     descriptor = export(args.case_dir, json.loads(args.manifest.read_text()), json.loads(args.candidate.read_bytes()), args.out,
                         copy.deepcopy(PARAMS))
-    print(json.dumps({k: descriptor[k] for k in ('sha256', 'encodedBytes', 'pageCount', 'gzipBytes', 'parametersSha256')}))
+    print(json.dumps({k: descriptor[k] for k in ('sha256', 'encodedBytes', 'pageCount', 'gzipBytes', 'parametersSha256', 'environment')}))
 
 
 if __name__ == '__main__':

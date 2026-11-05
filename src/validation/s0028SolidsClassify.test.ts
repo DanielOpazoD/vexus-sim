@@ -202,6 +202,18 @@ it('grasa compatible D: vóxel con bit y sin máscara es grasa D; la envolvente 
   }
   expect(fatChecked).toBeGreaterThan(60);
   expect(hull).toBeGreaterThan(40);
+  // Dentro de la celda nearest de un vóxel de grasa pero en el SDF lineal de una máscara: manda la máscara, sin grasa.
+  let sliver = 0;
+  for (const row of fat.rows.filter((r) => r.fat)) {
+    const box = B.solids.boxes.find((b) => b.side === row.side)!;
+    for (let k = 0; k < 27; k++) {
+      const p = box.originMm.map((o, a) => o + 1.5 * row.index[a] + 0.7 * ((Math.floor(k / 3 ** a) % 3) - 1)) as Vec3;
+      if (!SOURCES.some((f) => s0028SourceValue(p, f.name).d < 0) || s0028CompatibleFat(p) !== true) continue;
+      sliver++;
+      expect(ids(at(p)), p.join(',')).not.toContain('compatible_fat');
+    }
+  }
+  expect(sliver).toBeGreaterThan(0);
 });
 
 it('vocabulario cerrado: ningún dueño es Gerota, cuadrado lumbar, diafragma posterior, interior renal ni compartimento', () => {

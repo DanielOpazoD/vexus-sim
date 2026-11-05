@@ -4,6 +4,19 @@
 # (docs/TESTING.md). Lentas, matrices, cobertura, build y E2E quedan en `npm run check` y en la CI protegida, cuyo
 # recibo es la puerta de fusión.
 set -e
+# Git da una línea por referencia: «<ref local> <sha local> <ref remota> <sha remoto>». Un push que sólo borra ramas
+# (todas las sha locales en ceros) no publica código: no hay nada que comprobar. Sin líneas, se comprueba como siempre.
+hook_deletes_only=
+while read -r hook_local_ref hook_local_sha hook_remote_ref hook_remote_sha; do
+  case "$hook_local_sha" in
+    '' | *[!0]*) hook_deletes_only=no ;;
+    *) if [ -z "$hook_deletes_only" ]; then hook_deletes_only=yes; fi ;;
+  esac
+done
+if [ "$hook_deletes_only" = yes ]; then
+  echo 'El push sólo borra ramas remotas: no hay código que comprobar.'
+  exit 0
+fi
 hook_head=$(git rev-parse HEAD)
 hook_index=$(git write-tree)
 hook_config=$(git hash-object "$(git rev-parse --git-common-dir)/config")

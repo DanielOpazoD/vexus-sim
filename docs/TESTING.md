@@ -25,7 +25,9 @@ Ver [criterios de selección, costes observados y recibo CI](engineering/iterati
 | CI protegida (`.github/workflows/ci.yml`) | lo de `check` repartido en core y matrices, la E2E en doce fragmentos y el tríplex temprano                    | core y matrices con techo de 25 min, E2E de 40; su recibo es la puerta de fusión                                                  |
 | Cierre de ronda (`npm run closure`)       | las etapas de abajo, en serie y con un trabajador                                                              | ≈102 min de etapas en el cierre del punto 8: `check` 62, lentas 29, rápidas 7, gancho 2,3                                         |
 
-El gancho adelanta los errores baratos antes de publicar; no acredita nada. Lentas, matrices, cobertura, build y E2E
+El gancho adelanta los errores baratos antes de publicar; no acredita nada. Un push que sólo borra ramas remotas
+(`git push --delete`: todas las sha locales que recibe el gancho en ceros) no publica código y no corre nada: 0,02 s
+frente a ≈120 s. Lentas, matrices, cobertura, build y E2E
 quedan en `check` y en la CI protegida, que ya es la puerta de fusión (`CONTRIBUTING.md`). Una rama sólo puede introducir
 errores de formato o de lint en lo que cambia, y la CI sigue comprobando todo el repo; un cambio de configuración de
 Prettier o ESLint conviene comprobarlo entero (`npm run format:check`, `npm run lint`). Con carga ajena el gancho sigue

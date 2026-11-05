@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { feedbackFiles, feedbackFingerprint, feedbackGitEnvironment, feedbackPlan } from '../../tools/workspace/feedbackPlan';
@@ -85,6 +85,41 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       });
       expect(result.status).toBe(mutation === 'none' ? 0 : 1);
       if (mutation !== 'none') expect(result.stderr).toContain('publicación detenida');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  const ZERO = '0'.repeat(40),
+    SHA = 'a'.repeat(40);
+  it.each([
+    ['sólo borrados', `(delete) ${ZERO} refs/heads/x ${SHA}\n(delete) ${ZERO} refs/heads/y ${SHA}\n`, false],
+    ['borrado y publicación', `(delete) ${ZERO} refs/heads/x ${SHA}\nrefs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
+    ['publicación', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
+    ['sin líneas', '', true],
+  ])('el gancho real con un push de %s corre la capa rápida: %s', (_case, stdin, runs) => {
+    // `git push --delete` no publica código: con todas las sha locales en ceros el gancho no corre las ~1.900 pruebas.
+    const root = mkdtempSync(join(tmpdir(), 'vexus-hook-delete-'));
+    const env = feedbackGitEnvironment();
+    const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe', env });
+    try {
+      git('init');
+      git('config', 'user.name', 'Hook fixture');
+      git('config', 'user.email', 'fixture@example.invalid');
+      writeFileSync(join(root, 'seed'), 'one');
+      git('add', '.');
+      git('commit', '-m', 'one');
+      mkdirSync(join(root, 'bin'));
+      writeFileSync(join(root, 'bin/npm'), '#!/bin/sh\necho "$@" >> "$FIXTURE_CALLS"\nexit 0\n', { mode: 0o755 });
+      const calls = join(root, 'calls');
+      const result = spawnSync('sh', [join(import.meta.dirname, '../../.githooks/pre-push'), 'origin', 'https://example.invalid/x.git'], {
+        cwd: root,
+        encoding: 'utf8',
+        input: stdin,
+        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_CALLS: calls },
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(existsSync(calls)).toBe(runs);
+      if (!runs) expect(result.stdout).toContain('sólo borra ramas');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

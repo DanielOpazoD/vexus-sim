@@ -10409,6 +10409,28 @@ el contorno acústico se decide en r3 junto con la GPU. Dueño `heart` puede sal
 heredado). Las rojas Python de r2 fallaron por una función ausente (`p2_used_bytes`), no por comportamiento; las siete
 rojas TS sí. Metadatos 3.788/4.096 B es el mismo presupuesto del manifiesto (38.309 − 34.521), no una medida aparte.
 
+**Ronda r4, interior renal desde el propio TAC (offline, pendiente de revisión del propietario).** El TAC s0028 está en
+fase portal venosa (núcleos: aorta 137 HU, porta/esplénica 158, VCI 97–119, hígado 109) y sin contraste excretado
+(vejiga 25 HU); ruido por vóxel ≈ 19 HU. La máscara O renal excluye el seno: profundidad interna 12,5/12,2 mm y sólo
+45/27 vóxeles < −30 HU (0,14 %/0,08 %), todos a ≤ 2,1 mm del borde. El seno es la cavidad de la envolvente convexa de la
+máscara no reclamada por ninguna otra máscara fuente (5.113/5.136 vóxeles D/I, hasta 23/22 mm de profundidad).
+Separables en este TAC: grasa del seno D (HU [−190, −30]) y luz del colector D (orina sin contraste: HU suavizado
+[−10, 40] sólo con vóxeles no grasos del seno, sin borde grasa/realce en su vecindad, ≥ 27 vóxeles). Quedan U la banda
+< 3 mm de la cara de la envolvente (boca hiliar: depende de la regla de cierre), los vasos realzados y los bordes del
+seno. Corteza y médula no son D: el parénquima profundo está 27/25 HU por debajo del superficial, d′ por vóxel
+1,43/1,33; tras suavizar 1,5 mm son 4,5/4,2 σ y dibujan cuñas hacia el seno, así que se entregan como hipótesis E
+(umbral de Otsu 142/140 HU del HU suavizado en el núcleo; médula subcapsular o en componentes < 27 vóxeles, U).
+Candidato reproducible `tools/anatomy/s0028-renal-interior.py` (payload `ed757c70…`; contrato sintético
+`s0028-renal-interior_test.py`, 8 pruebas, 14/14 mutantes tumbados): corteza E 89,2/90,2 cm³, médula E 18,5/18,1,
+seno graso D 3,3/5,3, colector D 2,5/2,1; U 9,6 %/8,0 % del dominio máscara ∪ seno; ninguna etiqueta fuera de él, en la
+banda ni sobre otro dueño (quiste izquierdo y duodeno conservan su máscara). La grasa del seno queda dentro de ±1 DE
+de Caglar et al. 2014 (control, no fuente). Empaquetado medido, no instalado: 46 páginas RG16F (188.416 B) tras la
+grasa P3 en la reserva de pared (1.633.526/2.113.536 B), +12.372 B gzip, descarga 20.445.316/25.000.000 B; una lectura
+nearest por evaluación en una columna fija de páginas del atlas (sin tabla, textura, sampler ni bucles). El descriptor
+(612 B) no cabe en los 308 B de margen de metadatos: exige escribir los descriptores P2 en una línea (−1.194 B, mismo
+JSON; 3.206/4.096 B). Láminas sí/no con seis casillas del propietario sin rellenar. Sin runtime ni GPU (r5); sin
+validación clínica.
+
 ## 322. Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo
 
 **Contexto.** Medido sobre main `8555a2c` (05-11-2026): `src` ≈51.000 líneas de producto; validación 300 archivos /

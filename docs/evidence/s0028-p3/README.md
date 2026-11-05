@@ -1,7 +1,25 @@
 # P3: sólidos y compartimento posterior s0028 (321)
 
 **Pendiente de revisión del propietario.** r1 dejó la fuente y el paquete offline; r2 integra la
-clasificación en CPU y Worker. La GPU y su paridad son r3. Sin validación clínica.
+clasificación en CPU y Worker. La GPU y su paridad son r3; r4 propone, sin instalarla, una anotación del interior
+renal desde el propio TAC. Sin validación clínica.
+
+## r4: interior renal candidato (offline, sin runtime)
+
+TAC en fase portal venosa sin contraste excretado; ruido ≈ 19 HU por vóxel. La máscara O renal no contiene el seno
+(profundidad interna 12,5/12,2 mm; 45/27 vóxeles < −30 HU, a ≤ 2,1 mm del borde): el seno es la cavidad de su
+envolvente convexa no reclamada por otra máscara (5.113/5.136 vóxeles D/I). Separables: grasa del seno D y luz del
+colector D (orina sin contraste); corteza/médula sólo como hipótesis E (déficit profundo 27/25 HU, d′ por vóxel
+1,43/1,33, 4,5/4,2 σ tras suavizar 1,5 mm). U: boca hiliar < 3 mm de la envolvente, vasos y bordes del seno.
+
+Exportador `tools/anatomy/s0028-renal-interior.py`, payload `ed757c70…` reproducible byte a byte, parámetros en el
+JSON (`34695a7d…`). Volúmenes D/I (cm³): corteza E 89,2/90,2; médula E 18,5/18,1; seno graso D 3,3/5,3; colector D
+2,5/2,1; U 9,6 %/8,0 % del dominio máscara ∪ seno. Contrato sintético 8 pruebas, 14/14 mutantes. Empaquetado medido,
+no instalado: 46 páginas (188.416 B) tras la grasa P3, reserva de pared 1.633.526/2.113.536 B, +12.372 B gzip,
+descarga 20.445.316 B; descriptor 612 B frente a 308 B de margen: compactar los descriptores P2 (−1.194 B).
+[Informe r4](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/report.md) ·
+[láminas y seis casillas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/review.html) ·
+[mediciones](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/measurements.json).
 
 ## r2: CPU y Worker
 

@@ -1,13 +1,44 @@
 # Migración a s0028: P1, compactación y P2 offline
 
 Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026); P3 r1 offline y r2 CPU/Worker, pendientes de revisión (321).**
+**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026); P3 r1 offline, r2 CPU/Worker y r4 interior renal candidato offline, pendientes de revisión (321).**
 Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
 ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
 de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
 La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
 Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
 no sustituyen la decisión 316 vigente de la pared cava.
+
+## P3 r4: interior renal candidato desde el propio TAC, pendiente (321)
+
+Offline: no se instala ni cambia el runtime, la GPU ni el paquete. Rejilla P1 de `kidneyRight`/`kidneyLeft` (1,5 mm, mismo
+marco), caja = crop de la máscara O (el campo sin su relleno de 6 nodos). Etiquetas 0 U, 1 corteza, 2 médula, 3 seno
+graso, 4 colector/pelvis; procedencia por vóxel U/D/E con los códigos de la pared P2.
+
+Qué separa este TAC (fase portal venosa, sin contraste excretado, ruido ≈ 19 HU por vóxel): la máscara O renal **no
+contiene el seno** (profundidad interna 12,5/12,2 mm; 45/27 vóxeles < −30 HU, todos a ≤ 2,1 mm del borde). El seno es la
+cavidad de la envolvente convexa no reclamada por otra máscara fuente (5.113/5.136 vóxeles, hasta 23/22 mm). Dentro:
+grasa D (HU [−190, −30]) y luz del colector D (orina sin contraste, HU suavizado [−10, 40] sólo con vóxeles no grasos
+del seno, sin borde grasa/realce, ≥ 27 vóxeles); la banda < 3 mm de la cara de la envolvente (boca hiliar), los vasos y
+los bordes quedan U. Corteza/médula: el parénquima profundo está 27/25 HU por debajo del superficial (d′ por vóxel
+1,43/1,33: no D; 4,5/4,2 σ tras suavizar 1,5 mm, cuñas hacia el seno): hipótesis **E** por umbral de Otsu (142/140 HU)
+del HU suavizado en el núcleo; médula subcapsular o en componentes pequeños, U.
+
+Candidato `tools/anatomy/s0028-renal-interior.py`, reproducible byte a byte (payload `ed757c70…`), con contrato
+sintético `tools/anatomy/s0028-renal-interior_test.py` (formato, procedencia, dominio, puerta, lectura única;
+14/14 mutantes): corteza E 89,2/90,2 cm³, médula E 18,5/18,1, seno graso D 3,3/5,3, colector D 2,5/2,1; U 9,6 %/8,0 % del
+dominio máscara ∪ seno; nada fuera de él, en la banda ni sobre otro dueño. Estabilidad: corteza Dice ≥ 0,977 y colector
+≥ 0,92 frente a cada parámetro; médula 0,91–0,99 (Otsu ±5 HU mueve ±16–20 %); la grasa depende sobre todo de la banda de
+cierre (0,70–0,92 con 1,5/4,5 mm). Hilio anteromedial en ambos lados; sin máscaras de vena/arteria renal, el realce sin
+máscara une el seno con la VCI (D) y la aorta (D, I). Grasa del seno dentro de ±1 DE de Caglar et al. 2014 (control).
+
+Empaquetado medido, sin instalar: 46 páginas RG16F (188.416 B) tras la grasa P3 en la reserva de pared, que pasaría a
+1.633.526/2.113.536 B; activo de capacidad +12.372 B gzip; descarga 20.445.316/25.000.000 B. Consumo GPU propuesto: una
+lectura nearest por evaluación en una columna fija y contigua de páginas del atlas abdominal (sin tabla, textura,
+sampler ni bucles). El descriptor (612 B) no cabe en el margen de metadatos (308 B): propuesta, escribir los descriptores
+P2 del manifiesto en una línea (mismo JSON, −1.194 B → 3.206/4.096 B). Láminas sí/no con seis casillas sin rellenar. La
+instalación CPU/Worker/GPU es r5. Sin validación clínica.
+[Evidencia P3](../evidence/s0028-p3/README.md).
 
 ## P3 r2: clasificador CPU/Worker de sólidos y posterior, pendiente (321)
 

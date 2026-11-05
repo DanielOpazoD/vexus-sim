@@ -389,5 +389,59 @@
     },
     "gpu": "r3",
     "clinicalValidation": false
+  },
+  "r4": {
+    "scope": "offline candidate; not installed; runtime/GPU unchanged",
+    "ctPhase": {
+      "aortaHU": 137,
+      "portalSplenicHU": 158,
+      "ivcHU": [97, 119],
+      "liverHU": 109,
+      "bladderHU": 25,
+      "phase": "portal venous; no excreted contrast",
+      "voxelNoiseHU": 19
+    },
+    "maskInterior": {
+      "maxDepthMm": [12.46, 12.19],
+      "voxelsBelowMinus30HU": [45, 27],
+      "maxDepthOfThoseMm": 2.12
+    },
+    "sinusVoxels": [5113, 5136],
+    "corticomedullary": {
+      "deepDeficitHU": [27.0, 25.0],
+      "nativeDPrime": [1.432, 1.328],
+      "smoothedSigmas": [4.547, 4.21],
+      "otsuHU": [142, 140],
+      "decision": "E"
+    },
+    "volumesCm3": {
+      "cortexE": [89.188, 90.177],
+      "medullaE": [18.468, 18.11],
+      "sinusFatD": [3.308, 5.252],
+      "collectingD": [2.511, 2.147]
+    },
+    "uFractionOfDomain": [0.0961, 0.0801],
+    "payload": {
+      "sha256": "ed757c70a0da98bd7981ac3c3865a7584b47b1a00a4e2b24cd07915c5ca1a736",
+      "pages": 46,
+      "encodedBytes": 188416,
+      "parametersSha256": "34695a7d7f2b28931eaab4e78f52c8e4909ba7fb8b3784b6402030e51f38cb85"
+    },
+    "packagingMeasured": {
+      "wallReserveEndBytes": 1633526,
+      "wallReserveBytes": 2113536,
+      "capacityGzipDeltaBytes": 12372,
+      "downloadBytes": 20445316,
+      "descriptorBytes": 612,
+      "metadataMarginBytes": 308,
+      "proposedCompactionSavingBytes": 1194
+    },
+    "contract": {
+      "tests": 8,
+      "mutantsKilled": 14,
+      "mutants": 14
+    },
+    "ownerReview": "pending",
+    "clinicalValidation": false
   }
 }

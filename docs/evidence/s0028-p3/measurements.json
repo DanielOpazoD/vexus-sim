@@ -1,7 +1,7 @@
 {
   "person": "s0028",
   "ownerReview": "pending",
-  "runtimeInstalledByP3": "r2: CPU/Worker only; GPU pending r3",
+  "runtimeInstalledByP3": "r2: CPU/Worker; r3: GPU con paridad, contorno renal y compresión rígida por dueño",
   "clinicalValidation": false,
   "sourceMasks": 117,
   "fatHU": [-190, -30],
@@ -453,5 +453,390 @@
     "hullVoxelsOnBoxFaces": [310, 377],
     "closureBandVoxels": [1330, 996],
     "shallowConcavityFatVoxelsForR5": [52, 122]
+  },
+  "r3": {
+    "commit": "78dec3d tras rebasar sobre f47e860 (= e72ab01 antes del rebase; f47e860 sólo añade docs y herramientas offline, mismo código de app)",
+    "gpu": {
+      "programs": ["RAWFIELD", "ECHO", "CLASS", "ELEVATION", "GRADIENT", "TRANS_HITS", "TRANS_HITS_GRID", "COLOR"],
+      "retiredInS0028Gpu": ["classifyKidneys", "kidneyQuery", "perirenal/Gerota fat", "ligamentum venosum"],
+      "loopsInP3": 0,
+      "newTexturesOrSamplers": 0,
+      "fatPages": 77,
+      "pageTable": "GLSL constant validated against the package at load"
+    },
+    "accessesPerEvaluation": {
+      "p3": {
+        "max": 30,
+        "p99": 17,
+        "p95": 14,
+        "mean": 4.91
+      },
+      "wall": 17,
+      "total": 47,
+      "design": 83,
+      "points": 674637,
+      "grid": "3 mm (+0,37/0,29/0,41) bajo la piel E, dominio s0028",
+      "multiplierPerPixel": {
+        "RAWFIELD": "≤4",
+        "ECHO": 1,
+        "CLASS": 1,
+        "ELEVATION": 1,
+        "GRADIENT": "0 (s28PGrad 8 nodos)",
+        "TRANS_HITS": "≤1024 pasos (línea Metal)",
+        "TRANS_HITS_GRID": 1,
+        "COLOR": 5
+      }
+    },
+    "renalContour": {
+      "interface": "RenalCapsule",
+      "cutoffMm": 1.2,
+      "normal": "analytic trilinear gradient (CPU = GPU)",
+      "twoSidedIncludingUU": true
+    },
+    "rigidCompression": {
+      "apnea": {
+        "vertebraMaxShiftMm": {
+          "main": 1.439,
+          "r3": 0
+        },
+        "kidneyP95RadialStrain": {
+          "main": 0.25,
+          "r3": 0,
+          "r3Flank": 0.061
+        },
+        "kidneyMaxRadialStrainR3": 0.38,
+        "kidneyMaxTranslationMm": 11.09,
+        "softMaxStrain": {
+          "hepatorenal": {
+            "main": 0.383,
+            "r3": 0.537
+          },
+          "renal": {
+            "main": 0.25,
+            "r3": 0.489
+          },
+          "allWindowsMax": {
+            "main": 0.508,
+            "r3": 0.537
+          }
+        },
+        "ribsUnderFaceMaxShiftMm": 19.39,
+        "drddMin": 1
+      },
+      "respiration": {
+        "subxiphoid": {
+          "kidneyP95Strain": {
+            "main": [0.2064, 0.2008, 0.1956],
+            "r3": [0, 0.171, 0.1662]
+          },
+          "vertebraMaxShiftMm": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          }
+        },
+        "epigastric": {
+          "kidneyP95Strain": {
+            "main": [0, "-", "-"],
+            "r3": [0, "-", "-"]
+          },
+          "vertebraMaxShiftMm": {
+            "main": [0.958, 0.88, 0.804],
+            "r3": [0, 0, 0]
+          }
+        },
+        "intercostal": {
+          "kidneyP95Strain": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          },
+          "vertebraMaxShiftMm": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          }
+        },
+        "subcostal": {
+          "kidneyP95Strain": {
+            "main": [0.2497, 0.2486, 0.2391],
+            "r3": [0, 0, 0]
+          },
+          "vertebraMaxShiftMm": {
+            "main": ["-", "-", "-"],
+            "r3": [0, 0, 0.001]
+          }
+        },
+        "flank": {
+          "kidneyP95Strain": {
+            "main": [0.2497, 0.2474, 0.2092],
+            "r3": [0.0612, 0.0303, 0.0022]
+          },
+          "vertebraMaxShiftMm": {
+            "main": [0.625, 0.234, 0.116],
+            "r3": [0, 5.761, "-"]
+          }
+        },
+        "portal": {
+          "kidneyP95Strain": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          },
+          "vertebraMaxShiftMm": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          }
+        },
+        "portalTrunk": {
+          "kidneyP95Strain": {
+            "main": [0.0865, 0.0635, 0.0689],
+            "r3": [0, 0, 0]
+          },
+          "vertebraMaxShiftMm": {
+            "main": [0, 0, 0],
+            "r3": [0, 0, 0]
+          }
+        },
+        "renal": {
+          "kidneyP95Strain": {
+            "main": [0.2499, 0.2499, 0.2499],
+            "r3": [0, 0.344, 0.3498]
+          },
+          "vertebraMaxShiftMm": {
+            "main": [1.439, 1.077, 0.897],
+            "r3": [0, 0.232, 1.049]
+          }
+        },
+        "hepatorenal": {
+          "kidneyP95Strain": {
+            "main": [0.2497, 0.2486, 0.242],
+            "r3": [0, 0.2024, 0.2364]
+          },
+          "vertebraMaxShiftMm": {
+            "main": [0.034, 0.034, 0.034],
+            "r3": [0, 0, 0]
+          }
+        },
+        "portalSubcostal": {
+          "kidneyP95Strain": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          },
+          "vertebraMaxShiftMm": {
+            "main": ["-", "-", "-"],
+            "r3": ["-", "-", "-"]
+          }
+        }
+      },
+      "note": "tabla calculada en apnea; no sigue a la respiración"
+    },
+    "contactCostMs": {
+      "main": 20.05,
+      "r3": 33.03,
+      "what": "probeContact mediana, diez poses"
+    },
+    "parityMetal": {
+      "nodesFatConflicts": {
+        "points": 30983,
+        "equalPct": 99.99
+      },
+      "conflictWitnesses": {
+        "points": 119,
+        "equal": 119,
+        "pairs": 9
+      },
+      "kidneyPlanes": {
+        "D0": {
+          "equalPct": 99.982,
+          "interiorDisagree": [0, 14364]
+        },
+        "D10": {
+          "equalPct": 99.924,
+          "interiorDisagree": [0, 14194]
+        },
+        "D20": {
+          "equalPct": 99.848,
+          "interiorDisagree": [1, 14122]
+        }
+      },
+      "windowsWithCompression": {
+        "D0": {
+          "equalPct": 99.961,
+          "interiorDisagree": [0, 7936]
+        },
+        "D10": {
+          "equalPct": 99.863,
+          "interiorDisagree": [0, 7930]
+        },
+        "D20": {
+          "equalPct": 99.798,
+          "interiorDisagree": [0, 8012]
+        }
+      },
+      "renalFaceD0Pct": 100,
+      "ifdMaxMm": 1.5e-5,
+      "normalMin": 0.9999999,
+      "analyticRenalTissueGpu": 0,
+      "p2DeepBandMetalFinding": "9/134 testigos iniciales con banda P2 a 50–72 mm y margen < 0,3 mm o < 0,07 celdas: precisión Float32 de la proyección P2 en Metal"
+    },
+    "cpuWorker": "bit a bit con la tabla rígida, D = 10/20 (s0028SolidsMotion)",
+    "defaultParity": {
+      "points": 82251,
+      "frames": 10,
+      "contacts": 30,
+      "glslDefaultEqual": 38,
+      "equalToMain8555a2c": true
+    },
+    "ceilings": {
+      "FRAG_RAWFIELD": {
+        "main": [442270, 3366],
+        "r3": [407897, 2926],
+        "limit": [1385000, 11060],
+        "slots": 136,
+        "samplers": 10
+      },
+      "FRAG_RAWFIELD_ECHO": {
+        "main": [173366, 1255],
+        "r3": [166402, 1169],
+        "limit": [577000, 4640],
+        "slots": 137,
+        "samplers": 16
+      },
+      "FRAG_RAWFIELD_CLASS": {
+        "main": [128014, 942],
+        "r3": [120890, 853],
+        "limit": [455000, 3830],
+        "slots": 136,
+        "samplers": 10
+      },
+      "FRAG_RAWFIELD_ELEVATION": {
+        "main": [128154, 944],
+        "r3": [121030, 855],
+        "limit": [455000, 3830],
+        "slots": 137,
+        "samplers": 15
+      },
+      "FRAG_RAWFIELD_GRADIENT": {
+        "main": [106825, 730],
+        "r3": [96635, 599],
+        "limit": [351000, 2760],
+        "slots": 138,
+        "samplers": 15
+      },
+      "FRAG_TRANS_HITS": {
+        "main": [183655, 1455],
+        "r3": [168324, 1262],
+        "limit": [513000, 4470],
+        "slots": 101,
+        "samplers": 6
+      },
+      "FRAG_TRANS_HITS_GRID": {
+        "main": [85875, 708],
+        "r3": [78134, 611],
+        "limit": [252000, 2210],
+        "slots": 102,
+        "samplers": 11
+      },
+      "FRAG_COLOR": {
+        "main": [81069, 671],
+        "r3": [73008, 568],
+        "limit": [248000, 2160],
+        "slots": 110,
+        "samplers": 7
+      }
+    },
+    "jsBytes": 1069855,
+    "jsLimitBytes": 1070080,
+    "downloadBytes": 20433526,
+    "downloadIncrementBytes": 0,
+    "manifestBytes": 38309,
+    "metadataBytes": [3788, 4096],
+    "mutants": {
+      "killed": 14,
+      "total": 14,
+      "ids": [
+        "pesos-c0-c1-centro-fila",
+        "cara-DeepFascia-s0028",
+        "intercambio-fx-fy",
+        "medio-texel-pagina",
+        "OR-de-cajas",
+        "conflicto-elige-primero",
+        "contorno-solo-dentro",
+        "tubos-en-rinon-GPU",
+        "tubos-en-rinon-GPU-conducta",
+        "compresion-rigida-sin-GPU",
+        "hueso-con-desplazamiento",
+        "rinon-se-deforma",
+        "contorno-renal-CPU-ausente",
+        "bucle-en-lector-P3"
+      ]
+    },
+    "plates": {
+      "count": 16,
+      "opened": 16,
+      "cpuGpuDisagreePixels": {
+        "subxiphoid": 17,
+        "epigastric": 21,
+        "intercostal": 43,
+        "subcostal": 24,
+        "flank": 40,
+        "portal": 32,
+        "portalTrunk": 47,
+        "renal": 13,
+        "hepatorenal": 17,
+        "portalSubcostal": 36,
+        "kidney-right-axial": 33,
+        "kidney-right-coronal": 44,
+        "kidney-right-sagittal": 2,
+        "kidney-left-axial": 51,
+        "kidney-left-coronal": 73,
+        "kidney-left-sagittal": 12
+      },
+      "ownerChecklist": "blank, six boxes"
+    },
+    "ownerReview": "pending",
+    "clinicalValidation": false,
+    "gates": {
+      "swiftshaderX64": {
+        "commit": "e72ab01",
+        "passed": 7,
+        "total": 8,
+        "gpuFailed": 0,
+        "failed": ["s0028Load: espera de 15 s del tercer arranque (comprimido alterado)"],
+        "s0028Load": {
+          "failingStep": "e2e/s0028Load.spec.ts:78 toContainText('comprimido alterado') con 15.000 ms tras page.goto (tercer arranque, superficies alteradas)",
+          "traceMsAfterGoto": {
+            "r3-gate-b3": {
+              "bootstrapBegin": 22619,
+              "surfacesBegin": 23783,
+              "rejected": 24423
+            },
+            "main-a": {
+              "bootstrapBegin": 21890,
+              "surfacesBegin": 23140
+            }
+          },
+          "alternatingPairs": {
+            "main-a": "failed",
+            "r3-a": "failed",
+            "main-b": "passed (3,2 min)",
+            "r3-b": "failed"
+          },
+          "earlierR3": {
+            "gate-b1 (b35c566)": "failed",
+            "gate-b2 (b35c566)": "failed",
+            "gate-b3 (e72ab01)": "failed"
+          },
+          "earlierAssertionsInSpec": "pasan en r3: persona s0028, mapa real del Worker, bytes de inicialización, sin extracción de superficies, sin errores",
+          "costPairs": "ss-cost-pairs-1.json: arranque main 112/70 s, r3 107/78 s; primer mapa tras el arranque main 11,4/10,7 s, r3 8,4/8,5 s; cuadro renal main 4,49/3,97 s, r3 3,39/2,67 s",
+          "verdict": "retraso previo al arranque de la app (carga del JS bajo Rosetta x64 con carga ≥ 9), igual en main; no atribuible a la GPU P3"
+        }
+      },
+      "metal": {
+        "peakBytesR3": [1740919056, 1739886984, 1738182976],
+        "peakBytesMain": [1771622672, 1759613224, 1764397304],
+        "limitBytes": 2000000000,
+        "longTaskMaxMsR3": [1217, 1127, 1191],
+        "longTaskMaxMsMain": [1235, 1187, 1211],
+        "respiration": "quiet"
+      }
+    }
   }
 }

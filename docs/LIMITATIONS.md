@@ -683,16 +683,19 @@ La fracción U de celdas, los pliegues
 y las proyecciones sin prueba se registran por ventana en la [migración](anatomia/migracion-s0028.md). Intercostal
 sigue bloqueada/P8; posterior U/P3. No es validación clínica.
 
-`s0028-solids-cpu-only` (321, pendiente): P3 r2 clasifica sólidos y compartimento posterior sólo en CPU y Worker
-del corte; la GPU (r3) sigue dibujando en s0028 el riñón analítico con su grasa perirrenal, así que imagen y corte
-difieren dentro y alrededor del riñón hasta r3. El «borde D» renal es un borde de identidad (dueño y rótulo del corte), no
-una interfaz acústica: donde el exterior es U no hay cambio de tejido ni cara. El interior renal, Gerota, el cuadrado lumbar aislado, el diafragma
-posterior y los compartimentos perirrenal/pararrenal son U. Se conservan sin resolver los conflictos de dos dueños
-(693 puntos a 1,5 mm, casi todos grasa compatible D dentro de la banda P2 conocida y hueso+cartílago) y el solape
-real hígado/bazo con la banda P2 (4 y 2 vóxeles fuente). La compresión heredada (63/320) desplaza y deforma hueso
-(≤19,4 mm) y riñón (≤12,3 mm), y la respiración vigente no conserva la forma renal (peso de superficie 0,044–1): ni
-«hueso sin compresión» ni un movimiento rígido común de los sólidos están implementados. Vasos procedurales de la
-otra persona cruzan sólidos s0028 (P5) y el tórax E del corazón da distancias de frontera negativas (P7).
+`s0028-solids-p3` (321, pendiente): P3 clasifica sólidos y compartimento posterior con la misma política en CPU, Worker
+del corte y GPU (r3); la GPU coincide con la CPU salvo bordes subpíxel (empates nearest Float32/double y la carta P2 a
+50–72 mm de profundidad en Metal). El interior renal, Gerota, el cuadrado lumbar aislado, el diafragma posterior y los
+compartimentos perirrenal/pararrenal son U. El contorno renal es una cara acústica estimada en el borde O de la máscara,
+también con U a ambos lados; en la eco sólo se ve como línea donde la incidencia es casi normal. Se conservan sin
+resolver los conflictos de dos dueños (693 puntos a 1,5 mm, casi todos grasa compatible D dentro de la banda P2 conocida
+y hueso+cartílago) y el solape real hígado/bazo con la banda P2 (4 y 2 vóxeles fuente). La compresión rígida por dueño
+se calcula en la geometría de apnea: deja quietas las vértebras y traslada entero el riñón sin respiración, pero con
+respiración el tramo rígido no sigue a los sólidos desplazados (ventana renal: riñón |∂s/∂r| p95 0,34–0,35 frente a 0,25
+de main; flanco con 10 mm: vértebra ≤ 5,8 mm); costillas y cartílagos bajo la cara se desplazan con la pared como en
+main (≤ 19,4 mm, P8) y el tejido blando concentra la deformación (hasta 0,54 por ventana; main hasta 0,51). La
+respiración vigente no conserva la forma renal (peso de superficie 0,044–1). Vasos procedurales de la otra persona
+cruzan sólidos s0028 (P5) y el tórax E del corazón da distancias de frontera negativas (P7). No es validación clínica.
 
 P0 prepara herramientas; P1 r4c carga un candidato local sólo por `?abdomen=s0028`.
 Los identificadores de limitación del producto permanecen vigentes. [Migración](anatomia/migracion-s0028.md)

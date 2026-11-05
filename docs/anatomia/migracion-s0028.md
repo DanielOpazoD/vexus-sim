@@ -1,13 +1,14 @@
 # Migración a s0028: P1, compactación y P2 offline
 
-Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita.
-**Estado vigente (04-11-2026): P0 fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline, r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa (320, aceptada por el propietario el 04-11-2026); P3 r1 offline, r2 CPU/Worker y r4 interior renal candidato offline, pendientes de revisión (321).**
-Criterio autorizado antes de medir r4: pico Σ renderer + GPU Metal de la app completa
-≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de contexto y sin techo
-de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva.
-La dieta de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado.
-Los TAC originales permanecen fuera de Git. Las menciones históricas «316 provisional»
-no sustituyen la decisión 316 vigente de la pared cava.
+Objetivos 3, 7 y 8: una persona coherente, capacidad medida y procedencia explícita. **Estado vigente (04-11-2026): P0
+fusionada/B aceptado (317); P1 fusionada (318, #328); compactación local verificada entre P1 y P2 (319); P2 r1c offline,
+r2a CPU, r2b GPU/Worker/3D con la regla directa y r2b-U contacto por piel, cara E de nodos U y respiración U por rampa
+(320, aceptada por el propietario el 04-11-2026); P3 r1 offline, r2 CPU/Worker, r3 GPU con contorno renal y compresión
+rígida, y r4 interior renal candidato offline, pendientes de revisión (321).** Criterio autorizado antes de medir r4:
+pico Σ renderer + GPU Metal de la app completa ≤2.000.000.000 B; SwiftShader debe arrancar en BOOT_MS, sin pérdida de
+contexto y sin techo de memoria. Se retira el objetivo anterior 800 MB/techo 1 GB; su rechazo r3 se conserva. La dieta
+de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado. Los TAC originales permanecen fuera
+de Git. Las menciones históricas «316 provisional» no sustituyen la decisión 316 vigente de la pared cava.
 
 ## P3 r4: interior renal candidato desde el propio TAC, pendiente (321)
 
@@ -53,6 +54,39 @@ python -I tools/anatomy/s0028-renal-interior.py --case-dir "$VEXUS_S0028_CASE_DI
 ```
 
 [Evidencia P3](../evidence/s0028-p3/README.md).
+
+## P3 r3: GPU, contorno renal y compresión rígida por dueño, pendiente (321)
+
+Sólo `?abdomen=s0028`. La GPU clasifica con la política P3 de la CPU en los ocho programas s0028 y sus variantes:
+`s28POwn` sin bucles (los mismos dueños; dos o más, U), riñón U con contorno O, quiste E, grasa D por 77 páginas RG16F
+subidas a sus plazas reservadas del atlas (tabla de páginas constante, contrastada con el paquete al cargar). Fuera de
+la GPU s0028: `classifyKidneys`/`kidneyQuery`, grasa perirrenal/Gerota y ligamento venoso de la otra persona. Accesos
+por evaluación P3 máx 30/p99 17/media 4,9 + pared 17 = 47 ≤ 83; multiplicador RAWFIELD ≤ 4, ECHO/CLASS/ELEVATION/
+TRANS_HITS_GRID 1, GRADIENT 0, TRANS_HITS ≤ 1.024 (línea Metal), COLOR 5. Sin bucles en `s28P*` ni en lo que llaman.
+
+Contorno renal: `RenalCapsule` a < 1,2 mm del borde O de la máscara a ambos lados (también U/U), normal del gradiente
+trilineal analítico en CPU y GPU (1,5 mm coincidía con el umbral de lectura exacta y daba 4/364 caras distintas).
+Compresión: tabla rígida por nodo (κ, d₁, L); pared intacta; el primer hueso alcanzable con κ ≤ 3 queda quieto y el
+riñón delante se traslada entero. En apnea: vértebras 0 mm en las diez ventanas (main ≤ 1,44), riñón |∂s/∂r| p95 0
+(flanco 0,06; máx 0,38 en bordes laterales; main 0,25); costillas/cartílagos bajo la cara como main (≤ 19,4 mm, P8);
+tejido blando ≤ 0,54 por ventana (main ≤ 0,51). Con respiración 10/20 mm la tabla (de apnea) no sigue al riñón: renal
+p95 0,34/0,35 (main 0,25), flanco 10 mm vértebra ≤ 5,8 mm (main 0,23); mejor que main en subcostal, flanco (riñón) y
+epigástrica (vértebra).
+
+Paridad CPU = GPU (Metal): nodos/grasa/119 testigos de conflicto 99,990 % (D = 0); con D = 0/10/20, planos renales
+interior 0/0/1 de ~14.100 y ventanas con compresión interior 0; cara renal 100 % a D = 0; CPU = Worker bit a bit con la
+tabla rígida. SwiftShader x64 (Rosetta, `e72ab01`, código de app igual al final): 7/8 en verde (s0028WallGpu con 18
+testigos sólidos, s0028SolidsGpu, cutMapRafStall y aortaPulse ×4), 0 gpu-failed, primeros cuadros dentro de BOOT_MS;
+s0028Load falla sólo en la espera de 15 s del tercer arranque con el comprimido alterado: la traza da bootstrap a +22,6
+s y el rechazo a +24,4 s, como main (+21,9 s; main falla 1 de 2 pares alternos y r3 2 de 2), antes de cualquier trabajo
+GPU. Metal (app completa, respiración tranquila, diez poses, tres pares alternos): pico Σ renderer + GPU r3
+1,741/1,740/1,738 GB (main 1,772/1,760/1,764) ≤ 2,0 GB; tarea larga máxima r3 1.217/1.127/1.191 ms (main
+1.235/1.187/1.211 ms, la misma tarea preexistente al arrancar o activar la respiración); con la lista completa, r3 47
+tareas largas y 5,83 s frente a main 51 y 5,66 s. Default = main 8555a2c (82.251/10/30, 38 GLSL iguales). JS
+1.069.855/1.070.080 B, descarga 20.433.526 B (+0); ocho techos con menos tokens y ramas que main. Mutantes 14/14.
+Láminas: 16 abiertas, CPU ≠ GPU 2–73 píxeles por lámina (carta P2 en Metal). La eco r3 muestra el contorno como línea
+sólo con incidencia casi normal; el interior U no tiene corteza ni seno. Sin validación clínica. [Evidencia
+P3](../evidence/s0028-p3/README.md).
 
 ## P3 r2: clasificador CPU/Worker de sólidos y posterior, pendiente (321)
 

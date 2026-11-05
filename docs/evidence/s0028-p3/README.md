@@ -1,8 +1,8 @@
 # P3: sólidos y compartimento posterior s0028 (321)
 
 **Pendiente de revisión del propietario.** r1 dejó la fuente y el paquete offline; r2 integra la
-clasificación en CPU y Worker. La GPU y su paridad son r3; r4 propone, sin instalarla, una anotación del interior
-renal desde el propio TAC. Sin validación clínica.
+clasificación en CPU y Worker; r3 la lleva a la GPU con paridad, contorno acústico renal y compresión rígida por dueño;
+r4 propone, sin instalarla, una anotación del interior renal desde el propio TAC. Sin validación clínica.
 
 ## r4: interior renal candidato (offline, sin runtime)
 
@@ -23,6 +23,33 @@ Empaquetado medido, no instalado: 46 páginas (188.416 B) tras la grasa P3, rese
 [Informe r4](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/report.md) ·
 [láminas y seis casillas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/review.html) ·
 [mediciones](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r4/measurements.json).
+
+## r3: GPU, contorno renal y zonas rígidas
+
+La GPU s0028 clasifica con `s28POwn` (sin bucles) los mismos dueños que la CPU; la grasa D se lee de 77 páginas RG16F
+en plazas ya reservadas del atlas. Accesos P3 por evaluación máx 30, p99 17, media 4,9; con la pared 47 ≤ 83. El borde O
+renal es la cara `RenalCapsule` (< 1,2 mm, gradiente analítico). La compresión deja quietas las vértebras (0 mm en las
+diez ventanas; main ≤ 1,44) y traslada entero el riñón en apnea (|∂s/∂r| p95 0; main 0,25); con respiración la tabla de
+apnea no sigue al riñón (renal p95 0,34/0,35 a 10/20 mm; main 0,25). Costillas y cartílagos bajo la cara siguen como
+main (P8).
+
+Paridad Metal: nodos, grasa y 119 testigos de conflicto 99,990 % (D = 0); con D = 0/10/20 mm, planos renales interior
+0/0/1 de ~14.100 y ventanas con compresión interior 0; cara renal 100 % a D = 0. Los 134 testigos iniciales incluían 9
+con banda P2 a 50–72 mm de profundidad y < 0,3 mm de margen: la proyección P2 en Metal los resuelve del otro lado
+(precisión Float32, no política P3); los testigos vigentes exigen ≥ 0,5 mm y ≥ 0,15 celdas de carta. SwiftShader x64
+(Rosetta, `e72ab01`, código de app igual al final): 7/8 en verde (s0028WallGpu con 18 testigos sólidos, s0028SolidsGpu,
+cutMapRafStall y aortaPulse ×4), 0 gpu-failed, primeros cuadros dentro de BOOT_MS; s0028Load falla sólo en la espera de
+15 s del tercer arranque con el comprimido alterado: la traza da bootstrap a +22,6 s y el rechazo a +24,4 s, como main
+(+21,9 s; main falla 1 de 2 pares alternos y r3 2 de 2), antes de cualquier trabajo GPU. Metal (app completa,
+respiración tranquila, diez poses, tres pares alternos): pico Σ renderer + GPU r3 1,741/1,740/1,738 GB (main
+1,772/1,760/1,764) ≤ 2,0 GB; tarea larga máxima r3 1.217/1.127/1.191 ms (main 1.235/1.187/1.211 ms, la misma tarea
+preexistente al arrancar o activar la respiración); con la lista completa, r3 47 tareas largas y 5,83 s frente a main 51
+y 5,66 s. Default = main 8555a2c, 38 GLSL iguales; JS 1.069.855/1.070.080 B; descarga 20.433.526 B (+0); mutantes 14/14.
+Láminas TAC / CPU / GPU / eco main / eco r3: CPU ≠ GPU 2–73 píxeles por lámina (≥ 94 % en bordes de tejido CPU, casi
+todos de la carta P2); la eco r3 dibuja el contorno como línea sólo con incidencia casi normal. [Informe
+r3](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r3/report.md) ·
+[láminas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r3/review.html) ·
+[códigos](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r3/closure.json).
 
 ## r2: CPU y Worker
 

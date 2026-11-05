@@ -10446,6 +10446,44 @@ someras vuelve a ser grasa compatible D; (4) se aprueba escribir `wallP2Offline`
 JSON, −1.194 B) para que el descriptor de 612 B quepa en los metadatos (3.206/4.096 B). Las seis casillas por riñón
 siguen vacías para el propietario; nada se instala en esta ronda. No es validación clínica.
 
+**Ronda r3: GPU, contorno renal y zonas rígidas (sigue pendiente de revisión del propietario).** Los ocho programas
+s0028 (RAWFIELD, ECHO, CLASS, ELEVATION, GRADIENT, TRANS_HITS, TRANS_HITS_GRID, COLOR) y sus variantes clasifican con la
+política P3 de la CPU: `s28POwn` reúne los mismos dueños sin bucles (dos o más: U), riñón U con contorno O, quiste E y
+grasa D desde las 77 páginas RG16F subidas por texSubImage a sus plazas ya reservadas del atlas (tabla de páginas como
+constante GLSL, contrastada al cargar con la del paquete). Se retiran en la GPU s0028 `classifyKidneys`/`kidneyQuery`,
+la grasa perirrenal/Gerota y el ligamento venoso de la otra persona. Ninguna función P3 ni lo que llama tiene bucles (la
+guarda de `shaderLimits` también los rechaza con cota constante); sin textura ni sampler nuevos. Accesos P3 por
+evaluación: máx 30, p99 17, media 4,9 (674.637 puntos a 3 mm), más 17 de la pared: 47 ≤ 83. Multiplicador por píxel:
+RAWFIELD ≤ 4, ECHO/CLASS/ELEVATION/TRANS_HITS_GRID 1, GRADIENT 0 (gradiente renal: 8 nodos), TRANS_HITS hasta 1.024
+pasos de la línea Metal, COLOR 5. El borde O renal (SDF 0 de la máscara) es interfaz acústica `RenalCapsule` a < 1,2 mm
+a ambos lados, también con U a los dos, con la normal del gradiente trilineal analítico en CPU y GPU. Compresión (s0028;
+CPU, Worker y GPU): por nodo (κ, d₁, L) en téxeles libres de la escena; la pared no cambia; bajo ella σ = D + κ·(d − D −
+clamp(d − d₁, 0, L)): el primer hueso que el perfil alcanza con κ ≤ 3 queda quieto y el riñón delante se traslada entero
+(σ' = 0 dentro, continuo); sin hueso aceptable la caída acaba donde ya acababa (D + S), y si el riñón cruza esa
+profundidad o no cabe con κ ≤ 3, la caída se retrasa tras él. En apnea: vértebras con desplazamiento máximo 0 en las
+diez ventanas (main ≤ 1,44 mm); riñón |∂s/∂r| p95 0 (flanco 0,06; máx 0,38 en bordes laterales entre nodos; main 0,25),
+trasladado ≤ 11,1 mm; dr/dd ≥ 1; el tejido blando absorbe la presión (deformación máx por ventana 0,54 en hepatorrenal y
+0,49 en renal; main 0,38 y 0,25); costillas y cartílagos bajo la cara se desplazan como en main (≤ 19,4 mm): el contacto
+con hueso es P8. La tabla se calcula en la geometría de apnea y no sigue a la respiración: con 10/20 mm, la ventana
+renal deforma el riñón más que main (p95 0,34/0,35 frente a 0,25) y el flanco a 10 mm desplaza vértebras ≤ 5,8 mm;
+subxifoidea, subcostal, flanco (riñón) y epigástrica (vértebra) siguen mejor que main. Paridad CPU = GPU en Metal: a D =
+0, nodos, cajas de grasa y 119 testigos de conflicto 99,990 % (conflictos exactos); con D = 0/10/20 mm, planos renales
+interior 0/0/1 de ~14.100 y ventanas con compresión interior 0; cara renal 100 % a D = 0 (ifd ≤ 1,5·10⁻⁵ mm, normales ≥
+0,9999999). CPU = Worker bit a bit con la tabla rígida (10/20 mm). SwiftShader x64 (Rosetta, `e72ab01`, código de app
+igual al final): 7/8 en verde (s0028WallGpu con 18 testigos sólidos, s0028SolidsGpu, cutMapRafStall y aortaPulse ×4), 0
+gpu-failed, primeros cuadros dentro de BOOT_MS; s0028Load falla sólo en la espera de 15 s del tercer arranque con el
+comprimido alterado: la traza da bootstrap a +22,6 s y el rechazo a +24,4 s, como main (+21,9 s; main falla 1 de 2 pares
+alternos y r3 2 de 2), antes de cualquier trabajo GPU. Metal (app completa, respiración tranquila, diez poses, tres
+pares alternos): pico Σ renderer + GPU r3 1,741/1,740/1,738 GB (main 1,772/1,760/1,764) ≤ 2,0 GB; tarea larga máxima r3
+1.217/1.127/1.191 ms (main 1.235/1.187/1.211 ms, la misma tarea preexistente al arrancar o activar la respiración); con
+la lista completa, r3 47 tareas largas y 5,83 s frente a main 51 y 5,66 s. Default idéntico a main 8555a2c (82.251
+puntos, 10 marcos, 30 contactos; 38 GLSL iguales; f47e860 no cambia código). JS 1.069.855/1.070.080 B (rutas s0028
+heredadas retiradas para caber), descarga 20.433.526 B (+0), manifiesto 38.309 B, metadatos 3.788/4.096 B; ocho techos
+con menos tokens y ramas que main, samplers ≤ 16, ranuras ≤ 138. Mutantes 14/14. Láminas: 16 abiertas, CPU ≠ GPU 2–73
+píxeles de 71–75 mil por lámina (bordes subpíxel, casi todos de la carta P2 en Metal); lista del propietario sin
+rellenar. El interior renal sigue U en el runtime: r5 instalará sobre esta misma clasificación el candidato r4. Sin
+validación clínica.
+
 ## 322. Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo
 
 **Contexto.** Medido sobre main `8555a2c` (05-11-2026): `src` ≈51.000 líneas de producto; validación 300 archivos /

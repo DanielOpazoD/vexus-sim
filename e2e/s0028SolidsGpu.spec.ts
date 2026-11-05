@@ -3,6 +3,7 @@ import { bootWithoutErrors, budget } from './support';
 import { S0028_BUNDLE as B } from '../src/anatomy/anatomyBundle';
 import { Interface } from '../src/anatomy/interfaces';
 import { Tissue } from '../src/anatomy/tissues';
+import conflicts from '../src/validation/fixtures/s0028-conflict-witnesses.json' with { type: 'json' };
 
 /**
  * P3 r3 (decisión 321): la GPU clasifica los sólidos s0028 con la misma política que la CPU. Mismos puntos MATERIALES
@@ -31,6 +32,7 @@ const field = (name: string) => B.fields.find((f) => f.name === name)!;
 const ARGS = {
   kidneys: [field('kidneyRight'), field('kidneyLeft')].map((f) => ({ o: f.originMm, n: f.dimensions })),
   fat: B.solids.boxes.map((b) => ({ o: b.originMm, n: b.dimensions })),
+  conflicts: conflicts.points.flatMap((p) => p.slice(0, 3)),
   lattice: B.fields[0].originMm,
   analytic: ANALYTIC.map(Number),
   renal: Number(Interface.RenalCapsule),
@@ -187,6 +189,8 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
           for (let x = 1; x < b.n[0] - 1; x += 4) pts.push(b.o[0] + 1.5 * x, b.o[1] + 1.5 * y, b.o[2] + 1.5 * z);
       out.push(compare(`grasa ${bi ? 'I' : 'D'}`, 0, NO, pts));
     }
+    // Testigos de conflicto (nueve pares del censo, fuera de las mitades de celda): U con los dos dueños, sin elegir material.
+    out.push(compare('conflictos', 0, NO, a.conflicts));
     // Tres planos por riñón (fuera de la rejilla del TAC), con respiración D = 0 y 20 mm.
     for (const [ki, kb] of a.kidneys.entries()) {
       const c = kb.o.map((o, ax) => o + (1.5 * (kb.n[ax] - 1)) / 2 + [0.37, 0.29, 0.41][ax]);
@@ -263,6 +267,7 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
   const total = (cls: string) => rows.reduce((s, r) => s + (r.classes[cls]?.[0] ?? 0), 0);
   for (const cls of ['kidneyU', 'cystE', 'fatD', 'conflictU', 'noOwnerU'])
     expect(total(cls), cls).toBeGreaterThan(cls === 'cystE' ? 5 : 30);
+  expect(rows.find((r) => r.id === 'conflictos D=0')!.classes.conflictU).toEqual([conflicts.points.length, conflicts.points.length]);
   expect(rows.reduce((s, r) => s + r.renalCpu, 0)).toBeGreaterThan(2000);
   expect(errors).toEqual([]);
 });

@@ -22,6 +22,7 @@ import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWorker';
 import type { Vec3 } from '../core/vec3';
 import fat from './fixtures/s0028-fat-r1.json';
+import conflicts from './fixtures/s0028-conflict-witnesses.json';
 import { HALF } from '../anatomy/halfFloat';
 
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
@@ -135,6 +136,16 @@ it('conflicto: los vóxeles de hígado y bazo dentro de la banda P2 conservan lo
     expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
     expect(c.interface).toBe(Interface.None);
     expect(c.wall).toBeUndefined();
+  }
+});
+
+it('testigos de conflicto de la e2e GPU (r3): la CPU da U con los dos dueños del par, en los nueve pares del censo', () => {
+  expect(conflicts.pairs).toHaveLength(9);
+  for (const [x, y, z, k] of conflicts.points) {
+    const c = at([x, y, z]);
+    expect(c.solids?.state, `${x},${y},${z}`).toBe('conflict');
+    expect(ids(c).sort().join('+')).toBe(conflicts.pairs[k]);
+    expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
   }
 });
 

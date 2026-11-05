@@ -163,7 +163,7 @@ it('respiración: sólo los estímulos E de 10/20 mm del diseño, mismo material
 
 it('compresión rígida por dueño (r3): el riñón se traslada entero y la columna no se mueve; el mapa sigue monótono', () => {
   const sd = (m: Vec3, name: string) => s0028SourceValue(m, name);
-  for (const id of ['renal', 'hepatorenal', 'subcostal', 'flank']) {
+  for (const id of ['renal', 'hepatorenal', 'subcostal', 'flank', 'epigastric']) {
     const k = probeContact({ ...poses().find((p) => p.id === id)!, lift: 0 }, CONVEX_C35, scene.torso),
       f = k.frame;
     const strain: number[] = [],
@@ -187,11 +187,12 @@ it('compresión rígida por dueño (r3): el riñón se traslada entero y la colu
       }
     const q = (v: number[], f: number) => [...v].sort((a, b) => a - b)[Math.floor(f * (v.length - 1))];
     expect(slope, id).toBeGreaterThanOrEqual(-1e-6);
-    // main: ∂s/∂r ≈ 0,25 en todo el riñón y vértebras desplazadas hasta 1,4 mm (compression-owners-main.json).
-    if (strain.length > 50) {
-      expect(q(strain, 0.9), `${id} riñón`).toBeLessThanOrEqual(0.02);
+    // main: ∂s/∂r ≈ 0,25 en todo el riñón y vértebras desplazadas hasta 1,4 mm (compression-owners-main.json); r3: 0.
+    if (id !== 'epigastric') {
       expect(strain.length, id).toBeGreaterThan(100);
+      expect(q(strain, 0.9), `${id} riñón`).toBeLessThanOrEqual(0.02);
     }
-    if (vertebra.length > 20) expect(q(vertebra, 0.95), `${id} vértebra`).toBeLessThanOrEqual(0.1);
+    if (id === 'hepatorenal' || id === 'epigastric') expect(vertebra.length, id).toBeGreaterThan(40);
+    if (vertebra.length) expect(Math.max(...vertebra), `${id} vértebra`).toBeLessThanOrEqual(0.01);
   }
 });

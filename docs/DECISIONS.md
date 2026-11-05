@@ -10528,13 +10528,20 @@ porque `glslMinify` no renombra lo que aparece en cadenas. No es validación cl�
 
 **Punto 8** (mutantes reproducibles). `tools/mutants/` tiene un manifiesto por módulo (nombre, `from`/`to` exactos con una
 sola aparición, comportamiento que rompe, ronda de origen y pruebas focales) y un ejecutor, `npm run mutants`: corre las
-focales sobre el árbol original, aplica cada mutante solo con un trabajador, lo restaura byte a byte (`finally` y un diario
-en `.cache/mutants/` para un proceso muerto) y escribe `mutants.json`; sale con 1 si alguno sobrevive, falla la línea base
-o `git status` no queda igual. 27 mutantes en siete módulos (`s0028Solids` 10, `scene` 7, `s0028Wall` 5, su gemelo GLSL
-2, `contact`, Worker del corte y rótulos 1 cada uno): los 8 de P2 r2b-U, los 12 de P3 r2 y los 7 de la revisión de #331,
-reconstruidos de la decisión 321 y del commit `73be52e` porque el informe de la revisión no se conserva. Dos se
-reanclan al código vigente (`U-sin-acoplar` al contacto «sólo piel» de #330, `grasa-sobre-mascara-fuente` tras la
-exclusión de vasos de r2c). Medido sobre el código de esta PR: línea base verde (6 archivos focales, 42 s) y 27/27
-muertos en 475 s con carga media 9,7. No entra en el veredicto protegido: el workflow `Mutantes reproducibles` corre a
-mano o cuando cambian esos módulos, sus focales o el ejecutor. Un cambio que mueve el texto bajo un mutante actualiza su
-manifiesto en el mismo PR. Ningún archivo de producto cambia.
+focales sobre el árbol original, aplica cada mutante solo con un trabajador, lo restaura byte a byte y escribe
+`mutants.json`. Un diario en `.cache/mutants/` restaura el módulo tras una señal (`SIGINT`, `SIGTERM`, `SIGHUP`) o una
+caída; un cerrojo con el pid impide dos ejecuciones a la vez; una edición del módulo durante un mutante no se pisa (se
+rescata y la corrida se detiene). Muerto es una aserción roja: si las focales sólo caen por excepciones de ejecución
+(`TypeError`…), el mutante cuenta como error. Sale con 0 si todos mueren, 1 si alguno sobrevive y 2 ante error,
+interrupción o caída. 29 mutantes en siete módulos (`s0028Solids` 12, `scene` 7, `s0028Wall` 5, su gemelo GLSL 2,
+`contact`, Worker del corte y rótulos 1 cada uno): los 8 de P2 r2b-U, los 12 de P3 r2, los 7 de la revisión de #331
+(reconstruidos de la decisión 321 y del commit `73be52e`, porque el informe de la revisión no se conserva) y 2 de la de
+#334: `hueso-duplicado` (sin deduplicar el hueso, conflicto en las 432 de 803.472 muestras óseas donde se solapan
+lumbosacro y sacro, que ninguna de las 48 pruebas veía: prueba focal nueva) y `fuera-de-cajas-false`. `banda-desde-0mm` es
+equivalente (`scene.ts` resuelve la piel antes de `s0028Owners`) y queda documentado fuera. Dos se reanclan al código
+vigente (`U-sin-acoplar` al contacto «sólo piel» de #330, `grasa-sobre-mascara-fuente` tras la exclusión de vasos de
+r2c). La capa rápida comprueba los manifiestos contra el código: mover el texto bajo un mutante obliga a actualizarlo en
+el mismo PR. Medido sobre el código de esta PR: línea base verde (6 archivos focales, 34 s) y 29/29 muertos en 483 s con
+carga media 11 (cada mutante 1–61 s); con 27 mutantes, 507 s con carga 10–13 y 404 s el paso de CI (462 s el trabajo). No
+entra en el veredicto protegido: el workflow `Mutantes reproducibles` corre a mano o cuando cambian esos módulos, sus
+focales, el ejecutor, `vite.config.ts` o `package.json`. Ningún archivo de producto cambia.

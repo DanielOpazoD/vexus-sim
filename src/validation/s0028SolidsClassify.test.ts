@@ -72,7 +72,7 @@ it('riñón s0028: dueño propio con borde D e interior U, sin corteza, médula,
   ] as const) {
     const c = at([...p]);
     expect(c.tissue, id).toBe(Tissue.UnsegmentedSoftTissue);
-    // A más de 1,5 mm de su borde O no dibuja la cara de la cápsula (r3: sólo el contorno acústico).
+    // A más de 1,2 mm de su borde O no dibuja la cara de la cápsula (r3: sólo el contorno acústico).
     expect(c.interface).toBe(Interface.None);
     expect(c.solids).toEqual({
       state: 'known',
@@ -457,17 +457,17 @@ it('contorno acústico renal (r3): el borde O de la máscara es la cara de la c�
     brick(name, 1, (node) => {
       const p: Vec3 = [node[0] + off[0], node[1] + off[1], node[2] + off[2]];
       const d = s0028SourceValue(p, name).d;
-      if (d > 1.6 || (d < -1.6 && Math.round(node[0] + node[1] + node[2]) % 7)) return;
+      if (d > 1.3 || (d < -1.3 && Math.round(node[0] + node[1] + node[2]) % 7)) return;
       const c = at(p),
         own = c.solids?.owners.map((o) => o.id) ?? [];
       if (c.solids?.state === 'conflict' || c.vesselHit || c.interface === Interface.DuctLumen) return;
-      if (d < -1.5) {
+      if (d < -1.2) {
         // Interior U lejos del borde: sin cara inventada.
         expect(c.interface, p.join(',')).toBe(Interface.None);
         deep++;
         return;
       }
-      if (Math.abs(d) >= 1.5) return;
+      if (Math.abs(d) >= 1.2) return;
       if (d < 0) inside++;
       else if (own.length && !['compatible_fat', 'kidney_cyst_left'].includes(own[0])) return;
       else outside++;

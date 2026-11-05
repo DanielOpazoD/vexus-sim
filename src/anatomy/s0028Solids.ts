@@ -49,10 +49,11 @@ export interface S0028Ownership {
 }
 /**
  * Contorno acústico renal (r3): el borde O de la máscara es la cara `RenalCapsule` aunque a ambos lados haya U. La
- * dibujan las muestras a menos de esto de él (las que alcanza el perfil de la cara, ≤ 1,26 mm); dentro, sin corteza
- * ni seno inventados.
+ * dibujan las muestras a menos de esto de él: más que el alcance del perfil de una cara de dos lados (0,49 mm por la
+ * cota de gradiente 1,5 y la de la compresión) y dentro del vóxel en el que la GPU lee los ocho nodos exactos (con
+ * 1,5 mm el corte caía en el borde del filtro del hardware: 4 de 364 muestras distintas). Dentro, sin corteza ni seno.
  */
-export const S0028_RENAL_FACE_MM = 1.5;
+export const S0028_RENAL_FACE_MM = 1.2;
 
 // Campo P1, dueño (o dueños por etiqueta nearest 1…n) y certeza del interior. Los vasos fuente son de P5.
 const TABLE: ReadonlyArray<readonly [string, S0028OwnerId | readonly S0028OwnerId[], S0028Certainty]> = [

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { bootWithoutErrors, budget } from './support';
 import fixtures from '../src/validation/fixtures/s0028-wall-chart.json' with { type: 'json' };
+import witnesses from '../src/validation/fixtures/s0028-solid-witnesses.json' with { type: 'json' };
 
 test('la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU', async ({ page }) => {
   budget(120_000);
@@ -20,6 +21,22 @@ test('la GPU s0028 conserva la banda D/E con identidad U y el panículo regional
     rows.every((row) => row.cpu === row.gpu),
     JSON.stringify(rows),
   ).toBe(true);
+  // P3 r3: testigos en los sólidos (riñones U, quiste E, hígado, grasa D, conflictos y contorno renal a ±0,2–0,6 mm de su
+  // borde O, sin tubos; scripts/solid-witnesses.mts): mismo tejido y misma cara en la GPU, con todos los tubos.
+  const solids = await page.evaluate((w) => {
+    const sim = window.__vexusTest!.sim();
+    const points = Object.entries(w).flatMap(([kind, list]) => list.map((p) => ({ kind, p })));
+    const gpu = sim.gpuQuery(new Float32Array(points.flatMap((x) => x.p)), sim.frame, true);
+    return points.map(({ kind, p }, i) => {
+      const c = sim.anatomy.classifyWorld([p[0], p[1], p[2]], sim.sample);
+      return { kind, p, cpu: [Number(c.tissue), Number(c.interface)], gpu: [gpu.tissue[i], gpu.iface[i]] };
+    });
+  }, witnesses);
+  expect(solids).toHaveLength(18);
+  expect(
+    solids.filter((r) => r.cpu[0] !== r.gpu[0] || r.cpu[1] !== r.gpu[1]),
+    JSON.stringify(solids),
+  ).toEqual([]);
   // Normales analíticas de las caras de pared: GPU frente a CPU con el contrato del banco de pared (smoke.spec).
   const normals = [];
   for (const startPoint of ['epigastric', 'subcostal'] as const) {

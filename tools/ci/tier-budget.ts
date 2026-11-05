@@ -1,6 +1,6 @@
 /**
  * Informe de una capa de pruebas y presupuesto por archivo de la capa rápida (decisión 322, punto 7).
- * Uso: node --import tsx tools/ci/tier-budget.ts <fast|slow> <informe-vitest.json> [--out capa.json]
+ * Uso: node --import tsx tools/ci/tier-budget.ts <fast|slow> <informe-vitest.json> [--out capa.json] [--root checkout]
  * El informe debe ser de la capa completa. El presupuesto por archivo sólo se evalúa con un trabajador y con la carga
  * media de 5 min al terminar ≤ TIMING_MAX_LOAD; con más carga queda declarado no evaluable.
  */
@@ -18,8 +18,9 @@ import {
   type VitestJsonReport,
 } from './testTiers';
 
-const root = resolve(import.meta.dirname, '../..');
-const { values, positionals } = parseArgs({ allowPositionals: true, options: { out: { type: 'string' } } });
+const { values, positionals } = parseArgs({ allowPositionals: true, options: { out: { type: 'string' }, root: { type: 'string' } } });
+// Las capas y las rutas del informe son las del checkout medido (por omisión, éste).
+const root = resolve(values.root ?? resolve(import.meta.dirname, '../..'));
 const [tier, reportPath] = positionals;
 if ((tier !== 'fast' && tier !== 'slow') || !reportPath) {
   console.error('Uso: node --import tsx tools/ci/tier-budget.ts <fast|slow> <informe-vitest.json> [--out capa.json]');

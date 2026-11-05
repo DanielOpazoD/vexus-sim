@@ -47,6 +47,8 @@ export interface ClosureConfig {
   pythonTests: string[];
   pythonExcluded: { files: string[]; reason: string | null };
   e2e: { swiftshader: string[] | null; metal: string[] | null };
+  /** Comando del informe de capas; por omisión el del checkout. Para acreditar otro checkout, el de la herramienta con --root. */
+  tierBudget?: string[];
 }
 
 /** Entorno común de todas las etapas: un trabajador, fases de validación en serie e hilos numéricos a uno. */
@@ -61,9 +63,10 @@ export const SERIAL_ENV: Readonly<Record<string, string>> = {
   PYTHONDONTWRITEBYTECODE: '1',
 };
 
-const tierRun = (script: string[], tier: 'fast' | 'slow'): string[][] => [
+const TIER_BUDGET = ['node', '--import', 'tsx', 'tools/ci/tier-budget.ts'];
+const tierRun = (script: string[], tier: 'fast' | 'slow', budget: string[]): string[][] => [
   [...script, '--', '--reporter=default', '--reporter=json', '--outputFile={dir}/vitest.json'],
-  ['node', '--import', 'tsx', 'tools/ci/tier-budget.ts', tier, '{dir}/vitest.json', '--out', '{dir}/tier.json'],
+  [...budget, tier, '{dir}/vitest.json', '--out', '{dir}/tier.json'],
 ];
 const e2eRun = (backend: string, specs: string[]): string[][] => [
   ['npm', 'run', 'workspace:e2e', '--', '--backend', backend, '--out', '{dir}/e2e', ...(specs.length ? ['--', ...specs] : [])],
@@ -85,8 +88,8 @@ export function closureStages(config: ClosureConfig): StageDefinition[] {
       budgetSeconds: HOOK_BUDGET_SECONDS,
       budgetMaxLoad: TIMING_MAX_LOAD,
     },
-    { name: 'tests-fast', commands: tierRun(['npm', 'test'], 'fast'), optional: false },
-    { name: 'tests-slow', commands: tierRun(['npm', 'run', 'test:slow'], 'slow'), optional: false },
+    { name: 'tests-fast', commands: tierRun(['npm', 'test'], 'fast', config.tierBudget ?? TIER_BUDGET), optional: false },
+    { name: 'tests-slow', commands: tierRun(['npm', 'run', 'test:slow'], 'slow', config.tierBudget ?? TIER_BUDGET), optional: false },
     {
       name: 'python-contracts',
       commands: [[config.python, '-B', '-I', 'tools/anatomy/run-tests.py', ...config.pythonTests]],

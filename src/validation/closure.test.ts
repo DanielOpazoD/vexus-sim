@@ -120,6 +120,23 @@ describe('Planificador del cierre', () => {
     expect(by('python-contracts').commands).toEqual([['py', '-B', '-I', 'tools/anatomy/run-tests.py', 'tools/anatomy/a_test.py']]);
     expect(by('e2e-metal').commands[0].slice(-2)).toEqual(['--', 'e2e/smoke.spec.ts']);
     for (const s of all) if (s.name !== 'push-hook') expect(s.niceless ?? false, s.name).toBe(false);
+    // Otro checkout: su informe de capas lo calcula la herramienta que lo acredita, sobre las capas de ese checkout.
+    const other = closureStages({
+      ...config,
+      tierBudget: ['node', '--import', 'tsx', '/herramienta/tools/ci/tier-budget.ts', '--root', '/otro'],
+    });
+    expect(other.find((s) => s.name === 'tests-slow')!.commands[1]).toEqual([
+      'node',
+      '--import',
+      'tsx',
+      '/herramienta/tools/ci/tier-budget.ts',
+      '--root',
+      '/otro',
+      'slow',
+      '{dir}/vitest.json',
+      '--out',
+      '{dir}/tier.json',
+    ]);
   });
 });
 

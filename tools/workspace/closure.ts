@@ -49,12 +49,14 @@ const HELP = `npm run closure -- --evidence <carpeta> [opciones]
   --python-exclude a,b        contratos excluidos (nombres *_test.py), con --python-exclude-reason
   --e2e-swiftshader specs|all, --e2e-metal specs|all   etapas E2E opcionales (workspace:e2e)
   --progress archivo          dónde añadir las líneas «Cierre …» (por omisión <evidencia>/progress.md)
+  --checkout carpeta          acredita otro checkout con esta herramienta (por omisión, éste)
   --dry-run                   muestra el plan sin ejecutar nada`;
 
-const root = resolve(import.meta.dirname, '../..');
+const toolRoot = resolve(import.meta.dirname, '../..');
 const { values } = parseArgs({
   options: {
     evidence: { type: 'string' },
+    checkout: { type: 'string' },
     resume: { type: 'boolean' },
     only: { type: 'string' },
     skip: { type: 'string' },
@@ -72,6 +74,9 @@ const { values } = parseArgs({
     help: { type: 'boolean' },
   },
 });
+// El checkout que se acredita; por omisión, el de esta herramienta. Con otro, sus etapas son las suyas (scripts, gancho,
+// contratos) y sólo el informe de capas sale de esta herramienta, que se lo pide con --root.
+const root = resolve(values.checkout ?? toolRoot);
 
 const list = (v: string | undefined) =>
   v
@@ -177,7 +182,8 @@ async function main(): Promise<number> {
   const pythonTests = allPython.filter((f) => !pythonExcluded.includes(f)).map((f) => `tools/anatomy/${f}`);
   const python = values.python ?? process.env['VEXUS_PYTHON'] ?? 'python3';
   const e2e = { swiftshader: specs(values['e2e-swiftshader']), metal: specs(values['e2e-metal']) };
-  const all = closureStages({ python, pythonTests, pythonExcluded: { files: pythonExcluded, reason }, e2e });
+  const tierBudget = root === toolRoot ? undefined : ['node', '--import', 'tsx', join(toolRoot, 'tools/ci/tier-budget.ts'), '--root', root];
+  const all = closureStages({ python, pythonTests, pythonExcluded: { files: pythonExcluded, reason }, e2e, tierBudget });
   const requested: StageName[] = [];
   if (e2e.swiftshader) requested.push('e2e-swiftshader');
   if (e2e.metal) requested.push('e2e-metal');
@@ -261,6 +267,8 @@ async function main(): Promise<number> {
         performanceCores: sysctl('hw.perflevel0.physicalcpu'),
         efficiencyCores: sysctl('hw.perflevel1.physicalcpu'),
         python,
+        tool: toolRoot,
+        toolHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: toolRoot, encoding: 'utf8', env: feedbackGitEnvironment() }).trim(),
         ...SERIAL_ENV,
       },
       pythonExcluded: { files: pythonExcluded, reason },

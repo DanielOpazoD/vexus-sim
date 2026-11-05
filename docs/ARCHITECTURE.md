@@ -254,6 +254,13 @@ par CPU→GPU sistemático es una divergencia real.
 - **Ganchos de depuración** (`window.__sim()`, `window.__views()`) solo existen en desarrollo
   (`app/devtools.ts`).
 
+## Programa estructural (decisión 322)
+
+Diez puntos iterativos aprobados el 05-11-2026: persona como estrategia, activos explícitos, frontera de carga por
+persona, composición de GLSL, registro de gemelos, clasificación por candidatos y política, dieta de tiempo, mutantes
+reproducibles, estado vigente y evidencia indexada, archivos grandes partidos. Cada punto es una PR con medida antes y
+después; el detalle y las cifras de partida están en `DECISIONS.md` (322).
+
 ## Garantías mecánicas
 
 - `src/validation/layers.test.ts`: fronteras de capas y ciclos (Tarjan) sobre los imports reales.

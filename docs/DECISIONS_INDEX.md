@@ -325,3 +325,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [319](DECISIONS.md#L10129) | Compactar las mallas s0028 con deltas sin perder geometría | vigente |
 | [320](DECISIONS.md#L10176) | Completar la anotación continua de pared s0028 antes del runtime | vigente |
 | [321](DECISIONS.md#L10354) | Conservar fuente y desconocidos de sólidos y posterior s0028 | pendiente de revisión del propietario |
+| [322](DECISIONS.md#L10412) | Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo | vigente |

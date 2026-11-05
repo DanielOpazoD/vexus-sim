@@ -10408,3 +10408,58 @@ una interfaz acústica: en el 51 %/46 % de la superficie renal D/I el tejido es 
 el contorno acústico se decide en r3 junto con la GPU. Dueño `heart` puede salir `Lung` por el tórax E de P7 (15/250.000,
 heredado). Las rojas Python de r2 fallaron por una función ausente (`p2_used_bytes`), no por comportamiento; las siete
 rojas TS sí. Metadatos 3.788/4.096 B es el mismo presupuesto del manifiesto (38.309 − 34.521), no una medida aparte.
+
+## 322. Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo
+
+**Contexto.** Medido sobre main `8555a2c` (05-11-2026): `src` ≈51.000 líneas de producto; validación 300 archivos /
+50.800 líneas; `tools` 21.300; `e2e` 13.600; docs 23.600 (`DECISIONS.md` 10.410 líneas, 321 decisiones). Archivos que
+concentran demasiado: `app/fidelity.ts` 2.948 líneas y 101 exports, `ultrasound/renderer.ts` 2.389,
+`shaders/passes.glsl.ts` 1.836 (93 KB de GLSL en cadenas), `app/testHooks.ts` 1.740, `anatomy/scene.ts` 1.412. La persona
+se decide con condición: 72 sitios `person === 's0028'` en 12 archivos (24 en `scene.ts`); la precedencia de tejidos de
+`classifyInside` es el orden de los `if`. Estado global implícito: 9 setters (`setAbdominalAtlas`, `setS0028Wall`,
+`setS0028Solids`…) y 10 `let` de módulo; el Worker repite la coreografía. Tres implementaciones de la misma anatomía
+(CPU, Worker, GPU) con gemelos y paridad (45 archivos), pero la especialización GPU reemplaza texto GLSL con expresiones
+regulares (13 reemplazos en `personShader.ts`) y la guarda estática cubre 8 de 24 programas especializados (revisión de
+#330). Presupuestos en el filo: JS 1.061.578/1.070.080 B (margen 8.502 B), 16/16 samplers, metadatos 3.788/4.096 B;
+el bundle por defecto paga ≈30 KB de código s0028 que no ejecuta (imports estáticos). Tiempo: `check` local 70–85 min,
+gancho de push con 1.902 pruebas que cae con carga ajena, CI a 25 min. Evidencia con 88 enlaces a rutas absolutas de
+`~/.t3/scratch` en 14 documentos. Quedan P4–P8 sobre los mismos archivos.
+
+**Opciones.** (a) Seguir añadiendo condiciones por persona y scripts de cierre por ronda: coste creciente por fase y
+riesgo de tocar el default. (b) Reescritura grande: incompatible con las rondas P3 en curso. (c) Programa iterativo de
+diez puntos, cada uno una PR con medida antes y después y sin cambio de comportamiento salvo que se declare. Se elige (c).
+
+**Decisión.** El propietario aprobó el programa el 05-11-2026 («adelante con todas las mejoras, de forma iterativa»).
+Puntos, en el orden de ejecución previsto:
+
+1. La persona como estrategia (`AnatomyPerson`: clasificar, pared, contacto, respiración, especialización de shader,
+   activos) con dos implementaciones, default y s0028; `scene.ts`, `contact.ts` y los atlas delegan. «El default no
+   cambia» pasa a ser una propiedad del tipo; el corte de P8 es borrar un archivo.
+2. Contexto de activos explícito (`installPerson(bundle, buffers)` devuelve un objeto congelado que se pasa a escena,
+   Worker y pruebas) en lugar de setters globales.
+3. Frontera de carga por persona: el código s0028 se importa con `import()` sólo con `?abdomen=s0028`; dos presupuestos
+   medidos (default y s0028) en `bundle-budget.ts`.
+4. Composición de GLSL por módulos con grafo de inclusión declarado, en lugar de reemplazo de texto; guarda estática
+   sobre los 24 programas especializados con libro de coste por programa y variante comparado contra la base.
+5. Registro de gemelos CPU/GLSL: cada par nombra su prueba de paridad; un gemelo sin paridad rompe la CI. Tablas
+   constantes compartidas generadas desde una sola fuente.
+6. Clasificación como candidatos + política declarada (el modelo de P3) para la cadena del default.
+7. Dieta de tiempo: gancho de push sólo con la capa rápida (formato, lint, tipos, unitarias; ≤3 min); la validación
+   completa queda en la CI con recibo. Pruebas etiquetadas por capa con presupuesto de tiempo. Una herramienta de cierre
+   (`tools/workspace/closure.ts`: etapas, reanudación, muestreo de carga, JSON y logs) en lugar de un script por ronda.
+8. Mutantes reproducibles: manifiesto nombrado de mutantes por módulo y ejecutor mínimo.
+9. Documentación: `DECISIONS.md` sigue siendo el libro mayor; una página corta de estado vigente por subsistema; la
+   evidencia pesada en carpeta versionada fuera de Git con índice de hashes y rutas relativas dentro del repo; ningún
+   enlace a rutas absolutas.
+10. Partir los archivos grandes por ventana o responsabilidad, de forma oportunista, sin cambiar comportamiento.
+
+**Consecuencias.** Regla de colisión con P3: los puntos 1, 2, 3, 4 y 6 tocan los archivos de la ronda r3 (GPU) y se
+ejecutan después de su fusión; 5, 7, 8, 9 y 10 (empezando por `fidelity.ts`) corren en paralelo ahora en worktrees desde
+main. Cada PR estructural demuestra: paridad del default (82.251 puntos, 10 marcos, 30 contactos) y de s0028 (hash
+GLSL por variante), bundle no mayor, misma cuenta de pruebas, y anota aquí su párrafo «**Punto N**» con las cifras. Los
+techos (decisiones 318–320, `shaderLimits.test.ts`, `bundle-budget.ts`) no se suben. No es validación clínica.
+
+**Verificación.** Cada punto cierra con `npm run check` local (o la capa que corresponda, dicho explícitamente), revisión
+adversarial en contexto limpio y recibo de CI; las cifras antes/después quedan en el párrafo del punto y en la
+[evidencia estructural](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/structure-322/README.md) hasta que el
+punto 9 traslade la evidencia a su índice.

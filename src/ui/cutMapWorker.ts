@@ -148,7 +148,7 @@ self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
         const c = query.scene.classify(material, caliber);
         const i = v * width + u;
         tissue[i] = c.tissue;
-        structure[i] = structureIdentity(material, c.tissue, c.interface, query.scene);
+        structure[i] = structureIdentity(material, c.tissue, c.interface, query.scene, c.solids);
         vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(material) : -1;
       }
       // Report completed rows, never a timer-only heartbeat. Yield so a new

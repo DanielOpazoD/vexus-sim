@@ -19,6 +19,7 @@ import {
   s0028WallSurface,
   s0028WallUploads,
 } from '../anatomy/s0028Wall';
+import { setS0028Solids } from '../anatomy/s0028Solids';
 import { HALF } from '../anatomy/halfFloat';
 import { wallFaceGradient, wallFaceSd } from '../anatomy/organs/wall';
 import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
@@ -36,7 +37,9 @@ beforeAll(() => {
   const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
   setAbdominalAtlas(new Uint16Array(raw('abdominal-direct')));
   setThoracicAtlas(new Uint16Array(raw('thoracic-direct')));
-  setS0028Wall(raw('annotation-capacity'), raw('skin-polar'));
+  const capacity = raw('annotation-capacity');
+  setS0028Wall(capacity, raw('skin-polar'));
+  setS0028Solids(capacity);
   setAbdominalBody(new Float32Array(new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin')).buffer));
   scene = new AnatomyScene(NORMAL_ADULT);
 });

@@ -1,6 +1,7 @@
 import { anatomyBundle } from './anatomyBundle';
 import { s0028InsideWall, s0028RespiratoryWall, s0028WallAt } from './s0028Wall';
 import { s0028SourceValue } from './s0028Source';
+import { s0028Owners, type S0028Ownership } from './s0028Solids';
 import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
@@ -127,6 +128,8 @@ export interface Classification {
   approximation?: 'diaphragm-P7';
   /** P2 CPU: geometría de pared; la identidad muscular y subcapas finas siguen U. */
   wall?: 'skin-E' | 'fat-D/E' | 'band-D/E' | 'U';
+  /** P3 CPU s0028: todos los dueños y su certeza, antes de elegir material; un conflicto no elige ninguno (U). */
+  solids?: S0028Ownership;
   tissue: Tissue;
   /** Distancia con signo a la interfaz más cercana relevante (mm). */
   boundaryDistance: number;
@@ -608,6 +611,10 @@ export class AnatomyScene {
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
    * Fuera del hueso, la frontera cuenta hueso y disco. Los dueños corticales de PR139 y el disco de PR119 pueden
    * dibujar la cortical más cercana; las interfaces de órganos y sus caras suprimidas se conservan (`withSpineFace`).
+   *
+   * s0028 (P3, decisión 321): tras la piel E se reúnen todos los dueños independientes (`s0028Owners`) antes de
+   * cualquier orden; dos o más son conflicto, U y conservados en `solids`. Un dueño único da su material, salvo el
+   * riñón (borde D, interior U) y la grasa compatible D; sin dueño, U. Sólo CPU y Worker: la GPU sigue en r3.
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const torso = this.torso;
@@ -622,8 +629,8 @@ export class AnatomyScene {
     const c: Classification =
       d.disc < 0
         ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
-        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm, d.bone);
-    const result = this.identity.person === 's0028' ? c : withSpineFace(c, d.bone, d.body, d.disc);
+        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm, d.bone, wall.solids);
+    const result = wall.solids ? { ...c, solids: wall.solids } : withSpineFace(c, d.bone, d.body, d.disc);
     if (this.hasAbdominalAtlas && thoracicAtlas) {
       const q = thoracicValue(m);
       // Cortex belongs to adjacent soft tissue even when the registered rib
@@ -653,8 +660,12 @@ export class AnatomyScene {
     depth: number,
     wallMm: number,
     spineDistance: number,
+    solids?: S0028Ownership,
   ): Classification {
     const isS0028 = this.identity.person === 's0028';
+    // P3: el interior renal es U (borde D de su máscara); sin corteza, seno, cápsula ni vasos de otra persona dentro.
+    const owner = solids?.owners[0]?.id;
+    const renal = owner?.startsWith('kidney');
     if (isS0028) {
       const lung = s0028SourceValue(m, 'lung');
       if (lung.d < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -lung.d };
@@ -667,7 +678,7 @@ export class AnatomyScene {
     }
     const curtain = withCurtain && !isS0028 ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
-    const tube = this.classifyTubes(m, caliber);
+    const tube = renal ? null : this.classifyTubes(m, caliber);
     if (tube && tube.interface !== Interface.IvcLumen) return tube;
     const [dDome, slope] = isS0028 ? [1e3, 1] : sdDiaphragmSlope(m, this.diaphragm, this.torso);
     const floor = heartFloor(dDome, slope);
@@ -709,7 +720,14 @@ export class AnatomyScene {
         interface: Interface.GallbladderLumen,
         interfaceDistance: dGb,
       };
-    const kidney = this.classifyKidneys(m);
+    // El quiste izquierdo, líquido de un quiste simple (E rotulada en su dueño).
+    if (renal)
+      return {
+        ...NONE,
+        tissue: owner === 'kidney_cyst_left' ? Tissue.Fluid : Tissue.UnsegmentedSoftTissue,
+        boundaryDistance: -solids!.owners[0].d,
+      };
+    const kidney = isS0028 ? NO_KIDNEY : this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
     if (this.hasAbdominalAtlas) {
       const abdomen = abdomenQuery(m);
@@ -729,6 +747,8 @@ export class AnatomyScene {
       const muscle = s0028SourceValue(m, 'posteriorMuscle');
       if (muscle.d < 0 && muscle.label > 0)
         return { ...NONE, tissue: muscle.label <= 2 ? Tissue.Psoas : Tissue.Muscle, boundaryDistance: -muscle.d };
+      // Grasa compatible D por vóxel (HU, ≤30 mm del riñón, sin máscara): composición, no compartimento.
+      if (owner === 'compatible_fat') return { ...NONE, tissue: Tissue.Fat, boundaryDistance: 0 };
       // Conservar la cúpula E; la máscara de cada órgano ya ganó antes.
       // No usar esta estimación P7 para cortar el hígado de la persona.
       const dome = sdDiaphragm(m, this.diaphragm, this.torso);
@@ -948,7 +968,10 @@ export class AnatomyScene {
    * dibuja la cara de la capa más cercana (`wallFace`); junto a una costilla ósea, su cortical; el cartílago,
    * su pericondrio. El hueso no dibuja cara (su cortical la dibuja el tejido blando de fuera).
    */
-  private classifyWall(m: Vec3, d: number): { final: true; cls: Classification } | { final: false; wallMm: number } {
+  private classifyWall(
+    m: Vec3,
+    d: number,
+  ): { final: true; cls: Classification } | { final: false; wallMm: number; solids?: S0028Ownership } {
     if (this.identity.person === 's0028') {
       if (d < 1.5)
         return {
@@ -962,12 +985,19 @@ export class AnatomyScene {
             wall: 'skin-E',
           },
         };
-      for (const name of ['thoracicBone', 'lumbarSacralBone', 'sacrum', 'cartilage']) {
+      const q = s0028WallAt(m),
+        solids = s0028Owners(m, q),
+        owner = solids.owners[0]?.id;
+      // P3: dos o más dueños independientes son conflicto: se conservan todos y no se elige material (U).
+      if (solids.state === 'conflict')
+        return { final: true, cls: { ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, solids } };
+      for (const name of owner === 'bone' || owner === 'cartilage' ? ['thoracicBone', 'lumbarSacralBone', 'sacrum', 'cartilage'] : []) {
         const source = s0028SourceValue(m, name);
         if (source.d < 0)
           return {
             final: true,
             cls: {
+              solids,
               ...NONE,
               tissue:
                 name === 'cartilage'
@@ -981,9 +1011,8 @@ export class AnatomyScene {
             },
           };
       }
-      const q = s0028WallAt(m);
       if (q?.kind !== 'known' || q.depthMm >= q.interfaceMm)
-        return { final: false, wallMm: d - (q?.kind === 'known' ? q.depthMm - q.interfaceMm : 1e3) };
+        return { final: false, wallMm: d - (q?.kind === 'known' ? q.depthMm - q.interfaceMm : 1e3), solids };
       const fat = q.depthMm < q.outerMm;
       const outer = fat ? 1.5 : q.outerMm,
         inner = fat ? q.outerMm : q.innerMm;
@@ -997,6 +1026,7 @@ export class AnatomyScene {
           interface: fat ? Interface.DeepFascia : Interface.Peritoneum,
           interfaceDistance: Math.abs(inner - q.depthMm),
           wall: fat ? 'fat-D/E' : 'band-D/E',
+          solids,
         },
       };
     }
@@ -1305,7 +1335,8 @@ export class AnatomyScene {
         ...(other ? {} : { interface: Interface.LiverCapsule, interfaceDistance: inner }),
       };
     }
-    const dLv = this.ligamentumVenosumSdf(m);
+    // s0028: la lámina analítica es de la otra persona; su ligamento no está segmentado.
+    const dLv = this.identity.person === 's0028' ? 1e3 : this.ligamentumVenosumSdf(m);
     if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, bd) };
     return { ...NONE, tissue: Tissue.Liver, boundaryDistance: bd };
   }
@@ -1319,6 +1350,9 @@ const KIDNEY_TISSUE: Readonly<Record<KidneyRegion, Tissue>> = {
   arcuate: Tissue.ArteryWall,
   cortex: Tissue.RenalCortex,
 };
+
+/** s0028 P3: sin arquitectura ni grasa perirrenal analíticas (Morison sin grasa inventada). */
+const NO_KIDNEY = { cls: null, dPeriMm: 1e3, periThin: false } as const;
 
 /** Clasificación «nada» (aire fuera del cuerpo): base de todas las demás. */
 const NONE: Classification = Object.freeze({

@@ -19,6 +19,7 @@ import {
   s0028WallUploads,
   setS0028Wall,
 } from '../anatomy/s0028Wall';
+import { setS0028Solids } from '../anatomy/s0028Solids';
 import { HALF } from '../anatomy/halfFloat';
 import { CONTACT, probeContact, type ProbeContact } from '../probe/contact';
 import { nodeSin, warpAt, warpBound } from '../anatomy/compression';
@@ -40,6 +41,7 @@ beforeAll(() => {
   capacity = raw('annotation-capacity');
   skin = raw('skin-polar');
   setS0028Wall(capacity, skin);
+  setS0028Solids(capacity);
   setAbdominalBody(new Float32Array(new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin')).buffer));
   scene = new AnatomyScene(NORMAL_ADULT);
 });

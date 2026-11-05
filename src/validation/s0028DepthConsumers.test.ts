@@ -16,6 +16,7 @@ import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { probeContact, contactCoupling, firstCrossing } from '../probe/contact';
 import type { Vec3 } from '../core/vec3';
 import { setS0028Wall, s0028InsideWall } from '../anatomy/s0028Wall';
+import { setS0028Solids } from '../anatomy/s0028Solids';
 let scene: AnatomyScene;
 let atlas: Uint16Array;
 beforeAll(() => {
@@ -26,7 +27,9 @@ beforeAll(() => {
   const thorax = new Uint8Array(gunzipSync(readFileSync('src/anatomy/s0028/thoracic-direct.gzip.bin')));
   setThoracicAtlas(new Uint16Array(thorax.buffer));
   const auxiliary = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
-  setS0028Wall(auxiliary('annotation-capacity'), auxiliary('skin-polar'));
+  const capacity = auxiliary('annotation-capacity');
+  setS0028Wall(capacity, auxiliary('skin-polar'));
+  setS0028Solids(capacity);
   const profile = new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin'));
   setAbdominalBody(new Float32Array(profile.buffer));
   scene = new AnatomyScene(NORMAL_ADULT);

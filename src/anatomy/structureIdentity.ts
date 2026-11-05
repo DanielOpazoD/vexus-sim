@@ -4,6 +4,7 @@ import { Interface } from './interfaces';
 import { Tissue } from './tissues';
 import type { Vec3 } from '../core/vec3';
 import type { AnatomyScene } from './scene';
+import type { S0028Ownership } from './s0028Solids';
 
 /** Stable anatomical regions, separate from the acoustic tissue and vascular identity. */
 export const STRUCTURE_LABELS = [
@@ -24,9 +25,17 @@ export const STRUCTURE_LABELS = [
   'Colon transverso',
   'Colon descendente / distal',
   'Recto',
+  // s0028 P3: sin material elegido, rotulado como tal en el corte.
+  'Conflicto sin resolver · dos dueños',
+  'Riñón derecho · interior U',
+  'Riñón izquierdo · interior U',
 ] as const;
 
-export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, scene: AnatomyScene): number {
+export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, scene: AnatomyScene, solids?: S0028Ownership): number {
+  const owner = solids?.owners[0]?.id;
+  if (solids?.state === 'conflict') return 17;
+  if (owner === 'kidney_right') return 18;
+  if (owner === 'kidney_left' || owner === 'kidney_cyst_left') return 19;
   if (tissue === Tissue.Liver || tissue === Tissue.LiverCapsule) return 1;
   if ([Tissue.RenalCortex, Tissue.RenalMedulla, Tissue.RenalSinus, Tissue.RenalCapsule, Tissue.RenalPelvis].includes(tissue)) {
     const d = (center: Vec3) => center.reduce((sum, value, i) => sum + (value - p[i]) ** 2, 0);

@@ -44,6 +44,30 @@ Ver [criterios de selección, costes observados y recibo CI](engineering/iterati
 - **Fronteras**: cerca de un umbral clínico (PF 30/50 %, S/D renal 0,3) una prueba acepta la
   clase vecina y lo dice; lejos de él exige igualdad.
 
+## Mutantes reproducibles (decisión 322, punto 8)
+
+`npm run mutants` repite los mutantes que antes vivían en un script de cada ronda. Cada módulo tiene un manifiesto en
+`tools/mutants/manifests/`: nombre, reemplazo exacto `from` → `to` (una sola aparición), qué comportamiento rompe, la
+ronda donde se midió y las pruebas focales que deben detectarlo. El ejecutor corre primero esas focales sobre el árbol
+original (deben pasar), después aplica cada mutante solo, corre sus focales con un trabajador y restaura el módulo byte
+a byte en un `finally`; un diario en `.cache/mutants/` lo restaura en la ejecución siguiente si el proceso muere. Sale con
+código 1 si un mutante sobrevive, la línea base falla, un `from` no aparece exactamente una vez o `git status` no queda
+como al empezar. Escribe `mutants.json` (resultado, tiempo y pruebas rojas por mutante) y un log por mutante.
+
+```bash
+npm run mutants -- --list
+npm run mutants -- --module s0028Solids
+npm run mutants -- --only grasa-solo-sin-dueno,cajas-sin-OR --out .cache/mutants/prueba
+```
+
+Cubre 27 mutantes en siete módulos: pared, contacto y gemelo GLSL de P2 (los que detectan pruebas CPU o estáticas),
+sólidos, escena, Worker del corte y rótulos de P3, y los siete de la revisión de #331. El conjunto completo tardó 475 s
+en este equipo con carga media 9,7 (línea base 42 s; cada mutante 1–31 s). No entra en el veredicto protegido (25 min de
+techo):
+`.github/workflows/mutants.yml` corre a mano o cuando cambian esos módulos, sus focales o el ejecutor, y su rojo no
+bloquea la fusión. Un cambio que mueve el texto bajo un mutante actualiza su `from`/`to` en el mismo PR y demuestra que
+sigue muerto; no se borra un mutante para obtener verde.
+
 ## Coste del cuadro
 
 `window.__vexusTest.frameCostMs(n, opts?)` (`src/app/testHooks.ts`) mide el coste medio de `n` cuadros

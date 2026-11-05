@@ -10525,3 +10525,16 @@ gemelo GLSL `inLungCurtain` inexistente; `digestiveWallMm` y `digestiveGasPlane`
 sustitución s0028). Sin cambio de producto: 38 programas × 2 variantes y 85 constantes GLSL con el mismo hash; los 23 archivos JS
 del build idénticos salvo su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B
 porque `glslMinify` no renombra lo que aparece en cadenas. No es validación clínica.
+
+**Punto 8** (mutantes reproducibles). `tools/mutants/` tiene un manifiesto por módulo (nombre, `from`/`to` exactos con una
+sola aparición, comportamiento que rompe, ronda de origen y pruebas focales) y un ejecutor, `npm run mutants`: corre las
+focales sobre el árbol original, aplica cada mutante solo con un trabajador, lo restaura byte a byte (`finally` y un diario
+en `.cache/mutants/` para un proceso muerto) y escribe `mutants.json`; sale con 1 si alguno sobrevive, falla la línea base
+o `git status` no queda igual. 27 mutantes en siete módulos (`s0028Solids` 10, `scene` 7, `s0028Wall` 5, su gemelo GLSL
+2, `contact`, Worker del corte y rótulos 1 cada uno): los 8 de P2 r2b-U, los 12 de P3 r2 y los 7 de la revisión de #331,
+reconstruidos de la decisión 321 y del commit `73be52e` porque el informe de la revisión no se conserva. Dos se
+reanclan al código vigente (`U-sin-acoplar` al contacto «sólo piel» de #330, `grasa-sobre-mascara-fuente` tras la
+exclusión de vasos de r2c). Medido sobre el código de esta PR: línea base verde (6 archivos focales, 42 s) y 27/27
+muertos en 475 s con carga media 9,7. No entra en el veredicto protegido: el workflow `Mutantes reproducibles` corre a
+mano o cuando cambian esos módulos, sus focales o el ejecutor. Un cambio que mueve el texto bajo un mutante actualiza su
+manifiesto en el mismo PR. Ningún archivo de producto cambia.

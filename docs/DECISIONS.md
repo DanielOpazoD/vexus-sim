@@ -10431,6 +10431,15 @@ nearest por evaluación en una columna fija de páginas del atlas (sin tabla, te
 JSON; 3.206/4.096 B). Láminas sí/no con seis casillas del propietario sin rellenar. Sin runtime ni GPU (r5); sin
 validación clínica.
 
+Decisiones delegadas por el propietario (05-11-2026, «libertad, confía en ti»), para que r5 pueda instalar sin
+esperar: (1) corteza y médula entran como hipótesis E rotulada de este TAC (diferencia profunda 27/25 HU, 4,5/4,2 σ tras
+suavizar, cuñas hacia el seno), con la advertencia escrita de que la médula E se queda corta respecto a la anatómica; se
+retiran si el propietario marca «no» en sus casillas; (2) la franja del hilio < 3 mm junto al cierre de la envolvente
+sigue U; (3) el seno es la componente de la cavidad conectada al hilio con profundidad ≥ 3 mm; la grasa de concavidades
+someras vuelve a ser grasa compatible D; (4) se aprueba escribir `wallP2Offline` y `wallP2Derived` en una línea (mismo
+JSON, −1.194 B) para que el descriptor de 612 B quepa en los metadatos (3.206/4.096 B). Las seis casillas por riñón
+siguen vacías para el propietario; nada se instala en esta ronda. No es validación clínica.
+
 ## 322. Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo
 
 **Contexto.** Medido sobre main `8555a2c` (05-11-2026): `src` ≈51.000 líneas de producto; validación 300 archivos /

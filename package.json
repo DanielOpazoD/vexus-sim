@@ -34,7 +34,8 @@
     "workspace:doctor": "node tools/workspace/doctor.ts",
     "workspace:e2e": "node --import tsx tools/workspace/e2e.ts",
     "feedback": "node --import tsx tools/workspace/feedback.ts",
-    "workspace:ci": "node --import tsx tools/workspace/ci.ts"
+    "workspace:ci": "node --import tsx tools/workspace/ci.ts",
+    "mutants": "node --import tsx tools/mutants/run.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -10502,19 +10502,26 @@ adversarial en contexto limpio y recibo de CI; las cifras antes/después quedan 
 punto 9 traslade la evidencia a su índice.
 
 **Punto 5** (05-11-2026, rama `feat/322-p5-twins-20261105`). Registro de gemelos en `tools/twins/registry.ts`, inventario
-en `docs/engineering/gemelos.md` y prueba `src/validation/twinRegistry.test.ts`. 58 pares (57 CPU↔GLSL, 1 CPU↔Worker)
-que cubren las 167 funciones GLSL homónimas de una exportación TS (de 282). Paridad demostrada 35 (una e2e de la CI
-compara la GPU con el gemelo, o la CPU con el Worker); solo inspección 17 (pruebas que leen el texto GLSL: pleura de B,
-PSF, C, D, K, armónico, eco de interfaz, ruido del receptor, texturas, moteado y geometría dirigida de B, ganancia del
-campo cercano, y lo que solo usa A0); sin paridad 6, congelados: cinco gemelos de validación de diseño y el contrafactual
-de la decisión 174, código muerto en los dos lados. Un par nuevo sin prueba, un símbolo o una prueba que ya no existen,
-o un comentario «gemelo» sin `@twin` rompen la CI. Marcadores: 200 en 64 archivos; 138 de los 148 comentarios «gemelo»;
-los 10 restantes y un lado de 7 pares están en `scene.ts`, `s0028Wall.glsl.ts` y `personShader.ts` (r3 de P3) y se
-migran tras su fusión. Constantes: de 160 funciones homónimas, 85 sin literales físicos en la GLSL, 47 copiados a mano
-(erf de Abramowitz y Stegun, capas y gas digestivos, hash de Hoskins, arco de la pared) con prueba de igualdad y mutante,
-28 propios de la GLSL; generarlas desde TS cuesta hoy +16…+63 B minificados por función (`glslCompact` conserva el blanco
-junto a una interpolación) y se aplaza al punto 4. Hallazgos: `scene.ts` nombra un gemelo GLSL `inLungCurtain`
-inexistente; `digestiveWallMm` y `digestiveGasPlane` viven en tres sitios (TS, GLSL y sustitución s0028). Sin cambio de
-producto: 38 programas × 2 variantes y 85 constantes GLSL con el mismo hash; los 23 archivos JS del build idénticos salvo
-su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B porque `glslMinify` no
-renombra lo que aparece en cadenas. No es validación clínica.
+en `docs/engineering/gemelos.md`, comprobaciones en `tools/twins/check.ts` y prueba `src/validation/twinRegistry.test.ts`.
+58 pares (57 CPU↔GLSL, 1 CPU↔Worker) que cubren las 196 funciones GLSL homónimas de una función TS, exportada o no (de
+339; 28 en las cadenas sin `/* glsl */` de las sustituciones por persona). Paridad demostrada 26 (una e2e de la CI compara
+la GPU con el gemelo, o la CPU con el Worker, y el par no declara hueco); parcial 9 (comparación numérica con un hueco
+declarado: la especialización s0028 hasta la r3 de P3, la velocidad del tejido, el receso pulmonar); solo inspección 17
+(pruebas que leen el texto GLSL: pleura de B, PSF, C, D, K, armónico, eco de interfaz, ruido del receptor, texturas,
+moteado y geometría dirigida de B, ganancia del campo cercano, y lo que solo usa A0); sin paridad 6, congelados: cinco
+gemelos de validación de diseño y el contrafactual de la decisión 174, código muerto en los dos lados. Rompen la CI un par
+nuevo sin prueba; un símbolo que no existe en su lenguaje (TS del lado CPU; función GLSL o plantilla TS del lado GPU); una
+prueba que no existe o está desactivada (modificador, `describe` con modificador o `skip()` incondicional); un lado sin
+`@twin` en el comentario inmediato de una declaración suya; un comentario «gemelo» sin `@twin` y un homónimo GLSL fuera de
+todo par. Marcadores: 238 en 64 módulos; 128 de los 138 comentarios «gemelo»; los 10 restantes y un lado de 15 pares están
+en `scene.ts`, `s0028Wall.glsl.ts` y `personShader.ts` (r3 de P3) y se migran tras su fusión. Constantes: las 184 funciones
+GLSL homónimas se comparan como secuencias ordenadas de literales con signo, sin filtrar ninguno: 37 sin literales, 55
+copiados en el mismo orden, 22 reordenados, 70 distintos; 51 y 21 congelados fuera de los archivos de r3. Los cinco
+mutantes de la revisión (erf con dos cifras traspuestas, dos coeficientes intercambiados o un signo cambiado,
+`0.3275911` → `0.5`, `17.0` → `21.0` en el gas digestivo) sacan su función de «copiados»; con la regla anterior, por
+conjuntos sin 0, 1, 2 ni 0,5, sobrevivían cuatro. Generarlas desde TS cuesta hoy +16…+63 B minificados por función
+(`glslCompact` conserva el blanco junto a una interpolación) y se aplaza al punto 4. Hallazgos: `scene.ts` nombra un
+gemelo GLSL `inLungCurtain` inexistente; `digestiveWallMm` y `digestiveGasPlane` viven en tres sitios (TS, GLSL y
+sustitución s0028). Sin cambio de producto: 38 programas × 2 variantes y 85 constantes GLSL con el mismo hash; los 23 archivos JS
+del build idénticos salvo su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B
+porque `glslMinify` no renombra lo que aparece en cadenas. No es validación clínica.

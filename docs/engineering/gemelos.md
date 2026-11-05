@@ -3,59 +3,88 @@
 La anatomía y buena parte de la cadena de imagen existen dos veces: en TypeScript (medición, PW, corte del Worker,
 pruebas) y en GLSL (imagen y color). Cada par de implementaciones de lo mismo es un **gemelo**. La decisión 322
 (punto 5) pide que cada par nombre la prueba que demuestra su paridad y que un gemelo sin paridad rompa la CI. Esta
-página es el inventario medido y la convención; el registro está en `tools/twins/registry.ts` y lo hace cumplir
-`src/validation/twinRegistry.test.ts`.
+página es el inventario medido y la convención; el registro está en `tools/twins/registry.ts`, las comprobaciones en
+`tools/twins/check.ts` y las aplica `src/validation/twinRegistry.test.ts` al árbol real y a árboles mutados.
 
 ## Convención
 
-- **Un par, un `id`.** Se declara en `tools/twins/registry.ts`: qué calcula, los archivos y símbolos de cada lado (funciones
-  TS, funciones GLSL de una plantilla `/* glsl */` o la constante que las lleva) y sus pruebas.
-- **Marcador `@twin <id>`** en un comentario TS de cada lado: el JSDoc de la función TS y el de la constante o función que
-  lleva la GLSL. Nunca dentro del texto GLSL: `s0028WallGpu.test.ts` fija byte a byte el fuente de los programas por
-  defecto, y la GLSL no debe cambiar por documentarla. Un marcador puede estar también donde se mide con el gemelo
-  (ganchos de prueba, banco de fidelidad): es una referencia y también tiene que existir en el registro.
+- **Un par, un `id`.** Se declara en `tools/twins/registry.ts`: qué calcula, los archivos y símbolos de cada lado y sus
+  pruebas. Cada nombre se comprueba en su lenguaje: el lado CPU nombra declaraciones TS; el lado GPU, funciones GLSL (de
+  una plantilla `/* glsl */` o de una cadena con GLSL) y, aparte, en `templates`, las declaraciones TS que llevan esa
+  GLSL (`*_GLSL`, `FRAG_*`, funciones que montan el programa); el lado Worker, funciones que el Worker llama. Un
+  homónimo del otro lenguaje en el mismo módulo no salva un nombre que ya no existe.
+- **Marcador `@twin <id>`** en el comentario inmediatamente anterior a la declaración de un símbolo de cada lado: el
+  JSDoc (o la racha de `//`) de una función TS del lado CPU y el de una plantilla del lado GPU; el lado Worker, en su
+  archivo. No basta con que esté en el módulo. Nunca dentro del texto GLSL: `s0028WallGpu.test.ts` fija byte a byte el
+  fuente de los ocho programas por defecto, y la GLSL no debe cambiar por documentarla. Un marcador puede estar también
+  donde se mide con el gemelo (ganchos de prueba, banco de fidelidad): es una referencia y también tiene que existir en
+  el registro.
 - **La palabra «gemelo»** en un comentario TS de `src` va con su `@twin` en el mismo comentario. En el texto GLSL solo
   puede ir delante de una función registrada (el comentario `// … Gemelo TS: tubeQuery …` que precede a `tubeQuery`).
-  Para hablar de la convención en general se dice «par TS/GLSL».
-- **Gemelos por nombre** (decisión 46): toda función GLSL con el nombre de una exportación TS está en algún par; si no es
-  su gemela, va en `HOMONIMOS_NO_GEMELOS` con el motivo (hoy vacío).
+  Para hablar de la convención en general, y en los comentarios nuevos, se dice «par TS/GLSL»: el marcador sustituye a
+  la palabra.
+- **Gemelos por nombre** (decisión 46): toda función GLSL con el nombre de una función TS de `src`, exportada o no, o de
+  un método, está en algún par; también las de las cadenas sin `/* glsl */` (las sustituciones por persona de
+  `personShader.ts` y `s0028Wall.glsl.ts`). Si no es su gemela, va en `HOMONIMOS_NO_GEMELOS` con el motivo (hoy vacío).
 - **Paridad**, por la prueba más fuerte que nombra el par:
-  - _demostrada_: una prueba ejecuta los dos lados y compara números: una e2e de la CI (WebGL con SwiftShader) frente
-    al gemelo TS, o la CPU de la página frente al Worker del corte;
+  - _demostrada_: una prueba ejecuta los dos lados y compara números (una e2e de la CI, WebGL con SwiftShader, frente
+    al gemelo TS, o la CPU de la página frente al Worker del corte) y el par no declara hueco;
+  - _parcial_: hay comparación numérica, pero el par declara un hueco (`gap`): una rama, una persona o una función que
+    la comparación no cubre;
   - _solo inspección_: una prueba unitaria lee el texto GLSL (constantes interpoladas, mismas expresiones o nombres)
     sin ejecutarlo;
   - _sin paridad_: ninguna prueba toca el par. Rompe la CI salvo los congelados en `SIN_PARIDAD_ACEPTADA` (05-11-2026),
     una lista que solo encoge.
+
+  El `scope` de una prueba dice qué cubre cuando no es todo el par; si la unión de sus pruebas deja algo fuera, el par
+  lleva `gap`. El inventario imprime los dos.
+
+- **Prueba activa.** Una prueba de paridad cuenta si existe con ese título y está activa: sin `.skip`, `.fails`,
+  `.todo`, `.fixme` ni `.only`, fuera de un `describe` con modificador y sin un `skip()` incondicional (sin argumentos o
+  con `true`) en lo alto de su cuerpo. Un `skip(condición)` cuenta como activa: corre donde la condición se cumple.
 - **Archivos pendientes.** `scene.ts`, `s0028Wall.glsl.ts` y `personShader.ts` los edita la ronda r3 de P3 (regla de
-  colisión de la decisión 322): sus pares están registrados y comprobados por símbolo, pero el marcador de ese lado y
-  la migración de sus comentarios esperan a que r3 se fusione (junto con los puntos 1–4).
+  colisión de la decisión 322): sus pares están registrados y comprobados por símbolo, pero el marcador de ese lado, la
+  migración de sus comentarios y la congelación de sus constantes esperan a que r3 se fusione (junto con los puntos
+  1–4).
 - **Por qué en `tools/`.** `glslMinify` no renombra ningún identificador que aparezca en una cadena de un módulo de `src`
   que no sea prueba. Un registro en `src/validation/twinRegistry.ts`, con los nombres GLSL como cadenas, dejaba esas
-  funciones con su nombre largo en el bundle: medido, +4.657 B de JS (1.061.770 → 1.066.427 B), el 55 % del margen.
+  funciones con su nombre largo en el bundle: medido, +4.657 B de JS (1.061.770 → 1.066.427 B), el 56 % del margen
+  (8.310 B hasta el techo de 1045 KiB).
 
-Para añadir un par: escribe la entrada (lados, pruebas, `gap` si no hay paridad numérica), pon `@twin <id>` en los dos
-lados, regenera el inventario con `node --import tsx tools/twins/inventory.ts --write` y corre
-`npx vitest run src/validation/twinRegistry.test.ts`.
+Para añadir un par: escribe la entrada (lados, plantillas, pruebas, `gap` si la comparación numérica no lo cubre
+entero), pon `@twin <id>` en el comentario de una declaración de cada lado, regenera el inventario con
+`node --import tsx tools/twins/inventory.ts --write` y corre `npx vitest run src/validation/twinRegistry.test.ts`.
 
-## Cifras (main `8555a2c`, 05-11-2026)
+## Cifras (main `f47e860`, 05-11-2026)
 
-| Medida                                                                  | Antes            | Después                                         |
-| ----------------------------------------------------------------------- | ---------------- | ----------------------------------------------- |
-| Archivos de `src` que dicen «gemelo» (todos / sin `*.test.ts`)          | 79 / 46          | 79 / 46                                         |
-| Comentarios TS con «gemelo» (sin pruebas) / con `@twin`                 | 140 / 0          | 148 / 138 (10 en archivos de r3)                |
-| Comentarios GLSL con «gemelo», delante de una función registrada        | 15 / —           | 15 / 15                                         |
-| Marcadores `@twin` (archivos)                                           | 0                | 200 (64)                                        |
-| Funciones GLSL en plantillas `/* glsl */` / homónimas de una export. TS | 282 / 167        | 282 / 167, todas en un par                      |
-| Pares registrados                                                       | — (sin registro) | 58: 35 demostrada, 17 inspección, 6 sin paridad |
+| Medida                                                                        | Antes (main)     | Después (rama)                                             |
+| ----------------------------------------------------------------------------- | ---------------- | ---------------------------------------------------------- |
+| Archivos de `src` que dicen «gemelo» (todos / sin `*.test.ts`)                | 79 / 46          | 80 / 46                                                    |
+| Comentarios TS con «gemelo» (sin pruebas) / con `@twin`                       | 140 / 0          | 138 / 128 (10 en archivos de r3)                           |
+| Comentarios GLSL con «gemelo», delante de una función registrada              | 15 / —           | 15 / 15                                                    |
+| Marcadores `@twin` en módulos de `src` (archivos)                             | 0                | 238 (64)                                                   |
+| Funciones GLSL en plantillas `/* glsl */` / en cadenas sin etiqueta           | 311 / 28         | 311 / 28                                                   |
+| Funciones GLSL homónimas de una función TS (de una exportación o método / no) | 196 (190 / 6)    | 196 (190 / 6), todas en un par                             |
+| Pares registrados                                                             | — (sin registro) | 58: 26 demostrada, 9 parcial, 17 inspección, 6 sin paridad |
 
-Los ocho comentarios TS nuevos con la palabra son los JSDoc de las constantes GLSL que no tenían ninguno (`ANATOMY_GLSL`,
-`ABDOMEN_GLSL`, `STERNUM_GLSL`, `REST_TEXTURE_GLSL`, …). Los 46 archivos fuera de las pruebas son los «45» de la decisión
-322 más uno: lo medido es lo que cuenta.
+El archivo de más es la propia prueba (`twinRegistry.test.ts`). Los comentarios TS con la palabra bajan de 140 a 138:
+los dos de `organs/index.ts` que hablaban de la convención dicen ahora «par TS/GLSL», y los JSDoc que este punto añade
+para llevar un marcador no la usan; la palabra dentro de un id (`@twin gemelo-pared`, seis comentarios más) no cuenta.
+Los 46 archivos fuera de las pruebas son los «45» de la decisión 322 más uno: lo medido es lo que cuenta. Las 28
+funciones de cadenas sin etiqueta son las sustituciones por persona (12 en `personShader.ts`, 16 en
+`s0028Wall.glsl.ts`); las seis homónimas de una función TS no exportada, `smoothstepSlope`, `domeLift`, `sdRibBone`,
+`striationNoise`, `striationFasciaSlope` y `wallFaceNoise`.
 
 **Sin paridad (6).** Cinco son gemelos de validación, cadenas de la GPU rehechas en TS solo para bancos de diseño
 (`gemelo-interfaz`, `gemelo-pleura`, `gemelo-pared`, `gemelo-compuesto`, `rejilla-segmentos`): calibran en 2D y la GPU se
 mide aparte con el banco de fidelidad. El sexto, `transmision-doppler`, es el contrafactual de la decisión 174, código
 muerto en los dos lados: ningún programa incluye su GLSL.
+
+**Parcial (9).** La e2e compara la persona por defecto; la especialización s0028 de `personShader.ts` y
+`s0028Wall.glsl.ts` solo se compara en la banda de la pared o no se compara hasta la r3 de P3 (`clasificacion`,
+`tronco-primitivas`, `atlas-abdominal`, `atlas-toracico`, `organo-abdomen`, `organo-higado`, `s0028-lector`). Los otros
+dos: `deformacion` (la velocidad del tejido para el Doppler no se compara; la de la sangre, sí) y `organo-cortina`
+(`inLungRecess` y `lungCurtainEdgeMm` solo los usa A0).
 
 **Solo inspección (17).** Las pasadas de la imagen después de la clasificación: pleura en B, PSF, C y D, K, armónico, eco
 de interfaz, ruido del receptor, texturas de pared, retroperitoneo y reposo, moteado y geometría dirigida de B, ganancia
@@ -72,26 +101,38 @@ debe dejarlos en dos.
 
 ## Constantes compartidas TS ↔ GLSL
 
-La convención de `docs/ARCHITECTURE.md` es interpolar en la plantilla las constantes de TS. Medido con
-`tools/twins/constants.ts` sobre las 160 funciones homónimas de los pares (la TS y la GLSL con el mismo nombre):
+La convención de `docs/ARCHITECTURE.md` es interpolar en la plantilla las constantes de TS. `tools/twins/constants.ts`
+compara cada función GLSL de un par con su homónima TS del lado CPU (184 funciones). De cada cuerpo saca la secuencia
+ordenada de literales numéricos con su signo (negativo si va tras un `-`), sin filtrar ninguno (0, 1, 2 y 0,5 también
+cuentan), sin los índices `a[0]`, con `Math.PI` y compañía como su valor y con las repeticiones seguidas juntas (la TS
+desenrolla en tres líneas lo que la GLSL hace con un `vec3`):
 
-| Clase                                                                                  | Funciones |
-| -------------------------------------------------------------------------------------- | --------- |
-| La GLSL no escribe ningún literal físico (los interpola o solo usa 0, 1, 2 y 0,5)      | 85        |
-| Copiados a mano: cada literal de la GLSL está también escrito en la TS                 | 47        |
-| Propios de la GLSL (centinelas, épsilon, 2π como número, o constante con nombre en TS) | 28        |
+| Clase                                                                                                            | Funciones |
+| ---------------------------------------------------------------------------------------------------------------- | --------- |
+| Sin literales: la GLSL no escribe ningún número (los interpola o no los necesita)                                | 37        |
+| Copiados: la secuencia de la GLSL aparece seguida en la de la TS (mismos literales, orden y signo)               | 55        |
+| Reordenados: cada literal de la GLSL, con su signo, está en la TS, pero no en ese orden                          | 22        |
+| Distintos: algún literal de la GLSL no está en la TS (constante con nombre, centinela, épsilon, otra estructura) | 70        |
 
-Las 105 plantillas `/* glsl */` llevan 644 interpolaciones. Las tablas copiadas a mano más claras: los coeficientes de la
-erf de Abramowitz y Stegun en `normalCdf` (pleura), las capas, grosores y el plano del gas de la pared digestiva
-(abdomen), las constantes del hash de Hoskins (`hash13`, `hash12b`) y los coeficientes del arco de la pared (`wallArc`).
+Las 105 plantillas `/* glsl */` llevan 665 interpolaciones. Las tablas copiadas a mano más claras: los coeficientes de la
+erf de Abramowitz y Stegun en `normalCdf` (pleura), las capas y el plano del gas de la pared digestiva (abdomen), las
+constantes del hash de Hoskins (`hash13`, `hash12b`) y los coeficientes del arco de la pared (`wallArc`).
+
+`CONSTANTES_COPIADAS` (51) y `CONSTANTES_REORDENADAS` (21) congelan las dos clases fuera de los archivos de r3, que se
+miden pero no se congelan (4 copiadas y 1 reordenada): la prueba exige que cada función siga en su clase y que una copia
+nueva se registre, así que una constante cambiada en un solo lado rompe la CI. Medido con mutantes en la GLSL: dos
+cifras traspuestas de la erf (`1.453152027` → `1.453152072`), dos coeficientes intercambiados y un signo cambiado acaban
+en «distintos»; `0.3275911` → `0.5` en `normalCdf` y `17.0` → `21.0` en `digestiveGasPlane` acaban en «reordenados»
+(0,5 y 21 ya estaban en la TS). Con la regla anterior, por conjuntos y sin los literales 0, 1, 2 y 0,5, sobrevivían los
+cuatro últimos. De las 47 funciones que congelaba, 17 siguen copiadas, 14 pasan a reordenadas y 16 a distintas: la GLSL
+escribe ceros, unos o el orden de otra manera (`max(x, 0.0)`, `vec3(0.0)`) y la regla no separa eso de una constante
+desviada. Esas 16 conservan las pruebas de paridad de su par.
 
 Generarlas desde una sola fuente no es gratis hoy: `glslCompact` conserva el blanco junto a una interpolación y copia tal
 cual el resto de su línea, y pasar esos literales a `${…}` cuesta +63 B minificados en `normalCdf`, +21 en las capas,
-+16 en los grosores y +26 en el plano del gas. Con el JS a 8.502 B del techo y la regla de no crecer, se aplica la prueba
-de igualdad y se propone la generación para el punto 4. `CONSTANTES_COPIADAS` congela las 47 funciones y la prueba exige
-que cada literal de su GLSL siga escrito en la TS: una constante cambiada en un solo lado rompe la CI. La propuesta para
-el punto 4 es una interpolación numérica que `glslCompact` trate como un número (sin conservar el blanco), para generar
-estas tablas a coste cero y medir su hash.
++16 en los grosores y +26 en el plano del gas. Con el JS a 8.310 B del techo y la regla de no crecer, se aplica la prueba
+de igualdad y se propone la generación para el punto 4: una interpolación numérica que `glslCompact` trate como un número
+(sin conservar el blanco), para generar estas tablas a coste cero y medir su hash.
 
 ## Inventario
 

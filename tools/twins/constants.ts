@@ -1,12 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { findGlslTemplates } from '../build/glslMinify';
+import { scanSource } from './scan';
 
 /**
- * Constantes de los gemelos (decisión 322, punto 5): los literales numéricos del cuerpo de una función TS y de su gemela
- * GLSL. La convención (`docs/ARCHITECTURE.md`) es interpolar en la plantilla las constantes de TS; los que siguen
- * escritos a mano en los dos lados se comparan aquí como conjuntos de valores.
+ * Constantes de los gemelos (decisión 322, punto 5): la secuencia ordenada de literales numéricos, con su signo, del
+ * cuerpo de una función TS y de su gemela GLSL. La convención (`docs/ARCHITECTURE.md`) es interpolar en la plantilla las
+ * constantes de TS; las que siguen escritas a mano en los dos lados se comparan aquí como secuencias: la de la GLSL
+ * tiene que aparecer seguida dentro de la de la TS (la TS puede llevar ramas de más, como la de otra persona). Uso:
+ * `node --import tsx tools/twins/constants.ts` imprime las cifras y las listas congeladas del registro.
  */
 
 /** Constantes con nombre de `Math` que el TS usa donde la GLSL escribe el número. */
@@ -19,8 +22,64 @@ const MATH: Readonly<Record<string, number>> = {
   E: Math.E,
 };
 
-/** Literales de la función TS `fn` de `code` (sin los índices `a[0]`), con las constantes de `Math`. */
-export function tsLiterals(code: string, fn: string): number[] | undefined {
+const TOKEN = /0[xX][0-9a-fA-F]+[uU]?|\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+|\d+[uU]?|[A-Za-z_$][\w$]*|\S/g;
+const NUMBER = /^(?:0[xX][0-9a-fA-F]+[uU]?|\d|\.\d)/;
+
+const close = (a: number, b: number): boolean => Math.abs(a - b) <= 1e-8 * Math.max(1, Math.abs(a), Math.abs(b));
+
+/**
+ * Literales de un cuerpo en orden, con signo (negativo si el token anterior es `-`), sin los índices `a[0]` y con las
+ * repeticiones seguidas juntas (el TS desenrolla en tres líneas lo que la GLSL hace con un `vec3`). `Math.PI` y
+ * compañía cuentan como su valor.
+ */
+export function literalSequence(body: string): number[] {
+  const bare = body
+    .replace(/'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"/g, (m) => ' '.repeat(m.length))
+    .replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+  const tokens = bare.match(TOKEN) ?? [];
+  const out: number[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    const before = tokens[i - 1];
+    let value: number | undefined;
+    if (t === 'Math' && tokens[i + 1] === '.' && tokens[i + 2] in MATH) {
+      value = MATH[tokens[i + 2]];
+      i += 2;
+    } else if (NUMBER.test(t)) {
+      if (before === '[' && tokens[i + 1] === ']') continue; // índice
+      value = /^0[xX]/.test(t) ? parseInt(t.replace(/[uU]$/, ''), 16) : Number(t.replace(/[uU]$/, ''));
+    }
+    if (value === undefined) continue;
+    if (before === '-') value = -value;
+    if (out.length === 0 || !close(out[out.length - 1], value)) out.push(value);
+  }
+  return out;
+}
+
+/** ¿Aparece `part` seguida, elemento a elemento, dentro de `whole`? */
+export function contiguousIn(part: readonly number[], whole: readonly number[]): boolean {
+  if (part.length === 0) return true;
+  for (let i = 0; i + part.length <= whole.length; i++) if (part.every((v, k) => close(v, whole[i + k]))) return true;
+  return false;
+}
+
+/**
+ * Clase de las constantes de una función GLSL frente a su homónima TS. `sin-literales`: la GLSL no escribe ningún número
+ * (los interpola de TS o no los necesita); `copiados`: su secuencia aparece seguida en la de la TS (escritos a mano en los
+ * dos lados, en el mismo orden y con el mismo signo); `reordenados`: cada literal de la GLSL, con su signo, está en la TS
+ * pero no en ese orden (la TS escribe `Math.max(0, x)` donde la GLSL `max(x, 0.0)`, o reparte la cuenta en varias
+ * líneas); `distintos`: alguno no está (constante con nombre en TS, literales propios de la GLSL u otra estructura).
+ */
+export type ConstantsKind = 'sin-literales' | 'copiados' | 'reordenados' | 'distintos';
+
+export function constantsKind(glsl: readonly number[], tsSeq: readonly number[]): ConstantsKind {
+  if (glsl.length === 0) return 'sin-literales';
+  if (contiguousIn(glsl, tsSeq)) return 'copiados';
+  return glsl.every((v) => tsSeq.some((w) => close(v, w))) ? 'reordenados' : 'distintos';
+}
+
+/** Cuerpo de la función TS `fn` de `code` (declaración `function` o constante con una función). */
+export function tsBody(code: string, fn: string): string | undefined {
   const source = ts.createSourceFile('x.ts', code, ts.ScriptTarget.ES2022, true);
   let body: ts.Node | undefined;
   const find = (node: ts.Node): void => {
@@ -31,74 +90,26 @@ export function tsLiterals(code: string, fn: string): number[] | undefined {
     else node.forEachChild(find);
   };
   find(source);
-  if (!body) return undefined;
-  const out: number[] = [];
-  const visit = (node: ts.Node): void => {
-    if (ts.isNumericLiteral(node) && !(ts.isElementAccessExpression(node.parent) && node.parent.argumentExpression === node))
-      out.push(Number(node.text.replace(/_/g, '')));
-    else if (
-      ts.isPropertyAccessExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === 'Math' &&
-      node.name.text in MATH
-    )
-      out.push(MATH[node.name.text]);
-    node.forEachChild(visit);
-  };
-  visit(body);
-  return out;
+  return body ? code.slice(body.getStart(source), body.end) : undefined;
 }
 
-/** Literales del cuerpo de la función GLSL `fn` en las plantillas `/* glsl *\/` de `code` (sin los interpolados). */
-export function glslLiterals(code: string, fn: string): number[] | undefined {
-  for (const tpl of findGlslTemplates(code)) {
-    // una interpolación es un hueco: separa, pero no aporta literales
-    const text = tpl.statics.join(' ').replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, ' ');
-    const head = new RegExp(
-      `(?:^|[\\n;{}])\\s*(?:void|float|int|uint|bool|[iu]?vec[234]|mat[234]|[A-Z]\\w*)\\s+${fn}\\s*\\([^()]*\\)\\s*\\{`,
-    ).exec(text);
-    if (!head) continue;
-    let depth = 1,
-      i = head.index + head[0].length;
-    const start = i;
-    for (; i < text.length && depth > 0; i++) depth += text[i] === '{' ? 1 : text[i] === '}' ? -1 : 0;
-    const body = text.slice(start, i - 1);
-    return [...body.matchAll(/(?<![\w.])(\d+\.\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\d+[eE][-+]?\d+|\d+)(?![\w.])/g)].map((m) =>
-      Number(m[1]),
-    );
-  }
-  return undefined;
+/** Cuerpo de la primera definición de la función GLSL `fn` de `code` (de una plantilla o de una cadena con GLSL). */
+export function glslBody(code: string, fn: string): string | undefined {
+  const f = scanSource('x.ts', code).glslFunctions.find((g) => g.name === fn);
+  return f ? code.slice(f.bodyStart, f.bodyEnd) : undefined;
 }
-
-/** Conjunto de valores distintos (a 1e-8 relativo: `Math.SQRT1_2` frente a `0.70710678` difiere en 1,2e-9). */
-export function distinct(values: readonly number[]): number[] {
-  const out: number[] = [];
-  for (const v of [...values].sort((a, b) => a - b)) if (!out.some((w) => Math.abs(w - v) <= 1e-8 * Math.max(1, Math.abs(v)))) out.push(v);
-  return out;
-}
-
-/** ¿Está cada valor de `a` en `b`? */
-export const containedIn = (a: readonly number[], b: readonly number[]): boolean =>
-  a.every((v) => b.some((w) => Math.abs(v - w) <= 1e-8 * Math.max(1, Math.abs(v))));
-
-/** Literales que no dicen nada de la física: 0, 1, 2 y 0,5. */
-export const STRUCTURAL = new Set([0, 1, 2, 0.5]);
 
 export interface ConstantsRow {
   twin: string;
   fn: string;
-  /** Valores distintos no estructurales escritos en la GLSL (no interpolados). */
+  /** Archivo de la GLSL comparada (con `fn`, identifica la fila). */
+  file: string;
   glsl: number[];
   ts: number[];
-  /**
-   * `sin-literales`: la GLSL no escribe ninguno (los interpola de TS o solo usa 0, 1, 2 y 0,5); `copiados`: cada uno está
-   * también escrito en la función TS (duplicados a mano); `propios`: la GLSL escribe alguno que la TS no (centinelas,
-   * épsilon, 2π como número, o una constante con nombre en TS).
-   */
-  kind: 'sin-literales' | 'copiados' | 'propios';
+  kind: ConstantsKind;
 }
 
-/** Clasifica cada función homónima de un par (la TS y la GLSL con el mismo nombre). */
+/** Clasifica cada función homónima de un par: la GLSL de cada lado GPU frente a la TS del lado CPU con el mismo nombre. */
 export function constantsInventory(
   root: string,
   pairs: ReadonlyArray<{
@@ -106,21 +117,39 @@ export function constantsInventory(
     cpu: ReadonlyArray<{ file: string; symbols: readonly string[] }>;
     gpu: ReadonlyArray<{ file: string; symbols: readonly string[] }>;
   }>,
+  read: (file: string) => string = (f) => readFileSync(join(root, f), 'utf8'),
 ): ConstantsRow[] {
-  const read = (f: string): string => readFileSync(join(root, f), 'utf8');
   const rows: ConstantsRow[] = [];
   for (const p of pairs)
     for (const g of p.gpu)
       for (const fn of g.symbols) {
-        const glsl = glslLiterals(read(g.file), fn);
-        if (!glsl) continue;
+        const glsl = glslBody(read(g.file), fn);
         const tsSide = p.cpu.find((c) => c.symbols.includes(fn));
-        const tsVals = tsSide && tsLiterals(read(tsSide.file), fn);
-        if (!tsVals) continue;
-        const physical = (v: readonly number[]): number[] => distinct(v).filter((x) => !STRUCTURAL.has(x));
-        const [gl, tv] = [physical(glsl), physical(tsVals)];
-        const kind = gl.length === 0 ? 'sin-literales' : containedIn(gl, tv) ? 'copiados' : 'propios';
-        rows.push({ twin: p.id, fn, glsl: gl, ts: tv, kind });
+        const tsCode = tsSide && tsBody(read(tsSide.file), fn);
+        if (glsl === undefined || tsCode === undefined) continue;
+        const [gl, tv] = [literalSequence(glsl), literalSequence(tsCode)];
+        rows.push({ twin: p.id, fn, file: g.file, glsl: gl, ts: tv, kind: constantsKind(gl, tv) });
       }
   return rows;
+}
+
+/** Funciones de una clase por archivo GLSL, en el orden del inventario: la forma de las listas congeladas del registro. */
+export function byGlslFile(rows: readonly ConstantsRow[], kind: ConstantsKind): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const r of rows) if (r.kind === kind) (out[r.file] ??= []).push(r.fn);
+  return out;
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  const { ARCHIVOS_PENDIENTES, TWINS } = await import('./registry');
+  const rows = constantsInventory(resolve(import.meta.dirname, '../..'), TWINS);
+  const count = (k: ConstantsKind): number => rows.filter((r) => r.kind === k).length;
+  console.log(
+    `${rows.length} funciones GLSL homónimas: sin literales ${count('sin-literales')}, copiados ${count('copiados')}, ` +
+      `reordenados ${count('reordenados')}, distintos ${count('distintos')}`,
+  );
+  // los archivos pendientes de r3 se miden pero no se congelan (regla de colisión de la decisión 322)
+  const frozen = rows.filter((r) => !(r.file in ARCHIVOS_PENDIENTES));
+  console.log(`CONSTANTES_COPIADAS = ${JSON.stringify(byGlslFile(frozen, 'copiados'), null, 2)}`);
+  console.log(`CONSTANTES_REORDENADAS = ${JSON.stringify(byGlslFile(frozen, 'reordenados'), null, 2)}`);
 }

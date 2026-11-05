@@ -15,6 +15,7 @@ export const INVENTORY_END = '<!-- fin del inventario -->';
 
 const STATUS_LABEL: Record<TwinStatus, string> = {
   demostrada: 'demostrada',
+  parcial: 'parcial',
   inspeccion: 'solo inspección',
   'sin-paridad': 'sin paridad',
 };
@@ -27,13 +28,14 @@ export const pendingSides = (t: TwinPair): string[] =>
 export function registrySummary(twins: readonly TwinPair[] = TWINS): string {
   const count = (s: TwinStatus): number => twins.filter((t) => twinStatus(t) === s).length;
   const worker = twins.filter((t) => t.kind === 'cpu-worker').length;
-  const symbols = (sides: (t: TwinPair) => readonly TwinSide[]): number =>
-    twins.reduce((n, t) => n + sides(t).reduce((m, s) => m + s.symbols.length, 0), 0);
+  const symbols = (sides: (t: TwinPair) => readonly TwinSide[], key: 'symbols' | 'templates' = 'symbols'): number =>
+    twins.reduce((n, t) => n + sides(t).reduce((m, s) => m + (s[key]?.length ?? 0), 0), 0);
   const pending = twins.filter((t) => pendingSides(t).length > 0).length;
   return (
     `**Cifras del registro:** ${twins.length} pares (${twins.length - worker} CPU↔GLSL, ${worker} CPU↔Worker); ` +
-    `paridad demostrada ${count('demostrada')}, solo inspección ${count('inspeccion')}, sin paridad ${count('sin-paridad')}; ` +
-    `${symbols((t) => t.cpu)} símbolos del lado CPU y ${symbols((t) => t.gpu)} del lado GPU/Worker; ` +
+    `paridad demostrada ${count('demostrada')}, parcial ${count('parcial')}, solo inspección ${count('inspeccion')}, ` +
+    `sin paridad ${count('sin-paridad')}; ${symbols((t) => t.cpu)} símbolos del lado CPU, ${symbols((t) => t.gpu)} del lado GPU/Worker ` +
+    `y ${symbols((t) => t.gpu, 'templates')} plantillas; ` +
     `${pending} pares con un marcador pendiente de la r3 de P3.`
   );
 }
@@ -46,7 +48,18 @@ const where = (tree: ReadonlyMap<string, ScannedSource>, side: TwinSide, name: s
 };
 
 const sideCell = (tree: ReadonlyMap<string, ScannedSource>, sides: readonly TwinSide[]): string =>
-  sides.map((s) => `\`${s.file.replace(/^src\//, '')}\` ${s.symbols.map((n) => where(tree, s, n)).join(', ')}`).join('<br>');
+  sides
+    .map((s) => {
+      const names = [...s.symbols.map((n) => where(tree, s, n)), ...(s.templates ?? []).map((n) => `plantilla ${where(tree, s, n)}`)];
+      return `\`${s.file.replace(/^src\//, '')}\` ${names.join(', ')}`;
+    })
+    .join('<br>');
+
+/** Lo que la comparación no cubre: el hueco del par y el alcance de cada prueba parcial. */
+const gapCell = (t: TwinPair): string =>
+  [t.gap, ...t.evidence.filter((e) => e.scope).map((e) => `${e.file.replace(/^(src\/validation|e2e)\//, '')}: ${e.scope}`)]
+    .filter(Boolean)
+    .join('<br>') || '—';
 
 /** Tabla de pares con archivo y línea de cada símbolo (instantánea: las líneas se mueven con el código). */
 export function renderInventory(root: string, twins: readonly TwinPair[] = TWINS): string {
@@ -58,15 +71,15 @@ export function renderInventory(root: string, twins: readonly TwinPair[] = TWINS
           .map((f) => `\`${f.replace(/^src\//, '')}\``)
           .join(', ')})`
       : '';
-    return `| \`${t.id}\` | ${t.what} | ${sideCell(tree, t.cpu)} | ${sideCell(tree, t.gpu)} | ${STATUS_LABEL[twinStatus(t)]}${pending} | ${tests} |`;
+    return `| \`${t.id}\` | ${t.what} | ${sideCell(tree, t.cpu)} | ${sideCell(tree, t.gpu)} | ${STATUS_LABEL[twinStatus(t)]}${pending} | ${tests} | ${gapCell(t).replace(/\|/g, '\\|')} |`;
   });
   return [
     INVENTORY_START,
     '',
     registrySummary(twins),
     '',
-    '| Par | Qué | CPU (archivo, símbolo:línea) | GPU o Worker | Paridad | Pruebas |',
-    '|---|---|---|---|---|---|',
+    '| Par | Qué | CPU (archivo, símbolo:línea) | GPU o Worker | Paridad | Pruebas | Huecos y alcance |',
+    '|---|---|---|---|---|---|---|',
     ...rows,
     '',
     INVENTORY_END,

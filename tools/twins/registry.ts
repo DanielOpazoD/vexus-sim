@@ -8,11 +8,12 @@
  * módulo de `src` (salvo las pruebas), y los nombres GLSL de este registro dejarían esas funciones sin renombrar.
  *
  * Convención (`docs/engineering/gemelos.md`):
- * - un par se declara aquí con un `id` y se marca con `@twin <id>` en un comentario TS de cada lado (el JSDoc de la
- *   función TS y el de la constante que lleva la GLSL); nunca dentro del texto GLSL, cuyos bytes fija
- *   `s0028WallGpu.test.ts`;
+ * - un par se declara aquí con un `id` y se marca con `@twin <id>` en el comentario inmediatamente anterior a la
+ *   declaración de un símbolo de cada lado: una función TS del lado CPU y una plantilla (constante o función TS que lleva
+ *   la GLSL) del lado GPU; nunca dentro del texto GLSL, cuyos bytes fija `s0028WallGpu.test.ts`;
  * - la palabra «gemelo» en un comentario TS va con su `@twin`; en el texto GLSL, solo delante de una función registrada;
- * - una función GLSL con el nombre de una exportación TS es un gemelo por nombre (decisión 46) y está en algún par;
+ * - una función GLSL con el nombre de una función TS (exportada o no) es un gemelo por nombre (decisión 46) y está en
+ *   algún par;
  * - cada par nombra sus pruebas: `gpu`/`worker` demuestran la paridad con números; `texto` solo la inspecciona.
  */
 
@@ -37,8 +38,13 @@ export interface TwinEvidence {
 
 export interface TwinSide {
   file: string;
-  /** Funciones TS (exportadas o métodos), funciones GLSL de una plantilla `/* glsl *\/` o constantes exportadas. */
+  /**
+   * Lado CPU: declaraciones TS (funciones, constantes, clases o métodos). Lado GPU: funciones GLSL del archivo (de una
+   * plantilla `/* glsl *\/` o de una cadena con GLSL). Lado Worker: funciones que el Worker llama.
+   */
   symbols: readonly string[];
+  /** Lado GPU: declaraciones TS que llevan la GLSL (constantes `*_GLSL`, `FRAG_*`, funciones que la montan). */
+  templates?: readonly string[];
 }
 
 export interface TwinPair {
@@ -51,15 +57,21 @@ export interface TwinPair {
   /** Lado GLSL (o el Worker del corte en `cpu-worker`). */
   gpu: readonly TwinSide[];
   evidence: readonly TwinEvidence[];
-  /** Por qué no hay paridad numérica, o qué queda fuera de ella. Obligatorio si ninguna prueba es `gpu`/`worker`. */
+  /**
+   * Lo que la comparación numérica no cubre o por qué no la hay. Obligatorio si ninguna prueba es `gpu`/`worker`; con
+   * una prueba numérica y un hueco, el par es `parcial`.
+   */
   gap?: string;
 }
 
-export type TwinStatus = 'demostrada' | 'inspeccion' | 'sin-paridad';
+export type TwinStatus = 'demostrada' | 'parcial' | 'inspeccion' | 'sin-paridad';
 
-/** Paridad demostrada si una prueba compara números; inspección si solo lee el texto GLSL; si no, sin paridad. */
-export function twinStatus(pair: Pick<TwinPair, 'evidence'>): TwinStatus {
-  if (pair.evidence.some((e) => e.kind === 'gpu' || e.kind === 'worker')) return 'demostrada';
+/**
+ * Demostrada si una prueba compara números y no queda hueco; parcial si la compara con un hueco declarado (`gap`);
+ * inspección si solo se lee el texto GLSL; si no, sin paridad.
+ */
+export function twinStatus(pair: Pick<TwinPair, 'evidence' | 'gap'>): TwinStatus {
+  if (pair.evidence.some((e) => e.kind === 'gpu' || e.kind === 'worker')) return pair.gap ? 'parcial' : 'demostrada';
   return pair.evidence.length > 0 ? 'inspeccion' : 'sin-paridad';
 }
 
@@ -114,7 +126,14 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Tejido, vaso, cara y distancia de un punto material: `AnatomyScene.classify` y `classifyWith` en el mismo orden.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['classify', 'classifyWall', 'classifyInside'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['classify', 'classifyWith', 'classifyWall', 'classifyInside'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['classify', 'classifyWith', 'classifyWall', 'classifyInside'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
+      },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['classifyWall', 'classifyWith'], templates: ['s0028WallShader'] },
+    ],
     evidence: [
       E.equivalence,
       E.reference,
@@ -132,7 +151,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Gradiente sin normalizar de la distancia de la cara que dibuja un punto (normal del eco de interfaz).',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['faceGradient'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['faceGradient'] }],
+    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['faceGradient'], templates: ['anatomyGlsl', 'ANATOMY_GLSL'] }],
     evidence: [
       E.faceNormals,
       { kind: 'gpu', file: 'e2e/vertebralCortex.spec.ts', title: 'cortical vertebral: cara, normales y hueso CPU/GPU' },
@@ -148,7 +167,10 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Profundidad bajo la cara interna de la pared (0 en la pleura parietal), donde A0 busca el cruce de la pleura.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['insideWallMm'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['insideWallMm'] }],
+    gpu: [
+      { file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['insideWallMm'], templates: ['anatomyGlsl', 'ANATOMY_GLSL'] },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['insideWallMm'], templates: ['s0028WallShader'] },
+    ],
     evidence: [
       {
         kind: 'texto',
@@ -157,14 +179,20 @@ export const TWINS: readonly TwinPair[] = [
         scope: 'fija el texto exacto de la función GLSL',
       },
     ],
-    gap: 'Ninguna e2e lee insideWallMm de la GPU: A0 la usa para el cruce de la pleura y la paridad de A2/A parte de los segmentos que A0 ya escribió.',
+    gap: 'Ninguna e2e lee insideWallMm de la GPU: A0 la usa para el cruce de la pleura y la paridad de A2/A parte de los segmentos que A0 ya escribió. En s0028 la sustituye `s0028WallShader` (`s28Inside`), comparada con la CPU solo dentro de la banda de la pared.',
   },
   {
     id: 'cortina-receso',
     what: 'Cortina pulmonar bajo la pared y receso costodiafragmático en la escena (envoltorios de `organs/lungCurtain.ts`).',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['inLungCurtain', 'inLungRecess', 'lungEdgeMm'] }],
-    gpu: [{ file: 'src/anatomy/organs/lungCurtain.ts', symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/organs/lungCurtain.ts',
+        symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm'],
+        templates: ['LUNG_CURTAIN_GLSL'],
+      },
+    ],
     evidence: [
       {
         kind: 'texto',
@@ -179,7 +207,13 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Vasos y conductos: ruido del radio con su hash, consulta del tubo que gana y gradiente analítico de su cara.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/primitives.ts', symbols: ['tubeHash', 'tubeNoise', 'tubeQuery', 'tubeFaceGradient'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['tubeHash', 'tubeNoise', 'tubeQuery', 'tubeFace'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['tubeHash', 'tubeNoise', 'tubeQuery', 'tubeFace'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
+      },
+    ],
     evidence: [
       E.equivalence,
       {
@@ -200,6 +234,7 @@ export const TWINS: readonly TwinPair[] = [
       {
         file: 'src/anatomy/gpu/anatomy.glsl.ts',
         symbols: ['spineSd', 'spineBodySd', 'spineArchSd', 'spineBodyParts', 'spineFaceCurvature'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
       },
     ],
     evidence: [
@@ -230,6 +265,7 @@ export const TWINS: readonly TwinPair[] = [
           'sdSphere',
           'ribDistanceLowerBound',
           'sdRib',
+          'sdRibBone',
         ],
       },
       { file: 'src/anatomy/referenceBody.ts', symbols: ['bodyGradient'] },
@@ -248,18 +284,28 @@ export const TWINS: readonly TwinPair[] = [
           'sdSphere',
           'ribDistanceLowerBound',
           'sdRib',
+          'sdRibBone',
         ],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
       },
-      { file: 'src/anatomy/organs/wall.ts', symbols: ['torsoDepthGrad'] },
+      { file: 'src/anatomy/organs/wall.ts', symbols: ['torsoDepthGrad'], templates: ['WALL_GLSL'] },
+      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['torsoDepth', 'torsoNormal', 'torsoDepthGrad'], templates: ['personShader'] },
     ],
     evidence: [E.equivalence, E.reference],
+    gap: 'En s0028, `torsoDepth`, `torsoNormal` y `torsoDepthGrad` de `personShader` solo se comparan en la banda de la pared (`s0028WallGpu.spec.ts`).',
   },
   {
     id: 'cupula',
     what: 'Altura del diafragma: inserción costal y la hemicúpula más alta.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/primitives.ts', symbols: ['diaphragmHeight'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['domeHeight', 'domeLift', 'sdDome'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['domeHeight', 'domeLift', 'sdDome'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
+      },
+    ],
     evidence: [
       E.equivalence,
       { kind: 'gpu', file: 'e2e/diaphragmAxis.spec.ts', title: 'eje diafragmático sin singularidad CPU/GPU' },
@@ -279,7 +325,9 @@ export const TWINS: readonly TwinPair[] = [
       {
         file: 'src/anatomy/gpu/anatomy.glsl.ts',
         symbols: ['toMaterial', 'tissueVelocity', 'respWeight', 'respWeightGradient', 'anatomyWarpAt'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
       },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['respWeight', 'respWeightGradient'], templates: ['s0028WallShader'] },
     ],
     evidence: [
       { ...E.equivalence, scope: 'mundo → material con respiración y compresión, en la clasificación' },
@@ -300,13 +348,14 @@ export const TWINS: readonly TwinPair[] = [
     cpu: [
       {
         file: 'src/anatomy/compression.ts',
-        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound'],
+        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound', 'smoothstepSlope'],
       },
     ],
     gpu: [
       {
         file: 'src/anatomy/compression.ts',
-        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound', 'COMPRESSION_GLSL'],
+        symbols: ['compressionElevation', 'compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound', 'smoothstepSlope'],
+        templates: ['COMPRESSION_GLSL'],
       },
     ],
     evidence: [
@@ -351,6 +400,12 @@ export const TWINS: readonly TwinPair[] = [
           'registeredDomeSample',
           'hepaticDomeValue',
         ],
+        templates: ['ABDOMINAL_ATLAS_GLSL'],
+      },
+      {
+        file: 'src/anatomy/gpu/personShader.ts',
+        symbols: ['abdominalAtlasValue', 'registeredDomeSample', 'hepaticDomeValue'],
+        templates: ['personShader'],
       },
     ],
     evidence: [
@@ -363,6 +418,7 @@ export const TWINS: readonly TwinPair[] = [
         title: 'techo registrado y vecinos mantienen tejidos, interfaces y normales CPU/GPU',
       },
     ],
+    gap: 'El lector s0028 de `personShader` (`abdominalAtlasValue` y las cúpulas vacías) solo se compara en la banda de la pared (`s0028WallGpu.spec.ts`); el volumen llega con la r3 de P3.',
   },
   {
     id: 'atlas-toracico',
@@ -378,19 +434,22 @@ export const TWINS: readonly TwinPair[] = [
       {
         file: 'src/anatomy/thoracicAtlas.ts',
         symbols: ['thoracicValue', 'thoracicSdf', 'thoracicMaterial', 'thoracicGradient', 'boneSurfaceFrame', 'thoracicFrame'],
+        templates: ['THORACIC_GLSL'],
       },
+      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['thoracicValue', 'thoracicMaterial'], templates: ['personShader'] },
     ],
     evidence: [
       E.thoracic,
       { kind: 'gpu', file: 'e2e/thoracicCoverage.spec.ts', title: 'doce pares, extremos libres y esternón: misma barrera CPU/GPU' },
     ],
+    gap: 'La sustitución s0028 de `thoracicValue` y `thoracicMaterial` (`personShader`) no tiene comparación numérica hasta la r3 de P3.',
   },
   {
     id: 'volumen-fuente',
     what: 'Interpolación trilineal de los ocho nodos de un volumen fuente junto a las interfaces óseas.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/sourceVolume.ts', symbols: ['sourceDistance'] }],
-    gpu: [{ file: 'src/anatomy/sourceVolume.ts', symbols: ['sourceDistancePrecise', 'SOURCE_DISTANCE_GLSL'] }],
+    gpu: [{ file: 'src/anatomy/sourceVolume.ts', symbols: ['sourceDistancePrecise'], templates: ['SOURCE_DISTANCE_GLSL'] }],
     evidence: [E.thoracic, E.atlas],
   },
   {
@@ -398,7 +457,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Cartílago costal del adulto de referencia: distancia, tangente y curvatura.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/referenceCartilage.ts', symbols: ['referenceCartilage'] }],
-    gpu: [{ file: 'src/anatomy/gpu/referenceCartilage.glsl.ts', symbols: ['referenceCartilage', 'CARTILAGE_GLSL'] }],
+    gpu: [{ file: 'src/anatomy/gpu/referenceCartilage.glsl.ts', symbols: ['referenceCartilage'], templates: ['CARTILAGE_GLSL'] }],
     evidence: [E.equivalence, E.reference],
   },
   {
@@ -406,7 +465,13 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Campo complejo de dispersores persistente en coordenadas materiales: hash, retícula y fundido trilineal.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/speckleField.ts', symbols: ['hash13', 'scattererField'] }],
-    gpu: [{ file: 'src/anatomy/gpu/anatomy.glsl.ts', symbols: ['hash13', 'latticeValueS', 'scattererFieldS', 'scattererField'] }],
+    gpu: [
+      {
+        file: 'src/anatomy/gpu/anatomy.glsl.ts',
+        symbols: ['hash13', 'latticeValueS', 'scattererFieldS', 'scattererField'],
+        templates: ['anatomyGlsl', 'ANATOMY_GLSL'],
+      },
+    ],
     evidence: [
       {
         kind: 'texto',
@@ -421,7 +486,13 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Dirección de la línea y punto del sector a una profundidad.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/probe/probe.ts', symbols: ['pointOnLine'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['pointOnLine', 'lineDir'] }],
+    gpu: [
+      {
+        file: 'src/ultrasound/shaders/passes.glsl.ts',
+        symbols: ['pointOnLine', 'lineDir'],
+        templates: ['BEAM_GEOMETRY_GLSL', 'LINE_DIR_GLSL'],
+      },
+    ],
     evidence: [
       {
         ...E.equivalence,
@@ -444,16 +515,10 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/anatomy/organs/abdomen.ts',
-        symbols: [
-          'digestiveWallMm',
-          'digestiveWallTissue',
-          'gastricWallTissue',
-          'gastricBoundary',
-          'digestiveGasPlane',
-          'abdomenQuery',
-          'ABDOMEN_GLSL',
-        ],
+        symbols: ['digestiveWallMm', 'digestiveWallTissue', 'gastricWallTissue', 'gastricBoundary', 'digestiveGasPlane', 'abdomenQuery'],
+        templates: ['ABDOMEN_GLSL'],
       },
+      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['digestiveWallMm', 'digestiveGasPlane'], templates: ['personShader'] },
     ],
     evidence: [
       {
@@ -464,13 +529,14 @@ export const TWINS: readonly TwinPair[] = [
       { kind: 'texto', file: 'src/validation/gastricWall.test.ts', title: 'la GLSL usa las mismas capas y el mismo pliegue' },
       E.organNames,
     ],
+    gap: 'La sustitución s0028 de `digestiveWallMm` y `digestiveGasPlane` (`personShader`) no tiene comparación numérica hasta la r3 de P3.',
   },
   {
     id: 'organo-intestino',
     what: 'Asas: luz, gas, pared y serosa.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/organs/bowel.ts', symbols: ['bowelQuery', 'bowelSdf', 'bowelGasSdf'] }],
-    gpu: [{ file: 'src/anatomy/organs/bowel.ts', symbols: ['bowelQuery', 'bowelSdf', 'bowelGasSdf', 'BOWEL_GLSL'] }],
+    gpu: [{ file: 'src/anatomy/organs/bowel.ts', symbols: ['bowelQuery', 'bowelSdf', 'bowelGasSdf'], templates: ['BOWEL_GLSL'] }],
     evidence: [
       { kind: 'gpu', file: 'e2e/bowel.spec.ts', title: 'asas: luz, gas, pared y serosa coinciden en CPU/GPU' },
       { kind: 'gpu', file: 'e2e/bowel.spec.ts', title: 'asas: compresión local reversible y gemelo GPU' },
@@ -482,7 +548,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Esternón: semianchura y distancia.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/organs/sternum.ts', symbols: ['sternumHalfWidth', 'sternumSd'] }],
-    gpu: [{ file: 'src/anatomy/organs/sternum.ts', symbols: ['sternumHalfWidth', 'sternumSd', 'STERNUM_GLSL'] }],
+    gpu: [{ file: 'src/anatomy/organs/sternum.ts', symbols: ['sternumHalfWidth', 'sternumSd'], templates: ['STERNUM_GLSL'] }],
     evidence: [
       { kind: 'gpu', file: 'e2e/thoracicCoverage.spec.ts', title: 'doce pares, extremos libres y esternón: misma barrera CPU/GPU' },
       E.organNames,
@@ -537,8 +603,13 @@ export const TWINS: readonly TwinPair[] = [
           'nearestRib',
           'ribTangent',
           'ribCurvature',
-          'WALL_GLSL',
         ],
+        templates: ['WALL_GLSL'],
+      },
+      {
+        file: 'src/anatomy/gpu/s0028Wall.glsl.ts',
+        symbols: ['wallFaceSd', 'wallFaceGradient', 'wallFaceDepth', 'wallDepths', 'ribSd'],
+        templates: ['s0028WallShader'],
       },
     ],
     evidence: [
@@ -556,6 +627,12 @@ export const TWINS: readonly TwinPair[] = [
         title: 'la GLSL: un relieve por cara con los términos de la tabla, la fascia con el espesor de grasa del relieve lento',
       },
       E.organNames,
+      {
+        kind: 'gpu',
+        file: 'e2e/s0028WallGpu.spec.ts',
+        title: 'la GPU s0028 conserva la banda D/E con identidad U y el panículo regional CPU',
+        scope: 'caras y normales de la pared s0028 (sustituciones de `s0028WallShader`)',
+      },
     ],
   },
   {
@@ -603,8 +680,8 @@ export const TWINS: readonly TwinPair[] = [
           'kidneySinusSdf',
           'atlasDepthScale',
           'kidneyQuery',
-          'KIDNEY_GLSL',
         ],
+        templates: ['KIDNEY_GLSL'],
       },
     ],
     evidence: [
@@ -620,7 +697,11 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/organs/liverLigaments.ts', symbols: ['umbilicalFissureSdf', 'ligamentumVenosumSdf'] }],
     gpu: [
-      { file: 'src/anatomy/organs/liverLigaments.ts', symbols: ['umbilicalFissureSdf', 'ligamentumVenosumSdf', 'LIVER_LIGAMENTS_GLSL'] },
+      {
+        file: 'src/anatomy/organs/liverLigaments.ts',
+        symbols: ['umbilicalFissureSdf', 'ligamentumVenosumSdf'],
+        templates: ['LIVER_LIGAMENTS_GLSL'],
+      },
     ],
     evidence: [
       E.equivalence,
@@ -640,18 +721,20 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/anatomy/organs/lungCurtain.ts',
-        symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm', 'LUNG_CURTAIN_GLSL'],
+        symbols: ['lungCurtainDistance', 'inLungRecess', 'lungCurtainEdgeMm'],
+        templates: ['LUNG_CURTAIN_GLSL'],
       },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['lungCurtainEdgeMm', 'inLungRecess'], templates: ['s0028WallShader'] },
     ],
     evidence: [{ ...E.equivalence, scope: '`lungCurtainDistance` dentro de la clasificación' }, E.organNames],
-    gap: '`inLungRecess` y `lungCurtainEdgeMm` solo los usa A0 (cruce de la pleura): sin comparación numérica.',
+    gap: '`inLungRecess` y `lungCurtainEdgeMm` solo los usa A0 (cruce de la pleura): sin comparación numérica. En s0028 las dos quedan vacías (sin cortina procedural), también sin comparación.',
   },
   {
     id: 'organo-vesicula',
     what: 'Vesícula: segmentos y unión suave con su gradiente exacto.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/organs/gallbladder.ts', symbols: ['gbSegment', 'gallbladderSdf'] }],
-    gpu: [{ file: 'src/anatomy/organs/gallbladder.ts', symbols: ['gbSegment', 'gallbladderSdf', 'GALLBLADDER_GLSL'] }],
+    gpu: [{ file: 'src/anatomy/organs/gallbladder.ts', symbols: ['gbSegment', 'gallbladderSdf'], templates: ['GALLBLADDER_GLSL'] }],
     evidence: [
       { kind: 'gpu', file: 'e2e/gallbladderGradient.spec.ts', title: 'pared vesicular: gradiente de la unión suave CPU/GPU' },
       E.equivalence,
@@ -687,9 +770,10 @@ export const TWINS: readonly TwinPair[] = [
           'medialCutDistance',
           'medialCutNormal',
           'liverSdf',
-          'LIVER_GLSL',
         ],
+        templates: ['LIVER_GLSL'],
       },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['visceralHeight'], templates: ['s0028WallShader'] },
     ],
     evidence: [
       E.equivalence,
@@ -701,6 +785,7 @@ export const TWINS: readonly TwinPair[] = [
       },
       E.organNames,
     ],
+    gap: 'La sustitución s0028 de `visceralHeight` (`s0028WallShader`) no tiene comparación numérica hasta la r3 de P3.',
   },
   {
     id: 'organo-retroperitoneo',
@@ -715,7 +800,8 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/anatomy/organs/retroperitoneum.ts',
-        symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum', 'RETROPERITONEUM_GLSL'],
+        symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
+        templates: ['RETROPERITONEUM_GLSL'],
       },
     ],
     evidence: [
@@ -742,7 +828,8 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/anatomy/organs/heart.ts',
-        symbols: ['heartShift', 'heartFrame', 'raFrame', 'raSdf', 'heartChambers', 'raInferiorZ', 'ivcAtrium', 'thorax', 'HEART_GLSL'],
+        symbols: ['heartShift', 'heartFrame', 'raFrame', 'raSdf', 'heartChambers', 'raInferiorZ', 'ivcAtrium', 'thorax'],
+        templates: ['HEART_GLSL'],
       },
     ],
     evidence: [
@@ -788,8 +875,8 @@ export const TWINS: readonly TwinPair[] = [
           's28Ramp',
           's28RespWall',
           's28Inside',
-          's0028WallShader',
         ],
+        templates: ['s0028WallShader'],
       },
     ],
     evidence: [
@@ -813,7 +900,7 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/anatomy/s0028Source.ts', symbols: ['s0028SourceValue'] },
       { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['s0028Depth', 's0028DepthGradient'] },
     ],
-    gpu: [{ file: 'src/anatomy/gpu/personShader.ts', symbols: ['personShader'] }],
+    gpu: [{ file: 'src/anatomy/gpu/personShader.ts', symbols: ['s28Gas', 's28DepthGradient'], templates: ['personShader'] }],
     evidence: [
       {
         kind: 'gpu',
@@ -870,7 +957,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Dirección reflejada del espejo diafragmático/pleural.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/transmission.ts', symbols: ['mirrorDirection'] }],
-    gpu: [{ file: 'src/ultrasound/transmission.ts', symbols: ['mirrorDirection', 'MIRROR_DIRECTION_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/transmission.ts', symbols: ['mirrorDirection'], templates: ['MIRROR_DIRECTION_GLSL'] }],
     evidence: [E.facets],
   },
   {
@@ -884,8 +971,8 @@ export const TWINS: readonly TwinPair[] = [
       },
     ],
     gpu: [
-      { file: 'src/ultrasound/transmission.ts', symbols: ['transLerp'] },
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_HITS', 'a0Reflected'] },
+      { file: 'src/ultrasound/transmission.ts', symbols: ['transLerp'], templates: ['TRANSMISSION_LERP_GLSL'] },
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['a0Reflected'], templates: ['FRAG_TRANS_HITS'] },
     ],
     evidence: [
       { kind: 'texto', file: 'src/validation/pleura.test.ts', title: 'la GLSL de A0 lleva la misma marcha que el gemelo' },
@@ -906,8 +993,12 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/ultrasound/transmission.ts', symbols: ['segmentDb'] },
     ],
     gpu: [
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_PREFIX', 'FRAG_TRANS_PREFIX_STEERED', 'segmentDb'] },
-      { file: 'src/ultrasound/transmission.ts', symbols: ['steeredPrefix', 'STEERED_PREFIX_GLSL'] },
+      {
+        file: 'src/ultrasound/shaders/passes.glsl.ts',
+        symbols: ['segmentDb'],
+        templates: ['FRAG_TRANS_PREFIX', 'FRAG_TRANS_PREFIX_STEERED'],
+      },
+      { file: 'src/ultrasound/transmission.ts', symbols: ['steeredPrefix'], templates: ['STEERED_PREFIX_GLSL'] },
     ],
     evidence: [
       E.transmission,
@@ -941,18 +1032,8 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/ultrasound/aperture.ts',
-        symbols: [
-          'apW',
-          'apCones',
-          'apEcho',
-          'apertureTransmission',
-          'steeredApertureTransmission',
-          'rfPsi',
-          'rfSlab',
-          'refractionGain',
-          'APERTURE_GLSL',
-          'REFRACTION_GLSL',
-        ],
+        symbols: ['apW', 'apCones', 'apEcho', 'apertureTransmission', 'steeredApertureTransmission', 'rfPsi', 'rfSlab', 'refractionGain'],
+        templates: ['APERTURE_GLSL', 'REFRACTION_GLSL'],
       },
     ],
     evidence: [
@@ -975,7 +1056,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Conversión de una transmisión de la imagen B a la frecuencia Doppler, con las barreras fijas aparte.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/dopplerTransmission.ts', symbols: ['dopplerTransmission'] }],
-    gpu: [{ file: 'src/ultrasound/dopplerTransmission.ts', symbols: ['dopplerTransmission', 'DOPPLER_TRANSMISSION_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/dopplerTransmission.ts', symbols: ['dopplerTransmission'], templates: ['DOPPLER_TRANSMISSION_GLSL'] }],
     evidence: [],
     gap: 'Contrafactual de la decisión 174 conservado para pruebas históricas: ningún programa incluye `DOPPLER_TRANSMISSION_GLSL` y fuera de su prueba unitaria nadie llama a `dopplerTransmission`. El canal Doppler de A2 sí tiene paridad e2e (`prefijo-a2`).',
   },
@@ -1022,9 +1103,8 @@ export const TWINS: readonly TwinPair[] = [
           'slidingField',
           'mediumField',
           'wallField',
-          'PLEURA_GLSL',
-          'CURTAIN_AIR_GLSL',
         ],
+        templates: ['PLEURA_GLSL', 'CURTAIN_AIR_GLSL'],
       },
     ],
     evidence: [
@@ -1057,7 +1137,8 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/ultrasound/shaders/passes.glsl.ts',
-        symbols: ['focalGain', 'echoFrequency', 'lateralSigmaMm', 'beamFwhm', 'elevSigma', 'LATERAL_PSF_GLSL', 'ELEV_SIGMA_GLSL'],
+        symbols: ['focalGain', 'echoFrequency', 'lateralSigmaMm', 'beamFwhm', 'elevSigma'],
+        templates: ['LATERAL_PSF_GLSL', 'ELEV_SIGMA_GLSL'],
       },
     ],
     evidence: [
@@ -1074,7 +1155,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Pasadas C y D: núcleo lateral con pedestal, réplicas de reverberación y su puerta.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/clutter.ts', symbols: ['lateralKernel', 'reverbGains', 'reverbGateWeight'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: [], templates: ['FRAG_LATERAL', 'FRAG_AXIAL'] }],
     evidence: [
       {
         kind: 'texto',
@@ -1090,8 +1171,8 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/compound.ts', symbols: ['compoundEnvelope', 'lookWeight'] }],
     gpu: [
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_COMPOUND', 'lookEnvelope'] },
-      { file: 'src/ultrasound/compound.ts', symbols: ['lookWeight'] },
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['lookEnvelope'], templates: ['FRAG_COMPOUND'] },
+      { file: 'src/ultrasound/compound.ts', symbols: ['lookWeight'], templates: ['COMPOUND_GLSL'] },
     ],
     evidence: [
       {
@@ -1107,7 +1188,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Acumulación del haz armónico en el campo cercano.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/harmonic.ts', symbols: ['harmonicNearGain'] }],
-    gpu: [{ file: 'src/ultrasound/harmonic.ts', symbols: ['harmonicNearGain', 'HARMONIC_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/harmonic.ts', symbols: ['harmonicNearGain'], templates: ['HARMONIC_GLSL'] }],
     evidence: [
       {
         kind: 'texto',
@@ -1122,7 +1203,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Coseno de incidencia de la faceta inclinada.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/interfaceEcho.ts', symbols: ['facetCosine'] }],
-    gpu: [{ file: 'src/ultrasound/interfaceEcho.ts', symbols: ['facetCosine', 'FACET_COSINE_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/interfaceEcho.ts', symbols: ['facetCosine'], templates: ['FACET_COSINE_GLSL'] }],
     evidence: [E.facets],
   },
   {
@@ -1147,15 +1228,8 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/ultrasound/interfaceEcho.ts',
-        symbols: [
-          'interfaceProfileEcho',
-          'facetTilt',
-          'faceEcho',
-          'faceShape',
-          'cachedFaceGradient',
-          'interfaceEcho',
-          'INTERFACE_ECHO_GLSL',
-        ],
+        symbols: ['interfaceProfileEcho', 'facetTilt', 'faceEcho', 'faceShape', 'cachedFaceGradient', 'interfaceEcho'],
+        templates: ['INTERFACE_ECHO_GLSL'],
       },
     ],
     evidence: [
@@ -1182,7 +1256,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Ruido del receptor por línea de la pasada C: hash en float32 y amplitud por modo.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/receiver.ts', symbols: ['hash12b'] }],
-    gpu: [{ file: 'src/ultrasound/receiver.ts', symbols: ['hash12b', 'receiverNoise', 'RECEIVER_NOISE_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/receiver.ts', symbols: ['hash12b', 'receiverNoise'], templates: ['RECEIVER_NOISE_GLSL'] }],
     evidence: [
       {
         kind: 'texto',
@@ -1198,7 +1272,13 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Fascículos y septos del psoas, cuadrado lumbar y grasa retroperitoneal en B.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/retroTexture.ts', symbols: ['retroMuscleAxis', 'fascicleSeptum', 'retroTexture'] }],
-    gpu: [{ file: 'src/ultrasound/retroTexture.ts', symbols: ['retroMuscleAxis', 'fascicleSeptum', 'retroTexture', 'RETRO_TEXTURE_GLSL'] }],
+    gpu: [
+      {
+        file: 'src/ultrasound/retroTexture.ts',
+        symbols: ['retroMuscleAxis', 'fascicleSeptum', 'retroTexture'],
+        templates: ['RETRO_TEXTURE_GLSL'],
+      },
+    ],
     evidence: [
       {
         kind: 'texto',
@@ -1216,7 +1296,17 @@ export const TWINS: readonly TwinPair[] = [
     cpu: [
       {
         file: 'src/ultrasound/wallTexture.ts',
-        symbols: ['wallOrientation', 'fatSeptum', 'muscleStriation', 'wallFaceGain', 'wallTexture', 'wallFaceEchoFlat'],
+        symbols: [
+          'wallOrientation',
+          'fatSeptum',
+          'muscleStriation',
+          'wallFaceGain',
+          'wallTexture',
+          'wallFaceEchoFlat',
+          'striationNoise',
+          'striationFasciaSlope',
+          'wallFaceNoise',
+        ],
       },
     ],
     gpu: [
@@ -1229,9 +1319,13 @@ export const TWINS: readonly TwinPair[] = [
           'wallFaceGain',
           'wallTexture',
           'wallFaceEchoFlat',
-          'WALL_TEXTURE_GLSL',
+          'striationNoise',
+          'striationFasciaSlope',
+          'wallFaceNoise',
         ],
+        templates: ['WALL_TEXTURE_GLSL'],
       },
+      { file: 'src/anatomy/gpu/s0028Wall.glsl.ts', symbols: ['muscleStriation'], templates: ['s0028WallShader'] },
     ],
     evidence: [
       {
@@ -1245,7 +1339,7 @@ export const TWINS: readonly TwinPair[] = [
         title: 'la GPU aplica el mismo tope a la variación de las caras',
       },
     ],
-    gap: 'Las e2e de estrías y septos (`muscleStriationNormals`, `wallSeptumNormals`) comparan la GLSL con un oráculo GLSL, no con estas funciones TS.',
+    gap: 'Las e2e de estrías y septos (`muscleStriationNormals`, `wallSeptumNormals`) comparan la GLSL con un oráculo GLSL, no con estas funciones TS. En s0028 `s0028WallShader` deja `muscleStriation` sin capas procedurales, tampoco comparada.',
   },
   {
     id: 'moteado-campo',
@@ -1258,19 +1352,11 @@ export const TWINS: readonly TwinPair[] = [
       },
     ],
     gpu: [
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['scattererFieldSlice', 'speckleField'] },
+      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['scattererFieldSlice', 'speckleField'], templates: ['rawFieldShader'] },
       {
         file: 'src/ultrasound/speckleField.ts',
-        symbols: [
-          'latticeValuePh',
-          'scattererFieldPh',
-          'valueNoise',
-          'strongScatter',
-          'clumpGain',
-          'densityGain',
-          'SPECKLE_LOOK_GLSL',
-          'SPECKLE_TISSUE_GLSL',
-        ],
+        symbols: ['latticeValuePh', 'scattererFieldPh', 'valueNoise', 'strongScatter', 'clumpGain', 'densityGain'],
+        templates: ['SPECKLE_LOOK_GLSL', 'SPECKLE_TISSUE_GLSL'],
       },
     ],
     evidence: [
@@ -1292,9 +1378,14 @@ export const TWINS: readonly TwinPair[] = [
     gpu: [
       {
         file: 'src/ultrasound/steering.ts',
-        symbols: ['steerBeta', 'alongLineMm', 'steeredElement', 'lookPhase', 'lookPhaseGrad', 'lookCoverage', 'STEERING_GLSL'],
+        symbols: ['steerBeta', 'alongLineMm', 'steeredElement', 'lookPhase', 'lookPhaseGrad', 'lookCoverage'],
+        templates: ['STEERING_GLSL'],
       },
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['steeredField', 'steeredT', 'steeredPleura', 'STEERED_FIELD_GLSL'] },
+      {
+        file: 'src/ultrasound/shaders/passes.glsl.ts',
+        symbols: ['steeredField', 'steeredT', 'steeredPleura'],
+        templates: ['STEERED_FIELD_GLSL'],
+      },
     ],
     evidence: [
       { kind: 'texto', file: 'src/validation/steering.test.ts', title: 'el GLSL lleva las mismas fórmulas (sin constantes de TS sueltas)' },
@@ -1308,7 +1399,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Tríadas portales: hash entero PCG3D, números de la célula y brillo de la tríada.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/portalTriads.ts', symbols: ['pcg3d', 'cellRandoms', 'portalTriadGain'] }],
-    gpu: [{ file: 'src/ultrasound/portalTriads.ts', symbols: ['triadPcg', 'portalTriad', 'PORTAL_TRIADS_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/portalTriads.ts', symbols: ['triadPcg', 'portalTriad'], templates: ['PORTAL_TRIADS_GLSL'] }],
     evidence: [
       {
         kind: 'gpu',
@@ -1327,7 +1418,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Perfil de la pared intestinal en reposo y su textura.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/restTexture.ts', symbols: ['bowelWallProfile', 'restTexture'] }],
-    gpu: [{ file: 'src/ultrasound/restTexture.ts', symbols: ['bowelWallProfile', 'restTexture', 'REST_TEXTURE_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/restTexture.ts', symbols: ['bowelWallProfile', 'restTexture'], templates: ['REST_TEXTURE_GLSL'] }],
     evidence: [
       {
         kind: 'texto',
@@ -1345,7 +1436,9 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/ultrasound/colorWallFilter.ts', symbols: ['colorWallResponseHz'] },
       { file: 'src/doppler/wallFilter.ts', symbols: ['WallFilter'] },
     ],
-    gpu: [{ file: 'src/ultrasound/colorWallFilter.ts', symbols: ['colorWallResponseHz', 'colorPhase', 'COLOR_WALL_FILTER_GLSL'] }],
+    gpu: [
+      { file: 'src/ultrasound/colorWallFilter.ts', symbols: ['colorWallResponseHz', 'colorPhase'], templates: ['COLOR_WALL_FILTER_GLSL'] },
+    ],
     evidence: [
       {
         kind: 'gpu',
@@ -1362,7 +1455,7 @@ export const TWINS: readonly TwinPair[] = [
       { file: 'src/ultrasound/colorGain.ts', symbols: ['colorPowerGain'] },
       { file: 'src/doppler/wallFilter.ts', symbols: ['WallFilter'] },
     ],
-    gpu: [{ file: 'src/ultrasound/colorMixture.ts', symbols: ['COLOR_MIXTURE_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/colorMixture.ts', symbols: [], templates: ['COLOR_MIXTURE_GLSL'] }],
     evidence: [
       {
         kind: 'gpu',
@@ -1376,7 +1469,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Paleta del Color: la barra de la UI y la de la GPU.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/colorMap.ts', symbols: ['colorMapRgb'] }],
-    gpu: [{ file: 'src/ultrasound/colorMap.ts', symbols: ['colorVelocityMap', 'COLOR_MAP_GLSL'] }],
+    gpu: [{ file: 'src/ultrasound/colorMap.ts', symbols: ['colorVelocityMap'], templates: ['COLOR_MAP_GLSL'] }],
     evidence: [{ kind: 'gpu', file: 'e2e/colorMap.spec.ts', title: 'barra CPU y paleta GPU coinciden desde cero hasta Nyquist' }],
   },
   {
@@ -1384,7 +1477,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Recta de ganancia del campo cercano en la presentación (`displayGrey`).',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/ultrasound/renderer.ts', symbols: ['nearFieldTgcDb'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['tgcAt', 'displayDb'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['tgcAt', 'displayDb'], templates: ['DISPLAY_GREY_GLSL'] }],
     evidence: [{ kind: 'texto', file: 'src/validation/nearFieldDisplay.test.ts', title: 'la GPU usa la misma recta' }],
     gap: 'La presentación se mide en la imagen; la recta de la GPU no se lee frente a `nearFieldTgcDb`.',
   },
@@ -1396,7 +1489,11 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/validation/support/interfaceTwin.ts', symbols: ['simulate', 'lineDir', 'elevSigma', 'calibrateBeta'] }],
     gpu: [
-      { file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL', 'lineDir', 'elevSigma'] },
+      {
+        file: 'src/ultrasound/shaders/passes.glsl.ts',
+        symbols: ['lineDir', 'elevSigma'],
+        templates: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'],
+      },
     ],
     evidence: [],
     gap: 'Banco de diseño: calibra β y la PSF en 2D; la GPU se mide aparte con el banco de fidelidad, no frente a este gemelo.',
@@ -1406,7 +1503,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Pleura y cortina en 2D: la serie, la neblina y el deslizamiento de B → C → D.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/validation/support/pleuraTwin.ts', symbols: ['simulatePleura'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: [], templates: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
     evidence: [],
     gap: 'Banco de diseño de la decisión 61; la imagen de la GPU se mide con `pleuraStats`, no frente al gemelo.',
   },
@@ -1415,7 +1512,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Eco de la pared en una línea con su textura y su PSF (banco de la decisión 62).',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/validation/support/wallTwin.ts', symbols: ['wallTwin', 'classifyModel'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: [], templates: ['FRAG_RAWFIELD', 'FRAG_LATERAL', 'FRAG_AXIAL'] }],
     evidence: [],
     gap: 'Banco de diseño; la GPU se mide con el banco de fidelidad (`wallStats`).',
   },
@@ -1424,7 +1521,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Envolventes de las miradas en un parche (correlación entre miradas del compuesto).',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/validation/support/compoundTwin.ts', symbols: ['lookPatchEnvelopes', 'elevSigmaMm'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_RAWFIELD_STEERED', 'FRAG_COMPOUND'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: [], templates: ['FRAG_RAWFIELD_STEERED', 'FRAG_COMPOUND'] }],
     evidence: [],
     gap: 'Banco de diseño de la decisión 58; la GPU mide la correlación entre miradas en su propia imagen.',
   },
@@ -1433,7 +1530,7 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Rejilla de segmentos de A0/A1 construida en TS desde la escena, sobre la que suman los gemelos de A2 y A.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/validation/support/segmentGrid.ts', symbols: ['segmentGridFromScene', 'lookTransmission'] }],
-    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: ['FRAG_TRANS_HITS', 'FRAG_TRANSMISSION'] }],
+    gpu: [{ file: 'src/ultrasound/shaders/passes.glsl.ts', symbols: [], templates: ['FRAG_TRANS_HITS', 'FRAG_TRANSMISSION'] }],
     evidence: [],
     gap: 'Las pruebas unitarias de A2/A la usan como entrada; la paridad e2e lee la rejilla real de la GPU (`readSegments`) en su lugar.',
   },
@@ -1453,41 +1550,71 @@ export const SIN_PARIDAD_ACEPTADA: readonly string[] = [
 ];
 
 /**
- * Funciones homónimas cuyos literales GLSL están también escritos a mano en la TS (decisión 322, punto 5, inventario de
- * constantes del 05-11-2026: 47 de 160). Generarlas desde una sola fuente cuesta hoy +16…+63 B minificados por función
- * (`glslCompact` conserva el blanco junto a una interpolación) y el bundle no puede crecer: la prueba exige que sigan
- * iguales en los dos lados hasta que la composición GLSL del punto 4 las interpole sin coste.
+ * Funciones GLSL cuyos literales están también escritos a mano en su homónima TS, por archivo GLSL (decisión 322, punto
+ * 5; clases de `tools/twins/constants.ts`, inventario del 05-11-2026): `copiados`, la secuencia ordenada de literales con
+ * signo de la GLSL aparece seguida en la de la TS (51). Generarlas desde una sola fuente cuesta hoy +16…+63 B
+ * minificados por función (`glslCompact` conserva el blanco junto a una interpolación) y el bundle no puede crecer: la
+ * prueba exige que cada una siga en su clase y que una copia nueva se registre, hasta que la composición GLSL del punto 4
+ * las interpole sin coste. Los archivos pendientes de r3 se miden pero no se congelan. Para regenerar:
+ * `node --import tsx tools/twins/constants.ts`.
  */
 export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = {
-  tubos: ['tubeNoise'],
-  columna: ['spineBodySd', 'spineArchSd', 'spineFaceCurvature'],
-  'tronco-primitivas': ['bodyGradient', 'sdEllipsoid', 'smoothMin', 'smoothMax', 'ribDistanceLowerBound'],
-  compresion: ['compressionSample'],
-  'atlas-abdominal': ['abdominalAtlasGradient'],
-  'atlas-toracico': ['thoracicValue', 'thoracicGradient', 'boneSurfaceFrame'],
-  'cartilago-referencia': ['referenceCartilage'],
-  'moteado-anatomia': ['hash13'],
-  'organo-abdomen': ['digestiveWallMm', 'digestiveWallTissue', 'digestiveGasPlane'],
-  'organo-intestino': ['bowelQuery', 'bowelGasSdf'],
-  'organo-esternon': ['sternumSd'],
-  'organo-pared': ['wallArc', 'wallFace', 'wallArcGradient', 'ribCurvature'],
-  'organo-rinon': ['perirenalThicknessMm', 'atlasDepthScale'],
-  'organo-vesicula': ['gallbladderSdf'],
-  'organo-higado': ['sminGrad', 'visceralHeight'],
-  'organo-retroperitoneo': ['psoasSdf', 'quadratusSdf', 'retroFrontY'],
-  'apertura-refraccion': ['refractionGain'],
-  'transmision-doppler': ['dopplerTransmission'],
-  pleura: ['normalCdf', 'seriesPow'],
-  'haz-psf': ['lateralSigmaMm'],
-  'ruido-receptor': ['hash12b'],
-  'textura-retro': ['fascicleSeptum'],
-  'textura-pared': ['fatSeptum'],
-  'moteado-campo': ['latticeValuePh', 'scattererFieldPh', 'valueNoise', 'clumpGain', 'densityGain'],
+  'src/anatomy/gpu/anatomy.glsl.ts': [
+    'tubeHash',
+    'spineFaceCurvature',
+    'torsoNormal',
+    'bodyGradient',
+    'sdEllipsoid',
+    'sdEllipsoidLocal',
+    'smoothMin',
+    'smoothMax',
+    'hash13',
+    'scattererField',
+  ],
+  'src/anatomy/compression.ts': ['warpBound', 'smoothstepSlope'],
+  'src/anatomy/organs/abdomen.ts': ['digestiveWallTissue', 'digestiveGasPlane'],
+  'src/anatomy/organs/bowel.ts': ['bowelGasSdf'],
+  'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
+  'src/anatomy/organs/kidney.ts': ['sdRoundCone', 'softRamp', 'perirenalThicknessMm', 'hilumChannelSdf', 'interiorPoint', 'kidneySinusSdf'],
+  'src/anatomy/organs/liver.ts': ['visceralFaceDistance', 'medialCutDistance', 'medialCutNormal'],
+  'src/anatomy/organs/retroperitoneum.ts': ['retroperitoneum'],
+  'src/anatomy/organs/heart.ts': ['heartShift', 'raInferiorZ'],
+  'src/ultrasound/dopplerTransmission.ts': ['dopplerTransmission'],
+  'src/ultrasound/pleura.ts': ['normalCdf', 'curtainSteerWeight', 'pleuraCapMm', 'seriesPow', 'pleuraSeriesDepths', 'aLineOrder'],
+  'src/ultrasound/compound.ts': ['lookWeight'],
+  'src/ultrasound/interfaceEcho.ts': ['facetTilt'],
+  'src/ultrasound/receiver.ts': ['hash12b'],
+  'src/ultrasound/retroTexture.ts': ['retroMuscleAxis'],
+  'src/ultrasound/wallTexture.ts': ['wallOrientation', 'wallFaceGain', 'wallTexture'],
+  'src/ultrasound/steering.ts': ['alongLineMm', 'lookPhase', 'lookPhaseGrad', 'lookCoverage'],
 };
 
 /**
- * Funciones GLSL con el nombre de una exportación TS que no son su gemelo (nombre GLSL → motivo). Vacía hoy: cada
- * homónimo está en un par.
+ * Como `CONSTANTES_COPIADAS`, las `reordenados` (21): cada literal de la GLSL, con su signo, está en la TS pero no en
+ * ese orden (`max(x, 0.0)` frente a `Math.max(0, x)`, la cuenta repartida en varias líneas). Un literal nuevo o con
+ * otro signo en un solo lado las saca de su clase; un intercambio entre literales que ya están en los dos lados, no.
+ */
+export const CONSTANTES_REORDENADAS: Readonly<Record<string, readonly string[]>> = {
+  'src/anatomy/gpu/anatomy.glsl.ts': ['spineArchSd'],
+  'src/anatomy/abdominalAtlas.ts': ['registeredDomeSample'],
+  'src/anatomy/thoracicAtlas.ts': ['thoracicGradient', 'boneSurfaceFrame'],
+  'src/anatomy/gpu/referenceCartilage.glsl.ts': ['referenceCartilage'],
+  'src/anatomy/organs/abdomen.ts': ['digestiveWallMm', 'gastricBoundary'],
+  'src/anatomy/organs/bowel.ts': ['bowelQuery'],
+  'src/anatomy/organs/wall.ts': ['ribSearchDepth', 'ribCurvature'],
+  'src/anatomy/organs/kidney.ts': ['atlasDepthScale'],
+  'src/anatomy/organs/liver.ts': ['visceralHeight'],
+  'src/ultrasound/aperture.ts': ['refractionGain'],
+  'src/ultrasound/harmonic.ts': ['harmonicNearGain'],
+  'src/ultrasound/retroTexture.ts': ['fascicleSeptum'],
+  'src/ultrasound/wallTexture.ts': ['fatSeptum', 'striationNoise'],
+  'src/ultrasound/speckleField.ts': ['scattererFieldPh', 'valueNoise', 'clumpGain'],
+  'src/ultrasound/colorWallFilter.ts': ['colorWallResponseHz'],
+};
+
+/**
+ * Funciones GLSL con el nombre de una función TS (exportada o no) que no son su gemela (nombre GLSL → motivo). Vacía
+ * hoy: cada homónimo está en un par.
  */
 export const HOMONIMOS_NO_GEMELOS: Readonly<Record<string, string>> = {};
 

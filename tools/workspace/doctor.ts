@@ -37,7 +37,7 @@ check('hook pre-push', () => {
   const configured = git('config', '--get', 'core.hooksPath');
   if (resolve(root, configured) !== resolve(root, '.githooks') || !existsSync(resolve(root, '.githooks/pre-push')))
     throw new Error('se requiere .githooks; npm ci ejecuta prepare');
-  return '.githooks (tipos + pruebas rápidas)';
+  return '.githooks (formato, lint, tipos y pruebas rápidas)';
 });
 check('dependencias instaladas / lockfile', () => {
   const pkg = JSON.parse(read('package.json')) as { dependencies: Record<string, string>; devDependencies: Record<string, string> };

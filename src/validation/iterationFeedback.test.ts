@@ -89,6 +89,21 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+  it('el gancho de push corre sólo la capa rápida (decisión 322): formato, lint, tipos y pruebas rápidas, en ese orden', () => {
+    const code = readFileSync(join(import.meta.dirname, '../../.githooks/pre-push'), 'utf8')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'));
+    const commands = code.filter((l) => /^npm /.test(l));
+    expect(commands).toEqual(['npm run format:check --silent', 'npm run lint --silent', 'npm run typecheck --silent', 'npm test --silent']);
+    for (const heavy of ['test:slow', 'test:all', 'test:coverage', 'npm run check', 'npm run build', 'e2e', 'calibrate', 'VITEST_TIER'])
+      expect(code.join('\n'), heavy).not.toContain(heavy);
+    const scripts = (
+      JSON.parse(readFileSync(join(import.meta.dirname, '../../package.json'), 'utf8')) as { scripts: Record<string, string> }
+    ).scripts;
+    expect(scripts['test']).toBe('vitest run');
+    expect(scripts['format:check']).toBe('prettier --check .');
+  });
   it('elige feedback proporcionado y no declara el navegador ni las matrices como aprobados', () => {
     const root = join(import.meta.dirname, '../..');
     expect(feedbackPlan(root, ['anatomy/unused.md']).mode).toBe('docs');

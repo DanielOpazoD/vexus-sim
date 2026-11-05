@@ -46,6 +46,8 @@ import { scattererField } from './speckleField';
  *
  * Gemelos: estas funciones (TS, pruebas y banco) y `PLEURA_GLSL` (pasada B, los dos programas), misma
  * fórmula; la geometría del camino dirigido en `steeredSample` (`steering.ts`).
+ * @twin pleura
+ * @twin gemelo-pleura
  */
 
 /** Reflexión de la pleura R_p: |Fresnel| músculo/gas de la tabla de caras (≈ 0,9995). */
@@ -77,6 +79,7 @@ export const CURTAIN_MIN_AIR = 1e-3;
 /**
  * Deslizamiento: nivel mostrado junto a la pleura respecto al moteado del hígado a esa profundidad (dB) [ESTIMADO −8 a
  * −12]. El tope del rango: su grano alargado sostiene la anisotropía de la neblina (gemelo: 2,57 con −8; 2,50 con −9).
+ * @twin gemelo-pleura
  */
 export const SLIDING_DB = -8;
 export const SLIDING_DB_RANGE = [-12, -8] as const;
@@ -86,6 +89,7 @@ export const SLIDING_DB_RANGE = [-12, -8] as const;
  * así que se suma casi en fase dentro de los núcleos de energía unidad [MEDIDO con el gemelo B → C → D,
  * `pleuraTwin.test.ts`: 8,9 dB a 1–3 mm bajo la pleura]. El campo va a SLIDING_DB − esto para que la imagen
  * lo muestre a SLIDING_DB.
+ * @twin gemelo-pleura
  */
 export const SLIDING_PSF_GAIN_DB = 9;
 /** Deslizamiento: caída con la profundidad bajo la pleura (e-fold, mm) [ESTIMADO 10–20]. */
@@ -108,6 +112,7 @@ export const PLEURA_SERIES_FLOOR = RECEIVER_NOISE / 10;
  * las bandas tenues de las referencias (Lee 2017, fig. 5B: +2–4 dB en el gemelo) y el deslizamiento sigue a la
  * vista en todo el rango (la banda de 2–6 mm bajo la pleura correlaciona 0,66 con 0,25 y 0,75 con 0,5 al bajar
  * el pulmón 2 mm; aceptación < 0,8).
+ * @twin gemelo-pleura
  */
 export const WALL_COPY_FACE_GAIN = 0.35;
 export const WALL_COPY_FACE_GAIN_RANGE = [0.25, 0.5] as const;
@@ -172,6 +177,7 @@ export function curtainAirFraction(dzMm: number, sigmaMm: number): number {
  * Fracción de aire de una línea (gemelo de `curtainAirFraction` de la GLSL): el haz de dos vías a la
  * profundidad D de la pleura, con la dirección `dir` de la línea, el eje de elevación del marco y la PSF
  * lateral de dos vías del equipo (`lateralSigmaMm` de `beamModel.ts` con su foco).
+ * @twin pleura
  */
 export function curtainAirFractionAt(
   dz: number,
@@ -192,6 +198,7 @@ export function curtainAirFractionAt(
  * múltiplos de su propio camino, y la media de tres dejaba cada línea A partida en tres arcos (los equipos no
  * componen en pulmón). Bajo la pleura de la mirada 0 (r > D, fAir ≥ CURTAIN_MIN_AIR) la dirigida pesa 1 − fAir
  * (0 en la cortina entera, sin costura en el borde blando); fuera, 1. Gemelo de `curtainSteerWeight` (GLSL).
+ * @twin pleura
  */
 export function curtainSteerWeight(r: number, D: number, fAir: number): number {
   return D > 0 && fAir >= CURTAIN_MIN_AIR && r > D ? 1 - fAir : 1;
@@ -290,6 +297,7 @@ export interface PleuraTerm {
  * bajo la décima del ruido (`fieldBound`: cota de |f|·acoplamiento). `chi`: la coherencia de la pleura con la
  * incidencia de la línea (`pleuraCoherence`); `tAt(d)`: T(d) sin acoplamiento, con la fila de la pleura por
  * tope (`pleuraCapMm`).
+ * @twin pleura
  */
 export function pleuraTerms(
   s: number,

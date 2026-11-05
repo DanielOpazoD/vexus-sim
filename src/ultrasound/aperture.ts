@@ -42,6 +42,7 @@ import { glslFloat } from './receiver';
  * (decisión 61) conservan el rayo central, con su lámina de pulmón por línea.
  *
  * Gemelos: `apertureEcho` (TS, `transmissionTwin.ts`) y `APERTURE_GLSL` (pasada A), misma fórmula.
+ * @twin apertura-refraccion
  */
 
 /**
@@ -163,6 +164,7 @@ export function refractionBeam(beam: BeamParams, focusMm: number): RefractionBea
  * ±`REFRACTION_SEARCH_FAR`) la ganancia es 1
  * exacto. Necesita uLinesF, uHalfSector, uCurvR, uAperture (D_tx, D_rx máx., F# de recepción, cRx), uRefr (F, escala de
  * la emisión, cTx, difracción) y uRefrK (κ_tx, κ_rx).
+ * @twin apertura-refraccion
  */
 export const REFRACTION_GLSL = /* glsl */ `
 float rfPsi(sampler2D pre, int ch, int m, int k) {

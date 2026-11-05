@@ -30,6 +30,7 @@ import { cutMapDirections, cutMapPoint } from './cutMapGeometry';
  * la MISMA anatomía TypeScript que el Doppler y las mediciones (`AnatomyQuery`),
  * fuera del hilo principal y sin lecturas GPU→CPU (una lectura síncrona esperaba
  * a toda la cola de la GPU, 50–90 ms por cuadro; decisión 25).
+ * @twin trabajador-corte
  */
 export interface CutMapRequest {
   type: 'map';

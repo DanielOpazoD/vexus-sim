@@ -2,7 +2,9 @@ import { COLOR_WALL_FILTER_GLSL } from './colorWallFilter';
 
 /** Expected lag-one correlations of the five spatial samples, not acquired IQ ensembles.
  * Each component retains its own sampled phase and wall-filter response before mixing.
- * The estimated width and stationary filter model are unchanged. */
+ * The estimated width and stationary filter model are unchanged.
+ * @twin mezcla-color
+ */
 export const COLOR_MIXTURE_GLSL = /* glsl */ `
 ${COLOR_WALL_FILTER_GLSL}
 vec4 colorMixture(float frequency[5], bool blood[5], float bloodPower, float tissuePower,

@@ -4,6 +4,7 @@
  * `steeredApertureTransmission`). Lo usan `aperture.test.ts` y `transmission.test.ts` (decisión 58). La
  * escena se clasifica en el plano de imagen con x lateral y z = profundidad bajo el centro de la cara
  * (z = ρ·cos α − R), como los diseños de la decisión 58 (`design-thi/psf-diversity/shadow.ts`).
+ * @twin rejilla-segmentos
  */
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { type ApertureGeometry } from '../../ultrasound/aperture';

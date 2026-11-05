@@ -132,7 +132,7 @@ export function lineDirection(frame: ProbeFrame, theta: number): Vec3 {
   ]);
 }
 
-/** Punto del mundo a distancia r (mm) de la cara a lo largo de la línea θ. */
+/** Punto del mundo a distancia r (mm) de la cara a lo largo de la línea θ. @twin geometria-sector */
 export function pointOnLine(frame: ProbeFrame, tr: Transducer, theta: number, r: number): Vec3 {
   const d = lineDirection(frame, theta);
   const R = tr.curvatureRadius + r;

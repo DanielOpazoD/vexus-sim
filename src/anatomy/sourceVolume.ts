@@ -56,7 +56,9 @@ export function sourceLabel(data: Uint16Array, p: Vec3, f: SourceVolume, texture
 
 /** Interpolación de los mismos ocho nodos RG16F en alta precisión del shader.
  * El filtrado fijo cuantiza pesos y puede cambiar el signo junto a una superficie (223).
- * Usar cerca de las interfaces óseas; no altera la rejilla ni el campo fuente. */
+ * Usar cerca de las interfaces óseas; no altera la rejilla ni el campo fuente.
+ * @twin volumen-fuente
+ */
 export const SOURCE_DISTANCE_GLSL = /* glsl */ `
 #define SOURCE_NODE(x,y,z) texelFetch(field,a+off+ivec3(x,y,z),0).r
 float sourceDistancePrecise(highp sampler3D field, vec3 q, ivec3 dim, ivec3 off) {

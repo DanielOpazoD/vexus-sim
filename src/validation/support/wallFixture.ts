@@ -21,5 +21,6 @@ export const RATIO_15_DB = 20 * Math.log10(1.5);
  * Sin textura (con las caras), septos y estrías no pueden pasar de esto sobre su capa (dB): lo que quede es
  * la falda de los ecos de las fascias. Con las muestras a < `WALL_INTERIOR_MM` de una cara, el gemelo daba
  * 2,1–2,8 dB de «septos» y 0,3–4,7 dB de «estrías» sin textura alguna.
+ * @twin gemelo-pared
  */
 export const SKIRT_DB = 1.5;

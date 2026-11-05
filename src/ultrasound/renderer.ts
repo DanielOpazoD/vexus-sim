@@ -210,6 +210,7 @@ export function nominalTgcDbPerCm(fMHz: number): number {
  * Compensación nominal del campo cercano (dB): la ganancia focal (`focalGain`, decisión 84) le quita a la pared −6 dB bajo la cara y −1 dB a 60 mm con el foco
  * del preajuste, y la TGC nominal solo sigue a la atenuación. La pared salía 0,6–0,8 veces el hígado, frente a 0,8–1,65 en seis ecografías reales. +8 dB la deja
  * en 0,73–0,97, casi siempre dentro de lo real, con dos metas de la decisión 62 relajadas por el propietario (decisión 308). Gemelo del término de `displayGrey`.
+ * @twin ganancia-campo-cercano
  */
 export const nearFieldTgcDb = (r: number): number => 8 * Math.max(0, 1 - r / 60);
 
@@ -2303,6 +2304,7 @@ export class UltrasoundRenderer {
    * Salidas de A0 y A1 del último cuadro como rejilla de segmentos (`SegmentGrid`): la entrada de los
    * gemelos de A2 (`prefixDb`, `steeredPrefixDb`). Solo pruebas: la paridad del prefijo dirigido de la GPU
    * con el de TS sobre los mismos segmentos (decisión 58).
+   * @twin prefijo-a2
    */
   readSegments(depthMm: number): SegmentGrid {
     const W = this.lines;

@@ -21,6 +21,7 @@ import type { Simulator } from './simulator';
  * ventanas de tres pulsos, como el hígado sano in vivo) y la SNR de estos parches baja ×0,90–0,93 (gemelo: 2,08–2,11 →
  * 1,91–1,95; con SwiftShader, 1,67–1,85; la banda de la e2e, 1,5–2,1). RAYLEIGH_SNR sigue siendo la referencia del
  * moteado difuso.
+ * @twin moteado-campo
  */
 export const RAYLEIGH_SNR = Math.sqrt(Math.PI / (4 - Math.PI));
 

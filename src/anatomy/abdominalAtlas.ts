@@ -8,12 +8,14 @@ export { HALF } from './halfFloat';
 /** Half-float source data shared by CPU, GPU and 3D. Never resize an individual organ. */
 export let abdominalAtlas: Uint16Array | undefined;
 
+/** Instala el atlas abdominal; el Worker del corte lo vuelve a instalar con la misma función. @twin trabajador-corte */
 export function setAbdominalAtlas(values?: Uint16Array): void {
   if (values && values.byteLength !== (anatomyBundle.person === 's0028' ? anatomyBundle.abdominal.rawBytes : ABDOMINAL_ATLAS.rawBytes))
     throw new Error('Tamaño del atlas abdominal inválido');
   abdominalAtlas = values;
 }
 
+/** Distancia y rótulo del campo `field` del atlas abdominal en p (gemela TS del lector GLSL de este módulo). @twin atlas-abdominal */
 export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label: number } {
   const data = abdominalAtlas,
     f =
@@ -148,6 +150,7 @@ export function s0028DepthXyz(x: number, y: number, z: number): number | undefin
   }
   return sourceDistance(abdominalAtlas, depthAt, f, anatomyBundle.abdominal.textureDimensions) + Math.sqrt(outside) * 3;
 }
+/** Profundidad bajo la piel s0028 en p (la GPU la lee con `torsoDepth` especializada en `personShader`). @twin s0028-lector */
 export function s0028Depth(p: Vec3): number | undefined {
   return s0028DepthXyz(p[0], p[1], p[2]);
 }

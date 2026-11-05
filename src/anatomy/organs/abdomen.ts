@@ -158,6 +158,7 @@ export {
   abdominalAtlasValue,
   abdominalAtlasGradient,
 } from '../abdominalAtlas';
+/** Gemelo GLSL de las funciones del abdomen (mismos nombres, decisión 46). @twin organo-abdomen */
 export const ABDOMEN_GLSL = /* glsl */ `
 ${ABDOMINAL_ATLAS_GLSL}
 // Shared acoustic layers and static nondependent gas. No assigned flow in a hollow organ.

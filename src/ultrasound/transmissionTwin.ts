@@ -17,6 +17,8 @@ import { BONE_ENTRY_DB, type SegmentGrid } from './transmission';
  * de A1, la penumbra de la apertura y la refracción de las luces. Los usan las pruebas y la paridad con la GPU
  * (`steeredParity.ts`, solo en los ganchos de prueba): viven aparte de `transmission.ts` y `aperture.ts`, cuya GLSL va en
  * el chunk principal, para que este no los lleve (decisión 86: 2,6 kB que la paridad de la mirada 0 metía en él).
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 
 /** Impactos de A0 de una línea, derivados de las marcas de A1 con la misma regla (gel previo omitido). */
@@ -52,6 +54,7 @@ export interface PrefixSample {
  * Gemelo de A2 (`FRAG_TRANS_PREFIX`) de la mirada 0: suma de los segmentos de la línea hasta la fila k
  * inclusive, con las reglas de `rayAttenuationDb` (gel previo sin pérdidas, hueso `BONE_ENTRY_DB` al entrar una vez);
  * el espejo se publica desde la fila cuyo final más el alcance del eco pleural pasa su cruce exacto.
+ * @twin prefijo-a2
  */
 export function prefixDb(g: SegmentGrid, line: number, k: number): PrefixSample {
   let db = 0;
@@ -87,6 +90,7 @@ export function prefixDb(g: SegmentGrid, line: number, k: number): PrefixSample 
  * fila k, 0 exacto. La forma r_k·Σe/(R + r) − Σe·r/(R + r) se cancelaba: en la primera fila de una luz dejaba en la GPU
  * un residuo de redondeo de ±10⁻⁹ mm (con FMA) donde aquí sale 0, y la distancia tras la luz saltaba de 0 a un paso
  * (0,01–0,12 dB de desacuerdo con el gemelo en la cara de la vesícula).
+ * @twin prefijo-a2
  */
 export function refractionPsi(g: SegmentGrid, R: number, line: number, k: number): number {
   let psi = 0;
@@ -151,6 +155,7 @@ export function mirrorLookaheadRows(stepMm: number): number {
  *
  * `roundBias` (líneas; 0 en el gemelo) desplaza el argumento del redondeo de la línea del camino: la
  * paridad con la GPU (`steeredParity.ts`) lo usa para reconocer las muestras en empate de redondeo.
+ * @twin prefijo-a2
  */
 export function steeredPrefixDb(
   g: SegmentGrid,
@@ -266,6 +271,7 @@ export interface ApertureCones {
  * en la anchura de cada una ([l − ½, l + ½]); fuera del arreglo, la del borde (como `texelFetch` con clamp). La línea d y
  * su simétrica pesan lo mismo; la central, una vez. Continua en los semianchos y sin redondeos: un cono más estrecho que
  * una línea es el rayo de la línea.
+ * @twin apertura-refraccion
  */
 export function apertureCones(lines: number, line: number, hTxIn: number, hRxIn: number, oneWay: (l: number) => number): ApertureCones {
   // un cono de anchura nula (1 − r₀/r redondeado a 0 junto al obstáculo) es el rayo de su línea
@@ -395,6 +401,7 @@ export function steeredApertureTransmission(
  * `refractionSlope`; la dirigida, el `psi` y el `slope` de `steeredPrefixDb`); fuera del arreglo se toma la del borde, como
  * `texelFetch` con clamp. `roundBias` (líneas; 0 en el gemelo) desplaza el redondeo de las líneas de las tomas: la
  * paridad con la GPU (`steeredParity.ts`) lo usa para reconocer las muestras en empate.
+ * @twin apertura-refraccion
  */
 export function refractionGain(
   ap: ApertureGeometry,

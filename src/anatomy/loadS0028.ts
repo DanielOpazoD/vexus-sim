@@ -14,6 +14,7 @@ export async function verifyS0028Manifest(bytes: Uint8Array<ArrayBuffer>): Promi
   if (bytes.length !== B.manifest.bytes || (await sha256(bytes)) !== B.manifest.sha256)
     throw new Error('Paquete s0028: marco, dimensiones o procedencia alterados');
 }
+/** Carga e instala la persona s0028 en la página; el Worker recibe los mismos bloques al iniciarse. @twin trabajador-corte */
 export async function loadS0028(signal: AbortSignal): Promise<void> {
   signal.throwIfAborted();
   if (loading || anatomyBundle.person === 's0028') throw new Error('Carga de persona ya iniciada; recargue');

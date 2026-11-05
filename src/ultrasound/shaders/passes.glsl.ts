@@ -57,7 +57,7 @@ void main() {
 `;
 
 /** Geometría del haz común a las pasadas de formación de imagen. */
-/** Ejes de la sonda y dirección de una línea de la mirada 0: los comparten las pasadas con geometría del haz y K. */
+/** Ejes de la sonda y dirección de una línea de la mirada 0: los comparten las pasadas con geometría del haz y K. @twin geometria-sector */
 const LINE_DIR_GLSL = /* glsl */ `
 uniform vec3 uAxial;
 uniform vec3 uLateral;
@@ -82,6 +82,7 @@ vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
  * armónica (decisión 77, `harmonic.ts`) la emisión va a λ1 = 2λ (cintura y rango de Rayleigh ×2) con la fuente
  * ∝ p1² (÷√2) y la recepción a λ: la σ equivalente de una vía es √2 × la de dos vías de ese par. Gemelo:
  * `elevSigmaMm` de `pleura.ts`.
+ * @twin haz-psf
  */
 const ELEV_SIGMA_GLSL = /* glsl */ `
 uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
@@ -196,6 +197,8 @@ float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }
  * espejo), con las distancias a lo largo de su camino. A2 y A la suman sobre los segmentos de A1, sin
  * clasificación ni pasada nuevas (`steeredPrefixDb`, `steeredApertureTransmission`), en sus programas
  * dirigidos: en un cuadro de la mirada 0 nadie escribe ni lee la salida 3 de A ni la 2 y la 3 de A2.
+ * @twin transmision-a0
+ * @twin rejilla-segmentos
  */
 export const FRAG_TRANS_HITS = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
 ${ANATOMY_GLSL}
@@ -614,7 +617,7 @@ const STEERED_PREFIX_MAIN_GLSL = /* glsl */ `  vec4 extra;
   o3 = extra;
 `;
 
-/** A2 de la mirada 0: el de antes de la composición, sin nada de la dirigida (decisión 58). */
+/** A2 de la mirada 0: el de antes de la composición, sin nada de la dirigida (decisión 58). @twin prefijo-a2 */
 export const FRAG_TRANS_PREFIX = transPrefixShader('look0');
 /** A2 de las miradas ±θ: la mirada 0 y, en `o2`/`o3`, el prefijo de la mirada del cuadro. */
 export const FRAG_TRANS_PREFIX_STEERED = transPrefixShader('steered');
@@ -723,6 +726,7 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  * Va solo en el programa dirigido de B (`FRAG_RAWFIELD_STEERED`), cuyo main es `steeredField()`; el de la
  * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance,
  * cortina): `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
+ * @twin miradas-direccion
  */
 // Generate both look variants from one compactable source body.
 function fieldForGlsl(phased = false): string {
@@ -992,6 +996,7 @@ ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCur
 }
 `;
 type RawFieldStage = 'direct' | 'class' | 'elevation' | 'gradient' | 'echo' | 'cached';
+/** Programas de la pasada B; el campo de dispersores de su rebanada tiene su gemelo TS en `speckleField.ts`. @twin moteado-campo */
 function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
   const mediumBody =
     stage === 'class'
@@ -1264,9 +1269,14 @@ ${init ? `  ${init}\n` : ''}  oField = steeredField();
 `;
 }
 
-/** Pasada B de la mirada 0: la de antes de la composición, sin nada de la dirigida (decisión 58). */
+/**
+ * Pasada B de la mirada 0: la de antes de la composición, sin nada de la dirigida (decisión 58).
+ * @twin gemelo-interfaz
+ * @twin gemelo-pleura
+ * @twin gemelo-pared
+ */
 export const FRAG_RAWFIELD = rawFieldShader('look0');
-/** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
+/** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. @twin gemelo-compuesto */
 export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
 export const FRAG_RAWFIELD_ELEVATION = rawFieldShader('look0', 'elevation');
 export const FRAG_RAWFIELD_ELEVATION_STEERED = rawFieldShader('steered', 'elevation');
@@ -1335,6 +1345,7 @@ void main() {
 /**
  * Pasada D: convolución lateral con anchura dependiente de profundidad y foco, ruido del receptor de la línea
  * (la segunda salida de C, ya limitado en banda axial; decisión 89) y detección de envolvente.
+ * @twin clutter-cd
  */
 export const FRAG_LATERAL = /* glsl */ `${SHADER_HEADER_GLSL}
 uniform sampler2D uField;
@@ -1409,6 +1420,7 @@ const LOOKS = COMPOUND.order.length;
  * Bajo la pleura de la cortina (decisión 61) las dirigidas pesan además 1 − fAir de la mirada 0
  * (`curtainSteerWeight`, con la pleura de A0 y la fracción de aire de B): cada mirada reverbera a múltiplos de
  * su propio camino y la media partía cada línea A en tres arcos; los equipos no componen en pulmón.
+ * @twin composicion-k
  */
 export const FRAG_COMPOUND = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
 ${COMPOUND.order.map((_, i) => `uniform sampler2D uLook${i};`).join('\n')}
@@ -1566,6 +1578,7 @@ void main() {
 /**
  * Mapa de grises de la presentación (una sola fuente para la pasada G y la línea M, decisión 80): envolvente →
  * gris mostrado (0–1) a la profundidad r (mm).
+ * @twin ganancia-campo-cercano
  */
 const DISPLAY_GREY_GLSL = /* glsl */ `
 uniform float uDepth;
@@ -1809,6 +1822,8 @@ void main() {
 /**
  * Consulta del peso respiratorio (solo pruebas, r2b-U): `respWeight` y `respWeightGradient` en puntos MATERIALES de
  * `uPoints`, con el GLSL especializado de la persona. La e2e los compara con el gemelo CPU en celdas D/E y U.
+ * @twin deformacion
+ * @twin s0028-pared
  */
 export const FRAG_RESP_QUERY = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
 ${ANATOMY_GLSL}
@@ -1824,6 +1839,7 @@ void main() {
  * Consulta de las tríadas portales (solo pruebas, decisión 78): el factor de `portalTriad` en puntos MATERIALES de
  * `uPoints`, con el mismo GLSL que la pasada B. La e2e lo compara punto a punto con el gemelo TS (`triadParity`): el
  * hash entero da las mismas tríadas en cualquier GPU y en TS.
+ * @twin triadas-portales
  */
 export const FRAG_TRIAD_QUERY = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
 ${PORTAL_TRIADS_GLSL}

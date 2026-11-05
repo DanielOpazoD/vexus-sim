@@ -8,6 +8,8 @@ export { effectiveWallFilterCutoff } from '../core/highPass';
  * lentos (tejido, pared); un corte alto borra flujo venoso lento (guía §16,
  * invariante §21). La cascada conserva una amplitud 0,5 en el corte (−6 dB),
  * distinta de un Butterworth global de cuarto orden (−3 dB).
+ * @twin filtro-pared-color
+ * @twin mezcla-color
  */
 export class WallFilter {
   private stage2: WallFilterStage;

@@ -1,6 +1,6 @@
 import { CARTILAGE_ROWS, CARTILAGE_X0, CARTILAGE_X1 } from '../referenceCartilageData';
 
-/** Pure GLSL twin; section data occupies the existing scene-texture tail. */
+/** Pure GLSL twin; section data occupies the existing scene-texture tail. @twin cartilago-referencia */
 export const CARTILAGE_GLSL = (base: number): string => /* glsl */ `
 float referenceCartilage(vec3 p, out vec3 tangent, out float curvature) {
   float x = -abs(p.x), stepX = ${(CARTILAGE_X1 - CARTILAGE_X0) / (CARTILAGE_ROWS.length - 1)};

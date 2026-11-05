@@ -334,7 +334,7 @@ export function wallFace(
   return [face, best];
 }
 
-/** Profundidad (mm bajo la piel) de la cara de pared `face` en (u, z): la de su capa. Gemelo de la GLSL. */
+/** Profundidad (mm bajo la piel) de la cara de pared `face` en (u, z): la de su capa. Gemelo de la GLSL. @twin organo-pared */
 export function wallFaceDepth(u: number, z: number, face: Interface, t: Torso): number {
   const w = wallDepths(t, u, z);
   switch (face) {
@@ -357,6 +357,7 @@ export function wallFaceDepth(u: number, z: number, face: Interface, t: Torso): 
  * Distancia con signo a la cara de pared `face` (su gradiente es la normal que usa el eco): la profundidad
  * menos la de la capa, continua (los planos intermusculares, sin el corte de su fusión: el gradiente de la
  * GPU es una diferencia central y un salto en la distancia lo dispararía). Gemelo de la GLSL.
+ * @twin organo-pared
  */
 export function wallFaceSd(m: Vec3, face: Interface, t: Torso): number {
   if (anatomyBundle.person === 's0028') {
@@ -405,6 +406,7 @@ export function wallArcGradient(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0' | 'prof
 /**
  * Pendiente de la cara de pared `face` en el punto: (∂f/∂u, ∂f/∂z) de su profundidad, por diferencias adelantadas de
  * `WALL_SLOPE_STEP_MM` (tres evaluaciones de la capa, sin la clasificación). Gemelo de la GLSL.
+ * @twin organo-pared
  */
 export const WALL_SLOPE_STEP_MM = 0.05;
 export function wallFaceSlope(u: number, z: number, face: Interface, t: Torso): [number, number] {
@@ -422,6 +424,7 @@ export function wallFaceSlope(u: number, z: number, face: Interface, t: Torso): 
 export function wallFaceGradient(m: Vec3, face: Interface, t: Torso): Vec3 {
   if (anatomyBundle.person === 's0028') {
     // Analítico, gemelo de la GLSL: una consulta de pared y dos lecturas de la pendiente de la carta, sin seis consultas.
+    // @twin organo-pared
     if (face === Interface.SkinFat) {
       const g = torsoDepthGradient(m, t);
       return [-g[0], -g[1], -g[2]];
@@ -500,7 +503,11 @@ function glslRelief(name: string, terms: readonly ReliefTerm[]): string {
   return `float ${name}(float u, float z, float iP) { return ${terms.map(term).join(' + ')}; }`;
 }
 
-/** Gemelo GLSL (usa uTorso, uWall = (piel, grasa, músculo, preperitoneal), datos costales de la textura, sdRib y torsoDepth). */
+/**
+ * Gemelo GLSL (usa uTorso, uWall = (piel, grasa, músculo, preperitoneal), datos costales de la textura, sdRib y torsoDepth).
+ * @twin organo-pared
+ * @twin tronco-primitivas
+ */
 export const WALL_GLSL = /* glsl */ `
 #define WALL_SCARPA_FRACTION ${WALL.scarpaFraction.toFixed(4)}
 #define WALL_PLANE_F0 ${WALL.planeFractions[0].toFixed(4)}

@@ -20,6 +20,7 @@
  * G, el gris con la compensación nominal del equipo y el hígado puro a 100. `levelDbAt`, el nivel a la misma escala del
  * banco: sin la atenuación nominal ni la ganancia focal (`envelopeLine`).
  * Lo usa `pleuraTwin.test.ts` (lento) para las métricas del banco de la decisión 61 antes de la GPU.
+ * @twin gemelo-pleura
  */
 import { Interface } from '../../anatomy/interfaces';
 import { WALL as WALL_LAYERS, preperitonealMm } from '../../anatomy/organs/wall';
@@ -115,7 +116,7 @@ const BEAM = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
 const latSigmaMm = (r: number): number => lateralFwhmMm(r, FOCUS, BEAM) / 2.3548;
 /** Distancia de la línea θ a la pleura (plano y = 28 mm bajo la cara). */
 export const pleuraDepth = (th: number): number => (RC + WALL[2]) / Math.cos(th) - RC;
-/** Posición lateral (mm) del cruce de la línea θ con la pleura: la z anatómica de este gemelo. */
+/** Posición lateral (mm) del cruce de la línea θ con la pleura: la z anatómica de este gemelo. @twin gemelo-pleura */
 export const pleuraLateral = (th: number): number => (RC + pleuraDepth(th)) * Math.sin(th);
 
 export interface PleuraTwinOpts {

@@ -5,7 +5,7 @@ import { s0028RespiratoryRamp, s0028WallFaceGradient } from './s0028Wall';
 import { RESPIRATORY_DIRECTION as DIR } from './respiratoryDirection';
 import type { AnatomyScene } from './scene';
 
-/** Derivada analítica del mismo peso, fuera de las uniones no diferenciables del perfil torácico. */
+/** Derivada analítica del mismo peso, fuera de las uniones no diferenciables del perfil torácico. @twin deformacion */
 export function respiratoryWeightGradient(scene: AnatomyScene, m: Vec3): Vec3 {
   const s0028 = scene.identity.person === 's0028' ? s0028WallFaceGradient(m, 2) : undefined;
   // s0028 U: sin cara interna; el peso es la rampa por profundidad de su fila, smoothstep(p10, p90, −τ), y ∇ = −∇τ.

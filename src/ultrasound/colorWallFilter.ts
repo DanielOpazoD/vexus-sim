@@ -1,7 +1,9 @@
 import { effectiveWallFilterCutoff, WALL_FILTER_MAX_PRF_FRACTION } from '../core/highPass';
 
 /** Steady-state power response of the same two Butterworth high-pass
- * biquads as PW. This does not turn the analytic Color estimator into IQ. */
+ * biquads as PW. This does not turn the analytic Color estimator into IQ.
+ * @twin filtro-pared-color
+ */
 export function colorWallResponseHz(frequencyHz: number, cutoffHz: number, prfHz: number): number {
   const fc = effectiveWallFilterCutoff(cutoffHz, prfHz);
   if (!Number.isFinite(frequencyHz)) throw new RangeError('Invalid wall-filter frequency');

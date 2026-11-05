@@ -156,7 +156,7 @@ function chartCell(col: number, row: number) {
     const b = at(0, 1, page, k) + fx * (at(1, 1, page, k) - at(0, 1, page, k));
     return a + fy * (b - a);
   };
-  /** (∂/∂columna, ∂/∂fila) exacta de la misma bilineal, con sus cuatro esquinas (gemela de `s28Slope`). */
+  /** (∂/∂columna, ∂/∂fila) exacta de la misma bilineal, con sus cuatro esquinas (gemela de `s28Slope`). @twin s0028-pared */
   const slope = (page: number, k: number): [number, number] => {
     const dx0 = at(1, 0, page, k) - at(0, 0, page, k),
       dx1 = at(1, 1, page, k) - at(0, 1, page, k);
@@ -243,6 +243,7 @@ const PAGE_CHANNEL = [
  * Gradiente analítico de `profundidad − frontera` (gemelo de `s28FaceGradient` en GLSL): −∇τ − P(∂B/∂c·∇c + ∂B/∂f·∇f),
  * P = I − ∇τ∇τᵀ/|∇τ|² (la proyección sin su curvatura; el centro de fila se toma constante en z). La pendiente es la
  * de la celda bilineal, con sus mismas cuatro esquinas: ninguna lectura más. null en U o fuera.
+ * @twin s0028-pared
  */
 export function s0028WallFaceGradient(p: Vec3, boundary: S0028Boundary): { sd: number; gradient: Vec3 } | null {
   if (anatomyBundle.person !== 's0028') return null;
@@ -266,6 +267,7 @@ const known = (code: number) => Math.floor(code / 8) % 4 !== 0 && Math.floor(cod
  * null significa que no existe una cara interna demostrada; no es profundidad cero. Gemela exacta de
  * `s0028WallAt(p).depthMm − interfaceMm` (mismas operaciones en el mismo orden) sin objetos intermedios: el 3D la
  * pide una vez por vértice para el peso respiratorio.
+ * @twin s0028-pared
  */
 export function s0028InsideWall(p: Vec3): number | null {
   if (anatomyBundle.person !== 's0028' || !buffers) return null;
@@ -378,6 +380,7 @@ function rampAt(row: number): [number, number] {
  * Peso de pared del enlace respiratorio, sin el factor de columna (gemelo de `s28RespWall`). Celda D/E: smoothstep(0, 25,
  * profundidad bajo su cara interna), como siempre. Celda U, o fuera de la carta: rampa por profundidad smoothstep(p10,
  * p90, −τ) con la cara interna conocida de su fila (bloque derivado E). Sin objetos: el 3D lo pide una vez por vértice.
+ * @twin s0028-pared
  */
 export function s0028RespiratoryWall(p: Vec3): number {
   if (anatomyBundle.person !== 's0028' || !buffers) return 0;

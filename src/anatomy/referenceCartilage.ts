@@ -2,7 +2,9 @@ import type { Vec3 } from '../core/vec3';
 import { CARTILAGE_ROWS, CARTILAGE_X0, CARTILAGE_X1 } from './referenceCartilageData';
 
 /** Measured seventh-cartilage sections in the common mm/LAS frame; bilateral average.
- * Elliptical section/interpolation error is quantified in reference-cartilage-source.json. */
+ * Elliptical section/interpolation error is quantified in reference-cartilage-source.json.
+ * @twin cartilago-referencia
+ */
 export function referenceCartilage(p: Vec3): { d: number; tangent: Vec3; curvature: number } {
   const x = -Math.abs(p[0]);
   const step = (CARTILAGE_X1 - CARTILAGE_X0) / (CARTILAGE_ROWS.length - 1);

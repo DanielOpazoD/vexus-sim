@@ -2,7 +2,7 @@
 const TOWARD = [1, 0.13, 0.07] as const;
 const AWAY = [0.08, 0.24, 1] as const;
 
-/** Compresión de presentación: conserva flujo lento visible, con negro común en velocidad cero. */
+/** Compresión de presentación: conserva flujo lento visible, con negro común en velocidad cero. @twin mapa-color */
 export function colorMapRgb(towardProbe: boolean, mag: number): [number, number, number] {
   const m = Math.sqrt(Math.min(1, Math.max(0, mag)));
   const hue = towardProbe ? TOWARD : AWAY;

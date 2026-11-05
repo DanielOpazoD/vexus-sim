@@ -33,6 +33,7 @@ import type { BeamParams } from './beamModel';
  *    desplazamiento a bajas de `bEffectiveMHz` (2,5 de 3,5 MHz), 2·α(1,25) + α(2,5) = 2·α(2,5) con α lineal
  *    en f: la del fundamental. `bEffectiveMHz`, la TGC nominal y su techo no cambian [DERIVADO].
  *  - Doppler: fundamental. El color y el PW no cambian (`CONVEX_BEAM`, `dopplerEffectiveMHz`).
+ * @twin gemelo-pared
  */
 export const HARMONIC = {
   /** Emisión (f1) y recepción (2·f1), MHz. */
@@ -69,6 +70,7 @@ export function harmonicBeam(fundamental: BeamParams): BeamParams {
  * Acumulación del armónico en el campo cercano (amplitud relativa a la compensada, ≤ 1): crece como
  * 1 − e^(−r/L) y el preajuste la lleva a 1 desde `buildUpRefMm`. 1 en fundamental. Gemelo de
  * `harmonicNearGain` de `HARMONIC_GLSL` (pasada B, uniform `uHarmonicNear`), con r el camino recorrido.
+ * @twin armonico
  */
 export function harmonicNearGain(rMm: number, harmonic: boolean): number {
   const { buildUpMm: L, buildUpRefMm: ref } = HARMONIC;
@@ -80,7 +82,7 @@ export function harmonicNearGain(rMm: number, harmonic: boolean): number {
 export const harmonicNearUniform = (harmonic: boolean): [number, number] =>
   harmonic ? [HARMONIC.buildUpMm, HARMONIC.buildUpRefMm] : [0, 0];
 
-/** Acumulación del armónico para la pasada B (las dos miradas): gemelo de `harmonicNearGain`. */
+/** Acumulación del armónico para la pasada B (las dos miradas): gemelo de `harmonicNearGain`. @twin armonico */
 export const HARMONIC_GLSL = /* glsl */ `
 uniform vec2 uHarmonicNear; // acumulación del armónico (decisión 77): L y profundidad de referencia (mm); x = 0 en fundamental
 float harmonicNearGain(float r) {

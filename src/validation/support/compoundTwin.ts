@@ -16,6 +16,7 @@
  * El haz es el de la imagen B en fundamental (`bmodeBeam`) y la fase de mirada va a la frecuencia del eco
  * (k2·f(r)/f0), como la pasada B.
  * Sin WebGL ni `probe`/`app` (capa `validation`): el marco de la sonda entra como vectores.
+ * @twin gemelo-compuesto
  */
 import { add, scale, type Vec3 } from '../../core/vec3';
 import { axialSigmaMm, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
@@ -92,6 +93,7 @@ export const elevSigmaMm = (r: number, g: TwinGeometry = TWIN_GEOMETRY): number 
  * Textura del parénquima de la decisión 89 en el gemelo: los nodos fuertes de la retícula (`strongScatter`, en los tres
  * planos) y la densidad de dispersores del hígado (`densityGain` con la semilla `densitySeed`, sobre el campo mezclado del
  * plano central, como la pasada B; null, sin ella). Sin textura, el moteado difuso de siempre.
+ * @twin gemelo-compuesto
  */
 export interface TwinTexture {
   strong: StrongScatter;

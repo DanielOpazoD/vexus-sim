@@ -45,6 +45,7 @@ import type { Torso } from './primitives';
  * eco, la de una lámina de la textura) se llevan al mundo con la jacobiana de la inversa (`warpAt`,
  * `warpNormal`): ∇_mundo = J^T·∇_material, J = I + r̂⊗∇s + (s/ρ)·(I − r̂r̂ − êê). Gemelo GLSL con los mismos
  * nombres: `COMPRESSION_GLSL`.
+ * @twin compresion
  */
 export const PROBE_COMPRESSION = {
   /**
@@ -335,6 +336,7 @@ const f4 = (x: number): string => x.toFixed(4);
  * `anatomy/gpu/sceneUniforms.ts`): uCompC = (centro, R + alcance; 0 = sin compresión), uCompAx = (axial,
  * sen del semiángulo), uCompLat = (lateral, media huella elevacional) y la tabla en la textura de escena, un téxel
  * por nodo (s₀, s_D, D, R): el radio viaja en la tabla para que el alcance quepa en las tres ranuras.
+ * @twin compresion
  */
 export const COMPRESSION_GLSL = /* glsl */ `
 #define COMP_NODES ${PROBE_COMPRESSION.nodes}

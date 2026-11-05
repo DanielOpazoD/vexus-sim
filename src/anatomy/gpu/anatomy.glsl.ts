@@ -1047,4 +1047,17 @@ vec2 scattererFieldS(vec3 m, float h, float salt, vec3 s) {
 vec2 scattererField(vec3 m, float h, float salt) { return scattererFieldS(m, h, salt, vec3(0.0, 1.0, 1.0)); }
 `;
 }
+/**
+ * La anatomía en GLSL de imagen y color; su gemela TS es `AnatomyScene` con `primitives.ts` y `deformation.ts`
+ * (registro en `tools/twins/registry.ts`).
+ * @twin clasificacion
+ * @twin cara-gradiente
+ * @twin pared-interna
+ * @twin tubos
+ * @twin columna
+ * @twin tronco-primitivas
+ * @twin cupula
+ * @twin deformacion
+ * @twin moteado-anatomia
+ */
 export const ANATOMY_GLSL = anatomyGlsl();

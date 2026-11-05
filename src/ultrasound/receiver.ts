@@ -90,6 +90,7 @@ const UNIFORM_TO_UNIT = Math.sqrt(12);
  * +0,4 dB con 24 cm). Sin logaritmos ni senos en el bucle: 2 hashes por toma. Necesita los uniforms `uNoise` (escala por
  * componente, `RECEIVER_NOISE` × la del modo) y `uFrame` (cuadro módulo RECEIVER_NOISE_FRAMES). Gemelo:
  * `receiverNoiseSample`.
+ * @twin ruido-receptor
  */
 export const RECEIVER_NOISE_GLSL = /* glsl */ `
 uniform float uNoise;
@@ -105,7 +106,7 @@ vec2 receiverNoise(vec2 cell) {
 const f32 = Math.fround;
 const fract32 = (x: number): number => f32(x - Math.floor(x));
 
-/** `hash12b` de la pasada C en float32 (gemelo para las pruebas). */
+/** `hash12b` de la pasada C en float32 (gemelo para las pruebas). @twin ruido-receptor */
 export function hash12b(px: number, py: number): number {
   let x = fract32(f32(px * 0.1031));
   let y = fract32(f32(py * 0.1031));

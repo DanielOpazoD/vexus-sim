@@ -8,6 +8,7 @@ import { sdEllipsoidLocal, smoothMax, smoothMin } from '../primitives';
  * viven aquí con el mismo nombre; las tablas del shader (pirámides, pelvis, escotadura, cápsula)
  * se generan desde las constantes TS. El shader usa `uKidC/U/V/W/R`, `uKidSinus` y `uKidExtra`
  * del esquema único de uniforms.
+ * @twin organo-rinon
  */
 
 /**
@@ -564,7 +565,7 @@ const float PERI_SOFT = ${f4(PERIRENAL_SOFT)};`;
 const PELVIS = /* glsl */ `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
 const NOTCH = /* glsl */ `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
-/** Gemelo GLSL: `kidneyQuery` devuelve la región (0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos). */
+/** Gemelo GLSL: `kidneyQuery` devuelve la región (0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos). @twin organo-rinon */
 export const KIDNEY_GLSL = /* glsl */ `
 vec3 kidneyLocal(vec3 p, int k) {
   vec3 d = p - uKidC[k];

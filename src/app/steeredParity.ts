@@ -27,6 +27,8 @@ import {
  * (`steeredParity.test.ts` exige ≤ la mitad del margen en θ = 6–8°). Antes el empate se buscaba con
  * θ·(1 ± 2·10⁻⁴): un desplazamiento de hasta 2·10⁻³ líneas en las filas hondas (100 veces el error de
  * float32) que marcaba 0,6–1,4 % de las muestras, cerca del 1 % que admite la e2e.
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 export const STEERED_TIE_LINES = 1e-4;
 
@@ -43,6 +45,8 @@ export const TIE_APERTURE_DB = 5e-3;
 /**
  * Gemelos del prefijo dirigido de A2 y de la transmisión con apertura (y refracción, decisión 86) de A en (línea, fila k), y
  * la de los ecos especulares (A o2.w, decisión 91; sin la refracción).
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 export interface SteeredTwin {
   db: (l: number, k: number) => number;
@@ -96,6 +100,8 @@ export function steeredTransmissionTwin(grid: SegmentGrid, ap: ApertureGeometry,
  * gas o hueso de A0 en el centro de su segmento (como `APERTURE_GLSL` con uHits0) y la refracción de las luces con la Ψ̃
  * de cada línea (`refractionPsi`) y su pendiente (`refractionSlope`). Con `roundBias`, los redondeos
  * de los tramos de la refracción desplazados (empates).
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 export function look0TransmissionTwin(grid: SegmentGrid, ap: ApertureGeometry, roundBias = 0): SteeredTwin {
   const pre = new Map<number, number>();
@@ -163,7 +169,7 @@ export interface SteeredParity {
   specularMaxDiffDb: number;
   ambiguous: number;
   worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null;
-  /** Dónde está el peor desacuerdo de la transmisión con apertura (dB de los gemelos y de la GPU). */
+  /** Dónde está el peor desacuerdo de la transmisión con apertura (dB de los gemelos y de la GPU). @twin apertura-refraccion */
   worstAperture: { line: number; depthMm: number; tsDb: number; gpuDb: number } | null;
 }
 
@@ -174,6 +180,8 @@ export interface SteeredParity {
  * prefijo de la línea ya está bajo −60 dB (decisión 91). Una muestra en un empate de alguno de sus canales comparados
  * se cuenta aparte y no entra en ningún máximo. `twinOf` da los gemelos con un desplazamiento del redondeo: por
  * omisión, los de la mirada θ; la mirada 0 pasa `look0TransmissionTwin`.
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 export function compareSteeredTransmission(
   grid: SegmentGrid,

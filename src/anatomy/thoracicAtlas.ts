@@ -9,6 +9,7 @@ export function setThoracicAtlas(data?: Uint16Array): void {
     throw new Error('Campo torácico incompleto');
   thoracicAtlas = data;
 }
+/** Distancia y rótulo del campo óseo torácico en p (gemela TS del lector GLSL de este módulo). @twin atlas-toracico */
 export function thoracicValue(p: Vec3): { d: number; label: number } {
   if (!thoracicAtlas) return { d: 16, label: 0 };
   return {

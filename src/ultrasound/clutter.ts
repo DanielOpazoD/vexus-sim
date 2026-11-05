@@ -23,6 +23,7 @@
  * la reducción de la armónica). Niveles [ESTIMADO] con capturas de GPU frente a las referencias de la revisión.
  * Gemelos: `lateralKernel` (el núcleo de `FRAG_LATERAL`, misma fórmula), `reverbGains` y `reverbGateWeight` (las
  * réplicas de `FRAG_AXIAL`); los usan los gemelos de CPU (`wallTwin`, `interfaceTwin`, la prueba del receptor).
+ * @twin clutter-cd
  */
 export const CLUTTER = {
   /** Energía del pedestal de lóbulos laterales respecto a la del principal (dB), en el paciente de referencia. */
@@ -114,6 +115,7 @@ function kernelRadius(sigmaLines: number, sigmaPed: number, pedestal: boolean): 
  * σ 0,35). `coupling` es el acoplamiento de la línea de destino: una línea sin contacto no recibe lóbulos laterales.
  * Gemelo de `FRAG_LATERAL`, que acumula el principal y el pedestal aparte y normaliza con Σ|w|² = Σg_m² + a²Σg_p²
  * + 2aΣg_m·g_p·cos φ.
+ * @twin clutter-cd
  */
 export function lateralKernel(
   sigmaLines: number,

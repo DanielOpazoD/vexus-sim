@@ -114,7 +114,7 @@ export const TUBE_SHAPE = {
   classes: Record<TubeShapeClass, { kappa: readonly [number, number]; amp: number }>;
 };
 
-/** Hash entero de 32 bits («lowbias32», C. Wellons): gemelo exacto de `tubeHash` (GLSL, `uint`). */
+/** Hash entero de 32 bits («lowbias32», C. Wellons): gemelo exacto de `tubeHash` (GLSL, `uint`). @twin tubos */
 export function tubeHash(x: number): number {
   x ^= x >>> 16;
   x = Math.imul(x, 0x7feb352d);
@@ -182,6 +182,7 @@ export function tubeShapeTexel(tube: Pick<Tube, 'shape' | 'smoothRadius'>, radiu
 /**
  * Ruido de valor del radio a lo largo del eje del tubo `seed` en la longitud de arco `arcMm` (≥ 0): su valor en [−1, 1] y
  * su derivada (1/mm). Gemelo de `tubeNoise` (GLSL).
+ * @twin tubos
  */
 export function tubeNoise(seed: number, arcMm: number): [number, number] {
   const x = arcMm / TUBE_SHAPE.latticeMm;
@@ -253,7 +254,7 @@ export function diaphragmInteriorEdgeZ(x: number, y: number, d: Diaphragm, t: To
   return d.edgeZ + d.edgeRise * q * q * (3 - 2 * q) * Math.pow(Math.max(0, v) / Math.max(rho, 1e-20), 1.5);
 }
 
-/** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. */
+/** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. @twin cupula */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
   if (d.hepaticContact) {
     const registered = registeredDomeHeight(x, y);
@@ -501,6 +502,7 @@ export function spineBodySd(p: Vec3, sp: Spine): number {
  * llenan el cilindro, también en el borde redondeado del platillo (con el corte recto del disco quedaba ahí un surco de
  * hasta 0,375 mm que tomaba el tejido vecino, pulmón junto a T11–T12). `classify` las calcula una vez; gemelo del bloque
  * de la columna de `classifyWith` (GLSL).
+ * @twin columna
  */
 export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number; disc: number } {
   const e = spineEllipseSd(p, sp);
@@ -531,6 +533,7 @@ export function sdSpineDisc(p: Vec3, sp: Spine): number {
  * Curvatura (1/mm) de la cara de un cuerpo vertebral más cercana a p: la de la elipse en su costado
  * (ab/(a²·sen²t + b²·cos²t)^(3/2), con t el ángulo paramétrico de p), 0 en los platillos (planos). El eje del
  * cilindro es z. Gemelo de `spineFaceCurvature` (GLSL): la coherencia de curvatura de su eco (decisión 57).
+ * @twin columna
  */
 export function spineFaceCurvature(p: Vec3, sp: Spine): number {
   if (thoracicAtlas && abdominalAtlas) return spineFaceFrame(p, sp).curvature;
@@ -669,6 +672,7 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
  * (dist = √(dᵀQd) en el plano de la sección): S² = diag(1, 1/apScale², 1) en la VCI (1/r en la sección circular,
  * apScale/r en las paredes AP y 1/(apScale²·r) en las laterales) y c²·(I + wt·wtᵀ) con la forma de la decisión 90. Con
  * forma, el crecimiento del radio a lo largo del eje incluye el del ruido (r·amp·N′).
+ * @twin tubos
  */
 export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: TubeHit): { gradient: Vec3; curvature: number } {
   const a = tube.nodes[hit.segment];
@@ -735,7 +739,7 @@ export function torsoPhi(x: number, y: number, t: Torso): number {
   return Math.atan2((y - (t.y0 ?? 0)) / t.b, x / t.a);
 }
 
-/** Distancia radial (mm, aproximada) desde la piel: negativa dentro del cuerpo. */
+/** Distancia radial (mm, aproximada) desde la piel: negativa dentro del cuerpo. @twin tronco-primitivas */
 export function torsoDepth(p: Vec3, t: Torso): number {
   const source = s0028Depth(p);
   if (source !== undefined) return source;

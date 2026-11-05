@@ -37,6 +37,7 @@ export function sternumSd(m: Vec3, torso: Torso): number {
   return Math.hypot(...q.map((v) => Math.max(v, 0))) + Math.min(Math.max(...q), 0);
 }
 
+/** Gemelo GLSL de `sternumHalfWidth` y `sternumSd` (mismos nombres, decisión 46). @twin organo-esternon */
 export const STERNUM_GLSL = /* glsl */ `
 #define STERNUM_JUNCTION ${STERNUM.zJunctionMm.toFixed(8)}
 float sternumHalfWidth(float z) {

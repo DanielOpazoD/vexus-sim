@@ -118,6 +118,7 @@ export function gallbladderSdf(m: Vec3, g: GallbladderShape): number {
  * Gemelo GLSL. Con el gradiente exacto de la unión suave (sin normalizar; decisión 105) y, en sobrecarga sin ella, solo
  * la distancia: la usan las diferencias centrales de `faceGradient` (la cara de la luz) y la fosa del hígado de
  * `liverInner`, que antes calculaban y tiraban la normal de cada tramo. Mismas operaciones y en el mismo orden que el TS.
+ * @twin organo-vesicula
  */
 export const GALLBLADDER_GLSL = /* glsl */ `
 float gbSegment(vec3 m, vec4 a, vec4 b, out vec3 g) {

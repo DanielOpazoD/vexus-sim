@@ -1,5 +1,5 @@
 /** Contrafactual de 174: aproximación b=1, conservada para pruebas históricas; no se usa en el renderer. */
-/** Convert an acoustic loss prefix while preserving frequency-independent barriers. */
+/** Convert an acoustic loss prefix while preserving frequency-independent barriers. @twin transmision-doppler */
 export function dopplerTransmission(totalDb: number, fixedDb: number, frequencyRatio: number): number {
   return 10 ** (-(Math.max(0, totalDb - fixedDb) * frequencyRatio + fixedDb) / 20);
 }

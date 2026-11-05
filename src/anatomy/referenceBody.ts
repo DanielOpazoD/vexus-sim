@@ -162,6 +162,7 @@ export function bodySection(phi: number, z: number, data: Float32Array): [number
 export function bodyDepth(p: Vec3, data: Float32Array): number {
   return bodySample(0, p[2], data, p);
 }
+/** Gradiente de la profundidad del cuerpo de referencia (gemelo TS de `bodyGradient` en la GLSL). @twin tronco-primitivas */
 export function bodyGradient(p: Vec3, data: Float32Array): Vec3 {
   const cy = bodySection(0, p[2], data)[3];
   const x = p[0],

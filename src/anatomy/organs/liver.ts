@@ -63,7 +63,7 @@ export function medialCutDistance(m: Vec3): number {
   return Math.min(m[0] - MEDIAL_CUT.xPost, plane, MEDIAL_CUT.yMax - m[1]);
 }
 
-/** Normal exterior del hígado en el recorte posteromedial: la del término que manda (gemela de la GLSL). */
+/** Normal exterior del hígado en el recorte posteromedial: la del término que manda (gemela de la GLSL). @twin organo-higado */
 export function medialCutNormal(m: Vec3): Vec3 {
   const plane = (m[0] - MEDIAL_CUT.x0 - MEDIAL_CUT.k * (m[1] - MEDIAL_CUT.y0)) / Math.hypot(1, MEDIAL_CUT.k);
   const xp = m[0] - MEDIAL_CUT.xPost;
@@ -234,6 +234,7 @@ export function liverSdf(m: Vec3, s: LiverShape): number {
  * Gemelo GLSL; `n` es la normal de la superficie que manda y `dBase` el hígado sin fisura. La sobrecarga sin `n`
  * da la misma distancia, con los mismos términos y en el mismo orden, sin las normales de la impresión renal ni de
  * la fosa vesicular: la de `liverInner`, cuyo gradiente numérico da la cara de la cápsula (`faceGradient`).
+ * @twin organo-higado
  */
 export const LIVER_GLSL = /* glsl */ `
 const float HEPATIC_SPINE_GAP_MM = ${HEPATIC_SPINE_GAP_MM.toFixed(3)};

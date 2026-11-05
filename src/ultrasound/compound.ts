@@ -14,6 +14,7 @@ import { lookCoverage, steeredElement } from './steering';
  *
  * Aquí viven los parámetros, la regla de actividad, el anillo de miradas y el gemelo de la pasada K
  * (`compoundEnvelope`); la GPU es la etapa 2 de la decisión 58.
+ * @twin composicion-k
  */
 
 export interface CompoundParams {
@@ -23,6 +24,7 @@ export interface CompoundParams {
    * convexos, limitado por la directividad del elemento, que se ignora (−0,35 dB ida y vuelta a 8°)].
    * Predicción del gemelo 2D del diseño (no medida en GPU): ±6° → 12,2–13,7; ±7° → 11,7–13,3;
    * ±8° → 11,2–12,9 de desviación (la GPU, 0,5–1 menos). Un único θ global, sin ajuste por profundidad.
+   * @twin gemelo-compuesto
    */
   steerDeg: number;
   /** Orden de adquisición: signo de la dirección de cada mirada (la primera, la 0). */
@@ -50,6 +52,7 @@ export function compoundActive(bmode: { compound: boolean }, color: { enabled: b
  * von Ramm 1986; O'Donnell y Silverstein 1988): ρ_I = exp(−(k2·2·sin(Δ/2)·σ)²/2), con σ la de la PSF
  * lateral de amplitud (FWHM/2,355). Con la σ del grano lateral medido de la mirada 0 es la referencia de la
  * composición en el gemelo (`compoundSpeckle.test.ts`) y en el banco de GPU (`fidelity.ts`).
+ * @twin gemelo-compuesto
  */
 export function lookCorrelationLaw(delta: number, sigmaMm: number, k2: number): number {
   return Math.exp(-((k2 * 2 * Math.sin(Math.abs(delta) / 2) * sigmaMm) ** 2) / 2);
@@ -92,7 +95,7 @@ export function lookWeight(
   return lookCoverage(steeredElement(alpha, rho, theta, geom.curvatureRadius), geom.halfSector, geom.lines, taperLines);
 }
 
-/** Geometría de una envolvente (líneas × muestras) para el gemelo de K. */
+/** Geometría de una envolvente (líneas × muestras) para el gemelo de K. @twin composicion-k */
 export interface CompoundGrid {
   lines: number;
   samples: number;
@@ -123,6 +126,7 @@ export interface CurtainLineWeight {
  * bit a bit (paso directo). La celda (u, v) es la de la pasada D: α = lineTheta((u + ½)/líneas),
  * r = (v + ½)·profundidad/muestras. Con `curtain` (una entrada por línea), bajo la pleura de la cortina las
  * dirigidas pesan además `curtainSteerWeight` (1 − fAir; decisión 61).
+ * @twin composicion-k
  */
 export function compoundEnvelope(
   slots: readonly LookSlot[],

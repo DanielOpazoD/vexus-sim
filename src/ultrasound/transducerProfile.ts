@@ -88,6 +88,7 @@ export function bmodeBeam(profile: TransducerProfile, bmode: { harmonic: boolean
  * Apertura de emisión (mm) de la imagen B con el foco del equipo: la de `bmodeBeam` a ese foco (`txApertureMm`, F/2,5
  * con el foco somero). La lleva la penumbra de la pasada A (`uAperture.x`) y su gemelo; el Doppler, de un solo rayo,
  * no la usa.
+ * @twin apertura-refraccion
  */
 export function bmodeTxApertureMm(profile: TransducerProfile, bmode: { harmonic: boolean; focusMm: number }): number {
   return txApertureMm(bmode.focusMm, bmodeBeam(profile, bmode));

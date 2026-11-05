@@ -27,6 +27,7 @@ export function bowelWallProfile(depthMm: number): number {
 export function restTexture(m: Vec3, radii?: ArrayLike<number>): number {
   return bowelWallProfile(-bowelSdf(m, radii));
 }
+/** Gemelo GLSL de `bowelWallProfile` y `restTexture`. @twin textura-reposo */
 export const REST_TEXTURE_GLSL = /* glsl */ `
 float bowelWallProfile(float d){
   float v=mix(${REST_TEXTURE.muscularisBack.toFixed(3)},${REST_TEXTURE.submucosaBack.toFixed(3)},smoothstep(${(REST_TEXTURE.muscularisEndMm - REST_TEXTURE.edgeMm).toFixed(3)},${(REST_TEXTURE.muscularisEndMm + REST_TEXTURE.edgeMm).toFixed(3)},d));

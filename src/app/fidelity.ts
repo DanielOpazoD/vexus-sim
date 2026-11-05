@@ -914,6 +914,7 @@ export const GATED_MIN_RECORDS = 10;
  * Morison a 0–20° y el diafragma a 40–60°. La VSH y el diafragma a 0–20° no llegan a 10 registros en
  * ninguna vista y no se vigilan; desde la decisión 62 tampoco la cápsula sola: bajo la pared siempre tiene
  * la grasa preperitoneal y el peritoneo encima, en su ventana (su eco lo vigila el gemelo, `wallTwin.test.ts`).
+ * @twin gemelo-pared
  */
 export const GATED_FACE_BINS: readonly { label: string; kind: FaceKind; fromDeg: number }[] = [
   { label: 'VCI', kind: 'ivc', fromDeg: 0 },
@@ -978,6 +979,7 @@ export interface ContourBin {
    * mediana corta quita buena parte del rosario de línea a línea y la larga, la tendencia del lóbulo y de la
    * profundidad. NaN con < 10 líneas. Frágil entre realizaciones (la cápsula del gemelo a 0–20° va de 0,90
    * a 1,54 dB según la semilla): se promedia sobre ≥ 8.
+   * @twin gemelo-interfaz
    */
   sigmaLDb: number;
 }
@@ -1615,6 +1617,7 @@ const MAX_PATH_EXCESS_DB = 0.5;
  * con 0,01 el hígado pierde 0,09 dB y la réplica de orden 2 de la línea pleural queda ≤ −12 dB bajo él (gemelo:
  * +28 dB con la cortina entera); con 10⁻³, el umbral de la imagen, el borde se come la mitad del hígado de la
  * ventana intercostal sin cambiarlo.
+ * @twin gemelo-pleura
  */
 export const CURTAIN_LIVER_MAX_AIR = 0.01;
 /**
@@ -2619,6 +2622,7 @@ interface InterfaceSpec {
  * La pleura parietal de una línea del plano actual: el gemelo de A0 h2 (`pleuraCrossingLine`: el cruce
  * exacto de la cara interna de la pared y la distancia al borde de la cortina) y de la fracción de aire de la
  * pasada B (`curtainAirFractionAt`, con el haz del equipo).
+ * @twin transmision-a0
  */
 export interface CurtainLine {
   u: number;

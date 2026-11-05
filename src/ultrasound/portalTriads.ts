@@ -33,6 +33,7 @@ import type { Vec3 } from '../core/vec3';
  * ε + (1 − ε)·(1 − (d·b)²)², la ley |cos θ|⁴ de las láminas de la pared (decisión 62) con θ entre el haz b y la normal
  * de la vaina más alineada con él [EXTRAPOLACIÓN PROPIA]. La vaina sigue multiplicando el moteado del hígado (y sus
  * dispersores fuertes): su eco está modulado por el moteado.
+ * @twin triadas-portales
  */
 export const PORTAL_TRIADS = {
   /** Célula (mm): una tríada como mucho por célula. */
@@ -66,7 +67,7 @@ export const PORTAL_TRIADS = {
   salt: 0x9e3779b9,
 } as const;
 
-/** PCG3D de Jarzynski y Olano (2020): un hash de 3 × 32 bits sin signo; gemelo exacto de `triadPcg` (GLSL). */
+/** PCG3D de Jarzynski y Olano (2020): un hash de 3 × 32 bits sin signo; gemelo exacto de `triadPcg` (GLSL). @twin triadas-portales */
 export function pcg3d(x: number, y: number, z: number): [number, number, number] {
   x = (Math.imul(x, 1664525) + 1013904223) >>> 0;
   y = (Math.imul(y, 1664525) + 1013904223) >>> 0;
@@ -89,6 +90,7 @@ const unit = (u: number): number => (u >>> 8) / 16777216;
 /**
  * Los 12 números uniformes de la célula c (índices enteros): 4 llamadas a PCG3D con la sal ×1…×4 en z. Gemelo de las
  * cuatro llamadas de `portalTriad` (GLSL).
+ * @twin triadas-portales
  */
 export function cellRandoms(c: Vec3): number[] {
   const P = PORTAL_TRIADS;
@@ -187,7 +189,7 @@ export function portalTriadGain(m: Vec3, b: Vec3 = TRIAD_QUERY_BEAM, cells: 1 | 
 const f4 = (x: number): string => x.toFixed(4);
 const u32 = (x: number): string => `${x >>> 0}u`;
 
-/** Gemelo GLSL de `portalTriadGain` (pasada B); autocontenido: su propio hash entero. */
+/** Gemelo GLSL de `portalTriadGain` (pasada B); autocontenido: su propio hash entero. @twin triadas-portales */
 export const PORTAL_TRIADS_GLSL = /* glsl */ `
 const float TRIAD_CELL = ${f4(PORTAL_TRIADS.cellMm)};
 const float TRIAD_PRESENCE = ${f4(PORTAL_TRIADS.presence)};

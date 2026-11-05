@@ -38,6 +38,7 @@ import { hash13, valueNoise } from './speckleField';
  * [ESTIMADO], así que los septos paralelos a la piel brillan de frente y los perpendiculares apenas se ven.
  * Gemelos: estas funciones (TS) y `WALL_TEXTURE_GLSL` (pasada B), misma fórmula; las profundidades de las
  * capas salen de `organs/wall.ts` (uWall en la GPU).
+ * @twin textura-pared
  */
 export const WALL_TEXTURE = {
   /** Lóbulo de la grasa subcutánea a lo largo de la piel (mm): 5–10 mm (PMC7441131). */
@@ -343,6 +344,7 @@ const fasciaSlopeGlsl = (terms: (typeof WALL_WAVE_TERMS)[number]): string =>
 /**
  * Gemelo GLSL (pasada B, detrás de `SPECKLE_TISSUE_GLSL`: usa hash13, valueNoise, torsoDepth, torsoNormal,
  * wallArc, uTorso y uWall de la anatomía).
+ * @twin textura-pared
  */
 export const WALL_TEXTURE_GLSL = /* glsl */ `
 #define WT_LOBULE_MM ${f4(WALL_TEXTURE.lobuleMm)}
@@ -491,6 +493,7 @@ float wallTexture(vec3 m, int tissue, vec3 dir, Warp w) {
 /**
  * Gemelo GLSL de `wallFaceEchoFlat` (pasada B, detrás de `INTERFACE_ECHO_GLSL`: usa uIface, interfaceProfileEcho,
  * wallFaceGain y `torsoDepthGrad` de la anatomía, el gemelo de `torsoDepthGradient`).
+ * @twin textura-pared
  */
 export const WALL_FACE_ECHO_GLSL = /* glsl */ `
 // Eco de cara plana de una capa de la pared: las copias de la serie de la pleura (decisión 61), en su bucle y sin

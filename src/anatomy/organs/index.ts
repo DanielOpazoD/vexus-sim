@@ -18,13 +18,24 @@ import * as abdomen from './abdomen';
  * El ORDEN es el de dependencia en GLSL (el hígado usa riñón, vesícula y fisura; el retroperitoneo, los conos del riñón; el corazón,
  * los elipsoides y la unión suave de la anatomía). Los tubos
  * (árbol vascular en textura de datos) y las primitivas genéricas siguen en `primitives.ts`.
+ * @twin organo-abdomen
+ * @twin organo-intestino
+ * @twin organo-esternon
+ * @twin organo-pared
+ * @twin organo-rinon
+ * @twin organo-ligamentos
+ * @twin organo-cortina
+ * @twin organo-vesicula
+ * @twin organo-higado
+ * @twin organo-retroperitoneo
+ * @twin organo-corazon
  */
 export interface OrganModule {
   id: string;
-  /** Exportaciones TS del módulo (para comprobar los gemelos por nombre). */
+  /** Exportaciones TS del módulo (para comprobar por nombre los pares TS/GLSL). */
   exports: Record<string, unknown>;
   glsl: string;
-  /** Funciones GLSL sin gemela TS (nombre → motivo), p. ej. normales que solo usa el shader. */
+  /** Funciones GLSL sin pareja TS (nombre → motivo), p. ej. normales que solo usa el shader. */
   gpuOnly?: Readonly<Record<string, string>>;
 }
 

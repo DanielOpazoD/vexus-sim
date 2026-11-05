@@ -5,6 +5,7 @@ import { CONVEX_BEAM, beamFwhmMm, focalReferenceFwhmMm, type BeamParams } from '
  * `echoFrequency` y `focalGain` de `LATERAL_PSF_GLSL`, para el banco de fidelidad y los gemelos de validación. El
  * renderizador no los usa (las fórmulas van en el GLSL, con sus parámetros en `uBeamTx` y `uFocus`), así que viven
  * fuera de `beamModel.ts` y del chunk principal, que tiene presupuesto (`tools/ci/bundle-budget.ts`).
+ * @twin haz-psf
  */
 
 /** f(r)/f0 del eco a la profundidad r (mm): 1/(1 + κ·r). */

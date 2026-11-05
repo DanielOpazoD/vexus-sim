@@ -22,6 +22,7 @@ import { glslFloat } from './receiver';
  * fundido; los puntos de partida de la app se animan y reanclan con fundido.
  *
  * Gemelos: `speckleSliceField` (TS, pruebas) y `scattererFieldSlice` de la pasada B, misma fórmula.
+ * @twin moteado-campo
  */
 
 /** Ángulo entre la normal del plano y la del ancla a partir del cual se renueva el ancla. */
@@ -107,6 +108,7 @@ export class ElevationAnchor {
 }
 
 // ——— Gemelo TS del campo de la pasada B (pruebas) ———
+// @twin moteado-anatomia
 
 const f32 = Math.fround;
 const fract = (x: number): number => f32(x - Math.floor(x));
@@ -327,6 +329,7 @@ export function speckleSliceFieldPh(
  * decisión 58). Va en `FRAG_RAWFIELD` detrás de `speckleField` (usa hash13 de la anatomía, uSeed y las
  * uniforms del ancla); la mirada 0 no lo llama. ph0 y g salen de `lookPhase`/`lookPhaseGrad`
  * (`STEERING_GLSL`), con g = gx·uLateral + gz·uAxial.
+ * @twin moteado-campo
  */
 export const SPECKLE_LOOK_GLSL = /* glsl */ `
 vec2 latticeValuePh(vec3 cell, float salt, float ph, vec3 s) {
@@ -493,6 +496,7 @@ export const STRONG_SCATTERERS: Partial<Record<Tissue, StrongScatterers>> = {
  * escala (decisión 53) y todo lo que el banco mide frente a su mediana (paredes, cápsula, Morison, líneas de la pared,
  * deslizamiento) queda donde estaba. La potencia media sube level²·(1 − p + p·gain²), +0,42 dB en el hígado. Normalizar
  * la potencia media, en cambio, bajaba la mediana ~1,3 dB (4–5 grises con GPU).
+ * @twin moteado-campo
  */
 export function strongScatter(t: Tissue): StrongScatter {
   const s = STRONG_SCATTERERS[t];
@@ -528,6 +532,7 @@ const glslVec3 = (v: StrongScatter): string => `vec3(${v.map((x) => glslFloat(x)
  * Gemelo GLSL del moteado por tejido para la pasada B (`fieldFor`): mismas fórmulas que
  * `valueNoise`, `heterogeneityDb`, `clumpGain`, `strongScatter` y `densityGain`. Necesita `hash13` (anatomía),
  * los `T_…` de los tejidos y `uSeed`.
+ * @twin moteado-campo
  */
 export const SPECKLE_TISSUE_GLSL = /* glsl */ `
 const float TISSUE_SALT_STEP = ${TISSUE_SALT_STEP.toFixed(4)};

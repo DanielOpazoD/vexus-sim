@@ -65,7 +65,7 @@ export function lungCurtainEdgeMm(m: Vec3, caudalMm: number, domeZ: number): num
   return m[2] - Math.min(c.z0 - caudalMm, domeZ);
 }
 
-/** Gemelo GLSL: devuelve la distancia a la frontera (≥ 0) o −1 fuera de la cortina. */
+/** Gemelo GLSL: devuelve la distancia a la frontera (≥ 0) o −1 fuera de la cortina. @twin organo-cortina @twin cortina-receso */
 export const LUNG_CURTAIN_GLSL = /* glsl */ `
 float lungCurtainDistance(vec3 m, float insideWall) {
   if (insideWall < uCurtain.y && m.x <= uCurtain.z && m.y <= uCurtain.w && m.z >= uCurtain.x)

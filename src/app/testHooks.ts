@@ -144,6 +144,8 @@ export interface TestHooks {
   /**
    * Peso respiratorio GLSL (`respWeight`, `respWeightGradient`) frente al gemelo CPU en una rejilla del tronco s0028
    * (17 alturas × 32 ángulos × 6 profundidades bajo la piel), separado por celda D/E y U (r2b-U).
+   * @twin deformacion
+   * @twin s0028-pared
    */
   respirationParity: () => RespirationParityStats;
   /**
@@ -162,6 +164,8 @@ export interface TestHooks {
    * transmisión con apertura de A) con sus gemelos de TS (`steeredPrefixDb`, `steeredApertureTransmission`)
    * sobre los mismos segmentos de A0/A1 de la GPU; las muestras en un empate de redondeo (desplazar los
    * redondeos de los gemelos ±`STEERED_TIE_LINES` líneas cambia el resultado) se cuentan aparte.
+   * @twin prefijo-a2
+   * @twin apertura-refraccion
    */
   transmissionParity: (opts: { compound: boolean; look?: number; startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
     lines: number;
@@ -170,13 +174,18 @@ export interface TestHooks {
     /**
      * El peor desacuerdo de la transmisión con apertura de A (dB; con la refracción de las luces, decisión 86) con sus
      * gemelos sobre los segmentos de la GPU, y las muestras en empate de redondeo: en la mirada 0 también.
+     * @twin apertura-refraccion
      */
     apertureMaxDiffDb?: number;
-    /** El peor desacuerdo de la transmisión de los ecos especulares de A (dB; A o2.w, decisión 91) con sus gemelos. */
+    /**
+     * El peor desacuerdo de la transmisión de los ecos especulares de A (dB; A o2.w, decisión 91) con sus gemelos.
+     * @twin apertura-refraccion
+     */
     specularMaxDiffDb?: number;
     /**
      * Muestras (sin los empates) en las que se comparó la transmisión con apertura, el denominador de `ambiguous`, y la de
      * los especulares: cada una donde ella misma (la del gemelo o la de la GPU) pasa de −60 dB (decisión 91).
+     * @twin apertura-refraccion
      */
     apertureSamples?: number;
     specularSamples?: number;
@@ -280,6 +289,7 @@ export interface TestHooks {
    * Tríadas portales (decisión 78): el factor de la GPU (`queryTriads`, el GLSL de la pasada B) frente al gemelo TS en
    * puntos materiales pegados a las tríadas de medio hígado (su centro, dentro de la luz y de la vaina, en el borde,
    * junto a sus extremos y fuera) y al azar. Cuántos puntos caen en una vaina o en una luz y la mayor diferencia.
+   * @twin triadas-portales
    */
   triadParity: () => { points: number; inSheath: number; inLumen: number; maxAbs: number };
   /**
@@ -644,6 +654,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         }
         // la transmisión de la imagen (penumbra y refracción, decisiones 54 y 86) frente a sus gemelos sobre los segmentos
         // de A0/A1 de la GPU, como en las miradas dirigidas
+        // @twin apertura-refraccion
         const grid = sim.renderer.readSegments(depth);
         const beam = sim.profile.beam;
         const ap: ApertureGeometry = {
@@ -903,6 +914,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       let inLumen = 0;
       for (let i = 0; i < gpu.length; i++) {
         // el gemelo con los mismos puntos que recibe la GPU (float32)
+        // @twin triadas-portales
         const ts = portalTriadGain([flat[i * 3], flat[i * 3 + 1], flat[i * 3 + 2]]);
         maxAbs = Math.max(maxAbs, Math.abs(gpu[i] - ts));
         if (ts > 1.5) inSheath++;
@@ -1039,6 +1051,8 @@ function fillRing(sim: Simulator): void {
  * (dB) y la transmisión con apertura de A con sus gemelos de TS sobre esos segmentos
  * (`compareSteeredTransmission`): una muestra en un empate de redondeo (la GPU calcula en float32) cuenta
  * como ambigua y no entra en el máximo.
+ * @twin prefijo-a2
+ * @twin apertura-refraccion
  */
 function steeredParity(sim: Simulator, look: number, every: number): ReturnType<TestHooks['transmissionParity']> {
   const n = sim.profile.compound.order.length;
@@ -1565,6 +1579,7 @@ const LIVER_MASK_MIN_COUPLING = 0.95;
  * Decisión 63: solo en las líneas acopladas (el contacto conseguido; los bordes de la intercostal no apoyan y son
  * ruido del receptor). Girar la sonda 2° cambia su contacto, pero solo empujando: el tejido comprimido se mueve por
  * ello 0,05 mm de mediana (p90 0,18 mm; gemelo), muy por debajo del grano.
+ * @twin compresion
  */
 function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;

@@ -19,6 +19,7 @@ import type { AnatomyScene } from './scene';
  * respiración ha llevado bajo ella, así que mundo → material deshace primero la compresión y después la
  * respiración (el mismo orden que `toMaterial` en la GLSL). `compression` es el estado del contacto del cuadro
  * (null: sin sonda, el tronco rígido); lo pone el simulador con cada pose.
+ * @twin deformacion
  */
 /** Cota del intervalo normalizado tras resolver la inversa; no es precisión clínica. */
 export const RESPIRATORY_INVERSE_STEPS = 14;

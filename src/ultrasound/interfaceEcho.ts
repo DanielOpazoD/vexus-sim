@@ -69,6 +69,8 @@ import { valueNoise } from './speckleField';
  *    cuya rugosidad deja ~1 % de energía coherente. κ_d no sale de la
  *    conservación de la energía (la parte que vuelve a la apertura depende de ella y de la PSF): se calibra
  *    [ESTIMADO] con las líneas de la pared (W7 y W4 de la decisión 62) y el contraste de Morison a 40–60°.
+ * @twin eco-interfaz
+ * @twin gemelo-interfaz
  */
 
 /** Anchura del perfil de la cara (mm): ≥ 0,6·dr hasta 240 mm, así su integral muestreada es 1 a < 1 %. */
@@ -83,7 +85,7 @@ export const IFACE_SLOPE_REF = 0.14;
 export const IFACE_K_DB = 55;
 /** Rango de calibración de K en la GPU (dB): fuera de él es un error de modelo, no de calibración. */
 export const IFACE_K_RANGE_DB = [53, 57] as const;
-/** Campo de la pasada B por unidad de S (β, campo·mm): gemelo, 180 mm de profundidad, cara a 80 mm. */
+/** Campo de la pasada B por unidad de S (β, campo·mm): gemelo, 180 mm de profundidad, cara a 80 mm. @twin gemelo-interfaz */
 export const IFACE_BETA = 0.2903;
 /** Por debajo de este |cosθ| la cara no devuelve nada (rasante). */
 export const IFACE_MIN_COS = 0.05;
@@ -151,6 +153,7 @@ export interface WallAcrossScene {
  * lo que toca la pared es la grasa retroperitoneal o la perirrenal (en `classify` los órganos ganan al compartimento).
  * La columna no se descarta: desde las ventanas abdominales la cara que la toca está en la sombra del hueso. Gemelo
  * de la condición de `interfaceEcho` (GLSL).
+ * @twin eco-interfaz
  */
 export function fatAcrossWall(m: Vec3, scene: WallAcrossScene): boolean {
   return (
@@ -180,6 +183,7 @@ export const ATLAS_LOBE_EPS_MM = 3;
 /**
  * Gemelo de la normal del lóbulo de la cápsula del atlas en `interfaceEcho` (GLSL): tetraedro de la distancia que dibuja la cara, en la orientación de
  * `local`. Si se cancela o se da la vuelta, en un borde fino, devuelve `local`.
+ * @twin eco-interfaz
  */
 export function atlasCapsuleLobeNormal(m: Vec3, inner: (p: Vec3) => number, local: readonly number[]): readonly number[] {
   const e = ATLAS_LOBE_EPS_MM;
@@ -220,6 +224,7 @@ export const VALUE_NOISE_SD = 0.1846;
 /**
  * Distancia por la normal al cruce de la cara, a lo largo del rayo (mm): ifd/(|∇|·cosθ), con ifd el valor
  * de la distancia de la cara y |∇| la norma de su gradiente. Gemelo de la línea de `interfaceEcho` (GLSL).
+ * @twin eco-interfaz
  */
 export function faceDelta(ifd: number, gradNorm: number, cosI: number): number {
   return ifd / (gradNorm * cosI);
@@ -304,6 +309,7 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
  * rodean la costilla siguen hacia dentro y nunca la iluminan desde fuera, así que la transmisión con apertura
  * (la penumbra de la decisión 54) no vale para ella, y sin esta regla cada costilla dibujaba un anillo entero.
  * El cartílago transmite: su cara profunda sí se ve. Gemelo de la condición de `interfaceEcho` (GLSL).
+ * @twin eco-interfaz
  */
 export function faceLitFromProbe(face: Interface, normal: readonly number[], dir: readonly number[]): boolean {
   return (
@@ -312,13 +318,14 @@ export function faceLitFromProbe(face: Interface, normal: readonly number[], dir
   );
 }
 
-/** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. */
+/** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. @twin eco-interfaz */
 let uniformCache: { k0: number; kDb: number; u: Float32Array } | null = null;
 
 /**
  * Gemelo exacto de `interfaceProfileEcho` (GLSL): el eco de la cara `id` con incidencia cosI, coherencia
  * de curvatura `curv` y la muestra a δ = ifd/(|∇|·cosθ) del cruce (`faceDelta`). Lee los mismos números
  * que el uniform.
+ * @twin eco-interfaz
  */
 export function interfaceEchoField(id: Interface, cosI: number, curv: number, delta: number, k0: number, kDb = IFACE_K_DB): number {
   if (!uniformCache || uniformCache.k0 !== k0 || uniformCache.kDb !== kDb) uniformCache = { k0, kDb, u: interfaceUniforms(k0, kDb) };
@@ -342,6 +349,7 @@ export function facetTiltRms(s: number): number {
  * Inclinación de la faceta en el punto MATERIAL m de la cara `face` (decisión 65; gemelo de `facetTilt` en la
  * GLSL): tres ruidos de valor anclados, de media nula y desviación σ_t de la cara (`facetTiltRms`) por componente.
  * Es un vector del espacio: el eco solo usa su parte tangente a la cara (`facetCosine`).
+ * @twin eco-interfaz
  */
 export function facetTilt(m: Vec3, face: Interface): Vec3 {
   const c = FACET.cellMm;
@@ -359,6 +367,7 @@ export function facetTilt(m: Vec3, face: Interface): Vec3 {
  * Coseno de incidencia sobre la faceta: |n_f·dir|/|n_f| con n_f = n + τ − (τ·n)·n (la inclinación sin su
  * componente normal). n es material y dir del mundo, ambos unitarios. La faceta completa se
  * transporta mediante Jᵀ antes de medir la incidencia; inclinar la normal ya transformada mezcla marcos.
+ * @twin faceta-coseno
  */
 export function facetCosine(n: readonly number[], dir: readonly number[], tilt: readonly number[], w: Warp = IDENTITY_WARP): number {
   const tn = tilt[0] * n[0] + tilt[1] * n[1] + tilt[2] * n[2];
@@ -384,6 +393,7 @@ export function facetSlope(s: number): number {
  * su incidencia (cosF, `facetCosine`), con la amplitud que conserva la energía (A_i·s/s_f) y la coherencia de la
  * rugosidad fina de frente, χ(0). δ, la distancia por la normal al cruce con la incidencia de la cara (no la de la
  * faceta: el perfil está en la cara).
+ * @twin eco-interfaz
  */
 export function facetEchoField(id: Interface, cosF: number, curv: number, delta: number, k0: number, kDb = IFACE_K_DB): number {
   if (!uniformCache || uniformCache.k0 !== k0 || uniformCache.kDb !== kDb) uniformCache = { k0, kDb, u: interfaceUniforms(k0, kDb) };
@@ -431,6 +441,7 @@ export function boneDiffuseWindow(face: Interface, cosI: number): number {
  * κ_d·R_ef·√(1 − χ(0)²)·cosθ·exp(−d²/2σh²), con el perfil de la cara normalizado a 1 en su centro. La pasada B la
  * suma con el fasor unidad del moteado de la muestra (incoherente con la especular). La GLSL la saca del uniform A
  * (`IFACE_DIFFUSE_PER_A`), así que escala con K como la especular: con otro K, el mismo factor 10^((K − K₀)/20).
+ * @twin eco-interfaz
  */
 export function diffuseEchoField(id: Interface, cosI: number, delta: number, k0: number, kDb = IFACE_K_DB): number {
   if (id === Interface.None) return 0;

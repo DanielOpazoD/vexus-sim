@@ -149,7 +149,7 @@ export function bowelGasSdf(m: Vec3, lumen: number): number {
   return Math.max(lumen, d);
 }
 const f = (x: number) => x.toFixed(3);
-/** Gemelo: BOWEL_BASE apunta a las esferas de descarte y después a los nodos en uSceneTex. */
+/** Gemelo: BOWEL_BASE apunta a las esferas de descarte y después a los nodos en uSceneTex. @twin organo-intestino */
 export const BOWEL_GLSL = /* glsl */ `
 #define BOWEL_REACH ${f(BOWEL_FIELD_REACH_MM)}
 #define BOWEL_RADIUS ${f(BOWEL_RADIUS_MM)}

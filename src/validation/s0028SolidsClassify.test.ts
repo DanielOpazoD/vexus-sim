@@ -6,7 +6,7 @@ import { abdominalAtlas, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setThoracicAtlas, thoracicAtlas } from '../anatomy/thoracicAtlas';
 import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
 import { setS0028Wall, s0028WallAt } from '../anatomy/s0028Wall';
-import { setS0028Solids, s0028CompatibleFat } from '../anatomy/s0028Solids';
+import { setS0028Solids, s0028CompatibleFat, s0028Owners } from '../anatomy/s0028Solids';
 import { torsoDepth } from '../anatomy/primitives';
 import { s0028SourceValue } from '../anatomy/s0028Source';
 import { AnatomyScene, BASELINE_CALIBER, type Classification } from '../anatomy/scene';
@@ -141,6 +141,28 @@ it('hueso dentro de la banda P2: contenido del complejo de pared (O), no choque'
     const c = at(p);
     expect(c.tissue).toBe(Tissue.Bone);
     expect(c.solids).toEqual({ state: 'known', owners: [{ id: 'bone', d: expect.any(Number) as number, certainty: 'O' }] });
+  }
+});
+
+it('lumbosacro y sacro solapados: un solo dueño óseo, nunca conflicto hueso/hueso (mutante hueso-duplicado)', () => {
+  // Los únicos solapes entre campos óseos P1 son lumbosacro + sacro: 432 de 803.472 muestras óseas a 1,5 mm y media celda
+  // (decisión 322, punto 8). Son el mismo material O: la deduplicación deja un dueño, con la etiqueta del primero.
+  for (const p of [
+    [-25.98527431275116, -75.71478450019774, -275.98879268882285],
+    [-25.98527431275116, -74.21478450019774, -275.98879268882285],
+    [-25.98527431275116, -77.21478450019774, -274.48879268882285],
+  ] as Vec3[]) {
+    expect([s0028SourceValue(p, 'lumbarSacralBone').d < 0, s0028SourceValue(p, 'sacrum').d < 0], p.join(',')).toEqual([true, true]);
+    const o = s0028Owners(p, s0028WallAt(p));
+    expect(
+      o.owners.filter((x) => x.id === 'bone'),
+      p.join(','),
+    ).toHaveLength(1);
+    expect(o.state, p.join(',')).toBe(o.owners.length > 1 ? 'conflict' : 'known');
+    expect(
+      o.owners.some((x) => x.id !== 'bone'),
+      p.join(','),
+    ).toBe(false);
   }
 });
 

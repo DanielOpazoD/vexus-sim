@@ -1,6 +1,12 @@
 import type { MutantManifest } from '../manifest';
 
-/** Dueños independientes, grasa compatible D y bloque P3 de s0028 (P3, CPU). */
+/**
+ * Dueños independientes, grasa compatible D y bloque P3 de s0028 (P3, CPU).
+ *
+ * Equivalente documentado, fuera del manifiesto: `banda-desde-0mm` (`q.depthMm >= 1.5` → `>= 0` en la banda de pared).
+ * `scene.ts` clasifica como piel todo punto con profundidad < 1,5 mm antes de llamar a `s0028Owners`, y `depthMm` es esa
+ * misma profundidad: el mutante no cambia ningún resultado observable (revisión de #334).
+ */
 export const s0028Solids: MutantManifest = {
   module: 'src/anatomy/s0028Solids.ts',
   mutants: [
@@ -83,6 +89,22 @@ export const s0028Solids: MutantManifest = {
       from: "certainty: q.depthMm < q.outerMm ? 'D' : 'U'",
       to: "certainty: q.depthMm < q.outerMm ? 'U' : 'D'",
       tests: ['src/validation/s0028SolidsClassify.test.ts'],
+    },
+    {
+      name: 'hueso-duplicado',
+      origin: 'revisión adversarial de #334 (decisión 322, punto 8)',
+      breaks: 'Sin deduplicar el hueso, un punto en lumbosacro y sacro a la vez (432 muestras) tiene dos dueños óseos y sale conflicto.',
+      from: "    if (owner !== 'bone' || !owners.some((o) => o.id === 'bone')) owners.push({ id: owner, d, certainty });",
+      to: '    owners.push({ id: owner, d, certainty });',
+      tests: ['src/validation/s0028SolidsClassify.test.ts'],
+    },
+    {
+      name: 'fuera-de-cajas-false',
+      origin: 'revisión adversarial de #334 (decisión 322, punto 8)',
+      breaks: 'Fuera de las dos cajas de grasa la consulta responde «no es grasa» (false) en vez de «sin dato» (null).',
+      from: '  return covered ? false : null;',
+      to: '  return false;',
+      tests: ['src/validation/s0028SolidsPackage.test.ts'],
     },
   ],
 };

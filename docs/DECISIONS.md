@@ -10500,3 +10500,21 @@ techos (decisiones 318–320, `shaderLimits.test.ts`, `bundle-budget.ts`) no se 
 adversarial en contexto limpio y recibo de CI; las cifras antes/después quedan en el párrafo del punto y en la
 [evidencia estructural](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/structure-322/README.md) hasta que el
 punto 9 traslade la evidencia a su índice.
+
+**Punto 5** (05-11-2026, rama `feat/322-p5-twins-20261105`). Registro de gemelos en `tools/twins/registry.ts`, inventario
+en `docs/engineering/gemelos.md` y prueba `src/validation/twinRegistry.test.ts`. 58 pares (57 CPU↔GLSL, 1 CPU↔Worker)
+que cubren las 167 funciones GLSL homónimas de una exportación TS (de 282). Paridad demostrada 35 (una e2e de la CI
+compara la GPU con el gemelo, o la CPU con el Worker); solo inspección 17 (pruebas que leen el texto GLSL: pleura de B,
+PSF, C, D, K, armónico, eco de interfaz, ruido del receptor, texturas, moteado y geometría dirigida de B, ganancia del
+campo cercano, y lo que solo usa A0); sin paridad 6, congelados: cinco gemelos de validación de diseño y el contrafactual
+de la decisión 174, código muerto en los dos lados. Un par nuevo sin prueba, un símbolo o una prueba que ya no existen,
+o un comentario «gemelo» sin `@twin` rompen la CI. Marcadores: 200 en 64 archivos; 138 de los 148 comentarios «gemelo»;
+los 10 restantes y un lado de 7 pares están en `scene.ts`, `s0028Wall.glsl.ts` y `personShader.ts` (r3 de P3) y se
+migran tras su fusión. Constantes: de 160 funciones homónimas, 85 sin literales físicos en la GLSL, 47 copiados a mano
+(erf de Abramowitz y Stegun, capas y gas digestivos, hash de Hoskins, arco de la pared) con prueba de igualdad y mutante,
+28 propios de la GLSL; generarlas desde TS cuesta hoy +16…+63 B minificados por función (`glslCompact` conserva el blanco
+junto a una interpolación) y se aplaza al punto 4. Hallazgos: `scene.ts` nombra un gemelo GLSL `inLungCurtain`
+inexistente; `digestiveWallMm` y `digestiveGasPlane` viven en tres sitios (TS, GLSL y sustitución s0028). Sin cambio de
+producto: 38 programas × 2 variantes y 85 constantes GLSL con el mismo hash; los 23 archivos JS del build idénticos salvo
+su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B porque `glslMinify` no
+renombra lo que aparece en cadenas. No es validación clínica.

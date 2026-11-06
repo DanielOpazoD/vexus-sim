@@ -657,7 +657,11 @@
     ["IFACE_COUNT", "qS"],
     ["MAX_NODES", "qT"],
     ["dopplerTransmission", "qU"],
-    ["sdSphere", "qV"]
+    ["sdSphere", "qV"],
+    ["WT_STRIA_CELL_MM", "qW"],
+    ["laminaDistance", "qX"],
+    ["wallHash", "qY"],
+    ["wallNoise", "qZ"]
   ],
   "afterDot": [
     "COMP_NODES",
@@ -745,7 +749,8 @@
     "WT_STRIA_MASK1",
     "WT_ORIENT_FLOOR",
     "WT_FACE_VAR_MM",
-    "WT_FACE_VAR_MAX"
+    "WT_FACE_VAR_MAX",
+    "WT_STRIA_CELL_MM"
   ],
   "bindings": [
     ["IF_ARTERY", "_u0"],

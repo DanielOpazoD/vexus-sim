@@ -26,13 +26,16 @@ import { hash13, valueNoise } from './speckleField';
  *
  *  - Grasa subcutánea: lóbulos hipoecoicos (la retrodispersión de `TISSUES` es la del interior del lóbulo)
  *    separados por septos fibrosos. Campo celular aplanado y anclado: columnas de Voronoi de ~7 mm a lo
- *    largo de la piel (u, z) con semillas al azar, y en cada columna estratos de ~3 mm de hondo con un
- *    desfase y una inclinación propios (≤ 14°). Los septos son las paredes de las columnas (casi
- *    perpendiculares a la piel) y los techos de los estratos (casi paralelos u oblicuos): en la imagen,
- *    tramos de 5–10 mm escalonados, como en las referencias.
- *  - Músculo: hipoecoico con estrías de perimisio cada ~2,2 mm (±15 %), casi paralelas a la piel con una
- *    ondulación peniforme de ±10–15° y de longitud finita (una máscara de ruido por estría: tramos de
- *    10–30 mm).
+ *    largo de la piel (u, z) con semillas al azar, y en cada columna techos a profundidades independientes
+ *    (`laminaDistance`, ~3 mm de media) con una inclinación propia (≤ 14°). Los septos son las paredes de las
+ *    columnas (casi perpendiculares a la piel) y los techos (casi paralelos u oblicuos): en la imagen, tramos
+ *    de 5–10 mm escalonados, como en las referencias.
+ *  - Músculo: hipoecoico con estrías de perimisio a profundidades independientes (~2 mm de media), con una
+ *    secuencia propia en cada celda lateral de ~8 mm, casi paralelas a la piel con una ondulación peniforme
+ *    de ±10–15° y de longitud finita (una máscara de ruido: tramos de 4–12 mm).
+ *
+ * Hasta la decisión 324 los techos y las estrías se repetían cada 2,4 y 2,2 mm exactos: un peine de líneas
+ * equidistantes en todas las ventanas. Ahora cada celda axial tiene su techo en una posición al azar.
  *
  * Cada lámina es especular a su manera: su brillo es ε + (1 − ε)·|cosθ|⁴ con θ entre el haz y su normal
  * [ESTIMADO], así que los septos paralelos a la piel brillan de frente y los perpendiculares apenas se ven.
@@ -43,24 +46,32 @@ import { hash13, valueNoise } from './speckleField';
 export const WALL_TEXTURE = {
   /** Lóbulo de la grasa subcutánea a lo largo de la piel (mm): 5–10 mm (PMC7441131). */
   lobuleMm: 7,
-  /** Estrato (profundidad de un lóbulo, mm): 2–4 mm; con 3,5 los septos se veían como bandas. */
-  stratumMm: 2.4,
+  /**
+   * Separación media de los techos de una columna (mm): cada columna toma 0,75–1,25 veces esta y cada techo cae al
+   * azar dentro de su celda, de modo que los lóbulos miden 0–7,5 mm de hondo. Con 2,4–3,5 mm exactos eran bandas.
+   */
+  stratumMm: 3,
   /** Pendiente máxima de los techos de los estratos de una columna (tan 14°). */
   septumTiltMax: 0.25,
   /** Semiespesor gaussiano del septo (mm): 0,2–0,5 mm de espesor a media altura. */
   septumSigmaMm: 0.15,
-  /** Retrodispersión del septo fibroso (hígado = 1) [ESTIMADO]. */
-  septumBack: 3,
-  /** Estrías del perimisio: separación media (mm, 1,5–3), semiespesor (mm) y retrodispersión [ESTIMADO]. */
-  striationSpacingMm: 2.2,
+  /** Retrodispersión del septo fibroso (hígado = 1): +20 dB sobre el lóbulo; 3 hasta la 324 [EXTRAPOLACIÓN PROPIA]. */
+  septumBack: 1.6,
+  /** Estrías del perimisio: separación media, semiespesor (mm) y retrodispersión (3,6 hasta la 324) [EXTRAPOLACIÓN PROPIA]. */
+  striationSpacingMm: 2,
   striationSigmaMm: 0.15,
-  striationBack: 3.6,
-  /** Irregularidad de la separación: ±15 % con una correlación de 6 mm. */
+  striationBack: 3.2,
+  /** Desplazamiento común de las estrías, ±15 % de la separación, con correlación de 6 mm. */
   striationJitter: 0.3,
   striationJitterMm: 6,
-  /** Tramos de estría: correlación de la máscara (mm) y umbrales del smoothstep (~40 % cubierto). */
-  striationSegmentMm: 8,
-  striationMask: [0.45, 0.6] as const,
+  /** Tramos de estría: correlación de la máscara (mm) y umbrales del smoothstep (~60 % cubierto). */
+  striationSegmentMm: 6,
+  /**
+   * Celda lateral (mm, borde desplazado por el ruido de J) con su propia secuencia de estrías: con una sola, todas las
+   * ventanas repetían las mismas profundidades bajo la fascia. Escala de un haz de fascículos [EXTRAPOLACIÓN PROPIA].
+   */
+  striationCellMm: 8,
+  striationMask: [0.35, 0.5] as const,
   /** Especularidad de las láminas: ε + (1 − ε)·|cosθ|⁴. */
   orientationFloor: 0.2,
   /**
@@ -77,7 +88,45 @@ export const WALL_TEXTURE = {
 } as const;
 
 /** Sales del hash de la textura (fijas: la anatomía del paciente no depende de la semilla del moteado). */
-const SALT = { jitterU: 41.7, jitterV: 63.1, offset: 17.9, tiltU: 29.3, tiltV: 53.9, jitter: 71.3, mask: 83.7, face: 37.3 } as const;
+const SALT = {
+  jitterU: 41.7,
+  jitterV: 63.1,
+  offset: 17.9,
+  tiltU: 29.3,
+  tiltV: 53.9,
+  jitter: 71.3,
+  mask: 83.7,
+  face: 37.3,
+  lamina: 5.2,
+} as const;
+const HASH = { x: 73856093, y: 19349663, z: 83492791, mix: 2146121005, mix2: 2221713035, scale: 16777216 } as const;
+
+/** Hash entero estable TS/GLSL: entradas de celdas/sales decimales, salida de 24 bits. @twin textura-pared */
+export function wallHash(p: Vec3): number {
+  let h = Math.imul(Math.round(p[0] * 10), HASH.x) ^ Math.imul(Math.round(p[1] * 10), HASH.y) ^ Math.imul(Math.round(p[2] * 10), HASH.z);
+  h = Math.imul(h ^ (h >>> 16), HASH.mix);
+  h = Math.imul(h ^ (h >>> 15), HASH.mix2);
+  h ^= h >>> 16;
+  return (h >>> 8) / HASH.scale;
+}
+
+/** Máscara C1 con nodos idénticos en CPU/GPU; no salta al elegir otra estría. @twin textura-pared */
+export function wallNoise(q: Vec3, salt: number): number {
+  const c = q.map(Math.floor),
+    s = q.map((v, i) => {
+      const f = v - c[i];
+      return f * f * (3 - 2 * f);
+    });
+  let value = 0;
+  for (let k = 0; k < 8; k++) {
+    const x = k & 1,
+      y = (k >> 1) & 1,
+      z = k >> 2;
+    value +=
+      wallHash([c[0] + x + salt, c[1] + y + salt, c[2] + z + salt]) * (x ? s[0] : 1 - s[0]) * (y ? s[1] : 1 - s[1]) * (z ? s[2] : 1 - s[2]);
+  }
+  return value;
+}
 
 /** Ganancia de amplitud de un septo o una estría de frente: su retrodispersión sobre la del tejido. */
 const SEPTUM_GAIN = WALL_TEXTURE.septumBack / TISSUES[Tissue.Fat].backscatter;
@@ -93,6 +142,20 @@ export function wallOrientation(n: Vec3, dir: Vec3): number {
   const c = Math.abs(n[0] * dir[0] + n[1] * dir[1] + n[2] * dir[2]);
   const eps = WALL_TEXTURE.orientationFloor;
   return eps + (1 - eps) * c * c * c * c;
+}
+
+/**
+ * Distancia a techos independientes, uno por celda axial: su posición cubre toda la celda,
+ * sin una fase periódica residual. Se consultan las tres vecinas: omitir la anterior
+ * produce un salto al cruzar el entero. No cambia con sonda, ventana ni reloj.
+ * Escala y distribución son [EXTRAPOLACIÓN PROPIA], no microanatomía medida.
+ * @twin textura-pared
+ */
+export function laminaDistance(s: number, u: number, v: number): number {
+  const k = Math.floor(s);
+  let best = 2;
+  for (let j = -1; j <= 1; j++) best = Math.min(best, Math.abs(s - k - j - wallHash([u, v, k + j + SALT.lamina])));
+  return best;
 }
 
 /**
@@ -116,8 +179,8 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   for (let j = 0; j < 9; j++) {
     const iu = cu + (j % 3) - 1;
     const iv = cv + Math.floor(j / 3) - 1;
-    su.push(iu + hash13([iu, iv, SALT.jitterU]));
-    sv.push(iv + hash13([iu, iv, SALT.jitterV]));
+    su.push(iu + wallHash([iu, iv, SALT.jitterU]));
+    sv.push(iv + wallHash([iu, iv, SALT.jitterV]));
     const dd = (su[j] - qu) ** 2 + (sv[j] - qv) ** 2;
     if (dd < best) {
       best = dd;
@@ -142,13 +205,16 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   }
   const iu1 = cu + (k1 % 3) - 1;
   const iv1 = cv + Math.floor(k1 / 3) - 1;
-  const off = hash13([iu1, iv1, SALT.offset]);
-  const tu = (2 * hash13([iu1, iv1, SALT.tiltU]) - 1) * T.septumTiltMax;
-  const tv = (2 * hash13([iu1, iv1, SALT.tiltV]) - 1) * T.septumTiltMax;
-  const s = (d - w.skin + tu * (u - su[k1] * T.lobuleMm) + tv * (m[2] - sv[k1] * T.lobuleMm)) / T.stratumMm + off;
-  const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.sqrt(1 + tu * tu + tv * tv);
+  const off = wallHash([iu1, iv1, SALT.offset]);
+  const tu = (2 * wallHash([iu1, iv1, SALT.tiltU]) - 1) * T.septumTiltMax;
+  const tv = (2 * wallHash([iu1, iv1, SALT.tiltV]) - 1) * T.septumTiltMax;
+  // Techos independientes por columna y estrato. 2,25–3,75 mm es la separación media
+  // de cada columna, no un límite para cada intervalo individual.
+  const spacing = T.stratumMm * (0.75 + 0.5 * off);
+  const s = (d - w.skin + tu * (u - su[k1] * T.lobuleMm) + tv * (m[2] - sv[k1] * T.lobuleMm)) / spacing + off;
+  const dh = (laminaDistance(s, iu1, iv1) * spacing) / Math.sqrt(1 + tu * tu + tv * tv);
   // Cadena de derivación de la lámina material: el perfil corporal incluye pendiente
-  // craneocaudal y su arco no es una tangente unitaria (221). No mueve los septos.
+  // craneocaudal y su arco no es una tangente unitaria (221).
   const depthGradient = torsoDepthGradient(m, t);
   const arcGradient = wallArcGradient(m, t);
   const vertical = dV * T.lobuleMm < dh;
@@ -168,7 +234,7 @@ function striationNoise(u: number, z: number): Vec3 {
     f = q.map((v, i) => v - c[i]);
   const s = f.map((v) => v * v * (3 - 2 * v));
   const d = f.map((v) => (6 * v * (1 - v)) / WALL_TEXTURE.striationJitterMm);
-  const h = (x: number, y: number) => hash13([c[0] + x + SALT.jitter, c[1] + y + SALT.jitter, SALT.jitter]);
+  const h = (x: number, y: number) => wallHash([c[0] + x + SALT.jitter, c[1] + y + SALT.jitter, SALT.jitter]);
   const a = h(0, 0),
     b = h(1, 0),
     c0 = h(0, 1),
@@ -218,11 +284,10 @@ export function muscleStriation(m: Vec3, t: Torso): [number, number, number, num
   const jitterGain = T.striationJitter * T.striationSpacingMm;
   const J = jitterGain * (noise[0] - 0.5);
   const s = (d - w.fascia + U + J) / T.striationSpacingMm;
-  const k = Math.round(s);
   const [m0, m1] = T.striationMask;
   const x = Math.min(
     1,
-    Math.max(0, (valueNoise([u / T.striationSegmentMm, v / T.striationSegmentMm, k * 1.37], SALT.mask) - m0) / (m1 - m0)),
+    Math.max(0, (wallNoise([u / T.striationSegmentMm, v / T.striationSegmentMm, s * 1.37], SALT.mask) - m0) / (m1 - m0)),
   );
   const mask = x * x * (3 - 2 * x);
   const fasciaSlope = striationFasciaSlope(u, v, t);
@@ -233,7 +298,8 @@ export function muscleStriation(m: Vec3, t: Torso): [number, number, number, num
   const gradient: Vec3 = [-gd[0] + fu * gu[0], -gd[1] + fu * gu[1], -gd[2] + fz];
   const normal = norm3(gradient);
   // Ancho aproximado anterior: la corrección métrica 249 queda aplazada (DECISIONS).
-  const dist = (Math.abs(s - k) * T.striationSpacingMm) / Math.sqrt(1 + Uu * Uu + Uv * Uv);
+  const cell = (q: number) => Math.floor(q / T.striationCellMm + 0.6 * noise[0]);
+  const dist = (laminaDistance(s, cell(u) + SALT.jitter, cell(v) + SALT.mask) * T.striationSpacingMm) / Math.sqrt(1 + Uu * Uu + Uv * Uv);
   return [normal[0], normal[1], normal[2], mask * Math.exp(-0.5 * (dist / T.striationSigmaMm) ** 2)];
 }
 
@@ -358,15 +424,40 @@ export const WALL_TEXTURE_GLSL = /* glsl */ `
 #define WT_STRIA_JITTER ${f4(WALL_TEXTURE.striationJitter)}
 #define WT_STRIA_JITTER_MM ${f4(WALL_TEXTURE.striationJitterMm)}
 #define WT_STRIA_SEGMENT_MM ${f4(WALL_TEXTURE.striationSegmentMm)}
+#define WT_STRIA_CELL_MM ${f4(WALL_TEXTURE.striationCellMm)}
 #define WT_STRIA_MASK0 ${f4(WALL_TEXTURE.striationMask[0])}
 #define WT_STRIA_MASK1 ${f4(WALL_TEXTURE.striationMask[1])}
 #define WT_ORIENT_FLOOR ${f4(WALL_TEXTURE.orientationFloor)}
 #define WT_FACE_VAR_MM ${f4(WALL_TEXTURE.faceVariationMm)}
 #define WT_FACE_VAR_MAX ${f4(WALL_TEXTURE.faceVariationMax)}
 const float WT_FACE_VAR[${WALL_TEXTURE.faceVariation.length}] = float[${WALL_TEXTURE.faceVariation.length}](${WALL_TEXTURE.faceVariation.map(f4).join(', ')});
+float wallHash(vec3 p) {
+  uvec3 q = uvec3(ivec3(round(p * 10.0)));
+  uint h = (q.x * ${HASH.x}u) ^ (q.y * ${HASH.y}u) ^ (q.z * ${HASH.z}u);
+  h = (h ^ (h >> 16u)) * ${HASH.mix}u;
+  h = (h ^ (h >> 15u)) * ${HASH.mix2}u;
+  h ^= h >> 16u;
+  return float(h >> 8u) / ${f4(HASH.scale)};
+}
+float wallNoise(vec3 q, float salt) {
+  vec3 c = floor(q), s = q - c;
+  s = s * s * (3.0 - 2.0 * s);
+  float value = 0.0;
+  for (int k = 0; k < 8; k++) {
+    ivec3 i = ivec3(k & 1, (k >> 1) & 1, k >> 2);
+    vec3 weight = mix(1.0 - s, s, vec3(i));
+    value += wallHash(c + vec3(i) + vec3(salt)) * weight.x * weight.y * weight.z;
+  }
+  return value;
+}
 float wallOrientation(vec3 n, vec3 dir) {
   float c = abs(dot(n, dir));
   return WT_ORIENT_FLOOR + (1.0 - WT_ORIENT_FLOOR) * c * c * c * c;
+}
+float laminaDistance(float s, float u, float v) {
+  float k = floor(s), best = 2.0;
+  for (int j = -1; j <= 1; j++) best = min(best, abs(s - k - float(j) - wallHash(vec3(u, v, k + float(j) + ${f4(SALT.lamina)}))));
+  return best;
 }
 vec4 fatSeptum(vec3 m) {
   float skin = uWall.x;
@@ -381,7 +472,7 @@ vec4 fatSeptum(vec3 m) {
   float best = 1e9;
   for (int j = 0; j < 9; j++) {
     vec2 cell = c + vec2(float(j % 3 - 1), float(j / 3 - 1));
-    s[j] = cell + vec2(hash13(vec3(cell, ${f4(SALT.jitterU)})), hash13(vec3(cell, ${f4(SALT.jitterV)})));
+    s[j] = cell + vec2(wallHash(vec3(cell, ${f4(SALT.jitterU)})), wallHash(vec3(cell, ${f4(SALT.jitterV)})));
     vec2 e = s[j] - q;
     float dd = dot(e, e);
     if (dd < best) { best = dd; k1 = j; }
@@ -396,11 +487,12 @@ vec4 fatSeptum(vec3 m) {
     if (dist < dV) { dV = dist; gdir = dv / l; }
   }
   vec2 cell1 = c + vec2(float(k1 % 3 - 1), float(k1 / 3 - 1));
-  float off = hash13(vec3(cell1, ${f4(SALT.offset)}));
-  float tu = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltU)})) - 1.0) * WT_TILT_MAX;
-  float tv = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltV)})) - 1.0) * WT_TILT_MAX;
-  float st = (d - skin + tu * (u - s[k1].x * WT_LOBULE_MM) + tv * (m.z - s[k1].y * WT_LOBULE_MM)) / WT_STRATUM_MM + off;
-  float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / sqrt(1.0 + tu * tu + tv * tv);
+  float off = wallHash(vec3(cell1, ${f4(SALT.offset)}));
+  float tu = (2.0 * wallHash(vec3(cell1, ${f4(SALT.tiltU)})) - 1.0) * WT_TILT_MAX;
+  float tv = (2.0 * wallHash(vec3(cell1, ${f4(SALT.tiltV)})) - 1.0) * WT_TILT_MAX;
+  float spacing = WT_STRATUM_MM * (0.75 + 0.5 * off);
+  float st = (d - skin + tu * (u - s[k1].x * WT_LOBULE_MM) + tv * (m.z - s[k1].y * WT_LOBULE_MM)) / spacing + off;
+  float dh = laminaDistance(st, cell1.x, cell1.y) * spacing / sqrt(1.0 + tu * tu + tv * tv);
   vec3 gd = torsoDepthGrad(m);
   vec3 gu = wallArcGradient(m);
   bool vertical = dV * WT_LOBULE_MM < dh;
@@ -415,8 +507,8 @@ vec3 striationNoise(vec2 q) {
   vec2 c = floor(q), f = q - c;
   vec2 s = f * f * (3.0 - 2.0 * f), d = 6.0 * f * (1.0 - f) / WT_STRIA_JITTER_MM;
   vec3 o = vec3(${f4(SALT.jitter)});
-  float a = hash13(vec3(c, 0.0) + o), b = hash13(vec3(c + vec2(1, 0), 0.0) + o);
-  float c0 = hash13(vec3(c + vec2(0, 1), 0.0) + o), e = hash13(vec3(c + vec2(1, 1), 0.0) + o);
+  float a = wallHash(vec3(c, 0.0) + o), b = wallHash(vec3(c + vec2(1, 0), 0.0) + o);
+  float c0 = wallHash(vec3(c + vec2(0, 1), 0.0) + o), e = wallHash(vec3(c + vec2(1, 1), 0.0) + o);
   float lo = mix(a, b, s.x), hi = mix(c0, e, s.x);
   return vec3(mix(lo, hi, s.y), mix(b - a, e - c0, s.y) * d.x, (hi - lo) * d.y);
 }
@@ -443,11 +535,11 @@ vec4 muscleStriation(vec3 m) {
   float jitterGain = WT_STRIA_JITTER * WT_STRIA_SPACING;
   float J = jitterGain * (noise.x - 0.5);
   float s = (d - fascia + U + J) / WT_STRIA_SPACING;
-  float k = floor(s + 0.5);
-  float mask = smoothstep(WT_STRIA_MASK0, WT_STRIA_MASK1, valueNoise(vec3(u / WT_STRIA_SEGMENT_MM, v / WT_STRIA_SEGMENT_MM, k * 1.37), ${f4(SALT.mask)}));
+  float mask = smoothstep(WT_STRIA_MASK0, WT_STRIA_MASK1, wallNoise(vec3(u / WT_STRIA_SEGMENT_MM, v / WT_STRIA_SEGMENT_MM, s * 1.37), ${f4(SALT.mask)}));
   vec2 slope = vec2(Uu, Uv) + jitterGain * noise.yz - striationFasciaSlope(u, v, 6.2831853 / P);
   vec3 gradient = -torsoDepthGrad(m) + slope.x * wallArcGradient(m) + vec3(0.0, 0.0, slope.y);
-  float x = abs(s - k) * WT_STRIA_SPACING / (sqrt(1.0 + Uu * Uu + Uv * Uv) * WT_STRIA_SIGMA);
+  vec2 cell = floor(vec2(u, v) / WT_STRIA_CELL_MM + 0.6 * noise.x) + vec2(${f4(SALT.jitter)}, ${f4(SALT.mask)});
+  float x = laminaDistance(s, cell.x, cell.y) * WT_STRIA_SPACING / (sqrt(1.0 + Uu * Uu + Uv * Uv) * WT_STRIA_SIGMA);
   return vec4(normalize(gradient), mask * exp(-0.5 * x * x));
 }
 float wallFaceNoise(float u, float z, float face) {

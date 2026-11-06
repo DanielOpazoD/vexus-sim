@@ -1375,6 +1375,9 @@ export const TWINS: readonly TwinPair[] = [
         symbols: [
           'wallOrientation',
           'fatSeptum',
+          'laminaDistance',
+          'wallHash',
+          'wallNoise',
           'muscleStriation',
           'wallFaceGain',
           'wallTexture',
@@ -1391,6 +1394,9 @@ export const TWINS: readonly TwinPair[] = [
         symbols: [
           'wallOrientation',
           'fatSeptum',
+          'laminaDistance',
+          'wallHash',
+          'wallNoise',
           'muscleStriation',
           'wallFaceGain',
           'wallTexture',
@@ -1405,6 +1411,12 @@ export const TWINS: readonly TwinPair[] = [
     ],
     evidence: [
       {
+        kind: 'gpu',
+        file: 'e2e/wallTextureParity.spec.ts',
+        title: 'septos y estrías de pared coinciden entre CPU y GLSL',
+        scope: 'fatSeptum y muscleStriation default en tronco elíptico, incluidos sus pesos y normales',
+      },
+      {
         kind: 'texto',
         file: 'src/validation/wall.test.ts',
         title: 'la GLSL: el mismo gradiente y el eco de cara plana en la pared que copia la serie, sin faceGradient',
@@ -1415,7 +1427,7 @@ export const TWINS: readonly TwinPair[] = [
         title: 'la GPU aplica el mismo tope a la variación de las caras',
       },
     ],
-    gap: 'Las e2e de estrías y septos (`muscleStriationNormals`, `wallSeptumNormals`) comparan la GLSL con un oráculo GLSL, no con estas funciones TS. En s0028 `s0028WallShader` deja `muscleStriation` sin capas procedurales, tampoco comparada.',
+    gap: 'La paridad numérica cubre septos y estrías default en tronco elíptico. Las caras y el perfil corporal quedan bajo los oráculos de gradiente/continuidad, sin comparación completa CPU/GLSL. La sustitución muscular de s0028 tampoco se compara.',
   },
   {
     id: 'moteado-campo',
@@ -1663,7 +1675,7 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
   'src/ultrasound/interfaceEcho.ts': ['facetTilt'],
   'src/ultrasound/receiver.ts': ['hash12b'],
   'src/ultrasound/retroTexture.ts': ['retroMuscleAxis'],
-  'src/ultrasound/wallTexture.ts': ['wallOrientation', 'wallFaceGain', 'wallTexture'],
+  'src/ultrasound/wallTexture.ts': ['wallOrientation', 'wallFaceGain', 'wallTexture', 'laminaDistance', 'wallHash', 'wallNoise'],
   'src/ultrasound/steering.ts': ['alongLineMm', 'lookPhase', 'lookPhaseGrad', 'lookCoverage'],
 };
 

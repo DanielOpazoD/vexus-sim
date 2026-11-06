@@ -327,3 +327,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [321](DECISIONS.md#L10354) | Conservar fuente y desconocidos de sólidos y posterior s0028 | pendiente de revisión del propietario |
 | [322](DECISIONS.md#L10501) | Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo | vigente |
 | [323](DECISIONS.md#L10687) | Extraer la red vascular s0028 con identidades y soporte verificables, antes de instalarla | pendiente del propietario |
+| [324](DECISIONS.md#L10733) | Textura de la pared sin peine: techos y estrías a profundidades independientes | vigente |

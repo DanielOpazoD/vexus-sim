@@ -26,7 +26,7 @@ layout(location=0) out vec4 result;
 float phaseAt(vec3 p) {
   float u=wallArc(p),v=p.z,P=wallPerimeter();
   float U=1.1*sin(wallWavenumber(7.0,P)*u+0.8*sin(v/11.0))+0.5*sin(v/9.0+wallWavenumber(17.0,P)*u);
-  float J=WT_STRIA_JITTER*WT_STRIA_SPACING*(valueNoise(vec3(u/WT_STRIA_JITTER_MM,v/WT_STRIA_JITTER_MM,0.0),71.3)-0.5);
+  float J=WT_STRIA_JITTER*WT_STRIA_SPACING*(wallNoise(vec3(u/WT_STRIA_JITTER_MM,v/WT_STRIA_JITTER_MM,0.0),71.3)-0.5);
   return -torsoDepth(p)-wallDepths(u,v).y+U+J;
 }
 void main() {

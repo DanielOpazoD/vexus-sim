@@ -54,7 +54,6 @@ import {
   interfaceEchoField,
 } from '../ultrasound/interfaceEcho';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
-import { valueNoise } from '../ultrasound/speckleField';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import {
   WALL_FACE_ECHO_GLSL,
@@ -66,6 +65,7 @@ import {
   wallFaceGain,
   wallOrientation,
   wallTexture,
+  wallNoise,
 } from '../ultrasound/wallTexture';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from './support/legacyPerson/scene';
 import { ORGAN_MODULES } from './support/organRegistry';
@@ -818,7 +818,7 @@ describe('textura de la pared (wallTexture.ts)', () => {
     // la máscara de tramos deja fuera parte de las estrías; las que hay ocupan una fracción pequeña del músculo
     expect(covered / total).toBeGreaterThan(0.02);
     expect(covered / total).toBeLessThan(0.3);
-    // Fase escalar anterior a 248, independiente de las nuevas derivadas analíticas.
+    // Fase escalar con nodos enteros de A, independiente de las derivadas analíticas.
     const phase = (p: Vec3, complete: boolean): number => {
       const u = wallArc(p, t),
         z = p[2];
@@ -826,7 +826,7 @@ describe('textura de la pared (wallTexture.ts)', () => {
       const J =
         WALL_TEXTURE.striationJitter *
         WALL_TEXTURE.striationSpacingMm *
-        (valueNoise([u / WALL_TEXTURE.striationJitterMm, z / WALL_TEXTURE.striationJitterMm, 0], 71.3) - 0.5);
+        (wallNoise([u / WALL_TEXTURE.striationJitterMm, z / WALL_TEXTURE.striationJitterMm, 0], 71.3) - 0.5);
       return -torsoDepth(p, t) + U + (complete ? J - wallDepths(t, u, z).fascia : 0);
     };
     const gradient = (p: Vec3, complete: boolean): Vec3 =>

@@ -10729,3 +10729,48 @@ coste integrado en SwiftShader/Metal. No se acredita aceptación del propietario
 en dos revisiones independientes se reprodujeron en rojo y corrigieron. Una tercera revisión confirmó los
 positivos y negativos de raíz/soporte sin hallazgos. El [índice de evidencia](evidence/migration-p5-r1/README.md)
 registra recibos, medidas, láminas abiertas y el alcance de las comprobaciones. [Método y reproducción](anatomia/s0028-vascular-offline.md).
+
+## 324. Textura de la pared sin peine: techos y estrías a profundidades independientes
+
+**Problema.** El propietario (06-11-2026) pide que la pared parezca real en las ocho ventanas. En el campo cercano
+había un peine: en cada columna de grasa los techos de los septos se repetían cada 2,4 mm exactos y en todo el cuerpo
+las estrías cada 2,2 mm (el jitter y la ondulación desplazaban una fase común), a +25,5 y +18,7 dB sobre su tejido. La
+reverberación no interviene: quitarla cambia 0,01–0,04 % RMS entre 0 y 40 mm. Un primer prototipo bajaba contraste y
+periodo (septo 1,2, estría 0,8 mm/1,4): quitaba el peine, pero el músculo dejaba de verse estriado (1,65–1,97 dB en el
+banco, meta ≥ 3,52 de la decisión 62) y la subxifoidea perdía su tercera línea. Diagnóstico y láminas:
+`vexus-owner-evidence-20261031/default-nearfield` y `default-wall`.
+
+**Decisión.**
+
+- `laminaDistance`: un techo por celda axial, en una posición al azar dentro de su celda, y la distancia al más cercano
+  de tres celdas vecinas: continua (Lipschitz 1) al cambiar de celda, sin fase común. Los nodos aleatorios de septos,
+  estrías y máscara pasan del hash flotante (`hash13`) a un hash entero de 24 bits (`wallHash`), idéntico en TS y GLSL:
+  con el flotante, CPU y GPU diferían hasta 0,18 en el peso de un septo.
+- Grasa: cada columna tiene una separación media de 2,25–3,75 mm y techos al azar dentro de ella (lóbulos de 0–7,5 mm
+  de hondo). Septo 3 → 1,6: +20 dB sobre el lóbulo.
+- Músculo: estrías a profundidades independientes, separación media 2,2 → 2 mm, σ 0,15 mm, retrodispersión 3,6 → 3,2
+  (+17,6 dB). Cada celda lateral de 8 mm (borde desplazado por el ruido de J) tiene su propia secuencia: con una sola,
+  todas las ventanas repetían las mismas profundidades bajo la fascia. Tramos 8 → 6 mm y máscara [0,45; 0,6] →
+  [0,35; 0,5] (≈ 60 % cubierto), evaluada con la fase continua (`wallNoise`, C1) y no con el índice de la estría.
+- Programas: cambian los 12 RAWFIELD (fuente y transformados, default y s0028) en `person-shaders-main.json`; la ABI
+  GLSL fijada suma 4 símbolos compartidos (`qW`–`qZ`) sin tocar los existentes, para que un símbolo privado no los
+  renombre.
+
+**Alternativas descartadas.** El prototipo de contraste, por la meta de la 62. Una sola secuencia de estrías para todo
+el cuerpo: además de repetirse, sesgaba el control sin textura (1,60 dB, meta < 1,5). Celdas de 12 mm: el recuento de
+estrías del banco en el flanco iba de 23 a 132 según la realización (meta > 50); con 6–9 mm, de 81 a 138. Bajar la
+ganancia o ensanchar la PSF: no tocan la causa.
+
+**Consecuencias.** En las ocho ventanas desaparece el peine regular de la grasa y del músculo; el músculo sigue
+estriado, en trazos cortos e irregulares. No cambia el espesor ni el reparto de las capas: las fascias largas y una
+pared igual en todas las ventanas siguen ahí (siguiente bloque). s0028 comparte septos y hashes: su grasa también
+cambia. Escalas y contrastes son [EXTRAPOLACIÓN PROPIA], no microanatomía medida. No es validación clínica.
+
+**Verificación.** `wallTextureAperiodic.test.ts`: seis rojos en la base (separaciones regulares y línea espectral
+dominante) con un control de peine sintético; verde después. Metas de la 62/65 en el gemelo y el banco: estrías
+4,3–5,4 dB, septos 4,2–6,2 dB, controles sin textura < 1,5 dB, 138 muestras de estría en el flanco (la base: 4,3–8,5 dB
+y 63). Paridad CPU/GLSL en 1.584 puntos: Metal 0,00017 y SwiftShader 0,0080 (tolerancia 0,02); normales de septo y
+estría en Metal. Ocho láminas antes/después con la misma pose, ganancia, foco, profundidad y tiempo: RMS de la envolvente
+≥ 5 cm ≤ 0,17 %. JS: default 1.028.605 → 1.029.973 B y s0028 1.066.305 → 1.067.673 B (+1.368 B en las dos clausuras,
+margen s0028 2.407 B); techos sin cambios. Tokens: RAWFIELD +1.924 (1.262.787/1.385.000), los otros cuatro con anatomía
++481; ramas +3–12; samplers sin cambios (ECHO 16/16).

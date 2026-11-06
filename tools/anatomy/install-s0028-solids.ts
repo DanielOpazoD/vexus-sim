@@ -7,8 +7,8 @@ import { createHash } from 'node:crypto';
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { S0028_BUNDLE as B } from '../../src/anatomy/anatomyBundle';
 import { HALF } from '../../src/anatomy/halfFloat';
+import { S0028_BUNDLE as B } from '../../src/anatomy/people/s0028/descriptor';
 
 const folder = process.argv[2];
 if (!folder) throw new Error('Indicar el paquete P3 reexportado');

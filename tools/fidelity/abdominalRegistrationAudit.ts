@@ -1,19 +1,20 @@
 /** Spatial audit in mm/LAS; sampled clearances are not certified global minima. */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
-import { kidneyWorld, kidneyOuterSdf, perirenalOuterSdf } from '../../src/anatomy/organs/kidney';
-import { retroFrontY, psoasSdf } from '../../src/anatomy/organs/retroperitoneum';
+import { kidneyOuterSdf, kidneyWorld, perirenalOuterSdf } from '../../src/anatomy/organs/kidney';
+import { psoasSdf, retroFrontY } from '../../src/anatomy/organs/retroperitoneum';
 import { torsoDepth } from '../../src/anatomy/primitives';
 import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 
 export function abdominalRegistrationAudit(scene: AnatomyScene) {
   const offset = scene.spine.y0 + 46;
+  const { person: _person, ...spine } = scene.spine;
   return {
     frame: 'mm/LAS: left, anterior, superior',
-    spine: scene.spine,
+    spine,
     kidneys: [scene.kidneyRight, scene.kidneyLeft].map((k) => {
       let wall = Infinity,
         front = Infinity,
@@ -37,8 +38,8 @@ export function abdominalRegistrationAudit(scene: AnatomyScene) {
           const p = kidneyWorld(dir.map((v) => v * hi) as Vec3, k);
           samples.push(p);
           wall = Math.min(wall, -torsoDepth(p, scene.torso) - scene.wallThickness());
-          if (p[1] > retroFrontY(Math.abs(p[0]), p[2]) + offset) periOutside++;
-          psoas = Math.min(psoas, psoasSdf([p[0], p[1] - offset, p[2]]));
+          if (p[1] > retroFrontY(Math.abs(p[0]), p[2], scene.person.cpu) + offset) periOutside++;
+          psoas = Math.min(psoas, psoasSdf([p[0], p[1] - offset, p[2]], scene.person.cpu));
         }
       for (let y = -250; y <= 250; y += 0.25) {
         if (torsoDepth([k.center[0], y, k.center[2]], scene.torso) > 0) continue;

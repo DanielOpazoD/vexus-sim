@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { warpAt, warpBound, warpNormal } from '../anatomy/compression';
 import { RespiratoryDeformation } from '../anatomy/deformation';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { anatomyWarpAt, respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { dot, length, type Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

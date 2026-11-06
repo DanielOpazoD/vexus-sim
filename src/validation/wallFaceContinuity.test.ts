@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { FIRST_WALL_INTERFACE, LAST_WALL_INTERFACE } from '../anatomy/interfaces';
-import type { Torso } from '../anatomy/primitives';
 import { wallArc, wallPerimeter } from '../anatomy/organs/wall';
+import type { Torso } from '../anatomy/primitives';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { valueNoise } from '../ultrasound/speckleField';
-import { WALL_TEXTURE_GLSL, wallFaceGain, WALL_TEXTURE as T } from '../ultrasound/wallTexture';
+import { WALL_TEXTURE as T, WALL_TEXTURE_GLSL, wallFaceGain } from '../ultrasound/wallTexture';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function expectOriginalInterior(t: Torso) {
   for (let f = FIRST_WALL_INTERFACE; f <= LAST_WALL_INTERFACE; f++)

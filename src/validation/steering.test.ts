@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, pointOnLine, pointOnSteeredLine, probeFrame } from '../probe/probe';
@@ -16,6 +15,7 @@ import {
   steerBeta,
   steeredElement,
 } from '../ultrasound/steering';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { rng } from './syntheticSpeckle';
 
 /**

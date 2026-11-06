@@ -1,6 +1,5 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import {
   ABDOMINAL_HYPERTENSION,
   CIRRHOSIS_PULMONARY_HYPERTENSION,
@@ -15,6 +14,7 @@ import { clonePatient, type PatientState, type RespiratoryPattern } from '../phy
 import { peepPleuralShiftMmHg } from '../physiology/respiratory';
 import { classifyModifiedVexus, classifyVexusC, type VexusContext } from '../vexus/classification';
 import { measurePhysiologyTruth, S_REVERSAL_FLOOR_CMS } from '../vexus/measurements';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Casos trampa (decisión 82) con el motor completo y la verdad fisiológica: cada uno da la discordancia que enseña

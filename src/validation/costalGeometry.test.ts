@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { sdRib, ribCentre } from '../anatomy/primitives';
+import { ribCentre, sdRib } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
-import { costalGeometry } from '../ui/navigator3d/body';
 import type { Vec3 } from '../core/vec3';
+import { costalGeometry } from '../ui/navigator3d/body';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const scene = new AnatomyScene(NORMAL_ADULT);
 describe('registro costal compartido en milímetros', () => {

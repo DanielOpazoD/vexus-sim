@@ -138,7 +138,11 @@ export const TWINS: readonly TwinPair[] = [
     id: 'clasificacion',
     what: 'Tejido, vaso, cara y distancia de un punto material: `AnatomyScene.classify` y `classifyWith` en el mismo orden.',
     kind: 'cpu-glsl',
-    cpu: [{ file: 'src/anatomy/scene.ts', symbols: ['classify', 'classifyWall', 'classifyInside'] }],
+    cpu: [
+      { file: 'src/anatomy/scene.ts', symbols: ['classify'] },
+      { file: 'src/anatomy/people/default/classifier.ts', symbols: ['classifyWall', 'classifyInside'] },
+      { file: 'src/anatomy/people/s0028/classifier.ts', symbols: ['classifyWall', 'classifyInside'] },
+    ],
     gpu: [
       {
         file: 'src/anatomy/gpu/anatomy.glsl.ts',
@@ -398,7 +402,7 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [
       {
-        file: 'src/anatomy/abdominalAtlas.ts',
+        file: 'src/anatomy/personAtlas.ts',
         symbols: [
           'abdominalAtlasValue',
           'abdominalAtlasSdf',
@@ -447,9 +451,10 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [
       {
-        file: 'src/anatomy/thoracicAtlas.ts',
-        symbols: ['thoracicValue', 'thoracicSdf', 'thoracicMaterial', 'thoracicGradient', 'boneSurfaceFrame', 'thoracicFrame'],
+        file: 'src/anatomy/personAtlas.ts',
+        symbols: ['thoracicValue', 'thoracicSdf', 'thoracicMaterial', 'thoracicGradient', 'thoracicFrame'],
       },
+      { file: 'src/anatomy/boneSurfaceFrame.ts', symbols: ['boneSurfaceFrame'] },
     ],
     gpu: [
       {
@@ -540,7 +545,6 @@ export const TWINS: readonly TwinPair[] = [
         symbols: ['digestiveWallMm', 'digestiveWallTissue', 'gastricWallTissue', 'gastricBoundary', 'digestiveGasPlane', 'abdomenQuery'],
         templates: ['ABDOMEN_GLSL'],
       },
-      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['digestiveWallMm', 'digestiveGasPlane'], templates: ['personShader'] },
     ],
     evidence: [
       {
@@ -550,8 +554,15 @@ export const TWINS: readonly TwinPair[] = [
       },
       { kind: 'texto', file: 'src/validation/gastricWall.test.ts', title: 'la GLSL usa las mismas capas y el mismo pliegue' },
       E.organNames,
-      { ...E.s0028Solids, scope: S0028_CLASSIFICATION },
     ],
+  },
+  {
+    id: 's0028-digestivo',
+    what: 'Espesor digestivo y gas de la máscara s0028.',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/anatomy/people/s0028/cpu.ts', symbols: ['digestiveWallMm', 'digestiveGasPlane'] }],
+    gpu: [{ file: 'src/anatomy/gpu/personShader.ts', symbols: ['digestiveWallMm', 'digestiveGasPlane'], templates: ['personShader'] }],
+    evidence: [{ ...E.s0028Solids, scope: S0028_CLASSIFICATION }],
     gap: 'La sustitución s0028 de `digestiveWallMm` y `digestiveGasPlane` (`personShader`) se compara por su resultado en la clasificación s0028 (`s0028SolidsGpu.spec.ts`), no valor a valor.',
   },
   {
@@ -678,11 +689,9 @@ export const TWINS: readonly TwinPair[] = [
           'perirenalOuterSdf',
           'hilumChannelSdf',
           'interiorPoint',
-          'kidneySinusSdf',
-          'atlasDepthScale',
-          'kidneyQuery',
         ],
       },
+      { file: 'src/anatomy/people/default/kidneyInterior.ts', symbols: ['kidneySinusSdf', 'atlasDepthScale', 'kidneyQuery'] },
     ],
     gpu: [
       {
@@ -875,7 +884,7 @@ export const TWINS: readonly TwinPair[] = [
     kind: 'cpu-glsl',
     cpu: [
       {
-        file: 'src/anatomy/s0028Wall.ts',
+        file: 'src/anatomy/people/s0028/wall.ts',
         symbols: [
           's0028WallAt',
           's0028WallSurface',
@@ -921,8 +930,8 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Lector directo s0028 de los campos abdominal y torácico (distancia, rótulo, gas) y profundidad de la piel.',
     kind: 'cpu-glsl',
     cpu: [
-      { file: 'src/anatomy/s0028Source.ts', symbols: ['s0028SourceValue'] },
-      { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['s0028Depth', 's0028DepthGradient'] },
+      { file: 'src/anatomy/people/s0028/atlas.ts', symbols: ['s0028SourceValue'] },
+      { file: 'src/anatomy/people/s0028/atlas.ts', symbols: ['s0028Depth', 's0028DepthGradient'] },
     ],
     gpu: [
       { file: 'src/anatomy/gpu/personShader.ts', symbols: ['s28Gas', 's28DepthGradient'], templates: ['personShader'] },
@@ -947,7 +956,7 @@ export const TWINS: readonly TwinPair[] = [
     id: 's0028-duenos',
     what: 'Dueños P3 de un punto s0028 (campos P1, banda P2 y grasa compatible D por páginas), sin orden: dos o más son conflicto y U.',
     kind: 'cpu-glsl',
-    cpu: [{ file: 'src/anatomy/s0028Solids.ts', symbols: ['s0028Owners', 's0028CompatibleFat'] }],
+    cpu: [{ file: 'src/anatomy/people/s0028/solids.ts', symbols: ['s0028Owners', 's0028CompatibleFat'] }],
     gpu: [{ file: 'src/anatomy/gpu/s0028Solids.glsl.ts', symbols: ['s28POwn', 's28PAdd', 's28PFat'], templates: ['S0028_SOLIDS_GLSL'] }],
     evidence: [
       { ...E.s0028Solids, scope: 'nodos y genéricos renales, cajas de grasa, 119 testigos de conflicto, planos renales y diez ventanas' },
@@ -957,7 +966,7 @@ export const TWINS: readonly TwinPair[] = [
     id: 's0028-gradiente-renal',
     what: 'Normal de la cara renal s0028: gradiente analítico de la trilineal del riñón, con los ocho nodos de su celda.',
     kind: 'cpu-glsl',
-    cpu: [{ file: 'src/anatomy/s0028Solids.ts', symbols: ['s0028KidneyGradient'] }],
+    cpu: [{ file: 'src/anatomy/people/s0028/solids.ts', symbols: ['s0028KidneyGradient'] }],
     gpu: [
       {
         file: 'src/anatomy/gpu/s0028Solids.glsl.ts',
@@ -990,10 +999,10 @@ export const TWINS: readonly TwinPair[] = [
     what: 'Activos y estado que la página instala y el Worker del corte vuelve a instalar (atlas, cuerpo, pared y sólidos s0028).',
     kind: 'cpu-worker',
     cpu: [
-      { file: 'src/anatomy/loadS0028.ts', symbols: ['loadS0028'] },
-      { file: 'src/anatomy/abdominalAtlas.ts', symbols: ['setAbdominalAtlas'] },
+      { file: 'src/anatomy/people/s0028/runtime.ts', symbols: ['loadPerson'] },
+      { file: 'src/anatomy/people/s0028/cpu.ts', symbols: ['installS0028Cpu'] },
     ],
-    gpu: [{ file: 'src/ui/cutMapWorker.ts', symbols: ['setAbdominalAtlas', 'setThoracicAtlas', 'setS0028Wall', 'setS0028Solids'] }],
+    gpu: [{ file: 'src/ui/cutMapWorker.ts', symbols: ['loadCpu', 'createCutMapWorker'] }],
     evidence: [
       {
         kind: 'worker',
@@ -1639,9 +1648,9 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
     'scattererField',
   ],
   'src/anatomy/compression.ts': ['warpBound', 'smoothstepSlope'],
-  'src/anatomy/gpu/personShader.ts': ['registeredDomeSample', 'hepaticDomeValue'],
+  'src/anatomy/gpu/personShader.ts': ['registeredDomeSample', 'hepaticDomeValue', 'digestiveWallMm'],
   'src/anatomy/gpu/s0028Wall.glsl.ts': ['visceralHeight', 'muscleStriation'],
-  'src/anatomy/organs/abdomen.ts': ['digestiveWallTissue', 'digestiveGasPlane'],
+  'src/anatomy/organs/abdomen.ts': ['digestiveWallMm', 'digestiveWallTissue', 'digestiveGasPlane'],
   'src/anatomy/organs/bowel.ts': ['bowelGasSdf'],
   'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
   'src/anatomy/organs/kidney.ts': ['sdRoundCone', 'softRamp', 'perirenalThicknessMm', 'hilumChannelSdf', 'interiorPoint', 'kidneySinusSdf'],
@@ -1668,8 +1677,7 @@ export const CONSTANTES_REORDENADAS: Readonly<Record<string, readonly string[]>>
   'src/anatomy/abdominalAtlas.ts': ['registeredDomeSample'],
   'src/anatomy/thoracicAtlas.ts': ['thoracicGradient', 'boneSurfaceFrame'],
   'src/anatomy/gpu/referenceCartilage.glsl.ts': ['referenceCartilage'],
-  'src/anatomy/gpu/personShader.ts': ['digestiveWallMm'],
-  'src/anatomy/organs/abdomen.ts': ['digestiveWallMm', 'gastricBoundary'],
+  'src/anatomy/organs/abdomen.ts': ['gastricBoundary'],
   'src/anatomy/organs/bowel.ts': ['bowelQuery'],
   'src/anatomy/organs/wall.ts': ['ribSearchDepth', 'ribCurvature'],
   'src/anatomy/organs/kidney.ts': ['atlasDepthScale'],

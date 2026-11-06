@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs';
+import type { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { torsoDepth } from '../anatomy/primitives';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { quadratusSdf } from '../anatomy/organs/retroperitoneum';
+import { torsoDepth } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { buildPosteriorMuscles } from '../ui/navigator3d/organs';
-import type { Mesh } from 'three';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
@@ -16,11 +17,11 @@ const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byte
 describe('soporte muscular posterior, antes de precedencia de tejidos', () => {
   it('el campo aislado rechaza espacio exterior y pared, conservando músculo válido', () => {
     // Testigo que antes era interior del QL aunque el clasificador devolvía aire.
-    expect(quadratusSdf([65, -150, -130], -70, 20)).toBeGreaterThan(0);
-    expect(quadratusSdf([65, -75, -130], -2, 20)).toBeGreaterThan(0);
-    expect(quadratusSdf([65, -65, -130], 5, 20)).toBeLessThan(0);
+    expect(quadratusSdf([65, -150, -130], -70, 20, fixturePerson().cpu)).toBeGreaterThan(0);
+    expect(quadratusSdf([65, -75, -130], -2, 20, fixturePerson().cpu)).toBeGreaterThan(0);
+    expect(quadratusSdf([65, -65, -130], 5, 20, fixturePerson().cpu)).toBeLessThan(0);
     // El riñón y su soporte perirrenal siguen siendo obstáculo, no músculo.
-    expect(quadratusSdf([65, -65, -130], 5, -2)).toBeGreaterThan(0);
+    expect(quadratusSdf([65, -65, -130], 5, -2, fixturePerson().cpu)).toBeGreaterThan(0);
   });
 
   for (const reference of [false, true])

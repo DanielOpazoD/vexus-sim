@@ -1,6 +1,7 @@
-import { sub, scale, dot, length, add, type Vec3 } from '../../core/vec3';
+import { add, dot, length, scale, sub, type Vec3 } from '../../core/vec3';
+import { EMPTY_ATLAS } from '../emptyAtlas';
+import type { AnatomyPerson } from '../person';
 import { smoothMin } from '../primitives';
-import { abdominalAtlas, abdominalAtlasSdf, abdominalAtlasGradient } from '../abdominalAtlas';
 
 /**
  * Vesícula biliar como módulo de órgano (decisiones 41, 46 y 67): pera curvada en su fosa (cara visceral
@@ -25,6 +26,7 @@ export interface GallbladderNode {
 }
 
 export interface GallbladderShape {
+  person?: AnatomyPerson;
   kind: 'gallbladder';
   /** Del fondo (0) al cuello (último); `GALLBLADDER_NODES` nodos. */
   nodes: readonly GallbladderNode[];
@@ -91,7 +93,7 @@ export function gbSegmentGradient(m: Vec3, a: GallbladderNode, b: GallbladderNod
 
 /** Gradiente de la misma unión suave, sin normalizar: su norma calibra el grosor del eco. */
 export function gallbladderGradient(m: Vec3, g: GallbladderShape): Vec3 {
-  if (abdominalAtlas) return abdominalAtlasGradient(m, 7);
+  if (g.person?.assets.buffers.abdominal) return (g.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasGradient(m, 7);
   const n = g.nodes;
   let d = gbSegment(m, n[0], n[1]);
   let grad = gbSegmentGradient(m, n[0], n[1]);
@@ -107,7 +109,7 @@ export function gallbladderGradient(m: Vec3, g: GallbladderShape): Vec3 {
 
 /** Distancia con signo a la luz vesicular (negativa dentro; la pared va de 0 a `wallMm`). */
 export function gallbladderSdf(m: Vec3, g: GallbladderShape): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 7) + GALLBLADDER_WALL_MM;
+  if (g.person?.assets.buffers.abdominal) return (g.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 7) + GALLBLADDER_WALL_MM;
   const n = g.nodes;
   let d = gbSegment(m, n[0], n[1]);
   for (let i = 1; i < n.length - 1; i++) d = smoothMin(d, gbSegment(m, n[i], n[i + 1]), g.blendMm);

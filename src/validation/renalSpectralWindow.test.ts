@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { VESSEL_META } from '../physiology/vessels';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const reference = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

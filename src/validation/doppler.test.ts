@@ -1,9 +1,8 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
+import { tubeQuery } from '../anatomy/primitives';
 import { AnatomyQuery } from '../anatomy/query';
 import { Tissue } from '../anatomy/tissues';
-import { tubeQuery } from '../anatomy/primitives';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { dopplerShiftHz, velocityFromShiftMmS, wrapToNyquist } from '../core/units';
 import type { Vec3 } from '../core/vec3';
@@ -15,6 +14,7 @@ import { WallFilter } from '../doppler/wallFilter';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('Física Doppler (base 10.1 y 10.2)', () => {
   it('ángulo físico: 20 cm/s a 60° con f0=3 MHz → ≈389,6 Hz; a 0° → ≈779,2 Hz', () => {

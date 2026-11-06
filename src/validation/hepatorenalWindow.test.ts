@@ -1,17 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { kidneyLocal } from '../anatomy/organs/kidney';
 import { uncompress } from '../anatomy/compression';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { kidneyLocal } from '../anatomy/organs/kidney';
 import { Tissue, TISSUES } from '../anatomy/tissues';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { startPointsFor } from '../app/startPoints';
 import { CASES } from '../cases';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   const load = (name: string) => {

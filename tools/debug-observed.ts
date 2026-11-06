@@ -1,5 +1,4 @@
 import { AnatomyQuery } from '../src/anatomy/query';
-import { AnatomyScene } from '../src/anatomy/scene';
 import { NORMAL_ADULT } from '../src/cases';
 import type { Vec3 } from '../src/core/vec3';
 import { PwDopplerChain } from '../src/doppler/pwChain';
@@ -8,6 +7,7 @@ import { measureObservedHepatic, observedTrace } from '../src/doppler/spectralMe
 import { PhysiologyEngine } from '../src/physiology/engine';
 import { clonePatient } from '../src/physiology/patientState';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbePose } from '../src/probe/probe';
+import { AnatomyScene } from '../src/validation/support/legacyPerson/scene';
 import { beatWindows } from '../src/vexus/measurements';
 
 const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern: 'apnea-expiratory' as const };

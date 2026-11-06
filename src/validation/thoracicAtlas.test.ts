@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import witnesses from '../../docs/anatomy/costal-heldout-witnesses.json';
 import { THORACIC_ATLAS } from '../anatomy/thoracicAtlasData';
 import { THORACIC_SURFACE } from '../anatomy/thoracicSurfaceData';
-import { thoracicSdf, thoracicFrame, thoracicMaterial, thoracicValue, setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import witnesses from '../../docs/anatomy/costal-heldout-witnesses.json';
 import type { Vec3 } from '../core/vec3';
+import { setThoracicAtlas, thoracicFrame, thoracicMaterial, thoracicSdf, thoracicValue } from './support/legacyPerson/thoracicAtlas';
 
 const compressed = readFileSync('src/anatomy/thoracic-atlas.gzip.bin'),
   raw = gunzipSync(compressed);

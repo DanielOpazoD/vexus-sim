@@ -1,3 +1,4 @@
+import type { InstalledCpuPerson } from '../anatomy/person';
 import { AF_MODERATE_CONGESTION, NORMAL_ADULT } from '../cases';
 import { clonePatient, validatePatient, type PatientState } from '../physiology/patientState';
 
@@ -54,8 +55,8 @@ export function congestionParameters(fraction: number): VenousExperimentParamete
   };
 }
 
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
+import { AnatomyScene } from '../anatomy/scene';
 import { PhysiologyEngine } from '../physiology/engine';
 
 /** Independent steady-state experiment; advancing it never mutates the observed patient.
@@ -66,9 +67,9 @@ export class VenousExperiment {
   readonly anatomy: AnatomyQuery;
   readonly engine: PhysiologyEngine;
   private remaining = 7500;
-  constructor(parameters: VenousExperimentParameters) {
+  constructor(parameters: VenousExperimentParameters, person: InstalledCpuPerson) {
     this.patient = venousExperimentPatient(parameters);
-    const scene = new AnatomyScene(this.patient);
+    const scene = new AnatomyScene(this.patient, undefined, person);
     this.anatomy = new AnatomyQuery(scene);
     this.engine = new PhysiologyEngine(this.patient, scene.vesselAreas());
   }

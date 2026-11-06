@@ -1,17 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { uncompress } from '../anatomy/compression';
 import { wallArc, wallDepths } from '../anatomy/organs/wall';
 import { torsoDepth } from '../anatomy/primitives';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   for (const [setter, name] of [

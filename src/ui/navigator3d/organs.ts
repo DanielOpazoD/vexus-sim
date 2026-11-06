@@ -1,24 +1,21 @@
-import { s0028Surfaces } from '../s0028Surfaces';
-import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
-import { abdominalSurface } from '../../anatomy/abdominalSurface';
-import { ABDOMINAL_SURFACE } from '../../anatomy/abdominalSurfaceData';
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
-import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
+import { ABDOMINAL_SURFACE } from '../../anatomy/abdominalSurfaceData';
+import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
+import { diaphragmRim } from '../../anatomy/diaphragmRim';
+import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { domeFloor, heartOuterSdf, heartShift } from '../../anatomy/organs/heart';
-import { diaphragmSurfaceZ } from '../../anatomy/primitives';
-import { diaphragmRim } from '../../anatomy/diaphragmRim';
-import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
+import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
+import { ATLAS_QUADRATUS, psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
+import type { PersonSurfaces } from '../../anatomy/person';
+import { diaphragmSurfaceZ, torsoDepth } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
+import { valueNoise } from '../../ultrasound/speckleField';
 import { CM } from './common';
 import { labelSprite } from './labels';
-import { ATLAS_QUADRATUS, psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
-import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
-import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
-import { valueNoise } from '../../ultrasound/speckleField';
 
 /** Share coincident vertices so smooth lighting survives respiratory deformation.
  * Only positions are present on these atlas meshes; never weld textured seams.
@@ -174,11 +171,11 @@ export function buildKidneyMesh(k: Kidney): THREE.Mesh {
 export function buildHeartMesh(a: AnatomyScene): THREE.Mesh {
   // Registrar el dominio, no trasladar otra vez la malla: el SDF ya está registrado.
   // Margen para las capas que MarchingCubes no emite; 140/48 < 130/44 mm por voxel.
-  const shift = heartShift();
+  const shift = heartShift(a.person?.cpu);
   const lo: Vec3 = [-55 + shift[0], -25 + shift[1], shift[2]];
   const hi: Vec3 = [85 + shift[0], 85 + shift[1], 125 + shift[2]];
   return meshFromSdf(
-    (p) => heartOuterSdf(p, domeFloor(p, a.diaphragm, a.torso)),
+    (p) => heartOuterSdf(p, domeFloor(p, a.diaphragm, a.torso), a.person?.cpu),
     lo,
     hi,
     48,
@@ -186,10 +183,11 @@ export function buildHeartMesh(a: AnatomyScene): THREE.Mesh {
   );
 }
 
-export function buildOrgans(a: AnatomyScene): THREE.Group {
+export function buildOrgans(a: AnatomyScene, surfaces: PersonSurfaces = {}): THREE.Group {
+  const abdominalSurface = surfaces.abdominal;
   const g = new THREE.Group();
   if (a.identity.person === 's0028') {
-    for (const f of s0028Surfaces.filter((f) => !['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
+    for (const f of (surfaces.indexed ?? []).filter((f) => !['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
       geometry.setIndex(new THREE.BufferAttribute(f.indices, 1));
@@ -341,9 +339,12 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
       const field = (p: Vec3) => {
         const local: Vec3 = [p[0], p[1] - offset, p[2]];
         const sideDistance = side < 0 ? p[0] : -p[0];
-        if (kind === 'psoas') return Math.max(psoasSdf(local), sideDistance);
+        if (kind === 'psoas') return Math.max(psoasSdf(local, a.person.cpu), sideDistance);
         const peri = Math.min(...[a.kidneyRight, a.kidneyLeft].map((k) => perirenalOuterSdf(kidneyLocal(p, k), k)));
-        return Math.max(quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
+        return Math.max(
+          quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri, a.person.cpu),
+          sideDistance,
+        );
       };
       const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
       if (a.hasAbdominalAtlas) prepareOrganSurface(mesh.geometry);

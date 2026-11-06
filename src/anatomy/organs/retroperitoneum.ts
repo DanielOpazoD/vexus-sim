@@ -1,5 +1,6 @@
-import { abdominalAtlas, abdominalAtlasSdf } from '../abdominalAtlas';
 import type { Vec3 } from '../../core/vec3';
+import { EMPTY_ATLAS } from '../emptyAtlas';
+import type { AnatomyPerson } from '../person';
 import { Tissue } from '../tissues';
 import { sdRoundCone } from './kidney';
 
@@ -97,8 +98,8 @@ export const RETRO_FAT = {
 const smooth01 = (x: number): number => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 /** Distancia con signo al psoas más cercano (mm; negativa dentro). @twin organo-retroperitoneo */
-export function psoasSdf(m: Vec3): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 9);
+export function psoasSdf(m: Vec3, person?: AnatomyPerson): number {
+  if (person?.assets.buffers.abdominal) return (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 9);
   const q: Vec3 = [Math.abs(m[0]), m[1], m[2]];
   let d = 1e3;
   for (let i = 0; i + 1 < PSOAS_NODES.length; i++) {
@@ -125,8 +126,8 @@ const QL_LIPSCHITZ = {
  * Distancia (cota inferior, mm; negativa dentro) al cuadrado lumbar. `insideWallMm`, la profundidad bajo la cara interna
  * de la pared; `dPeriMm`, la distancia a la cara externa de la grasa perirrenal (el músculo le deja sitio).
  */
-export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): number {
-  if (abdominalAtlas) {
+export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number, person?: AnatomyPerson): number {
+  if (person?.assets.buffers.abdominal) {
     const q = ATLAS_QUADRATUS,
       ax = Math.abs(m[0]);
     const f = (q.zTop - m[2]) / (q.zTop - q.zBottom);
@@ -151,8 +152,8 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
       q.xMedial - ax,
       (ax - lateral) / Math.hypot(1, (q.xBottom - q.xTop) / 100),
       (Math.abs(m[1] - y) - q.halfThickness) / Math.hypot(1, (q.yBottom - q.yTop) / 100),
-      (1 - abdominalAtlasSdf(m, 8)) / 1.25,
-      (1 - abdominalAtlasSdf(m, 9)) / 1.25,
+      (1 - (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 8)) / 1.25,
+      (1 - (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 9)) / 1.25,
     );
   }
   const Q = QUADRATUS;
@@ -179,11 +180,11 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
 }
 
 /** Borde anterior del compartimento retroperitoneal, y (mm), en (|x|, z). */
-export function retroFrontY(ax: number, z: number): number {
+export function retroFrontY(ax: number, z: number, person?: AnatomyPerson): number {
   const R = RETRO_FAT;
   const lat = smooth01((ax - R.xFront) / (R.xLateral - R.xFront));
   const y = R.frontY + (R.yLateral - R.frontY) * lat;
-  return y + (Math.min(y, R.yLow) - y) * smooth01(((abdominalAtlas ? -210 : R.zLow) - z) / R.zRamp);
+  return y + (Math.min(y, R.yLow) - y) * smooth01(((person?.assets.buffers.abdominal ? -210 : R.zLow) - z) / R.zRamp);
 }
 
 /**
@@ -197,9 +198,9 @@ const RETRO_FRONT_LIPSCHITZ = Math.hypot(
 );
 
 /** Distancia con signo (cota inferior, mm) al borde anterior del compartimento retroperitoneal: negativa dentro. */
-export function retroFatSdf(m: Vec3): number {
+export function retroFatSdf(m: Vec3, person?: AnatomyPerson): number {
   const ax = Math.abs(m[0]);
-  return Math.max((m[1] - retroFrontY(ax, m[2])) / RETRO_FRONT_LIPSCHITZ, ax - RETRO_FAT.xLateral);
+  return Math.max((m[1] - retroFrontY(ax, m[2], person)) / RETRO_FRONT_LIPSCHITZ, ax - RETRO_FAT.xLateral);
 }
 
 /**
@@ -207,12 +208,18 @@ export function retroFatSdf(m: Vec3): number {
  * posterior, el «resto» (intestino). Devuelve el tejido y la distancia a la frontera más cercana entre ellos (el psoas
  * gana al cuadrado y los dos a la grasa). `insideWallMm` y `dPeriMm`, como en `quadratusSdf`.
  */
-export function retroperitoneum(m: Vec3, insideWallMm: number, dPeriMm: number, compartmentPoint: Vec3 = m): [Tissue, number] {
-  const dP = psoasSdf(abdominalAtlas ? compartmentPoint : m);
+export function retroperitoneum(
+  m: Vec3,
+  insideWallMm: number,
+  dPeriMm: number,
+  compartmentPoint: Vec3 = m,
+  person?: AnatomyPerson,
+): [Tissue, number] {
+  const dP = psoasSdf(person?.assets.buffers.abdominal ? compartmentPoint : m, person);
   if (dP < 0) return [Tissue.Psoas, -dP];
-  const dQ = quadratusSdf(abdominalAtlas ? compartmentPoint : m, insideWallMm, dPeriMm);
+  const dQ = quadratusSdf(person?.assets.buffers.abdominal ? compartmentPoint : m, insideWallMm, dPeriMm, person);
   if (dQ < 0) return [Tissue.QuadratusLumborum, Math.min(-dQ, dP)];
-  const dF = retroFatSdf(compartmentPoint);
+  const dF = retroFatSdf(compartmentPoint, person);
   return dF < 0 ? [Tissue.RetroperitonealFat, Math.min(-dF, dP, dQ)] : [Tissue.Bowel, Math.min(dF, dP, dQ)];
 }
 

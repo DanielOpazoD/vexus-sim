@@ -1,12 +1,12 @@
 /** Constant-flow analytical phantom: diagnose numerical sidebands independently of haemodynamics. */
 import { writeFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { NORMAL_ADULT } from '../../src/cases';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { Tissue } from '../../src/anatomy/tissues';
-import { PwDopplerChain } from '../../src/doppler/pwChain';
+import { NORMAL_ADULT } from '../../src/cases';
 import { dopplerShiftHz } from '../../src/core/units';
+import { PwDopplerChain } from '../../src/doppler/pwChain';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const results = [];
 for (const u of [100, 300])
   for (const prf of [2000, 4000]) {

@@ -1,13 +1,13 @@
 // @tier slow
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { ABDOMINAL_HYPERTENSION, AF_MODERATE_CONGESTION, CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Intervention } from '../physiology/circulation';
 import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../physiology/patientState';
 import { classifyVexusC } from '../vexus/classification';
 import { measurePhysiologyTruth } from '../vexus/measurements';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Intervenciones sobre el lazo cerrado (decisión 79), con el motor completo y la verdad fisiológica: la PAD media

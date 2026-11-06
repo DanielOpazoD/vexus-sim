@@ -1,30 +1,30 @@
-import { spectralSampling } from '../../doppler/spectralSampling';
-import { spectralTimeAxis } from '../spectralTimeAxis';
-import { observedVelocitySummary } from '../observedVelocitySummary';
-import { qualityText } from '../../doppler/qualityMessages';
 import { VenousExperiment } from '../../app/venousExperiment';
-import { VenousExperimentControls } from './venousExperimentControls';
-import { measurePhysiologyTruth } from '../../vexus/measurements';
-import { classifyVexusC } from '../../vexus/classification';
-import { gradeValueText } from './vexusText';
-import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
 import {
   AcousticWindowUnavailableError,
-  VenousSpectralAcquisition,
-  VENOUS_SPECTRAL_SCALES,
-  VENOUS_GATE_LENGTHS_MM,
   VENOUS_FORWARD_SIGN,
-  type RenalSpectralWindow,
+  VENOUS_GATE_LENGTHS_MM,
+  VENOUS_SPECTRAL_SCALES,
+  VenousSpectralAcquisition,
   type HepaticSpectralWindow,
+  type RenalSpectralWindow,
 } from '../../app/venousSpectral';
-import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
-import type { Beat } from '../../physiology/rhythm';
+import { qualityText } from '../../doppler/qualityMessages';
+import type { CaptureMark } from '../../doppler/spectralMeasure';
+import { spectralSampling } from '../../doppler/spectralSampling';
 import type { PhysiologySample } from '../../physiology/engine';
-import { drawVenousSpectrum } from '../venousSpectralPlot';
+import type { Beat } from '../../physiology/rhythm';
 import { VENOUS_COMPARISON_CHANNELS, venousComparisonTrace, type VenousComparisonPoint } from '../../physiology/venousComparison';
-import { button, element, controlId, note, row } from '../controls';
+import { classifyVexusC } from '../../vexus/classification';
+import { measurePhysiologyTruth } from '../../vexus/measurements';
+import { button, controlId, element, note, row } from '../controls';
+import { observedVelocitySummary } from '../observedVelocitySummary';
+import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
+import { spectralTimeAxis } from '../spectralTimeAxis';
+import { drawVenousSpectrum } from '../venousSpectralPlot';
 import type { PanelContext } from './context';
+import { VenousExperimentControls } from './venousExperimentControls';
+import { gradeValueText } from './vexusText';
 
 const NS = 'http://www.w3.org/2000/svg';
 // Fixed axes make changes of pressure/amplitude visible across experiments. These
@@ -121,7 +121,7 @@ export class VenousViewer {
     this.#experimentControls = new VenousExperimentControls((parameters) => {
       this.clear(false);
       try {
-        this.#experiment = parameters ? new VenousExperiment(parameters) : null;
+        this.#experiment = parameters ? new VenousExperiment(parameters, this.#ctx.sim().scene.person) : null;
       } catch (error) {
         this.#experiment = null;
         this.#experimentError = String(error);

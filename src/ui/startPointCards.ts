@@ -1,4 +1,4 @@
-import { anatomyBundle } from '../anatomy/anatomyBundle';
+import { CURRENT_BUNDLE } from '../anatomy/anatomyBundle';
 import { torsoSkinPoint, type Torso } from '../anatomy/primitives';
 import { startPointsFor, type StartPoint } from '../app/startPoints';
 import { WINDOW_GROUPS } from '../app/windowGroups';
@@ -28,7 +28,7 @@ export function yawDelta(a: number, b: number): number {
 export function startPointDistanceMm(
   pose: Pick<ProbePose, 'phi' | 'z'>,
   sp: StartPoint,
-  torso: Pick<Torso, 'a' | 'b' | 'profile'>,
+  torso: Pick<Torso, 'a' | 'b' | 'profile' | 'person'>,
 ): number {
   if (torso.profile) {
     const t = { ...torso, zMin: -300, zMax: 300, skinMm: 2, fatMm: 0, muscleMm: 0, preperitonealMm: 0 };
@@ -47,12 +47,12 @@ export function startPointDistanceMm(
  */
 export function currentStartPoint(
   pose: Pick<ProbePose, 'phi' | 'z' | 'yaw'>,
-  torso: Pick<Torso, 'a' | 'b' | 'profile'>,
+  torso: Pick<Torso, 'a' | 'b' | 'profile' | 'person'>,
   maxMm = CURRENT_WINDOW_MM,
 ): StartPointId | null {
   let best: StartPointId | null = null;
   let bestMm = maxMm;
-  for (const sp of startPointsFor(torso, anatomyBundle)) {
+  for (const sp of startPointsFor(torso, torso.person?.assets.identity ?? CURRENT_BUNDLE)) {
     // escrito para que un giro NaN no cuente como ventana
     if (!(yawDelta(pose.yaw, sp.yaw) < CURRENT_WINDOW_YAW)) continue;
     const d = startPointDistanceMm(pose, sp, torso);
@@ -68,7 +68,7 @@ export interface StartPointCardsDeps {
   /** Lleva la sonda al punto de partida (se desliza: decisión 17). */
   onPick: (sp: StartPoint) => void;
   getPose: () => ProbePose;
-  getTorso: () => Pick<Torso, 'a' | 'b' | 'profile'>;
+  getTorso: () => Pick<Torso, 'a' | 'b' | 'profile' | 'person'>;
   /** La sonda se está deslizando hacia la ventana elegida. */
   animating: () => boolean;
 }
@@ -85,7 +85,7 @@ export class StartPointCards {
     host: HTMLElement,
     private readonly deps: StartPointCardsDeps,
   ) {
-    const points = startPointsFor(deps.getTorso(), anatomyBundle);
+    const points = startPointsFor(deps.getTorso(), deps.getTorso().person?.assets.identity ?? CURRENT_BUNDLE);
     for (const { label, windows } of WINDOW_GROUPS) {
       const group = document.createElement('div');
       group.className = 'win-group';

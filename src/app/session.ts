@@ -1,3 +1,4 @@
+import type { InstalledPerson } from '../anatomy/person';
 import { findCase, isCaseId, type CaseId } from '../cases';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
@@ -28,8 +29,9 @@ export class SimulationSession {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     firstCase: CaseId,
+    private readonly person: InstalledPerson,
   ) {
-    this.current = new Simulator(sessionPatient(firstCase), canvas);
+    this.current = new Simulator(sessionPatient(firstCase), canvas, undefined, undefined, person);
     this.equipment = new EquipmentController(defaultEquipment(), {
       halfSectorRad: this.current.transducer.halfSector,
       cMmS: C_RECONSTRUCTION_MM_S,
@@ -63,7 +65,7 @@ export class SimulationSession {
     const prev = this.current;
     let next: Simulator;
     try {
-      next = new Simulator(sessionPatient(id), this.canvas, prev.audio, prev.renderer);
+      next = new Simulator(sessionPatient(id), this.canvas, prev.audio, prev.renderer, this.person);
     } catch (e) {
       errorLog.report('caso', e);
       // si llegó a cambiarse la escena del renderizador compartido, vuelve a la del caso anterior

@@ -1,16 +1,16 @@
 // @tier slow
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { PhysiologyEngine } from '../physiology/engine';
-import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { captureProtocolVessel } from '../doppler/capture';
 import { bestGateOnVessel } from '../app/gatePlacement';
+import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
+import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { captureProtocolVessel } from '../doppler/capture';
+import { PhysiologyEngine } from '../physiology/engine';
 import { pointOnLine } from '../probe/probe';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { openSession, placeGate, probeAt, TR } from './support/studentChain';
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));
 const body = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

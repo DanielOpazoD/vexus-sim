@@ -2,27 +2,27 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it, vi } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { abdominalAtlas, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas, thoracicAtlas } from '../anatomy/thoracicAtlas';
-import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
-import { setS0028Wall } from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
-import { AnatomyScene } from '../anatomy/scene';
-import { AnatomyQuery } from '../anatomy/query';
-import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
-import { structureIdentity } from '../anatomy/structureIdentity';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
-import { CONVEX_C35 } from '../probe/probe';
-import { probeContact } from '../probe/contact';
 import { compressionReachMm, compressionSample, uncompress } from '../anatomy/compression';
-import { s0028SourceValue } from '../anatomy/s0028Source';
+import { Interface } from '../anatomy/interfaces';
+import { AnatomyQuery } from '../anatomy/query';
+import { structureIdentity } from '../anatomy/structureIdentity';
+import { Tissue } from '../anatomy/tissues';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
+import type { Vec3 } from '../core/vec3';
+import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
+import { probeContact } from '../probe/contact';
+import { CONVEX_C35 } from '../probe/probe';
 import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWorker';
-import type { Vec3 } from '../core/vec3';
+import { abdominalAtlas, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { abdominalBody, setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028SourceValue } from './support/legacyPerson/s0028Source';
+import { setS0028Wall } from './support/legacyPerson/s0028Wall';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas, thoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
 let scene: AnatomyScene, capacity: ArrayBuffer, skin: ArrayBuffer, sample: PhysiologySample;
@@ -105,14 +105,13 @@ it('respiración: sólo los estímulos E de 10/20 mm del diseño, mismo material
   const handler = (globalThis as unknown as { self: { onmessage: (e: { data: unknown }) => Promise<void> } }).self.onmessage;
   const init: CutMapInit = {
     type: 'init',
-    identity: B,
+    identity: scene.person.identity,
+    assetKey: scene.person.assetKey,
+    epoch: 1,
     id: 1,
     patient: NORMAL_ADULT,
     referenceProfile: abdominalBody,
-    abdominalField: abdominalAtlas,
-    thoracicField: thoracicAtlas,
-    wall: capacity,
-    skin,
+    buffers: { abdominal: abdominalAtlas, thoracic: thoracicAtlas, body: abdominalBody, capacity, skin },
   };
   await handler({ data: init });
   const query = new AnatomyQuery(scene);
@@ -129,6 +128,8 @@ it('respiración: sólo los estímulos E de 10/20 mm del diseño, mismo material
     );
     const req: CutMapRequest = {
       type: 'map',
+      epoch: 1,
+      assetKey: scene.person.assetKey,
       id: ++id,
       frame: k.frame,
       transducer: CONVEX_C35,

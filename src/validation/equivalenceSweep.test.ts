@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { equivalenceSweep, interfaceShellEquivalence, volumeEquivalence } from '../app/equivalenceSweep';
-import type { Simulator } from '../app/simulator';
 import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
 import { AnatomyQuery, type WorldQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
+import { equivalenceSweep, interfaceShellEquivalence, volumeEquivalence } from '../app/equivalenceSweep';
+import type { Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import type { GpuPointQuery } from '../ultrasound/renderer';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 type P = [number, number, number];
 /** Lo que la «GPU» cambia respecto a la CPU en un punto: tejido, cara o distancia a la cara. */

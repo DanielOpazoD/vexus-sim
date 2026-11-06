@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
-import { CONVEX_C35, pointOnLine, probeFrame } from '../probe/probe';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
+import { CONVEX_C35, pointOnLine, probeFrame } from '../probe/probe';
+import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 it('cada centro de la rejilla 96×128 conserva exactamente el rayo adquirido al trasladar y angular la sonda', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);

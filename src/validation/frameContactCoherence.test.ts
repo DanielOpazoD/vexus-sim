@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { describe, expect, it, vi } from 'vitest';
-import { setAbdominalBody, setReferenceBody } from '../anatomy/referenceBody';
 import { Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import { probeContact } from '../probe/contact';
 import type { ProbePose } from '../probe/probe';
 import type { FrameInputs, UltrasoundRenderer } from '../ultrasound/renderer';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody, setReferenceBody } from './support/legacyPerson/referenceBody';
+import { fixtureInstalled } from './support/legacyPerson/state';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
@@ -27,7 +28,13 @@ function rig() {
       this.displayedFrame = { bmode: inputs.bmode, color: inputs.color };
     },
   };
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), {} as HTMLCanvasElement, undefined, renderer as unknown as UltrasoundRenderer);
+  const sim = new Simulator(
+    clonePatient(NORMAL_ADULT),
+    {} as HTMLCanvasElement,
+    undefined,
+    renderer as unknown as UltrasoundRenderer,
+    fixtureInstalled(),
+  );
   return { sim, frames };
 }
 

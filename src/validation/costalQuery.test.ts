@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { ribCentre, ribDistanceLowerBound, sdRib } from '../anatomy/primitives';
-import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { setReferenceBody, validateReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = validateReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));

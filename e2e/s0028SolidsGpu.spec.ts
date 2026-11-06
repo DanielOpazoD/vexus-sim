@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
-import { S0028_BUNDLE as B } from '../src/anatomy/anatomyBundle';
 import { Interface } from '../src/anatomy/interfaces';
+import { S0028_BUNDLE as B } from '../src/anatomy/people/s0028/descriptor';
 import { Tissue } from '../src/anatomy/tissues';
 import conflicts from '../src/validation/fixtures/s0028-conflict-witnesses.json' with { type: 'json' };
 import cysts from '../src/validation/fixtures/s0028-cyst-witnesses.json' with { type: 'json' };
+import { bootWithoutErrors, budget } from './support';
 
 /**
  * P3 r3 (decisión 321): la GPU clasifica los sólidos s0028 con la misma política que la CPU. Mismos puntos MATERIALES

@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { CARTILAGE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
+import { Interface } from '../anatomy/interfaces';
+import { ribSearchDepth } from '../anatomy/organs/wall';
+import { sdRib, torsoDepth } from '../anatomy/primitives';
 import { referenceCartilage } from '../anatomy/referenceCartilage';
 import { CARTILAGE_ROWS, CARTILAGE_X0, CARTILAGE_X1 } from '../anatomy/referenceCartilageData';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { sdRib, torsoDepth } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
-import { Interface } from '../anatomy/interfaces';
 import { NORMAL_ADULT } from '../cases';
-import { ribSearchDepth } from '../anatomy/organs/wall';
-import { CARTILAGE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 describe('séptimo cartílago fuente, sin prolongación inventada de los arcos óseos', () => {
   it('conserva el registro y las secciones originales inspeccionables, dentro de la textura existente', () => {

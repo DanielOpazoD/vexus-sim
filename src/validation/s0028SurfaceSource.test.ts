@@ -3,9 +3,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
-import { S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { S0028_SURFACE as M } from '../anatomy/s0028SurfaceData';
 import { sourceSurface } from '../anatomy/sourceSurface';
+import { S0028_BUNDLE as B } from './support/legacyPerson/anatomyBundle';
 
 it('las 19 mallas offline conservan cada triángulo orientado del extractor fuente', async () => {
   for (const asset of ['abdominal', 'thoracic'] as const) {

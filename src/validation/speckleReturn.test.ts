@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { probeContact } from '../probe/contact';
@@ -12,6 +11,7 @@ import {
   speckleSliceField,
   type SpeckleAnchorState,
 } from '../ultrasound/speckleField';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 // Medio homogéneo estático: mismos puntos materiales, semilla y pose al regresar.
 // No es una PSF independiente, una imagen GPU ni una calibración clínica.

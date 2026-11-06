@@ -1,17 +1,17 @@
 /** Research only: can small physical probe adjustments recover a reference-body hepatic window? */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { NORMAL_ADULT, TRICUSPID_REGURGITATION } from '../../src/cases';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
-import { PhysiologyEngine } from '../../src/physiology/engine';
-import { startPointsFor } from '../../src/app/startPoints';
 import { bestGateOnVessel } from '../../src/app/gatePlacement';
 import { acousticWindowWeight } from '../../src/app/gateTransmission';
 import { pwGate } from '../../src/app/pwGate';
+import { startPointsFor } from '../../src/app/startPoints';
+import { NORMAL_ADULT, TRICUSPID_REGURGITATION } from '../../src/cases';
+import { PhysiologyEngine } from '../../src/physiology/engine';
 import { probeContact } from '../../src/probe/contact';
-import { CONVEX_C35_PROFILE as PROFILE } from '../../src/ultrasound/transducerProfile';
 import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
+import { CONVEX_C35_PROFILE as PROFILE } from '../../src/ultrasound/transducerProfile';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const b = readFileSync('src/anatomy/reference-body.bin');
 setReferenceBody(new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)));
 const results = [];

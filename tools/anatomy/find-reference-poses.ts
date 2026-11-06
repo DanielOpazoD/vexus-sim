@@ -4,22 +4,21 @@
  */
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene } from '../../src/anatomy/scene';
+import { kidneyWorld } from '../../src/anatomy/organs/kidney';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { Tissue } from '../../src/anatomy/tissues';
-import { NORMAL_ADULT } from '../../src/cases';
-import { dot, sub, normalize, scale, length, type Vec3 } from '../../src/core/vec3';
-import { probeFrame, CONVEX_C35, pointOnLine, type ProbePose } from '../../src/probe/probe';
-import { probeContact, contactCoupling } from '../../src/probe/contact';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { bestGateOnVessel } from '../../src/app/gatePlacement';
 import { acousticWindowWeight, gateTransmission } from '../../src/app/gateTransmission';
-import { CONVEX_C35_PROFILE } from '../../src/ultrasound/transducerProfile';
+import { NORMAL_ADULT } from '../../src/cases';
+import { dot, length, normalize, scale, sub, type Vec3 } from '../../src/core/vec3';
+import { PhysiologyEngine } from '../../src/physiology/engine';
 import type { VesselId } from '../../src/physiology/vessels';
-import { kidneyWorld } from '../../src/anatomy/organs/kidney';
+import { contactCoupling, probeContact } from '../../src/probe/contact';
+import { CONVEX_C35, pointOnLine, probeFrame, type ProbePose } from '../../src/probe/probe';
+import { CONVEX_C35_PROFILE } from '../../src/ultrasound/transducerProfile';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody, setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const atlas = process.argv.includes('--abdomen');
 if (atlas) {
   const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));

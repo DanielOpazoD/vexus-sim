@@ -1,5 +1,5 @@
-import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { describe, expect, it } from 'vitest';
+import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import {
   FIRST_WALL_INTERFACE,
   INTERFACES,
@@ -8,16 +8,23 @@ import {
   LAST_WALL_INTERFACE,
   interfaceReflectivity,
 } from '../anatomy/interfaces';
+import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { LUNG_CURTAIN, lungCurtainEdgeMm } from '../anatomy/organs/lungCurtain';
-import { AnatomyScene, type VesselCaliber } from '../anatomy/scene';
-import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { torsoNormal } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
+import { clearLiverGrid } from '../app/fidelity/clearLiver';
+import { curtainLines, type CurtainLine } from '../app/fidelity/curtain';
+import { CURTAIN_LIVER_MAX_AIR } from '../app/fidelity/grid';
+import { CURTAIN_FULL_AIR, curtainEdgeFit, slidingCorrelation } from '../app/fidelity/pleura';
+import type { Simulator } from '../app/simulator';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { cross, normalize, type Vec3 } from '../core/vec3';
-import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame } from '../probe/probe';
+import { PhysiologyEngine } from '../physiology/engine';
+import { clonePatient } from '../physiology/patientState';
 import { probeContact } from '../probe/contact';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame } from '../probe/probe';
 import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
 import {
   IFACE_K_DB,
@@ -39,13 +46,13 @@ import {
   PLEURA_RT,
   PLEURA_SERIES_FLOOR,
   PLEURA_WALL_FIELD_BOUND,
-  WALL_COPY_FACE_GAIN,
-  WALL_COPY_FACE_GAIN_RANGE,
   SLIDING_AX_MM,
   SLIDING_DB,
   SLIDING_EFOLD_MM,
   SLIDING_LAT_MM,
   SLIDING_PSF_GAIN_DB,
+  WALL_COPY_FACE_GAIN,
+  WALL_COPY_FACE_GAIN_RANGE,
   aLineGain,
   aLineOrder,
   curtainAirFraction,
@@ -65,7 +72,7 @@ import {
   slidingLattice,
 } from '../ultrasound/pleura';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANS_HITS, FRAG_TRANS_SEGMENTS } from '../ultrasound/shaders/passes.glsl';
-import { WALL_TEXTURE } from '../ultrasound/wallTexture';
+import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
 import {
   GAS_DB_PER_CM,
   MIRROR_BISECTION_STEPS,
@@ -78,17 +85,10 @@ import {
   type HitsLineQuery,
 } from '../ultrasound/transmission';
 import { lineHits, steeredPrefixDb } from '../ultrasound/transmissionTwin';
-import { clearLiverGrid } from '../app/fidelity/clearLiver';
-import { curtainLines, type CurtainLine } from '../app/fidelity/curtain';
-import { CURTAIN_LIVER_MAX_AIR } from '../app/fidelity/grid';
-import { CURTAIN_FULL_AIR, curtainEdgeFit, slidingCorrelation } from '../app/fidelity/pleura';
-import type { Simulator } from '../app/simulator';
-import { AnatomyQuery } from '../anatomy/query';
-import { PhysiologyEngine } from '../physiology/engine';
-import { clonePatient } from '../physiology/patientState';
-import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { rng } from './syntheticSpeckle';
+import { WALL_TEXTURE } from '../ultrasound/wallTexture';
+import { AnatomyScene, type VesselCaliber } from './support/legacyPerson/scene';
 import { emptyGrid } from './support/segmentGrid';
+import { rng } from './syntheticSpeckle';
 
 /**
  * Pleura parietal y cortina pulmonar (decisión 61): la cara nueva de la tabla, las amplitudes de la serie

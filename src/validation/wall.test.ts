@@ -1,4 +1,3 @@
-import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { describe, expect, it } from 'vitest';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { SCENE_UNIFORMS } from '../anatomy/gpu/sceneUniforms';
@@ -14,21 +13,21 @@ import {
   isRibInterface,
   isWallLayerInterface,
 } from '../anatomy/interfaces';
-import { ORGAN_MODULES } from '../anatomy/organs';
+import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import {
   WALL,
   WALL_GLSL,
   WALL_SWELL_TERMS,
   WALL_WAVE_TERMS,
   preperitonealMm,
-  ribSearchDepth,
   ribCurvature,
+  ribSearchDepth,
   ribTangent,
   wallArc,
   wallArcGradient,
   wallDepths,
-  wallFaceDepth,
   wallFace,
+  wallFaceDepth,
   wallFaceSd,
   wallFaceSlope,
   wallFatMm,
@@ -40,14 +39,11 @@ import {
   wallWavenumber,
 } from '../anatomy/organs/wall';
 import { ribAnteriorEndX, sdRib, torsoDepth, torsoDepthGradient, torsoNormal, torsoSkinPoint } from '../anatomy/primitives';
-import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
 import { TISSUES, TISSUE_COUNT, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
 import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { valueNoise } from '../ultrasound/speckleField';
 import {
   IFACE_GRADIENT_MAX,
   IFACE_REACH_MM,
@@ -58,6 +54,8 @@ import {
   interfaceEchoField,
 } from '../ultrasound/interfaceEcho';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
+import { valueNoise } from '../ultrasound/speckleField';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import {
   WALL_FACE_ECHO_GLSL,
   WALL_TEXTURE,
@@ -69,6 +67,8 @@ import {
   wallOrientation,
   wallTexture,
 } from '../ultrasound/wallTexture';
+import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from './support/legacyPerson/scene';
+import { ORGAN_MODULES } from './support/organRegistry';
 
 /**
  * Pared torácica y abdominal realista (decisión 62): geometría de las capas y de sus caras (TS, con su gemelo

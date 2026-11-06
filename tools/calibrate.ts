@@ -5,11 +5,11 @@
  *
  *   npm run calibrate
  */
-import { AnatomyScene } from '../src/anatomy/scene';
 import { CASES } from '../src/cases';
 import { PhysiologyEngine } from '../src/physiology/engine';
-import { measurePhysiologyTruth } from '../src/vexus/measurements';
+import { AnatomyScene } from '../src/validation/support/legacyPerson/scene';
 import { classifyVexusC } from '../src/vexus/classification';
+import { measurePhysiologyTruth } from '../src/vexus/measurements';
 
 for (const patient of CASES) {
   const scene = new AnatomyScene(patient);

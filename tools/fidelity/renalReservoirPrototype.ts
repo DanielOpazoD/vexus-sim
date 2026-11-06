@@ -4,9 +4,9 @@
  * All reservoir constants below are exploratory, not measured clinical parameters.
  */
 import { writeFileSync } from 'node:fs';
-import { NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION } from '../../src/cases';
-import { AnatomyScene } from '../../src/anatomy/scene';
+import { AF_MODERATE_CONGESTION, NORMAL_ADULT, SEVERE_CONGESTION } from '../../src/cases';
 import { PhysiologyEngine } from '../../src/physiology/engine';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const results = [];
 for (const base of [NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION]) {
   for (const c0 of [2, 6, 10]) {

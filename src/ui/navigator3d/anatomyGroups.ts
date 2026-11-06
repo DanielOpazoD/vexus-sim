@@ -1,4 +1,5 @@
 import type * as THREE from 'three';
+import type { PersonSurfaces } from '../../anatomy/person';
 import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import { buildSkeleton, buildSkin } from './body';
 import { buildWindowMarks } from './labels';
@@ -8,6 +9,7 @@ import { buildVessels } from './tubes';
 export function buildAnatomyGroups(
   a: AnatomyScene,
   caliber: VesselCaliber,
+  surfaces: PersonSurfaces = {},
 ): {
   skin: THREE.Mesh;
   skeleton: THREE.Group;
@@ -17,8 +19,8 @@ export function buildAnatomyGroups(
 } {
   return {
     skin: buildSkin(a),
-    skeleton: buildSkeleton(a),
-    organs: buildOrgans(a),
+    skeleton: buildSkeleton(a, surfaces),
+    organs: buildOrgans(a, surfaces),
     vessels: buildVessels(a, caliber),
     windows: buildWindowMarks(a),
   };

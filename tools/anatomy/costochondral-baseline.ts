@@ -3,12 +3,12 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { bodyDepth, setReferenceBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { sdRib } from '../../src/anatomy/primitives';
 import { referenceCartilage } from '../../src/anatomy/referenceCartilage';
 import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { bodyDepth, setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 
 type Samples = {
   format: string;

@@ -1,28 +1,42 @@
+import type { ProbeCompression } from '../anatomy/compression';
+import {
+  BOWEL_BASE,
+  CARTILAGE_BASE,
+  COMPRESSION_BASE,
+  MAX_NODES,
+  MAX_TUBES,
+  MAX_TUBE_SEGMENTS,
+  NODE_BASE,
+  RIB_BASE,
+  RIB_TEXELS,
+  RIGID_BASE,
+  SCENE_TEX_H,
+  SCENE_TEX_W,
+  TUBE_HEADER_TEXELS,
+} from '../anatomy/gpu/anatomy.glsl';
+import { SCENE_SAMPLERS, evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
+import { TUBE_GRID_WIDTH, buildTubeGrid, tubeGridReach, tubeGridRegions, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
+import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
+import { BOWEL_ARC, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_NODES } from '../anatomy/organs/bowel';
+import type { PersonGpuPlan } from '../anatomy/person';
+import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
 import { bodyCoefficients } from '../anatomy/referenceBody';
-import { buildTubeGrid, tubeGridReach, tubeGridRegions, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
-import { assembleQueryGradient } from './queryGradient';
-import { segmentGasKind } from './segmentTag';
-import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import { vesselApScale, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
-import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
-import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
+import { TISSUES, TISSUE_COUNT, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
+import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
-import type { ProbeCompression } from '../anatomy/compression';
 import { contactCoupling } from '../probe/contact';
 import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
-import type { TransducerProfile } from './transducerProfile';
-import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
+import { createAbdominalTexture } from './abdominalTexture';
+import { refractionBeam } from './aperture';
+import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
+import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
+import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { COLOR_FILTER_GLSL } from './colorCorrelation';
 import { colorPowerGain } from './colorGain';
-import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
-import { GREY_CURVE, greyOfLevel } from './greyMap';
-import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
-import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
-import { interfaceUniforms } from './interfaceEcho';
-import { createAbdominalTexture } from './abdominalTexture';
-import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
+import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
+import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import {
   GLProgram,
   bindTarget,
@@ -36,36 +50,17 @@ import {
   type TargetFormat,
 } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
-import { RECEIVER_NOISE, RECEIVER_NOISE_FRAMES } from './receiver';
-import { ELEV_SIGMA0_MM } from './pleura';
-import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
+import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
-import { refractionBeam } from './aperture';
-import { bmodeBeam, bmodeTxApertureMm } from './transducerProfile';
+import { interfaceUniforms } from './interfaceEcho';
+import { MColumnRing, M_COLUMNS, M_SAMPLES, mLineU } from './mmode';
 import { FRAME_PASSES, type PassId } from './passGraph';
-import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
-import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
-import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
-import { lookWavenumber } from './steering';
-import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
-import { TransmissionReuse } from './transmissionReuse';
-import {
-  RIB_BASE,
-  RIB_TEXELS,
-  CARTILAGE_BASE,
-  COMPRESSION_BASE,
-  RIGID_BASE,
-  BOWEL_BASE,
-  MAX_NODES,
-  MAX_TUBES,
-  MAX_TUBE_SEGMENTS,
-  NODE_BASE,
-  TUBE_HEADER_TEXELS,
-  SCENE_TEX_H,
-  SCENE_TEX_W,
-} from '../anatomy/gpu/anatomy.glsl';
-import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
-import { SCENE_SAMPLERS, evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
+import { ELEV_SIGMA0_MM } from './pleura';
+import { assembleQueryGradient } from './queryGradient';
+import { RECEIVER_NOISE, RECEIVER_NOISE_FRAMES } from './receiver';
+import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
+import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
+import { segmentGasKind } from './segmentTag';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -75,40 +70,45 @@ import {
   FRAG_MLINE,
   FRAG_MSTRIP,
   FRAG_PERSIST,
-  FRAG_RAWFIELD_ELEVATION,
-  FRAG_RAWFIELD_ELEVATION_STEERED,
-  FRAG_RAWFIELD_CLASS,
-  FRAG_RAWFIELD_CLASS_STEERED,
-  FRAG_RAWFIELD_GRADIENT,
-  FRAG_RAWFIELD_GRADIENT_STEERED,
-  FRAG_RAWFIELD_ECHO,
-  FRAG_RAWFIELD_ECHO_STEERED,
-  FRAG_RAWFIELD_CACHED,
-  FRAG_RAWFIELD_CACHED_STEERED,
-  FRAG_RAWFIELD,
-  FRAG_RAWFIELD_STEERED,
-  FRAG_SCANCONVERT,
-  FRAG_SPECKLE,
-  FRAG_TISSUEMAP,
   FRAG_QUERY,
   FRAG_QUERY_CLASS,
   FRAG_QUERY_GRADIENT,
+  FRAG_RAWFIELD,
+  FRAG_RAWFIELD_CACHED,
+  FRAG_RAWFIELD_CACHED_STEERED,
+  FRAG_RAWFIELD_CLASS,
+  FRAG_RAWFIELD_CLASS_STEERED,
+  FRAG_RAWFIELD_ECHO,
+  FRAG_RAWFIELD_ECHO_STEERED,
+  FRAG_RAWFIELD_ELEVATION,
+  FRAG_RAWFIELD_ELEVATION_STEERED,
+  FRAG_RAWFIELD_GRADIENT,
+  FRAG_RAWFIELD_GRADIENT_STEERED,
+  FRAG_RAWFIELD_STEERED,
   FRAG_RESP_QUERY,
-  FRAG_TRIAD_QUERY,
+  FRAG_SCANCONVERT,
+  FRAG_SPECKLE,
+  FRAG_TISSUEMAP,
+  FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
   FRAG_TRANS_HITS,
+  FRAG_TRANS_HITS_FINISH,
   FRAG_TRANS_HITS_GRID,
   FRAG_TRANS_HITS_INITIAL,
   FRAG_TRANS_HITS_REFINE,
-  FRAG_TRANS_HITS_FINISH,
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
-  FRAG_TRANSMISSION,
-  FRAG_TRANSMISSION_STEERED,
+  FRAG_TRIAD_QUERY,
   TISSUE_VEC4,
   VERT,
 } from './shaders/passes.glsl';
-import type { Vec3 } from '../core/vec3';
+import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
+import { lookWavenumber } from './steering';
+import type { TransducerProfile } from './transducerProfile';
+import { bmodeBeam, bmodeTxApertureMm } from './transducerProfile';
+import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
+import { TransmissionReuse } from './transmissionReuse';
 
 /** Ajustes del ecógrafo que afectan a la formación de imagen (guía §16). */
 export interface BModeSettings {
@@ -534,6 +534,7 @@ export class UltrasoundRenderer {
     readonly canvas: HTMLCanvasElement,
     private currentScene: AnatomyScene,
     readonly profile: TransducerProfile,
+    private readonly gpu?: PersonGpuPlan,
   ) {
     this.lines = profile.geometry.lines;
     this.ring = new CompoundRing(profile.compound);
@@ -607,6 +608,7 @@ export class UltrasoundRenderer {
           mstrip: FRAG_MSTRIP,
         },
         this.currentScene.hasAbdominalAtlas,
+        this.gpu,
       ),
     );
     this.pTransHits = p['transmissionHits'] ?? null;
@@ -677,8 +679,8 @@ export class UltrasoundRenderer {
     this.tubeGridTex = createTexture(gl, 1, 1, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     this.bodyTex = createTexture(gl, 1, 1, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
-    this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
-    this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
+    this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, false, this.currentScene.person, this.gpu);
+    this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true, this.currentScene.person, this.gpu);
     this.uploadSceneStatic();
   }
 
@@ -690,6 +692,7 @@ export class UltrasoundRenderer {
    * columnas del modo M en vuelo.
    */
   setScene(scene: AnatomyScene): void {
+    if (scene.person?.assetKey !== this.currentScene.person?.assetKey) throw new Error('Renderer de otra identidad; recargue');
     if (scene.hasAbdominalAtlas !== this.currentScene.hasAbdominalAtlas)
       throw new Error('El modelo anatómico cambió: reconstruya el renderer');
     const gl = this.gl;
@@ -2042,7 +2045,7 @@ export class UltrasoundRenderer {
       this.pQuery ??= GLProgram.link(
         gl,
         VERT,
-        specializeAbdominalShader(staged ? FRAG_QUERY_CLASS : FRAG_QUERY, this.currentScene.hasAbdominalAtlas),
+        specializeAbdominalShader(staged ? FRAG_QUERY_CLASS : FRAG_QUERY, this.currentScene.hasAbdominalAtlas, this.gpu),
         'query',
       );
       // Puntos fuera del plano: todos los tubos, sin recorte por losa.
@@ -2058,7 +2061,7 @@ export class UltrasoundRenderer {
       if (opts.normals) {
         out2 = this.readRgba(target, 2);
         if (staged) {
-          this.pQueryGrad ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY_GRADIENT, true), 'queryGradient');
+          this.pQueryGrad ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY_GRADIENT, true, this.gpu), 'queryGradient');
           gradient = createTarget(gl, W, H, [f]);
           const axes: Float32Array[] = [];
           this.pQueryGrad.use();
@@ -2110,7 +2113,7 @@ export class UltrasoundRenderer {
       this.pRespQuery ??= GLProgram.link(
         gl,
         VERT,
-        specializeAbdominalShader(FRAG_RESP_QUERY, this.currentScene.hasAbdominalAtlas),
+        specializeAbdominalShader(FRAG_RESP_QUERY, this.currentScene.hasAbdominalAtlas, this.gpu),
         'respQuery',
       );
       this.updateSceneDynamic(inputs, true);

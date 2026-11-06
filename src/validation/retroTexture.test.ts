@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { kidneyWorld } from '../anatomy/organs/kidney';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
-import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
 import { PLEURA_GLSL } from '../ultrasound/pleura';
 import {
   RETRO_TEXTURE,
@@ -14,7 +13,8 @@ import {
   retroTexture,
   sinusLobules,
 } from '../ultrasound/retroTexture';
-import { kidneyWorld } from '../anatomy/organs/kidney';
+import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 /**
  * Textura del psoas y del cuadrado lumbar (decisión 81): septos del perimisio a lo largo del músculo, anclados al

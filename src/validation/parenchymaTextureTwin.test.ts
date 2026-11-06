@@ -1,6 +1,5 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity/envelope';
 import { patchSnr, SPECKLE_PATCH } from '../app/speckle';
@@ -12,13 +11,14 @@ import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import { ElevationAnchor, strongScatter } from '../ultrasound/speckleField';
 import { lookWavenumber } from '../ultrasound/steering';
 import {
-  TWIN_GEOMETRY as G,
   effectiveLooks,
+  TWIN_GEOMETRY as G,
   intensityCorrelation,
   lookPatchEnvelopes,
   type TwinPatch,
   type TwinTexture,
 } from './support/compoundTwin';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Gemelo B → C → D en cuatro profundidades y ocho realizaciones pareadas. El relieve

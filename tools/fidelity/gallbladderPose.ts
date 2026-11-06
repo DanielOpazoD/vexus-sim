@@ -1,13 +1,13 @@
 /** Búsqueda geométrica de ventana vesicular: no utiliza brillo ni imagen. Solo QA. */
 import { readFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { NORMAL_ADULT } from '../../src/cases';
-import { clonePatient } from '../../src/physiology/patientState';
 import { PhysiologyEngine } from '../../src/physiology/engine';
-import { probeContact, contactCoupling } from '../../src/probe/contact';
+import { clonePatient } from '../../src/physiology/patientState';
+import { contactCoupling, probeContact } from '../../src/probe/contact';
 import { CONVEX_C35, type ProbePose } from '../../src/probe/probe';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 export function gallbladderPose(reference: boolean): ProbePose {
   const b = reference ? readFileSync('src/anatomy/reference-body.bin') : null;
   setReferenceBody(b ? new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)) : undefined);

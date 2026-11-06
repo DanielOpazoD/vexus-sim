@@ -1,5 +1,5 @@
-import { S0028_BUNDLE as B } from './anatomyBundle';
-import { sha256 } from './loadAbdominalAtlas';
+import { sha256 } from './loadPinnedAsset';
+import { S0028_BUNDLE as B } from './people/s0028/descriptor';
 import { S0028_SURFACE as M } from './s0028SurfaceData';
 
 export interface IndexedSourceSurface {

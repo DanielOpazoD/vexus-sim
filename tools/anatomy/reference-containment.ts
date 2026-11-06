@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { AnatomyScene, BASELINE_CALIBER } from '../../src/anatomy/scene';
-import { bodyDepth, validateReferenceBody } from '../../src/anatomy/referenceBody';
 import { Tissue } from '../../src/anatomy/tissues';
 import { NORMAL_ADULT } from '../../src/cases';
+import { bodyDepth, validateReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from '../../src/validation/support/legacyPerson/scene';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = validateReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
 const scene = new AnatomyScene(NORMAL_ADULT);

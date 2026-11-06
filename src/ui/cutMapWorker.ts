@@ -1,168 +1,126 @@
-import {
-  anatomyBundle,
-  installAnatomyBundle,
-  S0028_BUNDLE,
-  CURRENT_BUNDLE,
-  LEGACY_BUNDLE,
-  type AnatomyIdentity,
-} from '../anatomy/anatomyBundle';
-import { structureIdentity } from '../anatomy/structureIdentity';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setS0028Wall } from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
-/// <reference lib="webworker" />
-import type { ProbeCompression } from '../anatomy/compression';
-import { AnatomyQuery } from '../anatomy/query';
 import { domeFloor } from '../anatomy/organs/heart';
 import { HEART_CHAMBER_IDS, heartChamber } from '../anatomy/organs/heartChamber';
+import type { InstalledCpuPerson } from '../anatomy/person';
+import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
+import { structureIdentity } from '../anatomy/structureIdentity';
 import { Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
-import type { PatientState } from '../physiology/patientState';
-import type { ProbeFrame, Transducer } from '../probe/probe';
 import { cutMapDirections, cutMapPoint } from './cutMapGeometry';
+import type { CutMapInit, CutMapReply, CutMapRequest } from './cutMapProtocol';
+export type { CutMapError, CutMapInit, CutMapProgress, CutMapReady, CutMapReply, CutMapRequest, CutMapResponse } from './cutMapProtocol';
 
-/**
- * Worker del «corte ecográfico»: clasifica la rejilla del plano de la imagen con
- * la MISMA anatomía TypeScript que el Doppler y las mediciones (`AnatomyQuery`),
- * fuera del hilo principal y sin lecturas GPU→CPU (una lectura síncrona esperaba
- * a toda la cola de la GPU, 50–90 ms por cuadro; decisión 25).
- * @twin trabajador-corte
- */
-export interface CutMapRequest {
-  type: 'map';
-  id: number;
-  frame: ProbeFrame;
-  transducer: Transducer;
-  /** Contacto de la sonda del marco (decisión 63): el corte muestra el tejido comprimido, como la imagen. */
-  compression: ProbeCompression | null;
-  depthMm: number;
-  /** Subconjunto de la muestra fisiológica que la clasificación necesita. */
-  sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'ivcSupra' | 'hvRadiusScale' | 'pvRadiusScale' | 'aortaRadiusScale' | 'velocities'>;
-  width: number;
-  height: number;
+/** CPU only; the two selected edges are audited in the build graph. */
+async function loadCpu(msg: CutMapInit): Promise<InstalledCpuPerson> {
+  if (!msg.buffers) throw new Error('Worker sin activos');
+  if (msg.identity.person === 's0028') return (await import('../anatomy/people/s0028/cpu')).installS0028Cpu(msg.buffers);
+  if (!['current', 'legacy'].includes(msg.identity.person)) throw new Error('Worker de persona desconocida');
+  return (await import('../anatomy/people/default/cpu')).installDefaultCpu(msg.buffers, msg.identity.person === 'legacy');
 }
-
-export interface CutMapInit {
-  type: 'init' | 'patient';
-  identity: AnatomyIdentity;
-  id: number;
-  patient: PatientState;
-  referenceProfile?: Float32Array;
-  abdominalField?: Uint16Array;
-  thoracicField?: Uint16Array;
-  wall?: ArrayBuffer;
-  skin?: ArrayBuffer;
+function sameIdentity(a: InstalledCpuPerson, msg: CutMapInit): boolean {
+  return (
+    a.assetKey === msg.assetKey &&
+    Object.entries(a.identity).every(([key, value]) => msg.identity[key as keyof typeof msg.identity] === value)
+  );
 }
-
-export interface CutMapResponse {
-  type: 'map';
-  id: number;
-  width: number;
-  height: number;
-  tissue: Uint8Array;
-  /** Órgano del clasificador común, independiente del tejido y vaso. */
-  structure: Uint8Array;
-  /**
-   * Índice de vaso en `scene.vessels` o −1; en la sangre de una cavidad del corazón (decisión 85), −2 − su índice en
-   * `HEART_CHAMBER_IDS` (VI, VD, AD, AI).
-   */
-  vessel: Int8Array;
-}
-
-/** El Worker nunca calla un fallo: responde con el id de la petición y el mensaje. */
-export interface CutMapError {
-  type: 'error';
-  id: number;
-  message: string;
-}
-
-export interface CutMapProgress {
-  type: 'progress';
-  id: number;
-  rows: number;
-}
-
-let query: AnatomyQuery | null = null;
-let revision = 0;
-
-/** Código de la cavidad del corazón que contiene un punto material (−2 − su índice), o −1. */
-function chamberCode(m: Vec3): number {
-  const sc = query!.scene;
-  const ch = heartChamber(m, domeFloor(m, sc.diaphragm, sc.torso));
+function chamberCode(m: Vec3, query: AnatomyQuery): number {
+  const sc = query.scene;
+  const ch = heartChamber(m, domeFloor(m, sc.diaphragm, sc.torso), sc.person?.cpu);
   return ch ? -2 - HEART_CHAMBER_IDS.indexOf(ch) : -1;
 }
-let vesselIndex = new Map<string, number>();
-
-const post = (m: CutMapResponse | CutMapError | CutMapProgress, transfer: Transferable[] = []) =>
-  (self as unknown as Worker).postMessage(m, transfer);
-
-self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
-  const msg = ev.data;
-  const current = ++revision;
-  try {
-    if (msg.type !== 'map') {
-      if (msg.type === 'patient' && msg.identity.person !== anatomyBundle.person) throw new Error('Worker de otra persona');
-      if (msg.type === 'init')
-        installAnatomyBundle(
-          msg.identity.person === 's0028' ? S0028_BUNDLE : msg.identity.person === 'current' ? CURRENT_BUNDLE : LEGACY_BUNDLE,
-        );
-      if (msg.identity.frameId !== anatomyBundle.frameId || msg.identity.revision !== anatomyBundle.revision)
-        throw new Error('Identidad Worker incompatible');
-      setReferenceBody(msg.referenceProfile);
-      // Immutable atlas arrays are loaded once per worker, not per patient.
-      if (msg.type === 'init' && msg.abdominalField) {
-        setAbdominalAtlas(msg.abdominalField);
-        setThoracicAtlas(msg.thoracicField);
+/** One local installation, newest pending map only; late imports can never publish another identity. @twin trabajador-corte */
+export function createCutMapWorker(post: (message: CutMapReply, transfer?: Transferable[]) => void, install = loadCpu) {
+  let query: AnatomyQuery | null = null;
+  let person: InstalledCpuPerson | null = null;
+  let epoch = -1,
+    revision = 0,
+    initializing = false;
+  let pending: CutMapRequest | null = null;
+  let assetKey = '';
+  let vesselIndex = new Map<string, number>();
+  return async function receive(msg: CutMapInit | CutMapRequest): Promise<void> {
+    if (msg.type === 'map' && (msg.epoch !== epoch || msg.assetKey !== assetKey)) return;
+    const current = ++revision;
+    try {
+      if (msg.type !== 'map') {
+        if (!Number.isSafeInteger(msg.epoch) || msg.epoch <= epoch) throw new Error('Epoch Worker incompatible');
+        epoch = msg.epoch;
+        assetKey = msg.assetKey;
+        query = null;
+        pending = null;
+        initializing = true;
+        if (msg.type === 'patient' && (!person || !sameIdentity(person, msg))) throw new Error('Worker de otra identidad');
+        const installed = msg.type === 'patient' ? person! : await install(msg);
+        if (epoch !== msg.epoch) return;
+        if (!sameIdentity(installed, msg)) throw new Error('Identidad Worker incompatible');
+        const scene = new AnatomyScene(msg.patient, msg.referenceProfile, installed);
+        person = installed;
+        query = new AnatomyQuery(scene);
+        vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
+        initializing = false;
+        post({ type: 'ready', id: msg.id, epoch, assetKey, identity: installed.identity });
+        const latest = pending as CutMapRequest | null;
+        pending = null;
+        if (latest) await receive(latest);
+        return;
       }
-      if (msg.type === 'init' && anatomyBundle.person === 's0028') {
-        if (!msg.wall || !msg.skin) throw new Error('Worker s0028 sin pared/piel');
-        setS0028Wall(msg.wall, msg.skin);
-        // El bloque P3 viaja en la misma reserva verificada: el Worker lo valida y lee igual que la CPU.
-        setS0028Solids(msg.wall);
+      if (initializing) {
+        pending = msg;
+        return;
       }
-      // Exact fitted wall from the acquisition, not a second fit without ribs.
-      const scene = new AnatomyScene(msg.patient, msg.referenceProfile);
-      query = new AnatomyQuery(scene);
-      vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
-      return;
+      if (!query) throw new Error('petición antes de inicializar la anatomía');
+      const activeQuery = query,
+        indices = vesselIndex;
+      const { width, height, frame, transducer, depthMm } = msg;
+      activeQuery.setProbeCompression(msg.compression);
+      const tissue = new Uint8Array(width * height);
+      const vessel = new Int8Array(width * height);
+      const structure = new Uint8Array(width * height);
+      const sample = msg.sample as PhysiologySample;
+      const caliber = activeQuery.caliberFor(sample);
+      const directions = cutMapDirections(frame, transducer, width);
+      let deadline = performance.now() + 16;
+      for (let v = 0; v < height; v++) {
+        const r = (depthMm * (v + 0.5)) / height;
+        const range = transducer.curvatureRadius + r;
+        for (let u = 0; u < width; u++) {
+          const p = cutMapPoint(frame.curvatureCenter, directions[u], range);
+          const material = activeQuery.deformation.toMaterial(p, sample.resp);
+          const c = activeQuery.scene.classify(material, caliber);
+          const i = v * width + u;
+          tissue[i] = c.tissue;
+          structure[i] = structureIdentity(material, c.tissue, c.interface, activeQuery.scene, c.solids);
+          vessel[i] = c.vessel ? (indices.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(material, activeQuery) : -1;
+        }
+        // Report completed rows, never a timer-only heartbeat. Yield so a new
+        // patient can abandon this slice without terminating/reloading the worker.
+        if (v + 1 < height && performance.now() >= deadline) {
+          post({ type: 'progress', id: msg.id, epoch: msg.epoch, assetKey: msg.assetKey, rows: v + 1 });
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          if (revision !== current || epoch !== msg.epoch) return;
+          deadline = performance.now() + 16;
+        }
+      }
+      post({ type: 'map', id: msg.id, epoch: msg.epoch, assetKey: msg.assetKey, width, height, tissue, vessel, structure }, [
+        tissue.buffer,
+        vessel.buffer,
+        structure.buffer,
+      ]);
+    } catch (error) {
+      if (msg.epoch !== epoch) return;
+      query = null;
+      initializing = false;
+      pending = null;
+      post({
+        type: 'error',
+        id: msg.id,
+        epoch: msg.epoch,
+        assetKey: msg.assetKey,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
-    if (!query) throw new Error('petición antes de inicializar la anatomía');
-    const { width, height, frame, transducer, depthMm } = msg;
-    query.setProbeCompression(msg.compression);
-    const tissue = new Uint8Array(width * height);
-    const vessel = new Int8Array(width * height);
-    const structure = new Uint8Array(width * height);
-    const sample = msg.sample as PhysiologySample;
-    const caliber = query.caliberFor(sample);
-    const directions = cutMapDirections(frame, transducer, width);
-    let deadline = performance.now() + 16;
-    for (let v = 0; v < height; v++) {
-      const r = (depthMm * (v + 0.5)) / height;
-      const range = transducer.curvatureRadius + r;
-      for (let u = 0; u < width; u++) {
-        const p = cutMapPoint(frame.curvatureCenter, directions[u], range);
-        const material = query.deformation.toMaterial(p, sample.resp);
-        const c = query.scene.classify(material, caliber);
-        const i = v * width + u;
-        tissue[i] = c.tissue;
-        structure[i] = structureIdentity(material, c.tissue, c.interface, query.scene, c.solids);
-        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(material) : -1;
-      }
-      // Report completed rows, never a timer-only heartbeat. Yield so a new
-      // patient can abandon this slice without terminating/reloading the worker.
-      if (v + 1 < height && performance.now() >= deadline) {
-        post({ type: 'progress', id: msg.id, rows: v + 1 });
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        if (revision !== current) return;
-        deadline = performance.now() + 16;
-      }
-    }
-    post({ type: 'map', id: msg.id, width, height, tissue, vessel, structure }, [tissue.buffer, vessel.buffer, structure.buffer]);
-  } catch (e) {
-    post({ type: 'error', id: 'id' in msg ? msg.id : 0, message: e instanceof Error ? e.message : String(e) });
-  }
-};
+  };
+}
+const receive = createCutMapWorker((message, transfer = []) => (self as unknown as Worker).postMessage(message, transfer));
+self.onmessage = (event: MessageEvent<CutMapInit | CutMapRequest>) => receive(event.data);

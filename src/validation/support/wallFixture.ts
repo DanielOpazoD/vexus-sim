@@ -1,10 +1,10 @@
 /** Deterministic starting conditions for the physical and display wall suites. */
 import { AnatomyQuery } from '../../anatomy/query';
-import { AnatomyScene } from '../../anatomy/scene';
 import { NORMAL_ADULT } from '../../cases';
 import { PhysiologyEngine } from '../../physiology/engine';
 import { clonePatient } from '../../physiology/patientState';
 import { nominalTgcDbPerCm } from '../../ultrasound/renderer';
+import { AnatomyScene } from './legacyPerson/scene';
 import { B_MHZ } from './wallTwin';
 export const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern: 'apnea-expiratory' as const };
 export const scene = new AnatomyScene(patient);

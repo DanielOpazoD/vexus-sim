@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { sdRib } from '../../src/anatomy/primitives';
+import { AnatomyQuery } from '../../src/anatomy/query';
 import { Tissue } from '../../src/anatomy/tissues';
-import { NORMAL_ADULT } from '../../src/cases';
 import { START_POINTS } from '../../src/app/startPoints';
+import { NORMAL_ADULT } from '../../src/cases';
 import { dot, length, sub } from '../../src/core/vec3';
 import { PhysiologyEngine } from '../../src/physiology/engine';
-import { probeContact, contactCoupling } from '../../src/probe/contact';
+import { contactCoupling, probeContact } from '../../src/probe/contact';
 import { CONVEX_C35, pointOnLine } from '../../src/probe/probe';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const rows = [];
 for (const reference of [false, true]) {

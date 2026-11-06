@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import type { VesselId } from '../physiology/vessels';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Velocidad en el eje de las arterias del adulto sano en apnea frente a publicaciones (decisión 297): media ± 1 DE, salvo donde se dice.

@@ -1,10 +1,11 @@
-import { createRequire } from 'node:module';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import type * as TS from 'typescript';
 import type { Plugin } from 'vite';
 import { compactGlslParts, type CompactMode } from './glslCompact';
 import { buildMangleMap, mangleGlslParts, type GlslAnalysis, type MangleMap } from './glslMangle';
+import { personShaderAbi } from './personShaderAbi';
 
 /**
  * Minificado del GLSL en el build: el texto de los shaders viaja en el chunk principal dentro de las plantillas
@@ -542,7 +543,7 @@ export function glslMinify(options: { mangle?: boolean; compact?: boolean } = {}
     buildStart() {
       // con `vite build --watch`, la caché de transformaciones juntaría módulos renombrados con mapas de compilaciones
       // distintas: ahí solo la primera etapa
-      ctx = mangle && !this.meta.watchMode ? prepareGlslMangle(readSources(join(root, 'src'))) : null;
+      ctx = mangle && !this.meta.watchMode ? personShaderAbi(prepareGlslMangle(readSources(join(root, 'src')))) : null;
     },
     transform(code, id) {
       if (!code.includes('glsl')) return null;

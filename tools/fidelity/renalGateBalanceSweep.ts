@@ -1,14 +1,14 @@
 /** Research: place a single physical sample volume across the paired interlobar vessels. */
 import { writeFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { NORMAL_ADULT } from '../../src/cases';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { VenousSpectralAcquisition } from '../../src/app/venousSpectral';
-import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
+import { NORMAL_ADULT } from '../../src/cases';
 import { prfFromNyquistCms } from '../../src/core/units';
-import { measureObservedRenal } from '../../src/doppler/spectralMeasure';
 import type { Vec3 } from '../../src/core/vec3';
+import { measureObservedRenal } from '../../src/doppler/spectralMeasure';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const p = { ...NORMAL_ADULT, respiratoryPattern: 'apnea-expiratory' as const };
 const scene = new AnatomyScene(p),
   q = new AnatomyQuery(scene),

@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Camera, Matrix4, Vector3 } from 'three';
-import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
-import type { ProbePose } from '../src/probe/probe';
 import type { AnatomyQuery } from '../src/anatomy/query';
-import type { AnatomyScene } from '../src/anatomy/scene';
 import type { PhysiologySample } from '../src/physiology/engine';
+import type { ProbePose } from '../src/probe/probe';
+import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
+import type { AnatomyScene } from '../src/validation/support/legacyPerson/scene';
 import { bootWithoutErrors, budget, windowAcquired, withinFrames, withinSimSeconds } from './support';
 
 interface CutModelSnapshot extends Pick<CutMapInit, 'patient' | 'referenceProfile'> {
@@ -41,7 +41,7 @@ async function observe(page: Page) {
         window.freeNavigation.model = {
           patient: structuredClone(request.patient),
           referenceProfile: request.referenceProfile?.slice(),
-          hasAbdominalAtlas: request.type === 'init' ? !!request.abdominalField : !!window.freeNavigation.model?.hasAbdominalAtlas,
+          hasAbdominalAtlas: request.type === 'init' ? !!request.buffers?.abdominal : !!window.freeNavigation.model?.hasAbdominalAtlas,
         };
       if (request.type === 'init')
         this.addEventListener('message', (event: MessageEvent<CutMapResponse>) => {

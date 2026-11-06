@@ -5,6 +5,7 @@ import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import type { FrameInputs, PassRepeat } from '../ultrasound/renderer';
 import { TransmissionReuse } from '../ultrasound/transmissionReuse';
+import { fixtureInstalled } from './support/legacyPerson/state';
 import { recordingGl } from './support/recordingGl';
 
 describe('TransmissionReuse: entradas GPU exactas, sin alias de memoria', () => {
@@ -36,7 +37,7 @@ describe('TransmissionReuse: entradas GPU exactas, sin alias de memoria', () => 
 /** Renderer real sobre recordingGl: se comprueba el protocolo, no imágenes de sus lecturas ficticias. */
 function rig() {
   const rec = recordingGl({ width: 320, height: 240 });
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
   sim.equipment = { ...sim.equipment, bmode: { ...sim.bmode, compound: false } };
   const inputs: FrameInputs = {
     sample: sim.sample,

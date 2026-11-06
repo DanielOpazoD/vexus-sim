@@ -23,9 +23,10 @@ import { HEPATIC_SPINE_GAP_MM, HEPATIC_SPINE_ROUND_MM, hepaticSpineEnvelopeSd } 
  * cápsula (fundido de 15 a 6 dB, extremos bruscos y cambios de dueño) y tramos rectos (flecha ≤ 0,25 o
  * 0,5 mm en ≥ 20 mm, solo informados: con 0,1 mm la flecha es 0,4 px de la rejilla).
  */
-import { MORISON_CONTACT_MM, INTERFACES, Interface } from '../../anatomy/interfaces';
-import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf } from '../../anatomy/organs/kidney';
+import type { ProbeCompression } from '../../anatomy/compression';
+import { FACE_GRADIENT_EPS_MM, INTERFACES, Interface, MORISON_CONTACT_MM } from '../../anatomy/interfaces';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
+import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import {
   GALLBLADDER_FOSSA_ROUND_MM,
   MEDIAL_CUT,
@@ -35,16 +36,14 @@ import {
 } from '../../anatomy/organs/liver';
 import { umbilicalFissureSdf } from '../../anatomy/organs/liverLigaments';
 import { sdDiaphragm, sdEllipsoid, smoothMax, smoothMin, torsoDepth } from '../../anatomy/primitives';
-import { AnatomyScene, BASELINE_CALIBER, type VesselCaliber } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM, Tissue } from '../../anatomy/tissues';
 import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../cases';
 import type { Vec3 } from '../../core/vec3';
-import type { ProbeCompression } from '../../anatomy/compression';
 import { contactCoupling, probeContact } from '../../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../../probe/probe';
 import { facetLobe, liverCapsuleSiteGain } from '../../ultrasound/interfaceEcho';
-import { FACE_GRADIENT_EPS_MM } from '../../anatomy/interfaces';
+import { AnatomyScene, BASELINE_CALIBER, type VesselCaliber } from './legacyPerson/scene';
 
 export const CONTOUR_DEPTH_MM = 180;
 /** Paso de la rejilla de pantalla (mm) y de los vértices a lo largo del contorno (mm de arco). */

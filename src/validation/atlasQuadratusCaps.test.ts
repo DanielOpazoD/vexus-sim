@@ -1,17 +1,18 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
+import type { Mesh } from 'three';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { quadratusSdf } from '../anatomy/organs/retroperitoneum';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
+import { torsoDepth } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { buildPosteriorMuscles } from '../ui/navigator3d/organs';
-import type { Mesh } from 'three';
-import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
-import { torsoDepth } from '../anatomy/primitives';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 beforeAll(() => {
   const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
@@ -27,7 +28,7 @@ afterAll(() => {
 // Testigos materiales de la esquina caudal abrupta de ce316626. No representan
 // dimensiones poblacionales ni un nuevo registro entre riñón y músculo.
 const corner: Vec3 = [-70.36, -68.26, -213];
-const field = (p: Vec3) => quadratusSdf(p, 100, 100);
+const field = (p: Vec3) => quadratusSdf(p, 100, 100, fixturePerson().cpu);
 const gradient = (p: Vec3): Vec3 => {
   const h = 0.001;
   const g = [0, 1, 2].map((axis) => {
@@ -101,7 +102,10 @@ describe('Atlas quadratus terminal contour', () => {
             (positions.getZ(i) * mesh.scale.z + mesh.position.z) * 10,
           ];
           const peri = Math.min(...[scene.kidneyRight, scene.kidneyLeft].map((k) => perirenalOuterSdf(kidneyLocal(p, k), k)));
-          worst = Math.max(worst, Math.abs(quadratusSdf(p, -torsoDepth(p, scene.torso) - scene.wallThickness(), peri)));
+          worst = Math.max(
+            worst,
+            Math.abs(quadratusSdf(p, -torsoDepth(p, scene.torso) - scene.wallThickness(), peri, fixturePerson().cpu)),
+          );
         }
         // Tolerancia numérica de extracción existente, independiente de iluminación y material.
         expect(worst, mesh.name).toBeLessThan(1.5);

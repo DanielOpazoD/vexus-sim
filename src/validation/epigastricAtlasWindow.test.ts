@@ -1,18 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { Tissue } from '../anatomy/tissues';
+import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
-import { startPointsFor } from '../app/startPoints';
-import { probeContact, contactCoupling } from '../probe/contact';
+import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   for (const [file, set] of [

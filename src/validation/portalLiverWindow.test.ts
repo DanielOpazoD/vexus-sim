@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { startPointsFor } from '../app/startPoints';
 import { AnatomyQuery } from '../anatomy/query';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
+import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../probe/probe';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));
 const body = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

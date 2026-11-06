@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
+import { pwGate } from '../app/pwGate';
 import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
 import { PwDopplerChain } from '../doppler/pwChain';
 import { SpectralProcessor } from '../doppler/spectral';
-import { pwGate } from '../app/pwGate';
+import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { openSession, placeGate, probeAt, PROFILE } from './support/studentChain';
 
 const PRF = 2000;

@@ -1,9 +1,8 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
+import { AnatomyQuery } from '../anatomy/query';
 import { bestGateOnVessel } from '../app/gatePlacement';
 import { START_POINTS } from '../app/startPoints';
-import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { CAPTURE_BEATS } from '../doppler/measureQuality';
@@ -17,6 +16,7 @@ import type { VesselId } from '../physiology/vessels';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { FRAG_COLOR, FRAG_SCANCONVERT } from '../ultrasound/shaders/passes.glsl';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Invariantes de la guía §21 comprobados sobre la SEÑAL de la cadena completa (puerta real sobre un

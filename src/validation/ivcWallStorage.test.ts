@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, TRICUSPID_REGURGITATION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('VCI: frontera de almacenamiento y luz (decisión 316)', () => {
   // ivc-wall-lag-not-in-network sigue vigente: el ensayo de pared única falla

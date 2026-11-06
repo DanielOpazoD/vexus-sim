@@ -1,6 +1,6 @@
-import { S0028_BUNDLE as B } from '../anatomyBundle';
-import { S0028_RENAL_FACE_MM, s0028FatPages } from '../s0028Solids';
 import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
+import { S0028_BUNDLE as B } from '../people/s0028/descriptor';
+import { S0028_RENAL_FACE_MM, s0028FatPages } from '../people/s0028/solidsData';
 import { RIGID_BASE } from './anatomy.glsl';
 
 /** Campos P3 de cada atlas, en el orden de los índices GLSL: los doce dueños abdominales y los tres vasos fuente (P5). */

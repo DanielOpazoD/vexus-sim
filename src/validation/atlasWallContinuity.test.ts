@@ -1,19 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { bodyDepth, bodyGradient, bodySection, bodyStride, validateReferenceBody, setAbdominalBody } from '../anatomy/referenceBody';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { AnatomyScene } from '../anatomy/scene';
-import { CASES } from '../cases';
-import type { Vec3 } from '../core/vec3';
-import { buildSkin } from '../ui/navigator3d/body';
+import { uncompress } from '../anatomy/compression';
 import { Interface } from '../anatomy/interfaces';
 import { wallFaceSd } from '../anatomy/organs/wall';
 import { startPointsFor } from '../app/startPoints';
+import { CASES } from '../cases';
+import type { Vec3 } from '../core/vec3';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
-import { uncompress } from '../anatomy/compression';
+import { buildSkin } from '../ui/navigator3d/body';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import {
+  bodyDepth,
+  bodyGradient,
+  bodySection,
+  bodyStride,
+  setAbdominalBody,
+  validateReferenceBody,
+} from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   const load = (name: string) => {

@@ -1,14 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dopplerScaleCommand } from '../app/dopplerScale';
 import { AcquisitionEquipment } from '../app/acquisitionEquipment';
+import { dopplerScaleCommand } from '../app/dopplerScale';
 import { EquipmentController, reduceEquipment, type EquipmentCommand } from '../app/equipment';
 import { Simulator, defaultEquipment, type EquipmentSettings } from '../app/simulator';
 import type { DopplerAudio } from '../audio/dopplerAudio';
 import { NORMAL_ADULT } from '../cases';
 import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import type { FrameInputs, UltrasoundRenderer } from '../ultrasound/renderer';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { fixtureInstalled } from './support/legacyPerson/state';
 
 const profile = CONVEX_C35_PROFILE;
 const ctx = { halfSectorRad: profile.geometry.halfSector, cMmS: C_RECONSTRUCTION_MM_S };
@@ -33,6 +34,7 @@ function rig() {
     {} as HTMLCanvasElement,
     audio as unknown as DopplerAudio,
     renderer as unknown as UltrasoundRenderer,
+    fixtureInstalled(),
   );
   const equipment = new EquipmentController(triplex(), ctx);
   sim.equipment = equipment.state;

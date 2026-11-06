@@ -3,12 +3,12 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, describe, expect, it } from 'vitest';
 import { torsoSkinPoint, type Torso } from '../anatomy/primitives';
-import { setThoracicAtlas, thoracicValue } from '../anatomy/thoracicAtlas';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody, setReferenceBody } from '../anatomy/referenceBody';
-import { startPointsFor } from '../app/startPoints';
 import { gateTransmission } from '../app/gateTransmission';
+import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody, setReferenceBody } from './support/legacyPerson/referenceBody';
+import { setThoracicAtlas, thoracicValue } from './support/legacyPerson/thoracicAtlas';
 import { acquire, openSession, placeGate, probeAt, PROFILE, TR } from './support/studentChain';
 
 const profile = (name: string): Float32Array => {

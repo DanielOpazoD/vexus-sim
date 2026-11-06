@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
 import { startPointsFor } from '../app/startPoints';
-import { CONVEX_C35, probeFrame, pointOnLine } from '../probe/probe';
+import { NORMAL_ADULT } from '../cases';
+import { CONVEX_C35, pointOnLine, probeFrame } from '../probe/probe';
 import { beamToPixel, sectorLayout } from '../ultrasound/sectorGeometry';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 afterEach(() => {
   setAbdominalAtlas();

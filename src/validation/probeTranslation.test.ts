@@ -1,11 +1,11 @@
-import { afterEach, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { AnatomyScene } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
-import { CONVEX_C35, probeFrame, pointOnLine, clampPose } from '../probe/probe';
-import { translateProbe } from '../probe/translation';
+import { afterEach, expect, it } from 'vitest';
 import { startPointsFor } from '../app/startPoints';
-import { setReferenceBody } from '../anatomy/referenceBody';
+import { NORMAL_ADULT } from '../cases';
+import { clampPose, CONVEX_C35, pointOnLine, probeFrame } from '../probe/probe';
+import { translateProbe } from '../probe/translation';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 afterEach(() => setReferenceBody());
 

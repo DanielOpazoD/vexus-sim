@@ -1,7 +1,7 @@
 import { ABDOMINAL_FIELDS } from '../abdominalAtlasData';
 import type { PersonDescriptors } from '../anatomyBundle';
-import { s0028WallShader } from './s0028Wall.glsl';
 import { S0028_READER_GLSL } from './s0028Solids.glsl';
+import { s0028WallShader } from './s0028Wall.glsl';
 
 /**
  * Una fuente por persona: la de la persona por defecto, intacta, o la de s0028 con sus lectores P1 (atlas abdominal y
@@ -9,7 +9,7 @@ import { S0028_READER_GLSL } from './s0028Solids.glsl';
  * @twin tronco-primitivas
  * @twin atlas-abdominal
  * @twin atlas-toracico
- * @twin organo-abdomen
+ * @twin s0028-digestivo
  * @twin s0028-lector
  */
 export function personShader(source: string, selection: { person: 'current' } | { person: 's0028'; bundle: PersonDescriptors }): string {

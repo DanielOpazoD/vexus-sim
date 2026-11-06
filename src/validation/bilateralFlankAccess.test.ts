@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { clampPose, CONVEX_C35, probeFrame, type ProbePose } from '../probe/probe';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

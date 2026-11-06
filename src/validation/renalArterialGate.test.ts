@@ -1,18 +1,18 @@
 // @tier slow
-import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { startPointsFor } from '../app/startPoints';
+import { afterEach, describe, expect, it } from 'vitest';
 import { bestGateOnVessel } from '../app/gatePlacement';
 import { acousticWindowWeight } from '../app/gateTransmission';
+import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { prfFromNyquistCms } from '../core/units';
+import { captureColumns } from '../doppler/capture';
+import { PwDopplerChain } from '../doppler/pwChain';
+import { measureObservedRenal } from '../doppler/spectralMeasure';
+import { dominantGateSystem } from '../doppler/vesselIdentity';
 import { probeContact } from '../probe/contact';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { PwDopplerChain } from '../doppler/pwChain';
-import { dominantGateSystem } from '../doppler/vesselIdentity';
-import { captureColumns } from '../doppler/capture';
-import { measureObservedRenal } from '../doppler/spectralMeasure';
-import { prfFromNyquistCms } from '../core/units';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
 import { acquire, openSession, PROFILE, TR } from './support/studentChain';
 
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));

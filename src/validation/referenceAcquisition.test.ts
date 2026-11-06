@@ -1,11 +1,11 @@
 // @tier slow
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { NORMAL_ADULT } from '../cases';
-import { acquire, openSession, placeGate, probeAt, PROFILE } from './support/studentChain';
-import type { VesselId } from '../physiology/vessels';
 import { gateTransmission } from '../app/gateTransmission';
+import { NORMAL_ADULT } from '../cases';
+import type { VesselId } from '../physiology/vessels';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { acquire, openSession, placeGate, probeAt, PROFILE } from './support/studentChain';
 const b = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
 beforeEach(() => setReferenceBody(profile));

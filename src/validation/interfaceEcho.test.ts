@@ -1,6 +1,4 @@
-import { ABDOMINAL_VESSEL_RADII } from '../physiology/vessels';
 import { describe, expect, it } from 'vitest';
-import { CLUTTER } from '../ultrasound/clutter';
 import {
   INTERFACES,
   INTERFACE_COUNT,
@@ -10,21 +8,20 @@ import {
   interfaceOfVessel,
   interfaceReflectivity,
 } from '../anatomy/interfaces';
-import { AnatomyScene } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
-import { NORMAL_ADULT } from '../cases';
-import { VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
-import { CONVEX_C35 } from '../probe/probe';
-import { CONVEX_BEAM, axialSigmaMm, lateralSigmaMm } from '../ultrasound/beamModel';
-import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { RETRO_FAT, quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm } from '../anatomy/primitives';
-import { DIAPHRAGM_THICKNESS_MM, TISSUES } from '../anatomy/tissues';
+import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
+import { ABDOMINAL_VESSEL_RADII, VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
+import { CONVEX_C35 } from '../probe/probe';
+import { CONVEX_BEAM, axialSigmaMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { CLUTTER } from '../ultrasound/clutter';
 import {
   BONE_CRITICAL_SIN,
   BONE_IMPEDANCE_RATIO,
   FACET,
   IFACE_BETA,
+  IFACE_DIFFUSE_PER_A,
   IFACE_K_DB,
   IFACE_K_RANGE_DB,
   IFACE_REACH_MM,
@@ -32,7 +29,6 @@ import {
   IFACE_SIGMA_H_MM,
   IFACE_SLOPE_REF,
   INTERFACE_ECHO_GLSL,
-  IFACE_DIFFUSE_PER_A,
   RETRO_PERITONEUM_GAIN,
   VALUE_NOISE_SD,
   WALL_ACROSS_MM,
@@ -42,13 +38,13 @@ import {
   diffuseEchoField,
   faceProfile,
   faceSiteGain,
-  fatAcrossWall,
   facetCosine,
   facetEchoField,
   facetLobe,
   facetSlope,
   facetTilt,
   facetTiltRms,
+  fatAcrossWall,
   interfaceAmplitude,
   interfaceEchoField,
   interfaceUniforms,
@@ -58,6 +54,9 @@ import {
 import { PLEURA_GLSL } from '../ultrasound/pleura';
 import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, LATERAL_PSF_GLSL } from '../ultrasound/shaders/passes.glsl';
 import { scattererField, valueNoise } from '../ultrasound/speckleField';
+import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 /**
  * Eco de interfaz (decisión 57): la tabla de caras, cada factor del modelo contra su valor analítico y
@@ -585,10 +584,10 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
     const inside: [number, number, number] = [-(RETRO_FAT.xLateral - 20), RETRO_FAT.yLateral - 5, -85];
     const outside: [number, number, number] = [-40, 60, -20];
-    expect(retroFatSdf(inside)).toBeLessThan(0);
-    expect(retroFatSdf(outside)).toBeGreaterThan(0);
+    expect(retroFatSdf(inside, fixturePerson().cpu)).toBeLessThan(0);
+    expect(retroFatSdf(outside, fixturePerson().cpu)).toBeGreaterThan(0);
     expect(sdDiaphragm(inside, scene.diaphragm, scene.torso)).toBeGreaterThan(DIAPHRAGM_THICKNESS_MM + WALL_ACROSS_MM);
-    expect(quadratusSdf(inside, 0, 1e3)).toBeGreaterThan(0);
+    expect(quadratusSdf(inside, 0, 1e3, fixturePerson().cpu)).toBeGreaterThan(0);
     // lo que toca la pared: la grasa (el hígado lejos) o el hígado a menos del margen (su área desnuda)
     const fat = { liverSdf: () => 10, diaphragm: scene.diaphragm, torso: scene.torso };
     const liver = { ...fat, liverSdf: () => WALL_ACROSS_MM - 0.1 };
@@ -602,7 +601,7 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     // la cúpula (diafragma o pulmón) y el cuadrado lumbar contra la pared también la dejan como está
     const dome: [number, number, number] = [inside[0], inside[1], inside[2]];
     for (let z = inside[2]; z < 200 && sdDiaphragm(dome, scene.diaphragm, scene.torso) > DIAPHRAGM_THICKNESS_MM; z += 1) dome[2] = z;
-    if (retroFatSdf(dome) < 0) expect(fatAcrossWall(dome, fat)).toBe(false);
+    if (retroFatSdf(dome, fixturePerson().cpu) < 0) expect(fatAcrossWall(dome, fat)).toBe(false);
   });
 
   it('GLSL: las constantes interpoladas, la faceta, la difusa y su suma en los dos programas de B', () => {

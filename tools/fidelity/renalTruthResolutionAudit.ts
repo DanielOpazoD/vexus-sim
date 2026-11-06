@@ -3,12 +3,12 @@
  */
 import { writeFileSync } from 'node:fs';
 import { CASES } from '../../src/cases';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { PhysiologyEngine } from '../../src/physiology/engine';
 import { clonePatient } from '../../src/physiology/patientState';
 import { INTERLOBAR_FLOW_SHARE, VESSEL_IDS, VESSEL_META } from '../../src/physiology/vessels';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
+import { RENAL_INTERRUPTION_FLOOR_CMS, renalPatternFromPeaks } from '../../src/vexus/classification';
 import { measurePhysiologyTruth } from '../../src/vexus/measurements';
-import { renalPatternFromPeaks, RENAL_INTERRUPTION_FLOOR_CMS } from '../../src/vexus/classification';
 
 const rows = [];
 for (const base of CASES)

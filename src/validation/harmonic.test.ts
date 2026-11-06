@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { reduceEquipment } from '../app/equipment';
-import { Simulator, defaultEquipment } from '../app/simulator';
-import { C_RECONSTRUCTION_MM_S } from '../core/units';
+import { defaultEquipment, Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
+import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_BEAM, lateralFwhmMm } from '../ultrasound/beamModel';
 import { CLUTTER } from '../ultrasound/clutter';
@@ -17,6 +17,7 @@ import {
 } from '../ultrasound/harmonic';
 import { ELEV_RAYLEIGH_MM, ELEV_SIGMA0_MM, elevSigmaMm } from '../ultrasound/pleura';
 import { RECEIVER_GLSL, RECEIVER_NOISE } from '../ultrasound/receiver';
+import { specializeSceneShaders } from '../ultrasound/sceneShader';
 import {
   FRAG_AXIAL as SOURCE_FRAG_AXIAL,
   FRAG_COLOR as SOURCE_FRAG_COLOR,
@@ -26,7 +27,9 @@ import {
   FRAG_RAWFIELD_STEERED as SOURCE_FRAG_RAWFIELD_STEERED,
   LATERAL_PSF_GLSL as SOURCE_LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
-import { specializeSceneShaders } from '../ultrasound/sceneShader';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { fixtureInstalled } from './support/legacyPerson/state';
+import { recordingGl } from './support/recordingGl';
 const { FRAG_AXIAL, FRAG_COLOR, FRAG_COMPOUND, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, LATERAL_PSF_GLSL } =
   specializeSceneShaders(
     {
@@ -40,8 +43,6 @@ const { FRAG_AXIAL, FRAG_COLOR, FRAG_COMPOUND, FRAG_LATERAL, FRAG_RAWFIELD, FRAG
     },
     false,
   );
-import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { recordingGl } from './support/recordingGl';
 
 /**
  * Armónica tisular (decisión 77): el haz armónico (emisión a f1 ÷√2, recepción a 2·f1), la σ elevacional
@@ -199,7 +200,7 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
 describe('Armónica tisular en el renderizador (WebGL falso)', () => {
   function frameWith(harmonic: boolean) {
     const rec = recordingGl({ width: 320, height: 240 });
-    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
     sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, compound: false, harmonic } };
     rec.draws.length = 0;
     sim.render();

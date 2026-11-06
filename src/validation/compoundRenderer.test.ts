@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { EquipmentController, type EquipmentCommand } from '../app/equipment';
-import { Simulator, defaultEquipment } from '../app/simulator';
+import { defaultEquipment, Simulator } from '../app/simulator';
 import { createTestHooks } from '../app/testHooks';
-import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { NORMAL_ADULT } from '../cases';
+import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { COMPOUND, lookSalt, lookTheta } from '../ultrasound/compound';
+import { specializeSceneShaders } from '../ultrasound/sceneShader';
 import {
   FRAG_COMPOUND as SOURCE_FRAG_COMPOUND,
   FRAG_LATERAL as SOURCE_FRAG_LATERAL,
@@ -17,7 +18,9 @@ import {
   FRAG_TRANSMISSION as SOURCE_FRAG_TRANSMISSION,
   FRAG_TRANSMISSION_STEERED as SOURCE_FRAG_TRANSMISSION_STEERED,
 } from '../ultrasound/shaders/passes.glsl';
-import { specializeSceneShaders } from '../ultrasound/sceneShader';
+import { lookWavenumber } from '../ultrasound/steering';
+import { fixtureInstalled } from './support/legacyPerson/state';
+import { recordingGl } from './support/recordingGl';
 const {
   FRAG_COMPOUND,
   FRAG_LATERAL,
@@ -42,8 +45,6 @@ const {
   },
   false,
 );
-import { lookWavenumber } from '../ultrasound/steering';
-import { recordingGl } from './support/recordingGl';
 
 /**
  * Cableado de la composición espacial en el renderizador real sobre un WebGL falso (decisión 58): cada
@@ -64,7 +65,7 @@ const PAIR_IDS = Object.keys(PAIRS) as PairId[];
 
 function rig(compound = true) {
   const rec = recordingGl({ width: 320, height: 240 });
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
   sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, compound } };
   // con la caja de color, la cadencia del color saltaría los cuadros con el reloj quieto: se fuerza
   const frame = () => {
@@ -349,7 +350,7 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
 describe('arranque: los programas se enlazan en lote (WebGL falso)', () => {
   const build = (opts?: Parameters<typeof recordingGl>[1]) => {
     const rec = recordingGl({ width: 320, height: 240 }, opts);
-    return { ...rec, make: () => new Simulator(clonePatient(NORMAL_ADULT), rec.canvas) };
+    return { ...rec, make: () => new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled()) };
   };
   /** Llamadas de `calls` desde `from`: ninguna consulta de estado antes del último enlace y una por programa. */
   const expectBatched = (calls: readonly string[], from: number, programs: number) => {
@@ -401,7 +402,7 @@ describe('arranque: los programas se enlazan en lote (WebGL falso)', () => {
 describe('ganchos de prueba con el compuesto (WebGL falso)', () => {
   function hookRig() {
     const rec = recordingGl({ width: 320, height: 240 });
-    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
     const equipment = new EquipmentController(defaultEquipment(), {
       halfSectorRad: sim.transducer.halfSector,
       cMmS: C_RECONSTRUCTION_MM_S,

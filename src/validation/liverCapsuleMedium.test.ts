@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { Tissue, reflectionCoefficient } from '../anatomy/tissues';
 import { Interface, interfaceReflectivity } from '../anatomy/interfaces';
+import { Tissue, reflectionCoefficient } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
-import { capsuleExteriorGain, liverCapsuleSiteGain, INTERFACE_ECHO_GLSL, CAPSULE_OUTSIDE_MM } from '../ultrasound/interfaceEcho';
 import type { Vec3 } from '../core/vec3';
+import { CAPSULE_OUTSIDE_MM, INTERFACE_ECHO_GLSL, capsuleExteriorGain, liverCapsuleSiteGain } from '../ultrasound/interfaceEcho';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 describe('medio exterior real de la cápsula hepática', () => {
   it('deriva el aumento del salto de impedancia, sin una ganancia global arbitraria', () => {

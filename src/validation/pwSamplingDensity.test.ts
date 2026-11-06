@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
 import { Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
 import { SampleVolumeIQ, particleAmplitudeScale, type GateGeometry } from '../doppler/sampleVolume';
+import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function phantom(radius: number, sigma = 1) {
   const scene = new AnatomyScene(NORMAL_ADULT),

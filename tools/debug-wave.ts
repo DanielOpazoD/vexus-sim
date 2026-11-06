@@ -1,6 +1,6 @@
-import { AnatomyScene } from '../src/anatomy/scene';
 import { CASES } from '../src/cases';
 import { PhysiologyEngine } from '../src/physiology/engine';
+import { AnatomyScene } from '../src/validation/support/legacyPerson/scene';
 const id = process.argv[2] ?? 'severe-congestion';
 const patient = CASES.find((c) => c.id === id)!;
 const scene = new AnatomyScene(patient);

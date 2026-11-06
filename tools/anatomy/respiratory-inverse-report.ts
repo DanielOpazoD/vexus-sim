@@ -1,11 +1,11 @@
 /** Reproduce coordinate round-trip errors, not image or clinical accuracy. */
 import { readFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { RespiratoryDeformation, RESPIRATORY_INVERSE_STEPS } from '../../src/anatomy/deformation';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
+import { RESPIRATORY_INVERSE_STEPS, RespiratoryDeformation } from '../../src/anatomy/deformation';
 import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
 import type { RespiratorySample } from '../../src/physiology/respiratory';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const rows = [];

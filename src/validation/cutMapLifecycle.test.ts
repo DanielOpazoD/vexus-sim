@@ -1,18 +1,14 @@
 import { afterEach, expect, it, vi, type Mock } from 'vitest';
-import type { CutMapInit, CutMapRequest } from '../ui/cutMapWorker';
-import { CutMapView } from '../ui/cutMapView';
-import type { Simulator } from '../app/simulator';
+import { DEFAULT_ASSETS } from '../anatomy/people/default/assets';
+import { S0028_ASSETS } from '../anatomy/people/s0028/assets';
 import { errorLog } from '../app/errorLog';
+import type { Simulator } from '../app/simulator';
 import { CONVEX_C35 } from '../probe/probe';
-import { CURRENT_BUNDLE, S0028_BUNDLE } from '../anatomy/anatomyBundle';
-import type * as LoadS0028 from '../anatomy/loadS0028';
+import { CutMapView } from '../ui/cutMapView';
+import type { CutMapInit, CutMapRequest } from '../ui/cutMapWorker';
 
 // Pared y piel s0028 ya cargadas: así el envío al Worker depende sólo de la identidad de la escena.
 const auxiliary = vi.hoisted(() => ({ capacity: new ArrayBuffer(8), skin: new ArrayBuffer(4) }));
-vi.mock('../anatomy/loadS0028', async (importOriginal) => ({
-  ...(await importOriginal<typeof LoadS0028>()),
-  s0028Auxiliary: auxiliary,
-}));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -23,14 +19,26 @@ function fixture(onMapReady?: () => void) {
   const workers: Array<{
     postMessage: Mock<(message: CutMapInit | CutMapRequest) => void>;
     terminate: ReturnType<typeof vi.fn>;
-    onmessage: (e: unknown) => void;
+    onmessage: (e: { data: { id: number; [key: string]: unknown } }) => void;
   }> = [];
   vi.stubGlobal(
     'Worker',
     class {
-      postMessage = vi.fn<(message: CutMapInit | CutMapRequest) => void>();
+      postMessage = vi.fn<(message: CutMapInit | CutMapRequest) => void>((message) => {
+        if (message.type !== 'map') this.onmessage({ data: { ...message, type: 'ready' } });
+      });
       terminate = vi.fn();
-      onmessage = () => {};
+      handler: (e: { data: { id: number; [key: string]: unknown } }) => void = () => {};
+      set onmessage(fn: (e: { data: { id: number; [key: string]: unknown } }) => void) {
+        this.handler = fn;
+      }
+      get onmessage() {
+        return (e: { data: { id: number; [key: string]: unknown } }) => {
+          const sent = this.postMessage.mock.calls.find(([m]) => m.id === e.data.id)?.[0];
+          Object.assign(e.data, { epoch: e.data.epoch ?? sent?.epoch, assetKey: e.data.assetKey ?? sent?.assetKey });
+          this.handler(e);
+        };
+      }
       constructor() {
         workers.push(this);
       }
@@ -47,7 +55,11 @@ function fixture(onMapReady?: () => void) {
   const view = new CutMapView(canvas as unknown as HTMLCanvasElement, onMapReady);
   const sim = {
     patient: { id: 'normal-adult' },
-    scene: { torso: {}, identity: CURRENT_BUNDLE },
+    scene: {
+      torso: {},
+      identity: DEFAULT_ASSETS.identity,
+      person: { identity: DEFAULT_ASSETS.identity, assetKey: 'default-fixture', assets: { buffers: {} } },
+    },
     renderer: {
       displayedFrame: {
         n: 1,
@@ -65,25 +77,32 @@ it('el default no envía al Worker la pared ni la piel de s0028', () => {
   view.draw(sim, 1000);
   const init = workers[0].postMessage.mock.calls[0][0] as CutMapInit;
   expect(init.type).toBe('init');
-  expect(init.identity).toBe(CURRENT_BUNDLE);
-  expect(init.wall).toBeUndefined();
-  expect(init.skin).toBeUndefined();
+  expect(init.identity).toBe(DEFAULT_ASSETS.identity);
+  expect(init.buffers?.capacity).toBeUndefined();
+  expect(init.buffers?.skin).toBeUndefined();
 });
 
 it('s0028 envía pared y piel sólo en la inicialización del Worker', () => {
   const { view, sim, workers } = fixture();
-  const s0028 = { ...sim, scene: { ...sim.scene, identity: S0028_BUNDLE } } as unknown as Simulator;
+  const s0028 = {
+    ...sim,
+    scene: {
+      ...sim.scene,
+      identity: S0028_ASSETS.identity,
+      person: { identity: S0028_ASSETS.identity, assetKey: 's0028-fixture', assets: { buffers: auxiliary } },
+    },
+  } as unknown as Simulator;
   view.draw(s0028, 1000);
   const init = workers[0].postMessage.mock.calls[0][0] as CutMapInit;
   expect(init.type).toBe('init');
-  expect(init.wall).toBe(auxiliary.capacity);
-  expect(init.skin).toBe(auxiliary.skin);
+  expect(init.buffers?.capacity).toBe(auxiliary.capacity);
+  expect(init.buffers?.skin).toBe(auxiliary.skin);
   view.onSimulatorChanged({ ...s0028, scene: { ...s0028.scene }, patient: { id: 'severe-congestion' } } as unknown as Simulator);
   view.draw({ ...s0028, scene: { ...s0028.scene }, patient: { id: 'severe-congestion' } } as unknown as Simulator, 1100);
   const next = workers.flatMap((w) => w.postMessage.mock.calls.map((c) => c[0])).filter((m) => m.type === 'patient') as CutMapInit[];
   for (const m of next) {
-    expect(m.wall).toBeUndefined();
-    expect(m.skin).toBeUndefined();
+    expect(m.buffers?.capacity).toBeUndefined();
+    expect(m.buffers?.skin).toBeUndefined();
   }
 });
 
@@ -163,6 +182,7 @@ it('presents between animation frames and immediately coalesces to the latest ac
   const ctx = {
     createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }),
     putImageData: vi.fn(),
+    clearRect: vi.fn(),
     fillText: vi.fn(),
   };
   Object.assign(canvas, { width: 12, height: 12, clientWidth: 12, clientHeight: 12, getContext: () => ctx });
@@ -229,6 +249,11 @@ it('presents between animation frames and immediately coalesces to the latest ac
   expect(requests()).toHaveLength(2);
   view.draw(sim, now + 125);
   expect(requests()).toHaveLength(3);
+  const clears = ctx.clearRect.mock.calls.length;
+  workers[0].onmessage({ data: { type: 'error', id: requests()[2].id, message: 'chunk failed' } });
+  expect(ctx.clearRect).toHaveBeenCalledTimes(clears + 1);
+  expect(canvas.dataset.acquiredFrame).toBeUndefined();
+
   view.dispose();
 });
 

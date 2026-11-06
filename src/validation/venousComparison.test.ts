@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { VENOUS_COMPARISON_CHANNELS, VENOUS_CONTROL_CAPABILITIES, venousComparisonTrace } from '../physiology/venousComparison';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const engineOf = (patient = NORMAL_ADULT) => new PhysiologyEngine(patient, new AnatomyScene(patient).vesselAreas());
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { kidneyLocal, kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
+import { kidneyLocal, kidneyWorld } from '../anatomy/organs/kidney';
+import { kidneyQuery } from '../anatomy/people/default/kidneyInterior';
 import { smoothMax, smoothMin, tubeQuery, type Tube } from '../anatomy/primitives';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Primitivas implícitas (`anatomy/primitives.ts`) con valores cerrados: sobre

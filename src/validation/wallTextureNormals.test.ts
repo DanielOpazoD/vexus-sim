@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { torsoNormal, torsoSkinPoint, type Torso } from '../anatomy/primitives';
 import { wallArc, wallDepths } from '../anatomy/organs/wall';
+import { torsoNormal, torsoSkinPoint, type Torso } from '../anatomy/primitives';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { fatSeptum } from '../ultrasound/wallTexture';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/abdominal-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

@@ -1,13 +1,13 @@
-import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
-import { maxPrfForDepth } from '../app/equipment';
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
+import { maxPrfForDepth } from '../app/equipment';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
+import { NORMAL_ADULT } from '../cases';
+import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
+import { PhysiologyEngine } from '../physiology/engine';
 import { VESSEL_META } from '../physiology/vessels';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function fixture() {
   const anatomy = new AnatomyQuery(new AnatomyScene(NORMAL_ADULT));

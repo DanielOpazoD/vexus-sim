@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
-import baseline from './fixtures/cutMapRasterBaseline.json';
-import contourBaseline from './fixtures/cutMapContourBaseline.json';
-import type { Simulator } from '../app/simulator';
 import { Tissue } from '../anatomy/tissues';
+import type { Simulator } from '../app/simulator';
 import { CONVEX_C35 } from '../probe/probe';
 import { CutMapView } from '../ui/cutMapView';
 import type { CutMapResponse } from '../ui/cutMapWorker';
 import * as sector from '../ultrasound/sectorGeometry';
+import contourBaseline from './fixtures/cutMapContourBaseline.json';
+import baseline from './fixtures/cutMapRasterBaseline.json';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -30,6 +30,8 @@ function mapFor(p: Projection, offset = 0): CutMapResponse {
   const tissues = [Tissue.Liver, Tissue.Fat, Tissue.Muscle, Tissue.Blood];
   return {
     type: 'map',
+    epoch: 1,
+    assetKey: 'raster-fixture',
     id: 1,
     width: p.mapW,
     height: p.mapH,

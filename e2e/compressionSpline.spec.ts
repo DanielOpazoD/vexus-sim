@@ -10,11 +10,11 @@ import {
   type CompressionNode,
   type ProbeCompression,
 } from '../src/anatomy/compression';
-import { AnatomyScene } from '../src/anatomy/scene';
 import { NORMAL_ADULT } from '../src/cases';
 import type { Vec3 } from '../src/core/vec3';
 import { probeContact } from '../src/probe/contact';
 import { CONVEX_C35, pointOnLine } from '../src/probe/probe';
+import { AnatomyScene } from '../src/validation/support/legacyPerson/scene';
 import { budget } from './support';
 
 const q = (v: Vec3): Vec3 => [Math.fround(v[0]), Math.fround(v[1]), Math.fround(v[2])];

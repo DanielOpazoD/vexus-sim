@@ -1,9 +1,10 @@
-// Presupuesto de tamaño del bundle: aplica los techos de `bundleBudgets.ts` (allí su historia) a `dist`
-// tras `vite build` y falla si algún activo o el JS total los supera.
+// Aplica los techos centrales por activo y las dos clausuras por persona a todo el JS de dist.
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { bundleAssets } from './bundleAssets';
-import { BUDGETS, KB, TEST_ONLY, TOTAL_JS_BUDGET } from './bundleBudgets';
 import { basename, join } from 'node:path';
+import { bundleAssets } from './bundleAssets';
+import { BUDGETS, KB, TEST_ONLY } from './bundleBudgets';
+import { measurePersonBundles, type PersonBundleGraph } from './personBundles';
 
 const dir = join(process.cwd(), 'dist');
 let files: Array<{ file: string; size: number }>;
@@ -39,10 +40,22 @@ for (const { file, size } of files) {
 }
 const w = rows.reduce((m, r) => Math.max(m, r[0].length), 10);
 for (const r of rows) console.log(`${r[0].padEnd(w)}  ${r[1].padStart(10)}  ${r[2].padStart(8)}  ${r[3]}`);
-console.log(
-  `${'total js'.padEnd(w)}  ${(totalJs / KB).toFixed(1).padStart(7)} kB  ${(TOTAL_JS_BUDGET / KB).toFixed(0).padStart(5)} kB  ${totalJs <= TOTAL_JS_BUDGET ? 'ok' : 'OVER'}`,
-);
-if (over || totalJs > TOTAL_JS_BUDGET) {
-  console.error('bundle-budget: presupuesto superado');
+const graph = JSON.parse(readFileSync(join(dir, 'person-bundle-graph.json'), 'utf8')) as PersonBundleGraph;
+const emittedJs = files
+  .filter((f) => f.file.endsWith('.js'))
+  .map((f) => f.file)
+  .sort();
+if (JSON.stringify(emittedJs) !== JSON.stringify(graph.chunks.map((c) => c.file).sort())) throw new Error('JS sin procedencia en dist');
+for (const chunk of graph.chunks) {
+  const bytes = readFileSync(join(dir, chunk.file));
+  if (bytes.length !== chunk.bytes || createHash('sha256').update(bytes).digest('hex') !== chunk.sha256)
+    throw new Error(`JS alterado: ${chunk.file}`);
+}
+const report = measurePersonBundles(graph);
+for (const person of ['default', 's0028'] as const)
+  console.log(`${person}: ${report[person].bytes} B / ${report[person].ceiling} B; margen ${report[person].margin} B`);
+console.log(`Unión de todo dist: ${totalJs} B; compartido: ${report.sharedBytes} B`);
+if (over) {
+  console.error('bundle-budget: presupuesto por archivo superado');
   process.exit(1);
 }

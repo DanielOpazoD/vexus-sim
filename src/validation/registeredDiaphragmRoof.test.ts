@@ -1,19 +1,20 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
 import { afterEach, expect, it } from 'vitest';
-import { setAbdominalAtlas, registeredDomeHeight, registeredDomeSample } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
-import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
 import { diaphragmRim } from '../anatomy/diaphragmRim';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
-import type { Vec3 } from '../core/vec3';
 import { raInferiorZ, raSdf } from '../anatomy/organs/heart';
+import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
+import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
+import type { Vec3 } from '../core/vec3';
 import preserved from './fixtures/registered-roof-preserved-fields.json';
 import renalBed from './fixtures/renal-bed-preserved-fields.json';
+import { registeredDomeHeight, registeredDomeSample, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const body = readFileSync('src/anatomy/abdominal-body.bin');
 afterEach(() => {
@@ -141,9 +142,9 @@ it('preserves the actual cava approach when the registered diaphragm is below th
 it('locates the atrial approach on the actual tilted ellipsoid', () => {
   for (const x of [-30, -22, -15])
     for (const y of [-5, 6, 14]) {
-      const z = raInferiorZ(x, y);
-      expect(Math.abs(raSdf([x, y, z]))).toBeLessThan(0.000001);
-      expect(raSdf([x, y, z - 0.1])).toBeGreaterThan(0);
-      expect(raSdf([x, y, z + 0.1])).toBeLessThan(0);
+      const z = raInferiorZ(x, y, fixturePerson().cpu);
+      expect(Math.abs(raSdf([x, y, z], fixturePerson().cpu))).toBeLessThan(0.000001);
+      expect(raSdf([x, y, z - 0.1], fixturePerson().cpu)).toBeGreaterThan(0);
+      expect(raSdf([x, y, z + 0.1], fixturePerson().cpu)).toBeLessThan(0);
     }
 });

@@ -1,27 +1,28 @@
-import { loadReferenceBody } from '../anatomy/loadReferenceBody';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { loadPerson } from '../anatomy/people/default/runtime';
+import { sdRib, torsoDepth, torsoNormal, torsoSkinPoint, type Torso } from '../anatomy/primitives';
+import { NORMAL_ADULT } from '../cases';
+import { costalGeometry } from '../ui/navigator3d/body';
 import {
+  BODY_COEFFICIENT_STRIDE,
+  BODY_ROWS,
+  BODY_SECTORS,
+  BODY_STRIDE,
+  BODY_SUBDIVISIONS,
+  bodyCoefficients,
   bodyDepth,
   bodyGradient,
   bodySection,
-  setReferenceBody,
-  validateReferenceBody,
-  referenceBody,
   bodyStride,
-  bodyCoefficients,
-  BODY_ROWS,
-  BODY_STRIDE,
-  BODY_SUBDIVISIONS,
-  BODY_SECTORS,
-  BODY_COEFFICIENT_STRIDE,
   COSTAL_BODY_ROWS,
   COSTAL_BODY_STRIDE,
-} from '../anatomy/referenceBody';
-import { torsoDepth, torsoSkinPoint, torsoNormal, sdRib, type Torso } from '../anatomy/primitives';
-import { NORMAL_ADULT } from '../cases';
-import { AnatomyScene } from '../anatomy/scene';
-import { costalGeometry } from '../ui/navigator3d/body';
+  referenceBody,
+  setReferenceBody,
+  validateReferenceBody,
+} from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+const loadReferenceBody = () => loadPerson(new AbortController().signal, true, true);
 
 // Oráculo completo previo a 242: conserva su localizador y no llama al evaluador optimizado.
 // Solo los coeficientes inmutables (no modificados por 242) siguen siendo compartidos.
@@ -119,7 +120,8 @@ describe('campo cutáneo del adulto de referencia, mismo mm/LAS que los órganos
         'fetch',
         vi.fn().mockResolvedValue(new Response(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))),
       );
-      await loadReferenceBody();
+      const person = await loadReferenceBody();
+      setReferenceBody(person.assets.buffers.reference);
       expect(referenceBody).toEqual(profile);
       expect(referenceBody).not.toBe(profile);
     } finally {

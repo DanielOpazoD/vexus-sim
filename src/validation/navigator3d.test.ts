@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { HILUM_NOTCH, kidneyLocal } from '../anatomy/organs/kidney';
-import { AnatomyScene } from '../anatomy/scene';
+import { windowMenuPoints } from '../app/windowGroups';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
-import { windowMenuPoints } from '../app/windowGroups';
 import { CM } from '../ui/navigator3d/common';
 import { LABEL_NEAR_CM, LABEL_STEP_CM, windowLabelPositions } from '../ui/navigator3d/labels';
 import { buildKidneyMesh, buildLiverMesh } from '../ui/navigator3d/organs';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * El navegador 3D extrae sus mallas del MISMO campo implícito que corta el haz:

@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyQuery } from '../anatomy/query';
-import { bodyDepth, bodyGradient } from '../anatomy/referenceBody';
 import { uncompress } from '../anatomy/compression';
-import { START_POINTS } from '../app/startPoints';
-import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from '../anatomy/scene';
 import { Interface } from '../anatomy/interfaces';
-import { TISSUES, Tissue } from '../anatomy/tissues';
-import { CASES, NORMAL_ADULT } from '../cases';
-import { SimulationClock } from '../core/clock';
-import { PhysiologyEngine } from '../physiology/engine';
-import { contactCoupling, probeContact } from '../probe/contact';
-import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
+import { HEART_WALLS, domeFloor, heartChambers, ivcAtrium } from '../anatomy/organs/heart';
 import {
   ARCUATE,
   MEDULLA_MIN_DEPTH_MM,
@@ -20,17 +11,26 @@ import {
   hilumChannelSdf,
   kidneyLocal,
   kidneyOuterSdf,
-  kidneyQuery,
-  kidneySinusSdf,
   kidneyWorld,
   perirenalThicknessMm,
   sdRoundCone,
 } from '../anatomy/organs/kidney';
+import { kidneyQuery, kidneySinusSdf } from '../anatomy/people/default/kidneyInterior';
 import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
-import { HEART_WALLS, domeFloor, heartChambers, ivcAtrium } from '../anatomy/organs/heart';
-import { renalPatternFromPeaks } from '../vexus/classification';
-import { VESSEL_META } from '../physiology/vessels';
+import { AnatomyQuery } from '../anatomy/query';
+import { TISSUES, Tissue } from '../anatomy/tissues';
 import { BRANCH_MAX_RADIUS_SCALE, BRANCH_TIP_RADIUS_MM, RENAL_VEIN_SINUS_V, branchShapeMax } from '../anatomy/vesselTree';
+import { START_POINTS } from '../app/startPoints';
+import { CASES, NORMAL_ADULT } from '../cases';
+import { SimulationClock } from '../core/clock';
+import { PhysiologyEngine } from '../physiology/engine';
+import { VESSEL_META } from '../physiology/vessels';
+import { contactCoupling, probeContact } from '../probe/contact';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
+import { renalPatternFromPeaks } from '../vexus/classification';
+import { bodyDepth, bodyGradient } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 describe('Anatomía implícita (base B)', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
@@ -1315,7 +1315,7 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     // que dentro de la cavidad de la AD la luz sigue siendo la VCI (el chorro que entra) y la pared es sangre de la aurícula,
     // sin cara (antes, un eco de pared a +13–14 dB y un anillo de pared dentro de la cavidad negra); fuera de la aurícula, a
     // más de IVC_ORIFICE_MM sobre la cúpula, no hay VCI
-    const atrium = (p: V) => ivcAtrium(p, domeFloor(p, scene.diaphragm, scene.torso));
+    const atrium = (p: V) => ivcAtrium(p, domeFloor(p, scene.diaphragm, scene.torso), fixturePerson().cpu);
     const supra = scene.vessels.find((v) => v.id === 'ivcSupra')!;
     const last = supra.tube.nodes[supra.tube.nodes.length - 1].p;
     const hiatus = supra.tube.nodes[supra.tube.nodes.length - 3].p;
@@ -1356,7 +1356,7 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
             trimmed++;
             expect(c.vessel, tag).toBeNull();
             expect(Tissue[c.tissue], tag).toBe('Myocardium');
-            expect(heartChambers(p)[3], tag).toBeLessThan(HEART_WALLS.ias);
+            expect(heartChambers(p, fixturePerson().cpu)[3], tag).toBeLessThan(HEART_WALLS.ias);
           }
         }
     const tag = JSON.stringify({ lumenInRa, wallInRa, tubeBelow, trimmed });

@@ -1,15 +1,15 @@
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { CASES, NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
-import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../doppler/spectralMeasure';
-import { captureProtocolVessel } from '../doppler/capture';
-import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
+import { CASES, NORMAL_ADULT } from '../cases';
 import { prfFromNyquistCms } from '../core/units';
+import { captureProtocolVessel } from '../doppler/capture';
+import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../doppler/spectralMeasure';
+import { PhysiologyEngine } from '../physiology/engine';
+import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
 import { VESSEL_META } from '../physiology/vessels';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('contratos de adquisición PW comparada', () => {
   it('encuentra cada territorio y conserva tres ventanas fijas sin mover el paciente observado', () => {

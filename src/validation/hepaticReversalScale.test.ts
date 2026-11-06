@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AF_MODERATE_CONGESTION, SEVERE_CONGESTION } from '../cases';
 import { velocityFromShiftMmS } from '../core/units';
 import { measureObservedHepatic } from '../doppler/spectralMeasure';
@@ -7,6 +6,7 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { hepaticFlowShares } from '../physiology/vessels';
 import { classifyVexusC } from '../vexus/classification';
 import { measurePhysiologyTruth, S_REVERSAL_FLOOR_CMS } from '../vexus/measurements';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * La escala de velocidad suprahepática (decisión 299) no puede cambiar la verdad de la vena derecha: el suelo de la S invertida la sigue, y la inversión

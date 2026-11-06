@@ -1,12 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { expect, it, vi } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setS0028Wall, s0028WallUploads } from '../anatomy/s0028Wall';
-import { setS0028Solids, s0028FatPages } from '../anatomy/s0028Solids';
 import { HALF } from '../anatomy/halfFloat';
+import { gpuPlan } from '../anatomy/people/s0028/gpu';
 import { createAbdominalTexture } from '../ultrasound/abdominalTexture';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { s0028FatPages, setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028WallUploads, setS0028Wall } from './support/legacyPerson/s0028Wall';
+import { fixturePerson } from './support/legacyPerson/state';
 
 it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin copiar el atlas ni derivar la carta S−dN', () => {
   installAnatomyBundle(B);
@@ -46,7 +48,8 @@ it('sube los 16 tiles RG16F y centros como vistas en el único atlas P1, sin cop
       input: Uint16Array,
     ) => uploads.push({ x, y, z, w, h, d, input }),
   };
-  createAbdominalTexture(gl as unknown as WebGL2RenderingContext, true);
+  const person = fixturePerson();
+  createAbdominalTexture(gl as unknown as WebGL2RenderingContext, true, false, person, gpuPlan(person));
   expect(storage).toHaveBeenCalledExactlyOnceWith(gl.TEXTURE_3D, 1, gl.RG16F, ...B.abdominal.textureDimensions);
   for (const [tile, offset] of B.wall.placements.entries()) {
     const u = uploads.find((u) => u.x === offset[0] && u.y === offset[1] && u.z === offset[2] && u.w === 65 && u.h === 91 && u.d === 2);

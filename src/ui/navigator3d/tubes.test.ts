@@ -1,6 +1,6 @@
-import { expect, it } from 'vitest';
 import type { Mesh } from 'three';
-import { type AnatomyScene, BASELINE_CALIBER } from '../../anatomy/scene';
+import { expect, it } from 'vitest';
+import { type AnatomyScene, BASELINE_CALIBER } from '../../validation/support/legacyPerson/scene';
 import { CM } from './common';
 import { buildVessels } from './tubes';
 

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { AnatomyQuery } from '../anatomy/query';
 import { bestGateOnVessel } from '../app/gatePlacement';
 import { gateTransmission } from '../app/gateTransmission';
 import { START_POINTS } from '../app/startPoints';
-import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, probeFrame, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Invariante nueva (§23 de la guía, «vasos que aparecen con la sonda mal situada»): sin contacto no

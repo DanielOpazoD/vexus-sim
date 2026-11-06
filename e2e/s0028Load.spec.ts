@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import type { PersonBuffers } from '../src/anatomy/personAssets';
 import { bootWithoutErrors, budget, withinFrames } from './support';
 
 interface WorkerEvidence {
@@ -38,13 +39,13 @@ test('s0028 carga una sola persona, dibuja y rechaza procedencia corrupta', asyn
           });
         }
         const identity = 'identity' in message ? message.identity : undefined;
+        const buffers = ('buffers' in message ? message.buffers : {}) as PersonBuffers;
         evidence.initializations.push({
           person: identity && typeof identity === 'object' && 'person' in identity ? identity.person : undefined,
-          abdominalBytes:
-            'abdominalField' in message && message.abdominalField instanceof Uint16Array ? message.abdominalField.byteLength : 0,
-          thoracicBytes: 'thoracicField' in message && message.thoracicField instanceof Uint16Array ? message.thoracicField.byteLength : 0,
-          wallBytes: 'wall' in message && message.wall instanceof ArrayBuffer ? message.wall.byteLength : 0,
-          skinBytes: 'skin' in message && message.skin instanceof ArrayBuffer ? message.skin.byteLength : 0,
+          abdominalBytes: buffers.abdominal?.byteLength ?? 0,
+          thoracicBytes: buffers.thoracic?.byteLength ?? 0,
+          wallBytes: buffers.capacity?.byteLength ?? 0,
+          skinBytes: buffers.skin?.byteLength ?? 0,
         });
       }
       return post.call(this, message, Array.isArray(transferOrOptions) ? { transfer: transferOrOptions } : transferOrOptions);

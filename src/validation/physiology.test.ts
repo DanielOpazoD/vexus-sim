@@ -1,12 +1,12 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type PatientState } from '../physiology/patientState';
-import { classifyVexusC, RENAL_INTERRUPTION_FLOOR_CMS } from '../vexus/classification';
 import { INTERLOBAR_FLOW_SHARE } from '../physiology/vessels';
+import { classifyVexusC, RENAL_INTERRUPTION_FLOOR_CMS } from '../vexus/classification';
 import { measurePhysiologyTruth } from '../vexus/measurements';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function run(patient: PatientState, seconds: number): PhysiologyEngine {
   const scene = new AnatomyScene(patient);

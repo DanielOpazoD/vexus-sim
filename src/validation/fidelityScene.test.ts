@@ -1,29 +1,29 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
+import { diaphragmHeight } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
+import { Tissue } from '../anatomy/tissues';
 import { fidelityStats } from '../app/fidelity';
 import { contourStats } from '../app/fidelity/contour';
 import type { TransmissionFrame } from '../app/fidelity/grid';
 import type { FidelityStats } from '../app/fidelity/planeStats';
-import { COMPOUND, compoundEnvelope, lookTheta } from '../ultrasound/compound';
-import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import type { Simulator } from '../app/simulator';
+import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
-import { AnatomyQuery } from '../anatomy/query';
-import { diaphragmHeight } from '../anatomy/primitives';
-import { AnatomyScene } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
-import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { probeContact } from '../probe/contact';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
+import { COMPOUND, compoundEnvelope, lookTheta } from '../ultrasound/compound';
 import { COARSE_DEPTH, DISPLAY_MARGIN_PX, type DisplayFrame } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { mirrorCrossing } from '../ultrasound/transmission';
-import { detect, psf, whiteField } from './syntheticSpeckle';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { CAPTURE_POSES } from './support/liverContour';
+import { detect, psf, whiteField } from './syntheticSpeckle';
 
 /**
  * El banco de fidelidad sobre la anatomía real, sin GPU: el sano en apnea en las ventanas subxifoidea,

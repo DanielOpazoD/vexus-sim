@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { NORMAL_ADULT } from '../../src/cases';
-import { openSession, probeAt, placeGate, acquire, PROFILE, TR } from '../../src/validation/support/studentChain';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { pwGate } from '../../src/app/pwGate';
+import { NORMAL_ADULT } from '../../src/cases';
 import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { acquire, openSession, placeGate, probeAt, PROFILE, TR } from '../../src/validation/support/studentChain';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 setReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
 const results = [];

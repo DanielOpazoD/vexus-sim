@@ -11,6 +11,7 @@ import {
   scanModule,
   transformWithMangle,
 } from '../../tools/build/glslMinify';
+import { personShaderAbi } from '../../tools/build/personShaderAbi';
 import { fragmentOutputCount } from '../ultrasound/gl';
 import { loadShaderGraph } from './support/shaderGraph';
 
@@ -309,7 +310,7 @@ describe('Espacios del GLSL en el build: reglas', () => {
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const SOURCES = readSources(join(ROOT, 'src'));
-const CTX = prepareGlslMangle(SOURCES);
+const CTX = personShaderAbi(prepareGlslMangle(SOURCES));
 const SOURCE_BY_PATH = new Map(SOURCES.map((m) => [m.path, m.code]));
 const WITH_GLSL = SOURCES.filter((m) => (CTX.modules.get(m.path)?.templates.length ?? 0) > 0);
 

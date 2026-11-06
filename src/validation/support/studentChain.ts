@@ -1,9 +1,8 @@
+import { AnatomyQuery } from '../../anatomy/query';
 import { bestGateOnVessel, type GatePlacement } from '../../app/gatePlacement';
 import { acousticWindowWeight } from '../../app/gateTransmission';
 import { pwGate } from '../../app/pwGate';
 import { startPointsFor, type StartPoint } from '../../app/startPoints';
-import { AnatomyQuery } from '../../anatomy/query';
-import { AnatomyScene } from '../../anatomy/scene';
 import { captureProtocolVessel, type CaptureResult } from '../../doppler/capture';
 import { PwDopplerChain } from '../../doppler/pwChain';
 import type { GateVesselSample, ProtocolVessel } from '../../doppler/vesselIdentity';
@@ -11,8 +10,9 @@ import { PhysiologyEngine } from '../../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../../physiology/patientState';
 import type { VesselId } from '../../physiology/vessels';
 import { probeContact, type ProbeContact } from '../../probe/contact';
-import { CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { DEFAULT_BMODE } from '../../ultrasound/renderer';
+import { CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
+import { AnatomyScene } from './legacyPerson/scene';
 
 /**
  * Cadena del alumno por la RUTA DE LA APLICACIÓN (decisión 94): la geometría de la puerta sale de `pwGate` (la misma

@@ -1,7 +1,7 @@
 import type { Vec3 } from '../../core/vec3';
+import type { AnatomyPerson } from '../person';
 import { sdDiaphragmSlope, sdEllipsoidLocal, smoothMin, type Diaphragm, type Torso } from '../primitives';
 import { Tissue } from '../tissues';
-import { abdominalAtlas } from '../abdominalAtlas';
 
 /**
  * Corazón y mediastino (decisión 85) como módulo de órgano (decisión 46). Por encima de la cúpula (`sdDiaphragm` < 0) no
@@ -101,12 +101,12 @@ export const MEDIASTINUM = {
  */
 export const HEART_ATLAS_SHIFT: Vec3 = [0, 2, -25];
 /** Misma traslación estática que heartShift en GLSL, según el atlas cargado. @twin organo-corazon */
-export function heartShift(): Vec3 {
-  return abdominalAtlas ? HEART_ATLAS_SHIFT : [0, 0, 0];
+export function heartShift(person?: AnatomyPerson): Vec3 {
+  return person?.assets.buffers.abdominal ? HEART_ATLAS_SHIFT : [0, 0, 0];
 }
-function registeredHeartPoint(m: Vec3): Vec3 {
-  if (!abdominalAtlas) return m;
-  const shift = heartShift();
+function registeredHeartPoint(m: Vec3, person?: AnatomyPerson): Vec3 {
+  if (!person?.assets.buffers.abdominal) return m;
+  const shift = heartShift(person);
   return [m[0] - shift[0], m[1] - shift[1], m[2] - shift[2]];
 }
 
@@ -133,8 +133,8 @@ export function domeFloor(m: Vec3, d: Diaphragm, torso: Torso): number {
 }
 
 /** Coordenadas de un punto en el marco de los ventrículos. */
-export function heartFrame(m: Vec3): Vec3 {
-  m = registeredHeartPoint(m);
+export function heartFrame(m: Vec3, person?: AnatomyPerson): Vec3 {
+  m = registeredHeartPoint(m, person);
   const d: Vec3 = [m[0] - HEART_ORIGIN[0], m[1] - HEART_ORIGIN[1], m[2] - HEART_ORIGIN[2]];
   const a = HEART_AXES;
   return [
@@ -145,8 +145,8 @@ export function heartFrame(m: Vec3): Vec3 {
 }
 
 /** Coordenadas de un punto en el marco de la AD (su centro, inclinada `RA_TILT` en el plano sagital). */
-export function raFrame(m: Vec3): Vec3 {
-  m = registeredHeartPoint(m);
+export function raFrame(m: Vec3, person?: AnatomyPerson): Vec3 {
+  m = registeredHeartPoint(m, person);
   const [c, s] = RA_TILT;
   const y = m[1] - CAV.ra.c[1];
   const z = m[2] - CAV.ra.c[2];
@@ -154,15 +154,15 @@ export function raFrame(m: Vec3): Vec3 {
 }
 
 /** Elipsoide de la AD sin los tabiques (mm, negativa dentro): la VCI que entra en ella. */
-export function raSdf(m: Vec3): number {
-  return sdEllipsoidLocal(raFrame(m), CAV.ra.r);
+export function raSdf(m: Vec3, person?: AnatomyPerson): number {
+  return sdEllipsoidLocal(raFrame(m, person), CAV.ra.r);
 }
 
 /** Inferior crossing of the statically registered tilted RA at this XY.
  * Outside its projection, the lowest pole bounds the approach; no atrial opening is invented.
  */
-export function raInferiorZ(x: number, y: number): number {
-  const shift = heartShift();
+export function raInferiorZ(x: number, y: number, person?: AnatomyPerson): number {
+  const shift = heartShift(person);
   x -= shift[0];
   y -= shift[1];
   const [c, s] = RA_TILT,
@@ -182,10 +182,10 @@ export function raInferiorZ(x: number, y: number): number {
  * cúpula, donde la VCI no existe (gana el corazón: la VCI dilatada no borra el tabique interauricular ni entra en la AI).
  * `cut` es la distancia (cota) a las dos fronteras que eso crea.
  */
-export function ivcAtrium(m: Vec3, floor: number): { cavity: number; outside: boolean; cut: number } {
-  const ra = heartChambers(m)[2];
+export function ivcAtrium(m: Vec3, floor: number, person?: AnatomyPerson): { cavity: number; outside: boolean; cut: number } {
+  const ra = heartChambers(m, person)[2];
   const cavity = Math.max(ra, floor + W.pericardium + W.ra);
-  const approach = Math.min(raInferiorZ(m[0], m[1]), RA_APPROACH_TOP_Z + heartShift()[2]) - m[2];
+  const approach = Math.min(raInferiorZ(m[0], m[1], person), RA_APPROACH_TOP_Z + heartShift(person)[2]) - m[2];
   // A diaphragm below the inherited atrium must not delete the intervening cava.
   // Above the actual atrial entry, the original septal/outer exclusion remains.
   return {
@@ -199,13 +199,13 @@ export function ivcAtrium(m: Vec3, floor: number): { cavity: number; outside: bo
  * Distancias (mm, negativas dentro) a las cavidades del VI, VD, AD y AI, con los tabiques tallados: el VD, a `ivs` del VI;
  * la AD, a `ias` de la AI y a `avs` del VI. Sin el recorte de la cúpula.
  */
-export function heartChambers(m: Vec3): [number, number, number, number] {
-  const q = heartFrame(m);
+export function heartChambers(m: Vec3, person?: AnatomyPerson): [number, number, number, number] {
+  const q = heartFrame(m, person);
   const lv = sdEllipsoidLocal(q, CAV.lv.r);
   const rv = Math.max(sdEllipsoidLocal([q[0] - CAV.rv.c[0], q[1] - CAV.rv.c[1], q[2] - CAV.rv.c[2]], CAV.rv.r), W.ivs - lv);
-  const a = registeredHeartPoint(m);
+  const a = registeredHeartPoint(m, person);
   const la = sdEllipsoidLocal([a[0] - CAV.la.c[0], a[1] - CAV.la.c[1], a[2] - CAV.la.c[2]], CAV.la.r);
-  const ra = Math.max(raSdf(m), Math.max(W.ias - la, W.avs - lv));
+  const ra = Math.max(raSdf(m, person), Math.max(W.ias - la, W.avs - lv));
   return [lv, rv, ra, la];
 }
 
@@ -225,11 +225,11 @@ export interface ThoraxClass {
  * y es una cota salvo junto al borde de una hemicúpula (el suelo no es allí una distancia); `classify` le suma la columna
  * y la pared.
  */
-export function thorax(m: Vec3, dDome: number, floor: number): ThoraxClass {
+export function thorax(m: Vec3, dDome: number, floor: number, person?: AnatomyPerson): ThoraxClass {
   const b = MED.bound;
   const out = Math.hypot(m[0] - b.c[0], m[1] - b.c[1], m[2] - b.c[2]) - b.r;
   if (out > 0) return { tissue: Tissue.Lung, bd: Math.min(-dDome, out), ifd: 1e3 };
-  const c = heartChambers(m);
+  const c = heartChambers(m, person);
   const p = W.pericardium;
   let cav = 1e3;
   let epi = 1e3;
@@ -257,8 +257,8 @@ export function thorax(m: Vec3, dDome: number, floor: number): ThoraxClass {
  * Epicardio recortado por el suelo (mm, negativa dentro del miocardio y las cavidades; `floor` = `heartFloor`): la cara
  * del pericardio (`faceSdf`) y la malla del navegador 3D. Solo TS.
  */
-export function heartOuterSdf(m: Vec3, floor: number): number {
-  const c = heartChambers(m);
+export function heartOuterSdf(m: Vec3, floor: number, person?: AnatomyPerson): number {
+  const c = heartChambers(m, person);
   return Math.max(Math.min(c[0] - W.lv, c[1] - W.rv, c[2] - W.ra, c[3] - W.la), floor + W.pericardium);
 }
 

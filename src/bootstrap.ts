@@ -1,53 +1,56 @@
-import { anatomyBundle } from './anatomy/anatomyBundle';
-import { registerDevtools } from './app/devtools';
+import type { InstalledPerson, PersonSurfaces } from './anatomy/person';
 import { caseDisplayLabel, teacherToggleAllowed } from './app/blindMode';
+import { registerDevtools } from './app/devtools';
 import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
-import { ErrorBudget } from './app/errorBudget';
 import { modeHasColor, modeHasPw, toggleM, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
+import { ErrorBudget } from './app/errorBudget';
 import { errorLog, errorMessage } from './app/errorLog';
-import { ProbeAnimator } from './app/probeAnimation';
-import { windowPreset } from './app/windowPreset';
-import { startPointsFor } from './app/startPoints';
-import { SimulationSession } from './app/session';
-import type { Simulator } from './app/simulator';
-import { Store, type ImagingMode } from './app/store';
-import { CASES, CASE_IDS, isCaseId } from './cases';
-import { NonFiniteStateError } from './physiology/engine';
-import { Banner } from './ui/controllers/banner';
-import { bindGpuLifecycle } from './ui/controllers/gpuLifecycle';
-import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
-import { bindCine } from './ui/controllers/cine';
-import { bindImageClick } from './ui/controllers/imageClick';
-import { buildLayerMenu } from './ui/controllers/layerMenu';
-import type { CutMapView } from './ui/cutMapView';
-import { bindCollapsible, bindPopover } from './ui/disclosure';
-import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
-import { drawVelocityRuler } from './ui/velocityRuler';
-import { MModeView } from './ui/mModeView';
-import { traceRight } from './ui/sweep';
-import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
-import type { Navigator3D } from './ui/navigator3d';
-import { setPressed } from './ui/controls';
-import { ControlPanel, tabAfterMode } from './ui/panel';
-import { ProbeInput } from './ui/probeInput';
-import { translateProbe } from './probe/translation';
-import { StartPointCards } from './ui/startPointCards';
-import { compoundActive } from './ultrasound/compound';
-import { markStartup, startupTraceEnabled } from './app/startupTrace';
 import { FirstGpuFrame } from './app/firstGpuFrame';
 import { GpuFramePacer } from './app/gpuFramePacer';
 import { gpuPageTurns as gpuTurns } from './app/gpuPageTurns';
+import { ProbeAnimator } from './app/probeAnimation';
+import { SimulationSession } from './app/session';
+import type { Simulator } from './app/simulator';
+import { startPointsFor } from './app/startPoints';
+import { markStartup, startupTraceEnabled } from './app/startupTrace';
+import { Store, type ImagingMode } from './app/store';
+import { windowPreset } from './app/windowPreset';
+import { CASES, CASE_IDS, isCaseId } from './cases';
+import { NonFiniteStateError } from './physiology/engine';
+import { translateProbe } from './probe/translation';
+import { Banner } from './ui/controllers/banner';
+import { bindCine } from './ui/controllers/cine';
+import { bindGpuLifecycle } from './ui/controllers/gpuLifecycle';
+import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
+import { bindImageClick } from './ui/controllers/imageClick';
+import { buildLayerMenu } from './ui/controllers/layerMenu';
+import { setPressed } from './ui/controls';
+import type { CutMapView } from './ui/cutMapView';
+import { bindCollapsible, bindPopover } from './ui/disclosure';
+import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
+import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
+import { MModeView } from './ui/mModeView';
+import type { Navigator3D } from './ui/navigator3d';
+import { ControlPanel, tabAfterMode } from './ui/panel';
+import { ProbeInput } from './ui/probeInput';
+import { StartPointCards } from './ui/startPointCards';
+import { traceRight } from './ui/sweep';
+import { drawVelocityRuler } from './ui/velocityRuler';
+import { compoundActive } from './ultrasound/compound';
 
-export async function start(): Promise<void> {
+export async function start(person: InstalledPerson, signal: AbortSignal): Promise<void> {
   markStartup('bootstrap:begin');
   try {
-    if (anatomyBundle.person === 's0028') {
-      const controller = new AbortController();
-      window.addEventListener('pagehide', () => controller.abort(), { once: true });
-      await (await import('./ui/s0028Surfaces')).loadS0028Surfaces(controller.signal);
+    let surfaces: PersonSurfaces | undefined;
+    if (person.identity.person === 's0028') {
+      markStartup('surfaces:begin');
+      surfaces = await person.loadSurfaces();
+      signal.throwIfAborted();
+      markStartup('surfaces:ready');
     }
     await gpuTurns.prepare();
+    signal.throwIfAborted();
     /**
      * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
      * los conecta. La lógica vive en módulos con una sola responsabilidad: `SimulationSession`
@@ -111,7 +114,7 @@ export async function start(): Promise<void> {
     let session: SimulationSession;
     try {
       markStartup('simulation:begin');
-      session = new SimulationSession(glCanvas, CASE_IDS[0]);
+      session = new SimulationSession(glCanvas, CASE_IDS[0], person);
       markStartup('simulation:ready');
     } catch (e) {
       fatal(errorMessage(e));
@@ -238,18 +241,25 @@ export async function start(): Promise<void> {
       .then(async ({ Navigator3D }) => {
         if (sim().scene.hasAbdominalAtlas) {
           markStartup('navigator:surface:begin');
-          await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
+          surfaces ??= await person.loadSurfaces();
+          signal.throwIfAborted();
           markStartup('navigator:surface:ready');
         }
         markStartup('navigator:construct');
-        nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
-          getPose: () => sim().pose,
-          setPose: setPoseManual,
-          getFrame: () => sim().renderer.displayedFrame?.anatomy.frame ?? sim().frame,
-          getDepthMm: () => sim().renderer.displayedFrame?.bmode.depthMm ?? sim().bmode.depthMm,
-          getRespCaudalMm: () => (sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample).resp.diaphragmCaudalMm,
-          getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
-        });
+        nav = new Navigator3D(
+          navHost,
+          sim().scene,
+          sim().transducer,
+          {
+            getPose: () => sim().pose,
+            setPose: setPoseManual,
+            getFrame: () => sim().renderer.displayedFrame?.anatomy.frame ?? sim().frame,
+            getDepthMm: () => sim().renderer.displayedFrame?.bmode.depthMm ?? sim().bmode.depthMm,
+            getRespCaudalMm: () => (sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample).resp.diaphragmCaudalMm,
+            getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
+          },
+          surfaces,
+        );
         nav.setStudentMode(!store.get().debug);
         // El primer dibujo prepara programas y buffers de Three. Hacerlo tras
         // s.render() intercala sus consultas síncronas con la adquisición en vuelo.

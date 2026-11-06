@@ -1,14 +1,14 @@
 /** Refutation bank for the actual shared roof; no acceptance by a few selected heights. */
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../../src/anatomy/scene';
-import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../../src/anatomy/primitives';
 import { diaphragmRim } from '../../src/anatomy/diaphragmRim';
+import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../../src/anatomy/primitives';
 import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from '../../src/validation/support/legacyPerson/scene';
 const output = process.argv[2];
 if (!output) throw Error('Output required');
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));

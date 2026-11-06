@@ -1,9 +1,9 @@
 /** Instala sólo el paquete de datos reemplazable; no regenera ni modifica mallas/atlas. */
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync, copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { S0028_BUNDLE as B } from '../../src/anatomy/anatomyBundle';
+import { S0028_BUNDLE as B } from '../../src/anatomy/people/s0028/descriptor';
 
 const folder = process.argv[2];
 if (!folder) throw new Error('Indicar el paquete exportado por s0028-wall.py');

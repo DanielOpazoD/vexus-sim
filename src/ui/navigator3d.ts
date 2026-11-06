@@ -1,13 +1,14 @@
-import { bodySection } from '../anatomy/referenceBody';
-import { torsoSkinPoint } from '../anatomy/primitives';
 import * as THREE from 'three';
+import type { PersonSurfaces } from '../anatomy/person';
+import { torsoSkinPoint } from '../anatomy/primitives';
+import { bodySection } from '../anatomy/referenceBody';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
-import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
 import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { translateProbe } from '../probe/translation';
 import { buildAnatomyGroups } from './navigator3d/anatomyGroups';
 import { CM, disposeObject } from './navigator3d/common';
 import { buildFan, buildProbe, updateFan } from './navigator3d/probe';
+import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
 
 /**
  * Navegador 3D «Sonda y abdomen» (guía §8, §17): tronco con piel translúcida,
@@ -103,6 +104,7 @@ export class Navigator3D {
     private anatomy: AnatomyScene,
     private readonly transducer: Transducer,
     private readonly opts: Navigator3DOptions,
+    private readonly surfaces: PersonSurfaces = {},
   ) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
@@ -130,7 +132,7 @@ export class Navigator3D {
       organs: this.organs,
       vessels: this.vessels,
       windows: this.windows,
-    } = buildAnatomyGroups(anatomy, opts.getCaliber()));
+    } = buildAnatomyGroups(anatomy, opts.getCaliber(), surfaces));
     const p = buildProbe(transducer);
     this.probe = p.probe;
     this.marker = p.marker;
@@ -172,7 +174,7 @@ export class Navigator3D {
       organs: this.organs,
       vessels: this.vessels,
       windows: this.windows,
-    } = buildAnatomyGroups(anatomy, this.opts.getCaliber()));
+    } = buildAnatomyGroups(anatomy, this.opts.getCaliber(), this.surfaces));
     this.world.add(this.skin, this.skeleton, this.organs, this.vessels, this.windows);
     this.setLayers({});
     this.dirty = true;

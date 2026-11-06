@@ -1,17 +1,17 @@
 // @tier slow
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import { VenousSpectralAcquisition } from '../app/venousSpectral';
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { acquire, openSession, placeGate, probeAt, TR } from './support/studentChain';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { bestGateOnVessel } from '../app/gatePlacement';
 import { acousticWindowWeight } from '../app/gateTransmission';
+import { VenousSpectralAcquisition } from '../app/venousSpectral';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { prfFromNyquistCms } from '../core/units';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
+import { acquire, openSession, placeGate, probeAt, TR } from './support/studentChain';
 
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const profile = readFileSync('src/anatomy/abdominal-body.bin');

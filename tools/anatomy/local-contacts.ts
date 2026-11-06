@@ -1,14 +1,14 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { NORMAL_ADULT } from '../../src/cases';
-import { ribCentre, ribShape, sdRib } from '../../src/anatomy/primitives';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { STERNUM, sternumHalfWidth, sternumSd } from '../../src/anatomy/organs/sternum';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
+import { ribCentre, ribShape, sdRib } from '../../src/anatomy/primitives';
+import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
-import { signedContactSamples } from './signed-contact';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 import { organSignedFields } from './organ-fields';
+import { signedContactSamples } from './signed-contact';
 
 const destination = process.argv[2];
 if (!destination || existsSync(destination)) throw new Error('Indique una salida nueva; no se sobrescribe evidencia');

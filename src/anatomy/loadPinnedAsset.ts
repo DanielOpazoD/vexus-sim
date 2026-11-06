@@ -1,9 +1,3 @@
-import { THORACIC_ATLAS } from './thoracicAtlasData';
-import { setThoracicAtlas } from './thoracicAtlas';
-import { ABDOMINAL_ATLAS, ABDOMINAL_BODY } from './abdominalAtlasData';
-import { setAbdominalAtlas } from './abdominalAtlas';
-import { setAbdominalBody, validateReferenceBody } from './referenceBody';
-
 export async function sha256(data: Uint8Array<ArrayBuffer>): Promise<string> {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', data)), (b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -39,20 +33,4 @@ export async function loadPinnedGzip(
   if (offset !== raw.length || (await sha256(raw)) !== meta.sha256Raw) throw new Error('Atlas abdominal incompleto o alterado');
   options.signal?.throwIfAborted();
   return raw.buffer;
-}
-
-export async function loadAbdominalAtlas(): Promise<void> {
-  const [raw, response, skeleton] = await Promise.all([
-    loadPinnedGzip(new URL('./abdominal-atlas.gzip.bin?no-inline', import.meta.url), ABDOMINAL_ATLAS),
-    fetch(new URL('./abdominal-body.bin?no-inline', import.meta.url)),
-    loadPinnedGzip(new URL('./thoracic-atlas.gzip.bin?no-inline', import.meta.url), THORACIC_ATLAS),
-  ]);
-  if (!response.ok) throw new Error(`Perfil abdominal: HTTP ${response.status}`);
-  const body = new Uint8Array(await response.arrayBuffer());
-  if (body.byteLength !== ABDOMINAL_BODY.bytes || (await sha256(body)) !== ABDOMINAL_BODY.sha256)
-    throw new Error('Perfil abdominal alterado');
-  const profile = validateReferenceBody(new Float32Array(body.buffer));
-  setAbdominalBody(profile);
-  setAbdominalAtlas(new Uint16Array(raw));
-  setThoracicAtlas(new Uint16Array(skeleton));
 }

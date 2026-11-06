@@ -5,18 +5,18 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { AnatomyQuery } from '../../src/anatomy/query';
-import { PhysiologyEngine } from '../../src/physiology/engine';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../../src/anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../../src/anatomy/abdominalAtlasData';
+import { AnatomyQuery } from '../../src/anatomy/query';
 import { Tissue } from '../../src/anatomy/tissues';
-import { NORMAL_ADULT } from '../../src/cases';
 import { startPointsFor } from '../../src/app/startPoints';
-import { CONVEX_C35, probeFrame } from '../../src/probe/probe';
+import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { CONVEX_C35, probeFrame } from '../../src/probe/probe';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
+import { setThoracicAtlas } from '../../src/validation/support/legacyPerson/thoracicAtlas';
 
 const save = (out: string, file: string, value: unknown) => writeFileSync(resolve(out, file), JSON.stringify(value, null, 2) + '\n');
 function floats(file: string): Float32Array {

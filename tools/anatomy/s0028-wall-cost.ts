@@ -1,7 +1,7 @@
 /** P2 offline: injerta el lector de superficie en las ocho fuentes P1, sin instalarlo. */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { S0028_BUNDLE } from '../../src/anatomy/anatomyBundle';
+import { S0028_BUNDLE } from '../../src/anatomy/people/s0028/descriptor';
 import * as PASSES from '../../src/ultrasound/shaders/passes.glsl';
 import { personShader } from './s0028-p1-specialized';
 import { shaderContract, shaderCosts } from './s0028-shader-metrics';

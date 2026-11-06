@@ -102,7 +102,7 @@ export async function mutantsCli(argv: string[], ctx: CliContext): Promise<numbe
   const { root } = ctx;
   if (values.help) {
     console.log(
-      'npm run mutants -- [--module s0028Solids|src/anatomy/s0028Solids.ts] [--only a,b] [--out carpeta] [--list] [--timeout-min 10]\n' +
+      'npm run mutants -- [--module solids|src/anatomy/people/s0028/solids.ts] [--only a,b] [--out carpeta] [--list] [--timeout-min 10]\n' +
         'Salida: 0 todos muertos; 1 alguno sobrevive; 2 error, interrupción o caída.',
     );
     return 0;

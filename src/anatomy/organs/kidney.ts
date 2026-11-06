@@ -1,6 +1,7 @@
 import type { Vec3 } from '../../core/vec3';
-import { abdominalAtlas, abdominalAtlasGradient, abdominalAtlasSdf } from '../abdominalAtlas';
-import { sdEllipsoidLocal, smoothMax, smoothMin } from '../primitives';
+import { EMPTY_ATLAS } from '../emptyAtlas';
+import type { AnatomyPerson } from '../person';
+import { sdEllipsoidLocal, smoothMax } from '../primitives';
 
 /**
  * Riñón como módulo de órgano (decisión 46): contorno en judía con escotadura hiliar, cápsula,
@@ -20,6 +21,7 @@ import { sdEllipsoidLocal, smoothMax, smoothMin } from '../primitives';
  * [EXTRAPOLACIÓN PROPIA para la disposición de las pirámides].
  */
 export interface Kidney {
+  person?: AnatomyPerson;
   kind: 'kidney';
   center: Vec3;
   radii: Vec3;
@@ -266,10 +268,10 @@ export function perirenalOuterSdf(q: Vec3, k: Kidney): number {
 /** La misma cara, dada la distancia al contorno del riñón en ese punto. */
 export function perirenalFromOuter(dOuter: number, q: Vec3, k: Kidney): number {
   let d = dOuter - perirenalThicknessMm(q, k);
-  if (abdominalAtlas && d < 2) {
+  if (k.person?.assets.buffers.abdominal && d < 2) {
     const p = kidneyWorld(q, k);
     // The fat compartment conforms to neighboring viscera in the shared physical field.
-    for (const field of [0, 1, 2, 3, 4, 7, 8, 9, 10]) d = Math.max(d, -abdominalAtlasSdf(p, field));
+    for (const field of [0, 1, 2, 3, 4, 7, 8, 9, 10]) d = Math.max(d, -(k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, field));
   }
   return d;
 }
@@ -361,9 +363,10 @@ const ATLAS_KIDNEY_NEIGHBORS = [1, 9] as const;
  */
 export function atlasKidneyOuter(p: Vec3, k: Kidney): number {
   const field = k.center[0] < 0 ? 5 : 6;
-  let clipped = abdominalAtlasSdf(kidneyAtlasPoint(p, k), field);
-  for (const f of ATLAS_KIDNEY_NEIGHBORS) clipped = Math.max(clipped, ATLAS_KIDNEY_CLEARANCE_MM - abdominalAtlasSdf(p, f));
-  return Math.min(abdominalAtlasSdf(p, field), clipped);
+  let clipped = (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(kidneyAtlasPoint(p, k), field);
+  for (const f of ATLAS_KIDNEY_NEIGHBORS)
+    clipped = Math.max(clipped, ATLAS_KIDNEY_CLEARANCE_MM - (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, f));
+  return Math.min((k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, field), clipped);
 }
 
 /** El riñón de una cara renal: el de centro más cercano. Entre los dos hay 15 cm: ninguna cara queda en duda, y no depende de las cajas del atlas. */
@@ -379,22 +382,23 @@ export function nearestKidney(p: Vec3, right: Kidney, left: Kidney): Kidney {
 export function atlasKidneyOuterGradient(p: Vec3, k: Kidney): Vec3 {
   const field = k.center[0] < 0 ? 5 : 6;
   const a = kidneyAtlasPoint(p, k);
-  const stretched = abdominalAtlasSdf(a, field);
-  const gut = ATLAS_KIDNEY_CLEARANCE_MM - abdominalAtlasSdf(p, ATLAS_KIDNEY_NEIGHBORS[0]);
-  const psoas = ATLAS_KIDNEY_CLEARANCE_MM - abdominalAtlasSdf(p, ATLAS_KIDNEY_NEIGHBORS[1]);
-  if (abdominalAtlasSdf(p, field) < Math.max(stretched, gut, psoas)) return abdominalAtlasGradient(p, field);
+  const stretched = (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(a, field);
+  const gut = ATLAS_KIDNEY_CLEARANCE_MM - (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, ATLAS_KIDNEY_NEIGHBORS[0]);
+  const psoas = ATLAS_KIDNEY_CLEARANCE_MM - (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, ATLAS_KIDNEY_NEIGHBORS[1]);
+  if ((k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, field) < Math.max(stretched, gut, psoas))
+    return (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasGradient(p, field);
   if (Math.max(gut, psoas) > stretched) {
-    const n = abdominalAtlasGradient(p, ATLAS_KIDNEY_NEIGHBORS[gut >= psoas ? 0 : 1]);
+    const n = (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasGradient(p, ATLAS_KIDNEY_NEIGHBORS[gut >= psoas ? 0 : 1]);
     return [-n[0], -n[1], -n[2]];
   }
-  const n = abdominalAtlasGradient(a, field);
+  const n = (k.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasGradient(a, field);
   const w = (1 - ATLAS_KIDNEY_W_SCALE) * (n[0] * k.w[0] + n[1] * k.w[1] + n[2] * k.w[2]);
   return [n[0] - w * k.w[0], n[1] - w * k.w[1], n[2] - w * k.w[2]];
 }
 
 /** Contorno externo del riñón: elipsoide con escotadura hiliar (forma de judía). */
 export function kidneyOuterSdf(q: Vec3, k: Kidney): number {
-  if (abdominalAtlas) return atlasKidneyOuter(kidneyWorld(q, k), k);
+  if (k.person?.assets.buffers.abdominal) return atlasKidneyOuter(kidneyWorld(q, k), k);
   const ell = sdEllipsoidLocal(q, k.radii);
   const notch = sdEllipsoidLocal([q[0], q[1] - (k.radii[1] + HILUM_NOTCH.offsetV), q[2]], HILUM_NOTCH.radii);
   return smoothMax(ell, -notch, HILUM_NOTCH.roundMm);
@@ -440,7 +444,7 @@ export const SINUS_FINGERS_ATLAS = buildFingers(
   ],
   ATLAS_KIDNEY_SINUS,
 );
-const ATLAS_RIGHT_ONLY_FINGERS = 3;
+export const ATLAS_RIGHT_ONLY_FINGERS = 3;
 
 /**
  * Distancia con signo al canal del hilio (marco local): la cápsula desde el centro del seno hasta la cara medial (+v). Es
@@ -453,19 +457,7 @@ export function hilumChannelSdf(q: Vec3, k: Kidney): number {
 
 /** Punto de las tablas del interior: con el atlas, el riñón izquierdo las lee en espejo (su w apunta hacia atrás), y delante es delante en los dos. */
 export function interiorPoint(q: Vec3, k: Kidney): Vec3 {
-  return abdominalAtlas && k.w[1] < 0 ? [q[0], q[1], -q[2]] : q;
-}
-
-/** Distancia con signo al seno (elipsoide + canal del hilio + dedos hacia las papilas), marco local. */
-export function kidneySinusSdf(q: Vec3, k: Kidney): number {
-  const qs: Vec3 = [q[0], q[1] - k.sinusOffset, q[2]];
-  let d = Math.min(sdEllipsoidLocal(qs, k.sinusRadii), hilumChannelSdf(q, k));
-  const t = interiorPoint(q, k);
-  const fingers = abdominalAtlas ? SINUS_FINGERS_ATLAS : SINUS_FINGERS;
-  const count = abdominalAtlas && k.w[1] < 0 ? fingers.length - ATLAS_RIGHT_ONLY_FINGERS : fingers.length;
-  for (let i = 0; i < count; i++)
-    d = smoothMin(d, sdRoundCone(t, fingers[i].a, fingers[i].b, SINUS_FINGER.radiusMm, SINUS_FINGER.radiusMm), SINUS_FINGER.blendMm);
-  return d;
+  return k.person?.assets.buffers.abdominal && k.w[1] < 0 ? [q[0], q[1], -q[2]] : q;
 }
 
 /**
@@ -491,59 +483,6 @@ export const ARCUATE = { halfMm: 0.6, rimMm: 2.5 } as const;
  * lecturas del campo. Es 1 en los polos y 0,8 delante y detrás. Solo para situar la unión corticomedular; no es una cota.
  */
 export const ATLAS_DEPTH_BD = 0.5;
-export function atlasDepthScale(q: Vec3): number {
-  const nu = q[0] / (KIDNEY_RADII[0] * KIDNEY_RADII[0]);
-  const nv = q[1] / (KIDNEY_RADII[1] * KIDNEY_RADII[1]);
-  const nw = q[2] / (KIDNEY_RADII[2] * KIDNEY_RADII[2]);
-  const nw2 = (nw * nw) / (nu * nu + nv * nv + nw * nw + 1e-12);
-  return Math.sqrt(1 - (1 - ATLAS_KIDNEY_W_SCALE * ATLAS_KIDNEY_W_SCALE) * nw2);
-}
-
-/**
- * Regiones del riñón en p. Fuera de él (`dOuter ≥ 0`) no se evalúan el seno ni las pirámides: `dSinus` = +∞. `inner` estima la
- * distancia a la región vecina, el anillo de los arcuatos incluido: las distancias de los conos van por `PYRAMID_BD`. Quien
- * clasifica la multiplica por 0,75, y resta la cápsula (los primeros `RENAL_CAPSULE_MM`).
- */
-export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
-  const q = kidneyLocal(p, k);
-  const dOuter = kidneyOuterSdf(q, k);
-  // fuera no hay regiones: la grasa perirrenal y su entorno (a < 65 mm del centro) no pagan los dedos del seno
-  if (dOuter >= 0) return { dOuter, dSinus: Infinity, region: 'cortex', inner: -dOuter };
-  const dSinus = kidneySinusSdf(q, k);
-  if (dSinus < 0) {
-    // Pelvis: hendidura de orina colapsada en el seno, hacia el hilio. |q/r| es 1/r_mín-lipschitziana: (|q/r| − 1)·r_mín acota
-    // la distancia a su superficie, dentro y fuera. `sdEllipsoidLocal` no sirve aquí: en esta lámina declara hasta 5 veces la
-    // salida real, y la guarda de la elevación reutilizaba el tejido del centro al otro lado (decisión 305)
-    const rp = RENAL_PELVIS.radii;
-    const lp = (Math.hypot(q[0] / rp[0], (q[1] - k.sinusOffset - RENAL_PELVIS.offsetV) / rp[1], q[2] / rp[2]) - 1) * rp[2];
-    if (lp < 0) return { dOuter, dSinus, region: 'pelvis', inner: Math.min(-lp, -dOuter) };
-    return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter, lp) };
-  }
-  // Pirámides (conos redondeados de la papila a la base, bajo la corteza) y el anillo de los arcuatos en el borde de su base.
-  // Con el atlas, la corteza se mide en el riñón ya estirado: `dOuter` es la distancia en el campo sin estirar
-  const depth = (abdominalAtlas ? -dOuter / atlasDepthScale(q) : -dOuter) - MEDULLA_MIN_DEPTH_MM;
-  // `depth` cambia hasta casi el doble de deprisa que la distancia cuando la corrige `atlasDepthScale`: su frontera va a la mitad
-  const dd = abdominalAtlas ? ATLAS_DEPTH_BD : 1;
-  const A = ARCUATE;
-  if (depth > -A.halfMm) {
-    let dMed = 1e3;
-    const t = interiorPoint(q, k);
-    for (const pyr of abdominalAtlas ? PYRAMIDS_ATLAS : PYRAMIDS)
-      dMed = Math.min(dMed, sdRoundCone(t, pyr.apex, pyr.base, pyr.apexR, pyr.baseR));
-    const g = PYRAMID_BD;
-    if (dMed >= 0) return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, dMed * g) };
-    // dentro del cono: el anillo (lejos de la unión menos de halfMm y del borde menos de rimMm), la médula bajo la unión o
-    // la corteza sobre el centro de la base; `toRing` acota la distancia al anillo desde fuera de él
-    const ringDepth = A.halfMm - Math.abs(depth);
-    const ringRim = A.rimMm + dMed;
-    if (ringDepth > 0 && ringRim > 0)
-      return { dOuter, dSinus, region: 'arcuate', inner: Math.min(ringDepth * dd, ringRim * g, -dMed * g, dSinus) };
-    const toRing = Math.max(-ringDepth * dd, -ringRim * g);
-    if (depth > 0) return { dOuter, dSinus, region: 'medulla', inner: Math.min(-dMed * g, dSinus, depth * dd, toRing) };
-    return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, -depth * dd, toRing) };
-  }
-  return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, (-depth - A.halfMm) * dd) };
-}
 
 const f4 = (v: number) => v.toFixed(4);
 const vec3s = (v: Vec3) => `vec3(${f4(v[0])}, ${f4(v[1])}, ${f4(v[2])})`;

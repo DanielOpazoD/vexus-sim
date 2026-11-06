@@ -2,22 +2,22 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { setS0028Wall } from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
-import { AnatomyScene } from '../anatomy/scene';
-import { AnatomyQuery } from '../anatomy/query';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
-import { CONVEX_C35 } from '../probe/probe';
-import { probeContact } from '../probe/contact';
 import { compressionSample, rigidNode, tableAt, uncompress } from '../anatomy/compression';
-import { s0028SourceValue } from '../anatomy/s0028Source';
+import { AnatomyQuery } from '../anatomy/query';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
+import { probeContact } from '../probe/contact';
+import { CONVEX_C35 } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028SourceValue } from './support/legacyPerson/s0028Source';
+import { setS0028Wall } from './support/legacyPerson/s0028Wall';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 /**
  * Compresión rígida s0028 (r3) en líneas radiales de todo el sector, no en una rejilla cartesiana de ±100 mm, que no llega

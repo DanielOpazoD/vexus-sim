@@ -14,11 +14,12 @@ import {
   thorax,
 } from '../anatomy/organs/heart';
 import { HEART_CHAMBER_IDS, heartChamber, type HeartChamber } from '../anatomy/organs/heartChamber';
-import { sdDiaphragm, diaphragmHeight, torsoDepth } from '../anatomy/primitives';
-import { AnatomyScene, BASELINE_CALIBER, type VesselCaliber } from '../anatomy/scene';
+import { diaphragmHeight, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { AnatomyScene, BASELINE_CALIBER, type VesselCaliber } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 /**
  * Corazón y mediastino (decisión 85): por encima de la cúpula ya no todo es pulmón. Marco levógiro: x = izquierda del
@@ -40,7 +41,7 @@ for (let x = -60; x < 90; x += STEP)
       const m: Vec3 = [x, y, z];
       const c = cls(m);
       if (c.tissue !== Tissue.Blood || c.vessel) continue;
-      const ch = heartChamber(m, floorOf(m));
+      const ch = heartChamber(m, floorOf(m), fixturePerson().cpu);
       if (ch) chambers.get(ch)!.push(m);
     }
 const centroid = (pts: Vec3[]): Vec3 => [0, 1, 2].map((k) => pts.reduce((a, p) => a + p[k], 0) / pts.length) as Vec3;
@@ -127,7 +128,8 @@ describe('Corazón y mediastino (decisión 85)', () => {
         if (-torsoDepth([x, y, zd], scene.torso) - scene.wallThickness() < 5) continue;
         // ¿hay corazón en la vertical, a menos de 20 mm de la cúpula?
         let above = false;
-        for (let dz = 1; dz <= 20 && !above; dz += 1) above = heartOuterSdf([x, y, zd + dz], floorOf([x, y, zd + dz])) < 0;
+        for (let dz = 1; dz <= 20 && !above; dz += 1)
+          above = heartOuterSdf([x, y, zd + dz], floorOf([x, y, zd + dz]), fixturePerson().cpu) < 0;
         if (!above) continue;
         columns++;
         for (const dz of [0.3, 1, 2, 4])
@@ -151,7 +153,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
       const m: Vec3 = [lv[0] + edge + s, lv[1], lv[2]];
       const c = cls(m);
       expect(c.tissue, `${tag} a +${s.toFixed(1)}`).toBe(Tissue.Mediastinum);
-      const d = heartOuterSdf(m, floorOf(m));
+      const d = heartOuterSdf(m, floorOf(m), fixturePerson().cpu);
       if (d < HEART_WALLS.pericardium - 0.05) {
         faced++;
         expect(c.interface).toBe(Interface.Pericardium);
@@ -205,7 +207,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
       const d = dome(m);
       if (d >= 0) continue;
       shell++;
-      expect(Tissue[thorax(m, d, floorOf(m)).tissue], m.map((v) => v.toFixed(1)).join(', ')).toBe('Lung');
+      expect(Tissue[thorax(m, d, floorOf(m), fixturePerson().cpu).tissue], m.map((v) => v.toFixed(1)).join(', ')).toBe('Lung');
     }
     expect(shell).toBeGreaterThan(3000);
   });
@@ -231,7 +233,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
       tag,
     ).toEqual([Tissue.Blood]);
     // el orificio: la AD empieza a pocos milímetros de la cúpula
-    const floor = ivcAtrium(top, floorOf(top));
+    const floor = ivcAtrium(top, floorOf(top), fixturePerson().cpu);
     expect(floor.cavity).toBeLessThan(0);
     expect(IVC_ORIFICE_MM).toBeLessThan(6);
   });
@@ -255,12 +257,12 @@ describe('Corazón y mediastino (decisión 85)', () => {
           above++;
           const c = cls(m, cal);
           const tag = JSON.stringify(m);
-          expect(Tissue[c.tissue], tag).toBe(Tissue[thorax(m, dome(m), f).tissue]);
-          if (heartChambers(m)[2] >= 0) {
+          expect(Tissue[c.tissue], tag).toBe(Tissue[thorax(m, dome(m), f, fixturePerson().cpu).tissue]);
+          if (heartChambers(m, fixturePerson().cpu)[2] >= 0) {
             heart++;
             expect(c.vessel, tag).toBeNull();
-            expect(ivcAtrium(m, f).outside, tag).toBe(true);
-            if (heartChamber(m, f) === 'la') inLa++;
+            expect(ivcAtrium(m, f, fixturePerson().cpu).outside, tag).toBe(true);
+            if (heartChamber(m, f, fixturePerson().cpu) === 'la') inLa++;
           }
         }
     expect(above).toBeGreaterThan(1000);
@@ -301,7 +303,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
         const zf = WALL4.map((w) => zFar(x, y, w + HEART_WALLS.pericardium + 3));
         for (let z = Math.min(...zf); z < 80; z += 1) {
           const m: Vec3 = [x, y, z];
-          const c = heartChambers(m);
+          const c = heartChambers(m, fixturePerson().cpu);
           // dentro de la cavidad tallada i (sin el recorte) y a más de su pared + pericardio + 3 mm de la cúpula
           const i = [0, 1, 2, 3].find((k) => c[k] < 0 && z > zf[k]);
           if (i === undefined) continue;
@@ -335,7 +337,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
           const m: Vec3 = [x, y, z];
           const f = floorOf(m);
           if (dome(m) >= 0) continue;
-          const c = heartChambers(m).map((v, k) => Math.max(v, f + p + WALL4[k]));
+          const c = heartChambers(m, fixturePerson().cpu).map((v, k) => Math.max(v, f + p + WALL4[k]));
           if (cls(m).tissue !== Tissue.Blood) continue;
           if (c[0] < 0 && c[3] < 0) {
             mitral++;

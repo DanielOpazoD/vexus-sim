@@ -1,22 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { bestGateOnVessel } from '../app/gatePlacement';
-import { acousticWindowWeight, gateTransmission } from '../app/gateTransmission';
-import { START_POINTS, type StartPoint } from '../app/startPoints';
-import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { TISSUES, Tissue } from '../anatomy/tissues';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
-import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
-import { sdSpineDisc } from '../anatomy/primitives';
 import { domeFloor } from '../anatomy/organs/heart';
 import { heartChamber } from '../anatomy/organs/heartChamber';
 import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf } from '../anatomy/organs/kidney';
+import { sdSpineDisc } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
+import { TISSUES, Tissue } from '../anatomy/tissues';
+import { bestGateOnVessel } from '../app/gatePlacement';
+import { acousticWindowWeight, gateTransmission } from '../app/gateTransmission';
+import { START_POINTS, type StartPoint } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
+import { PhysiologyEngine } from '../physiology/engine';
+import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, type ProbePose } from '../probe/probe';
-import { rayAttenuationDb } from '../ultrasound/transmission';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { rayAttenuationDb } from '../ultrasound/transmission';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 /**
  * Cada punto de partida debe cortar de verdad la estructura que promete su
@@ -105,7 +106,10 @@ function screenMap(pose: ProbePose, depthMm: number): ScreenMap {
       tissues[i][r] = q.tissue;
       const s = { x: -(R0 + r) * Math.sin(th), y: (R0 + r) * Math.cos(th), line: i, r };
       // la sangre sin vaso es la de una cavidad del corazón (decisión 85)
-      const chamber = !q.vessel && q.tissue === Tissue.Blood ? heartChamber(mat, domeFloor(mat, scene.diaphragm, scene.torso)) : null;
+      const chamber =
+        !q.vessel && q.tissue === Tissue.Blood
+          ? heartChamber(mat, domeFloor(mat, scene.diaphragm, scene.torso), fixturePerson().cpu)
+          : null;
       const keys: Array<string | Tissue> = q.vessel ? [q.vessel, q.tissue] : chamber ? [chamber, q.tissue] : [q.tissue];
       for (const key of keys) {
         (cut.get(key) ?? cut.set(key, []).get(key)!).push(s);

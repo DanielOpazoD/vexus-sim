@@ -1,36 +1,35 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, describe, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import {
+  ATLAS_KIDNEY_SINUS,
   KIDNEY_GLSL,
   KIDNEY_SINUS,
+  MEDULLA_MIN_DEPTH_MM,
   PYRAMIDS,
+  PYRAMIDS_ATLAS,
   SINUS_FINGER,
   SINUS_FINGERS,
   SINUS_FINGERS_ATLAS,
   interiorPoint,
-  atlasDepthScale,
-  MEDULLA_MIN_DEPTH_MM,
-  sdRoundCone,
-  ATLAS_KIDNEY_SINUS,
-  PYRAMIDS_ATLAS,
   kidneyOuterSdf,
-  kidneyQuery,
   kidneyWorld,
+  sdRoundCone,
   type Kidney,
 } from '../anatomy/organs/kidney';
+import { atlasDepthScale, kidneyQuery } from '../anatomy/people/default/kidneyInterior';
 import { sdEllipsoidLocal } from '../anatomy/primitives';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { startPointsFor } from '../app/startPoints';
 import { CASES } from '../cases';
 import { add, cross, normalize, scale, sub, type Vec3 } from '../core/vec3';
 import type { VesselId } from '../physiology/vessels';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 const PATIENT = { ...CASES.find((c) => c.id === 'normal-adult')!, respiratoryPattern: 'apnea-expiratory' as const };
 

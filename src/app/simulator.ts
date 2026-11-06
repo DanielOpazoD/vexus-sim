@@ -1,21 +1,18 @@
-import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
-import type { ColorTiming } from '../ultrasound/colorTiming';
-import { AcquisitionEquipment } from './acquisitionEquipment';
-import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import type { ProbeCompression } from '../anatomy/compression';
+import type { InstalledPerson } from '../anatomy/person';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { DopplerAudio } from '../audio/dopplerAudio';
-import { dopplerShiftHz } from '../core/units';
+import { C_RECONSTRUCTION_MM_S, dopplerShiftHz, nyquistVelocityCms } from '../core/units';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
-import { pwGate, type PwGateInfo } from './pwGate';
-import type { GateVesselSample } from '../doppler/vesselIdentity';
 import type { GateGeometry } from '../doppler/sampleVolume';
+import type { GateVesselSample } from '../doppler/vesselIdentity';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import { probeContact, type ProbeContact } from '../probe/contact';
 import { clampPose, defaultPose, probeVelocity, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
+import type { ColorTiming } from '../ultrasound/colorTiming';
 import {
   DEFAULT_BMODE,
   DEFAULT_COLOR,
@@ -25,6 +22,9 @@ import {
   type GpuPointQuery,
   type PassRepeat,
 } from '../ultrasound/renderer';
+import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
+import { AcquisitionEquipment } from './acquisitionEquipment';
+import { pwGate, type PwGateInfo } from './pwGate';
 
 /**
  * Segundos de composición de la puerta que se guardan: más que los 7 s de una captura. Por tiempo, no por número: la
@@ -156,10 +156,17 @@ export class Simulator {
    * `renderer`: el de otro simulador (cambio de caso), que se queda con sus programas compilados y
    * recibe esta escena al FINAL, cuando todo lo demás se ha construido sin errores.
    */
-  constructor(patient: PatientState, canvas: HTMLCanvasElement, audio?: DopplerAudio, renderer?: UltrasoundRenderer) {
+  constructor(
+    patient: PatientState,
+    canvas: HTMLCanvasElement,
+    audio?: DopplerAudio,
+    renderer?: UltrasoundRenderer,
+    readonly person?: InstalledPerson,
+  ) {
+    if (!person) throw new Error('Simulador sin persona instalada');
     this.patient = patient;
     this.audio = audio ?? new DopplerAudio();
-    this.scene = new AnatomyScene(patient);
+    this.scene = new AnatomyScene(patient, undefined, person);
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
     this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
@@ -169,7 +176,7 @@ export class Simulator {
     this.#contactPose = this.pose;
     this.anatomy.setProbeCompression(this.#lastContact);
     if (renderer) renderer.setScene(this.scene);
-    this.renderer = renderer ?? new UltrasoundRenderer(canvas, this.scene, this.profile);
+    this.renderer = renderer ?? new UltrasoundRenderer(canvas, this.scene, this.profile, this.person?.gpu);
   }
 
   get equipment(): EquipmentSettings {
@@ -251,7 +258,7 @@ export class Simulator {
   rebuildRenderer(canvas: HTMLCanvasElement): void {
     // The browser already released the lost context's resources. Deleting those
     // invalid handles after restoration sets INVALID_OPERATION in the new context.
-    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
+    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile, this.person?.gpu);
     this.beginAcquisitionEpoch();
   }
 

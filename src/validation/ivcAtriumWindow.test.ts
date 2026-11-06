@@ -1,22 +1,23 @@
+import { fixturePerson } from './support/legacyPerson/state';
 // @tier slow
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas, thoracicValue } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { domeFloor, heartChambers, heartOuterSdf } from '../anatomy/organs/heart';
-import { buildHeartMesh } from '../ui/navigator3d/organs';
-import { CM, disposeObject } from '../ui/navigator3d/common';
 import { heartChamber } from '../anatomy/organs/heartChamber';
-import { Tissue } from '../anatomy/tissues';
-import { SampleVolumeIQ } from '../doppler/sampleVolume';
 import { AnatomyQuery } from '../anatomy/query';
-import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
+import { Tissue } from '../anatomy/tissues';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { SampleVolumeIQ } from '../doppler/sampleVolume';
+import { PhysiologyEngine } from '../physiology/engine';
+import { CM, disposeObject } from '../ui/navigator3d/common';
+import { buildHeartMesh } from '../ui/navigator3d/organs';
 import { atriumWindow, summarizeAtriumRays } from './support/ivcAtriumWindow';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas, thoracicValue } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   for (const [name, setter] of [
@@ -132,9 +133,9 @@ it('conserva las cuatro cavidades adultas y sus vecinos sin cortinas dentro de s
       for (let z = -45.41; z < 110; z += 3) {
         const p: [number, number, number] = [x, y, z],
           floor = domeFloor(p, scene.diaphragm, scene.torso),
-          c = heartChambers(p);
+          c = heartChambers(p, fixturePerson().cpu);
         const q = scene.classify(p, BASELINE_CALIBER);
-        const ch = heartChamber(p, floor);
+        const ch = heartChamber(p, floor, fixturePerson().cpu);
         if (ch && q.tissue === Tissue.Blood && !q.vessel) volumes[['lv', 'rv', 'ra', 'la'].indexOf(ch)] += 27 / 1000;
         // A >4 mm inside, >12 mm above the bounded cardiac floor, any
         // non-blood tissue is a real collision or a curtain, not rounding.
@@ -158,7 +159,7 @@ it('no aumenta la intersección VD–esternón de la base, también a menos de 4
     for (let y = 60; y <= 85; y += 0.5)
       for (let z = 15; z <= 50; z += 0.5) {
         const p: [number, number, number] = [x, y, z],
-          rv = Math.max(heartChambers(p)[1], domeFloor(p, scene.diaphragm, scene.torso) + 5.5),
+          rv = Math.max(heartChambers(p, fixturePerson().cpu)[1], domeFloor(p, scene.diaphragm, scene.torso) + 5.5),
           bone = thoracicValue(p);
         if (rv < 0 && bone.d < 0 && bone.label === 14) {
           intersections++;
@@ -168,7 +169,9 @@ it('no aumenta la intersección VD–esternón de la base, también a menos de 4
   expect(interior).toBe(0);
   expect(intersections).toBeLessThanOrEqual(4);
   const witness: [number, number, number] = [17.5, 73.5, 36.5];
-  expect(Math.max(heartChambers(witness)[1], domeFloor(witness, scene.diaphragm, scene.torso) + 5.5)).toBeGreaterThanOrEqual(0);
+  expect(
+    Math.max(heartChambers(witness, fixturePerson().cpu)[1], domeFloor(witness, scene.diaphragm, scene.torso) + 5.5),
+  ).toBeGreaterThanOrEqual(0);
 });
 
 it('el corazón del navegador incluye el polo inferior del SDF y no tiene bordes cortados', () => {
@@ -181,7 +184,7 @@ it('el corazón del navegador incluye el polo inferior del SDF y no tiene bordes
       for (let y = -10; y <= 95; y++)
         for (let z = -15; z <= 10; z++) {
           const p: [number, number, number] = [x, y, z];
-          if (heartOuterSdf(p, domeFloor(p, scene.diaphragm, scene.torso)) < 0) inferior = Math.min(inferior, z);
+          if (heartOuterSdf(p, domeFloor(p, scene.diaphragm, scene.torso), fixturePerson().cpu) < 0) inferior = Math.min(inferior, z);
         }
     expect(Number.isFinite(inferior)).toBe(true);
     const vertices = mesh.geometry.getAttribute('position'),

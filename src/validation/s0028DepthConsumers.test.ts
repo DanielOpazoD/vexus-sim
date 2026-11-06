@@ -1,22 +1,22 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { setAbdominalAtlas, s0028Depth } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { torsoDepth, torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
 import { Interface } from '../anatomy/interfaces';
+import { wallFaceGradient, wallFaceSd } from '../anatomy/organs/wall';
+import { torsoDepth, torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
-import { wallFaceSd, wallFaceGradient } from '../anatomy/organs/wall';
-import { NORMAL_ADULT } from '../cases';
 import { startPointsFor } from '../app/startPoints';
-import { CONVEX_C35, probeFrame } from '../probe/probe';
-import { probeContact, contactCoupling, firstCrossing } from '../probe/contact';
+import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
-import { setS0028Wall, s0028InsideWall } from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
+import { contactCoupling, firstCrossing, probeContact } from '../probe/contact';
+import { CONVEX_C35, probeFrame } from '../probe/probe';
+import { s0028Depth, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028InsideWall, setS0028Wall } from './support/legacyPerson/s0028Wall';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 let scene: AnatomyScene;
 let atlas: Uint16Array;
 beforeAll(() => {
@@ -68,7 +68,9 @@ it('profundidad B alimenta signo, magnitud, caras profundas y respiración, tamb
   // Negative: removing B must change a real consumer, rather than merely changing metadata.
   const before = points.map((m) => torsoDepth(m, scene.torso));
   setAbdominalAtlas(undefined);
-  expect(points.map((m) => torsoDepth(m, scene.torso))).not.toEqual(before);
+  const withoutAtlas = new AnatomyScene(NORMAL_ADULT);
+  expect(points.map((m) => torsoDepth(m, withoutAtlas.torso))).not.toEqual(before);
+  expect(points.map((m) => torsoDepth(m, scene.torso))).toEqual(before);
   setAbdominalAtlas(atlas);
   expect(points.map((m) => torsoDepth(m, scene.torso))).toEqual(before);
 });

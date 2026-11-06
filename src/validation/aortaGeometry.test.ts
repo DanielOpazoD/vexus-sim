@@ -1,17 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
 import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
 import { tubeGridReach } from '../anatomy/gpu/tubeGrid';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import type { VesselId } from '../physiology/vessels';
 import { PhysiologyEngine } from '../physiology/engine';
+import type { VesselId } from '../physiology/vessels';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 import { junctionWitness } from './support/vascularJunctions';
 
 function atlas() {

@@ -1,18 +1,18 @@
 /** Source interior samples vs actual material classifier. No anatomy fitting or signal claims. */
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
 import { Tissue } from '../../src/anatomy/tissues';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../../src/anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../src/cases';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import type { Vec3 } from '../../src/core/vec3';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
+import { setThoracicAtlas } from '../../src/validation/support/legacyPerson/thoracicAtlas';
 
 const [input, output] = process.argv.slice(2);
 if (!input || !output) throw new Error('Usage: posteriorCompartmentAudit.ts SOURCE_POINTS.json OUTPUT.json');

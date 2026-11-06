@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { INTERLOBAR_FLOW_SHARE, VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('presupuesto de flujo renal y unidades Q/A', () => {
   for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION]) {

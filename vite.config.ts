@@ -4,15 +4,16 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { glslMinify } from './tools/build/glslMinify';
+import { glslPacking } from './tools/build/glslPacking';
+import { glslUniformNames } from './tools/build/glslUniformNames';
+import { marchingTable } from './tools/build/marchingTable';
+import { personBundles } from './tools/build/personBundles';
+import { buildProvenance } from './tools/build/provenance';
+import { sharedCutMapWorker } from './tools/build/sharedCutMapWorker';
 import { threeGlslCompact } from './tools/build/threeGlslCompact';
 import { threeUnusedSubsystems } from './tools/build/threeUnusedSubsystems';
-import { glslUniformNames } from './tools/build/glslUniformNames';
-import { glslPacking } from './tools/build/glslPacking';
-import { marchingTable } from './tools/build/marchingTable';
-import { sharedCutMapWorker } from './tools/build/sharedCutMapWorker';
 import { coverageFiles } from './tools/ci/coveragePartition';
 import { testFiles, testTierFiles } from './tools/ci/testTiers';
-import { buildProvenance } from './tools/build/provenance';
 
 /**
  * Niveles de prueba (práctica de EchoTwin; regla en tools/ci/testTiers.ts): un archivo cuya PRIMERA línea es
@@ -52,6 +53,7 @@ export default defineConfig({
     marchingTable(),
     glslPacking(),
     sharedCutMapWorker(),
+    personBundles(),
     buildProvenance(),
   ],
   define: {
@@ -69,7 +71,7 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            { name: 'three', test: /node_modules[\\/]three[\\/]/ },
+            { name: 'three', includeDependenciesRecursively: false, test: /node_modules[\\/]three[\\/]/ },
             // Consultas CPU de la persona separadas: conservan el techo por chunk sin moverlo.
             { name: 'anatomyScene', includeDependenciesRecursively: false, test: /src[\\/]anatomy[\\/]scene\.ts$/ },
             // Análisis PW y ventanas compartidas con Docente: una descarga, sin duplicar wrappers/imports.

@@ -1,7 +1,26 @@
-import { BOWEL_NODES, BOWEL_GAS } from '../anatomy/organs/bowel';
+import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
+import { BOWEL_GAS, BOWEL_NODES } from '../anatomy/organs/bowel';
+import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
+import { torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
+import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
+import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
+import { TISSUES, Tissue } from '../anatomy/tissues';
+import type { Vec3 } from '../core/vec3';
+import type { RespiratoryPattern } from '../physiology/patientState';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
+import { contactCoupling } from '../probe/contact';
+import { lineAngle, pointOnLine, type ProbePose } from '../probe/probe';
+import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
+import { focalGain } from '../ultrasound/beamEcho';
+import { compoundActive, lookTheta } from '../ultrasound/compound';
+import { levelOfGrey } from '../ultrasound/greyMap';
+import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
+import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';
+import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
+import { pixelToBeam } from '../ultrasound/sectorGeometry';
+import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
+import { rayAttenuationDb } from '../ultrasound/transmission';
 import { gateInColorBox, type EquipmentCommand } from './equipment';
-import { errorLog } from './errorLog';
 import {
   equivalenceSweep,
   interfaceShellEquivalence,
@@ -10,28 +29,7 @@ import {
   type InterfaceShellReport,
   type VolumeEquivalenceReport,
 } from './equivalenceSweep';
-import { bestGateOnVessel } from './gatePlacement';
-import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { contactCoupling } from '../probe/contact';
-import { lineAngle, pointOnLine, type ProbePose } from '../probe/probe';
-import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
-import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
-import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
-import { TISSUES, Tissue } from '../anatomy/tissues';
-import type { Vec3 } from '../core/vec3';
-import { torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
-import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
-import { s0028InsideWall } from '../anatomy/s0028Wall';
-import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
-import { rayAttenuationDb } from '../ultrasound/transmission';
-import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
-import { compareSteeredTransmission, look0TransmissionTwin } from './steeredParity';
-import { compoundActive, lookTheta } from '../ultrasound/compound';
-import { levelOfGrey } from '../ultrasound/greyMap';
-import { focalGain } from '../ultrasound/beamEcho';
-import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
-import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
-import { pixelToBeam } from '../ultrasound/sectorGeometry';
+import { errorLog } from './errorLog';
 import { fidelityStats } from './fidelity';
 import { clearLiverGrid } from './fidelity/clearLiver';
 import type { CompoundStats, LookFrames } from './fidelity/compound';
@@ -39,11 +37,12 @@ import { curtainLines } from './fidelity/curtain';
 import { CURTAIN_LIVER_MAX_AIR, centralGradient, type TransmissionFrame } from './fidelity/grid';
 import type { FidelityStats } from './fidelity/planeStats';
 import { pleuraStats, slidingCorrelation, type PleuraStats } from './fidelity/pleura';
-import type { RespiratoryPattern } from '../physiology/patientState';
-import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
-import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';
+import { bestGateOnVessel } from './gatePlacement';
+import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import type { RenderMeasureOptions, Simulator } from './simulator';
+import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
 import { startPointsFor, type StartPoint } from './startPoints';
+import { compareSteeredTransmission, look0TransmissionTwin } from './steeredParity';
 
 /**
  * Ganchos de prueba estables (e2e). Se cargan con `import()` dinámico solo en desarrollo o
@@ -1725,7 +1724,7 @@ function respirationParityStats(sim: Simulator): RespirationParityStats {
     const m: Vec3 = [points[3 * i], points[3 * i + 1], points[3 * i + 2]];
     const w = scene.respiratoryWeight(m),
       dw = Math.abs(gpu[4 * i] - w);
-    if (s0028InsideWall(m) === null) {
+    if ((scene.person?.cpu.regional?.s0028InsideWall(m) ?? null) === null) {
       stats.u++;
       if (w > 0) stats.movingU++;
       diffsU.push(dw);

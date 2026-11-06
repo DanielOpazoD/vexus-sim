@@ -16,7 +16,6 @@ import { ANATOMY_GLSL, COMPRESSION_BASE, MAX_NODES, NODE_BASE, SCENE_TEX_H, SCEN
 import { SCENE_UNIFORMS } from '../anatomy/gpu/sceneUniforms';
 import { torsoDepth, torsoDepthGradient } from '../anatomy/primitives';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
@@ -24,6 +23,7 @@ import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONTACT, contactCoupling, probeContact, type ProbeContact } from '../probe/contact';
 import { CONVEX_C35, clampPose, lineAngle, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../probe/probe';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 /**
  * La sonda comprime el tejido (decisión 63): gemelo TS del campo de compresión y del contacto en los puntos de

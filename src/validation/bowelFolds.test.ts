@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOWEL_ARC,
+  BOWEL_FOLD_MM,
   BOWEL_NODES,
   BOWEL_RADII,
   BOWEL_REST_RADII,
-  BOWEL_FOLD_MM,
   BOWEL_WALL_MM,
   bowelQuery,
   bowelRadii,
 } from '../anatomy/organs/bowel';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
+import type { Vec3 } from '../core/vec3';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, type ProbePose } from '../probe/probe';
-import type { Vec3 } from '../core/vec3';
-import { Tissue } from '../anatomy/tissues';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 const at = (z: number, radius: number): Vec3 => [-48 + radius, 22, z];
 const gradient = (p: Vec3, face: 'd' | 'lumen', radii = BOWEL_REST_RADII): Vec3 =>
   [0, 1, 2].map((j) => {

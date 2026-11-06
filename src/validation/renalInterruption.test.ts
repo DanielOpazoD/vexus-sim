@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { NORMAL_ADULT } from '../cases';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { SpectralProcessor } from '../doppler/spectral';
 import { measureObservedRenal, renalFloorCms } from '../doppler/spectralMeasure';
 import { WallFilter } from '../doppler/wallFilter';
-import { AnatomyScene } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { RENAL_GAP_MIN_S, beatWindows, resolvableMinimum } from '../vexus/measurements';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Interrupción del flujo interlobar sobre la cadena REAL (filtro de pared → espectro →

@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { nodeSin } from '../anatomy/compression';
 import { torsoDepth } from '../anatomy/primitives';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35 } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 beforeAll(() => {
   const a = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));

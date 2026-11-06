@@ -1,17 +1,16 @@
-import { s0028Surfaces } from '../s0028Surfaces';
-import { bodyStride } from '../../anatomy/referenceBody';
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
-import { thoracicSurface } from '../../anatomy/abdominalSurface';
-import { THORACIC_SURFACE } from '../../anatomy/thoracicSurfaceData';
-import { referenceCartilage } from '../../anatomy/referenceCartilage';
-import { sternumSd, STERNUM } from '../../anatomy/organs/sternum';
-import { meshFromSdf } from './organs';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { STERNUM, sternumSd } from '../../anatomy/organs/sternum';
+import type { PersonSurfaces } from '../../anatomy/person';
+import { ribAnteriorEndX, ribCentre, ribShape, sdRib, SPINE_SHAPE, torsoNormal, torsoSkinPoint, type Rib } from '../../anatomy/primitives';
+import { bodyStride } from '../../anatomy/referenceBody';
+import { referenceCartilage } from '../../anatomy/referenceCartilage';
 import type { AnatomyScene } from '../../anatomy/scene';
-import { ribAnteriorEndX, ribCentre, ribShape, torsoSkinPoint, torsoNormal, sdRib, SPINE_SHAPE, type Rib } from '../../anatomy/primitives';
+import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
+import { THORACIC_SURFACE } from '../../anatomy/thoracicSurfaceData';
 import { CM, surfaceAt } from './common';
+import { meshFromSdf } from './organs';
 
 /** Piel del campo corporal compartido (`torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
@@ -144,14 +143,15 @@ export function costalGeometry(a: AnatomyScene, rib: Rib, side: number): THREE.B
   return geometry;
 }
 
-export function buildSkeleton(a: AnatomyScene): THREE.Group {
+export function buildSkeleton(a: AnatomyScene, surfaces: PersonSurfaces = {}): THREE.Group {
+  const thoracicSurface = surfaces.thoracic;
   const g = new THREE.Group();
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
   if (a.identity.person === 's0028') {
     bone.flatShading = true;
     cartilage.flatShading = true;
-    for (const f of s0028Surfaces.filter((f) => ['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
+    for (const f of (surfaces.indexed ?? []).filter((f) => ['thoracicBone', 'cartilage', 'lumbarSacralBone', 'sacrum'].includes(f.name))) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(f.positions, 3));
       geometry.setIndex(new THREE.BufferAttribute(f.indices, 1));

@@ -318,6 +318,24 @@ describe('Registro de gemelos (decisión 322, punto 5)', () => {
     ]);
   });
 
+  it('las fábricas registran sólo las consultas que devuelven, también cuando las congelan', () => {
+    for (const frozen of [false, true]) {
+      const code = `export function queries() {
+        /** @twin consulta */
+        function read() { return 1; }
+        function internal() { return 2; }
+        return ${frozen ? 'Object.freeze({read})' : '{read}'};
+      }`;
+      const names = scanSource('queries.ts', code).tsDeclarations.map((d) => d.name);
+      expect(names).toEqual(['queries', 'read']);
+      expect(scanSource('queries.ts', code).tsDeclarations[1].leading).toContain('@twin consulta');
+      expect(scanSource('queries.ts', code.replace('{read}', '{internal}')).tsDeclarations.map((d) => d.name)).toEqual([
+        'queries',
+        'internal',
+      ]);
+    }
+  });
+
   it('docs/engineering/gemelos.md lleva las cifras del registro y nombra cada par', () => {
     const doc = read('docs/engineering/gemelos.md');
     const section = doc.slice(doc.indexOf(INVENTORY_START), doc.indexOf(INVENTORY_END));

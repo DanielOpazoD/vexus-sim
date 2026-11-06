@@ -1,8 +1,8 @@
 /** Offline only: index and delta-encode the native marching-cubes stream, without losing a bit. */
-import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { S0028_BUNDLE as B } from '../../src/anatomy/anatomyBundle';
+import { S0028_BUNDLE as B } from '../../src/anatomy/people/s0028/descriptor';
 import { sourceSurface } from '../../src/anatomy/sourceSurface';
 
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { congestionParameters, VENOUS_EXPERIMENT_FIELDS, venousExperimentPatient } from '../app/venousExperiment';
 import { NORMAL_ADULT } from '../cases';
-import { congestionParameters, venousExperimentPatient, VENOUS_EXPERIMENT_FIELDS } from '../app/venousExperiment';
+import { fixtureInstalled } from './support/legacyPerson/state';
 describe('parámetros de escenario hemodinámico', () => {
   it('conserva anatomía sana y casos originales, sin incluir un grado en el paciente', () => {
     const original = JSON.stringify(NORMAL_ADULT);
@@ -34,15 +35,15 @@ describe('parámetros de escenario hemodinámico', () => {
 });
 
 import { VenousExperiment } from '../app/venousExperiment';
-import { measurePhysiologyTruth } from '../vexus/measurements';
 import { classifyVexusC } from '../vexus/classification';
+import { measurePhysiologyTruth } from '../vexus/measurements';
 describe('ritmo independiente de la congestión', () => {
   it.each([5, 18].flatMap((rapMeanMmHg) => [0.05, 0.7].map((tricuspidRegurgitation) => ({ rapMeanMmHg, tricuspidRegurgitation }))))(
     'sinusal/FA con PAD $rapMeanMmHg e IT $tricuspidRegurgitation conserva el resto del escenario',
     (settings) => {
       const parameters = { ...congestionParameters(0), ...settings };
-      const sinus = new VenousExperiment(parameters);
-      const af = new VenousExperiment({ ...parameters, rhythm: 'atrial-fibrillation' });
+      const sinus = new VenousExperiment(parameters, fixtureInstalled());
+      const af = new VenousExperiment({ ...parameters, rhythm: 'atrial-fibrillation' }, fixtureInstalled());
       const { rhythm: _r, rrVariability: _v, label: _l, ...afOther } = af.patient;
       const { rhythm: _s, rrVariability: _w, label: _n, ...sinusOther } = sinus.patient;
       expect(afOther).toEqual(sinusOther);
@@ -76,7 +77,7 @@ describe('escenarios estables derivados de la red', () => {
     [1, 3],
   ])('trayectoria %s: referencia %s calculada, nunca introducida en la red', (fraction, grade) => {
     const source = JSON.stringify(NORMAL_ADULT);
-    const x = new VenousExperiment(congestionParameters(fraction));
+    const x = new VenousExperiment(congestionParameters(fraction), fixtureInstalled());
     for (let i = 0; i < 29; i++) x.advance(0);
     expect(x.ready).toBe(false);
     expect(x.engine.clock.t).toBe(29);
@@ -101,7 +102,7 @@ describe('escenarios estables derivados de la red', () => {
   it('los extremos de cada control conservan finitud en su escenario, sin certificar combinaciones', () => {
     for (const f of VENOUS_EXPERIMENT_FIELDS)
       for (const v of [f.min, f.max]) {
-        const x = new VenousExperiment({ ...congestionParameters(0), [f.key]: v });
+        const x = new VenousExperiment({ ...congestionParameters(0), [f.key]: v }, fixtureInstalled());
         for (let i = 0; i < 30; i++) x.advance(0);
         expect(x.ready).toBe(true);
         for (const value of Object.values(x.engine.sample.velocities)) expect(Number.isFinite(value)).toBe(true);
@@ -113,7 +114,7 @@ describe('frecuencia cardíaca sinusal como entrada del motor, no estiramiento d
   it('modifica RR y el número de ciclos con ECG y flujo en el mismo reloj, sin modificar anatomía ni el caso original', () => {
     const original = JSON.stringify(NORMAL_ADULT);
     const states = [50, 75, 120].map((heartRateBpm) => {
-      const x = new VenousExperiment({ ...congestionParameters(0), heartRateBpm });
+      const x = new VenousExperiment({ ...congestionParameters(0), heartRateBpm }, fixtureInstalled());
       for (let i = 0; i < 30; i++) x.advance(0);
       const samples = x.engine.samples.filter((s) => s.t >= 24);
       const beats = x.engine.rhythm.beatsBetween(24, 30);

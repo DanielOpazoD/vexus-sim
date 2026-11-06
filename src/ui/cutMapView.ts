@@ -1,19 +1,16 @@
-import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
-import { maskContours } from './anatomyContour';
-import { abdominalAtlas } from '../anatomy/abdominalAtlas';
-import { thoracicAtlas } from '../anatomy/thoracicAtlas';
-import { s0028Auxiliary } from '../anatomy/loadS0028';
-import type { Simulator } from '../app/simulator';
 import type { ProbeCompression } from '../anatomy/compression';
-import type { PhysiologySample } from '../physiology/engine';
-import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
+import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { Tissue } from '../anatomy/tissues';
-import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
-import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
-import type { CutMapError, CutMapInit, CutMapProgress, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import { errorLog } from '../app/errorLog';
-import { RequestWatchdog } from './requestWatchdog';
+import type { Simulator } from '../app/simulator';
+import type { PhysiologySample } from '../physiology/engine';
+import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
+import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
+import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
+import { maskContours } from './anatomyContour';
+import type { CutMapError, CutMapInit, CutMapProgress, CutMapReady, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import cutMapWorkerUrl from './cutMapWorkerUrl';
+import { RequestWatchdog } from './requestWatchdog';
 
 /**
  * «Corte ecográfico · plano de la imagen»: mapa a color de las estructuras que
@@ -452,7 +449,21 @@ export class CutMapView {
     this.worker?.terminate();
     this.worker = null;
     this.pendingInputs = null;
+    this.map = null;
+    this.mapInputs = null;
+    this.drawn = null;
+    this.clearBitmap();
+    this.workerReady = false;
   }
+
+  private clearBitmap(): void {
+    this.canvas.getContext('2d')?.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    delete this.canvas.dataset.acquiredFrame;
+    this.clearSelection();
+  }
+
+  private workerReady = false;
+  private workerEpoch = 0;
 
   private ensureWorker(sim: Simulator, nowMs: number): Worker | null {
     if (this.worker && this.workerScene === sim.scene) return this.worker;
@@ -471,24 +482,35 @@ export class CutMapView {
     this.mapInputs = null;
     this.pendingInputs = null;
     this.drawn = null;
-    this.clearSelection();
+    this.clearBitmap();
     this.lastUpdate = -Infinity;
+    this.workerReady = false;
+    this.watchdog.start(nowMs);
     const init: CutMapInit = {
       type: first ? 'init' : 'patient',
-      identity: sim.scene.identity,
+      identity: sim.scene.person.identity,
+      assetKey: sim.scene.person.assetKey,
+      epoch: ++this.workerEpoch,
       // Reservar su id ahora invalida respuestas anteriores aunque la GPU
       // retrase la primera adquisición de esta escena.
       id: ++this.requestId,
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
-      abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: first ? thoracicAtlas : undefined,
-      wall: first && sim.scene.identity.person === 's0028' ? s0028Auxiliary?.capacity : undefined,
-      skin: first && sim.scene.identity.person === 's0028' ? s0028Auxiliary?.skin : undefined,
+      buffers: first ? sim.scene.person.assets.buffers : undefined,
     };
-    worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
+    worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress | CutMapReady>) => {
       const message = ev.data;
-      if (this.worker !== worker) return;
+      if (this.worker !== worker || message.epoch !== this.workerEpoch || message.assetKey !== init.assetKey) return;
+      if (message.type === 'ready') {
+        if (message.id !== init.id) return;
+        if (Object.entries(init.identity).some(([key, value]) => message.identity[key as keyof typeof message.identity] !== value)) {
+          this.fail(new Error('Worker de otra identidad'), performance.now());
+          return;
+        }
+        this.workerReady = true;
+        this.watchdog.stop();
+        return;
+      }
       if (message.type === 'error') {
         // La inicialización puede fallar antes del siguiente cuadro adquirido.
         if (message.id !== this.requestId && message.id !== init.id) return;
@@ -539,7 +561,8 @@ export class CutMapView {
     const worker = this.ensureWorker(sim, nowMs);
     // CPU presentation ticks while the GPU is busy are not acquired loop frames.
     // Continue servicing the Worker there without charging its active-frame clock.
-    if (advanceWatchdog && this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
+    if (advanceWatchdog && (!this.workerReady || this.pendingInputs) && this.watchdog.expired(nowMs))
+      this.fail(new Error('corte sin avance durante 3 s'), nowMs);
     const previous = this.mapInputs;
     const geometryChanged =
       previous &&
@@ -548,6 +571,7 @@ export class CutMapView {
     // The acquired frame object stays identical in freeze/cine; counters can restart after GPU recovery.
     if (
       worker &&
+      this.workerReady &&
       this.worker === worker &&
       !this.pendingInputs &&
       shown.anatomy.frame !== this.mapInputs?.frame &&
@@ -558,6 +582,8 @@ export class CutMapView {
       // Keep one acquired snapshot for both the worker and presentation.
       const req = {
         type: 'map',
+        epoch: this.workerEpoch,
+        assetKey: sim.scene.person.assetKey,
         id: ++this.requestId,
         ...shown.anatomy,
         depthMm: shown.bmode.depthMm,

@@ -1,16 +1,17 @@
-import { beforeAll, afterAll, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas, abdominalAtlasValue } from '../anatomy/abdominalAtlas';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { abdomenQuery, digestiveGasPlane, digestiveWallMm } from '../anatomy/organs/abdomen';
-import { Tissue, TISSUES, attenuationDbPerCm } from '../anatomy/tissues';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { NORMAL_ADULT } from '../cases';
 import { structureIdentity } from '../anatomy/structureIdentity';
-import { lumenExcessPerMm, rayAttenuationDb } from '../ultrasound/transmission';
+import { attenuationDbPerCm, Tissue, TISSUES } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { lumenExcessPerMm, rayAttenuationDb } from '../ultrasound/transmission';
+import { abdominalAtlasValue, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 beforeAll(() => {
   const b = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
@@ -51,16 +52,16 @@ it('uses the registered colonic lumen only, retaining gas, clear small-bowel flu
         const p = f.originMm.map((v, i) => v + [x, y, z][i] * f.pitchMm) as Vec3;
         const q = abdominalAtlasValue(p, 1);
         if (q.d >= 0) continue;
-        const c = abdomenQuery(p)!;
+        const c = abdomenQuery(p, fixturePerson().cpu)!;
         // Another registered organ can own an overlapping surface voxel.
         if (![23, 24].includes(c.interface)) continue;
         // el estómago tiene su propia pared y su contenido (`gastricWall.test.ts`)
         if (q.label === 1) continue;
-        const inner = q.d + digestiveWallMm(q.label);
+        const inner = q.d + digestiveWallMm(q.label, fixturePerson().cpu);
         if (inner >= 0) {
           expect([Tissue.SoftCapsule, Tissue.GutMuscularis, Tissue.GutSubmucosa, Tissue.Bowel]).toContain(c.tissue);
           counts.wall++;
-        } else if (digestiveGasPlane(p, q.label) > 0) {
+        } else if (digestiveGasPlane(p, q.label, fixturePerson().cpu) > 0) {
           expect(c.tissue).toBe(Tissue.BowelGas);
           counts.gas++;
         } else if (q.label >= 5 && q.label <= 9) {

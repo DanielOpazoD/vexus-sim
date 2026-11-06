@@ -1,16 +1,16 @@
 /** Métricas de imagen para QA, no índice diagnóstico: ROIs virtuales a profundidad emparejada. */
-import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
+import { createRequire } from 'node:module';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
-import { NORMAL_ADULT } from '../../src/cases';
-import { clonePatient } from '../../src/physiology/patientState';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { Tissue } from '../../src/anatomy/tissues';
-import { probeContact, contactCoupling } from '../../src/probe/contact';
+import { NORMAL_ADULT } from '../../src/cases';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { clonePatient } from '../../src/physiology/patientState';
+import { contactCoupling, probeContact } from '../../src/probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../../src/probe/probe';
 import { pixelToBeam, sectorLayout } from '../../src/ultrasound/sectorGeometry';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 
 export interface MatchedSample {
   tissue: 'liver' | 'cortex';

@@ -1,7 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { ABDOMINAL_ATLAS } from '../anatomy/abdominalAtlasData';
 import { createAbdominalTexture } from '../ultrasound/abdominalTexture';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { fixturePerson } from './support/legacyPerson/state';
 
 afterEach(() => setAbdominalAtlas());
 
@@ -49,7 +50,7 @@ it('sube todos los texeles en orden sin reservar una transferencia del tamaño d
       input: Uint16Array,
     ) => uploads.push(input),
   };
-  createAbdominalTexture(gl as unknown as WebGL2RenderingContext, true);
+  createAbdominalTexture(gl as unknown as WebGL2RenderingContext, true, false, fixturePerson());
   expect(uploads.length).toBeGreaterThan(1);
   let offset = 0;
   for (const input of uploads) {

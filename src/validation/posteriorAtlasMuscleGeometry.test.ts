@@ -1,15 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { afterEach, describe, expect, it } from 'vitest';
 import { Vector3, type Mesh } from 'three';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { afterEach, describe, expect, it } from 'vitest';
 import { quadratusSdf } from '../anatomy/organs/retroperitoneum';
 import { torsoDepth } from '../anatomy/primitives';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { buildPosteriorMuscles } from '../ui/navigator3d/organs';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 afterEach(() => {
   setAbdominalAtlas();
@@ -21,9 +22,9 @@ describe('contención posterior del músculo, fuera del orden de clasificación 
     // Los dos puntos estaban dentro del campo antiguo: éste no tenía cara posterior.
     // La grasa queda lejos; el rechazo debe proceder del dominio de la pared.
     for (const x of [-65, 65]) {
-      expect(quadratusSdf([x, -200, -150], -80, 100)).toBeGreaterThan(0);
-      expect(quadratusSdf([x, -75, -150], -0.1, 100)).toBeGreaterThan(0);
-      expect(quadratusSdf([x, -75, -150], 6, 100)).toBeLessThan(0);
+      expect(quadratusSdf([x, -200, -150], -80, 100, fixturePerson().cpu)).toBeGreaterThan(0);
+      expect(quadratusSdf([x, -75, -150], -0.1, 100, fixturePerson().cpu)).toBeGreaterThan(0);
+      expect(quadratusSdf([x, -75, -150], 6, 100, fixturePerson().cpu)).toBeLessThan(0);
     }
   });
 

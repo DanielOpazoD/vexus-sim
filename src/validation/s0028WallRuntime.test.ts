@@ -1,35 +1,35 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { abdominalAtlas, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { sourceDistance } from '../anatomy/sourceVolume';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { nodeSin } from '../anatomy/compression';
+import { HALF } from '../anatomy/halfFloat';
+import { Interface } from '../anatomy/interfaces';
+import { wallFaceGradient, wallFaceSd } from '../anatomy/organs/wall';
 import { torsoDepth, torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
-import { NORMAL_ADULT } from '../cases';
-import { CONVEX_C35, probeFrame } from '../probe/probe';
+import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
+import { sourceDistance } from '../anatomy/sourceVolume';
+import { Tissue } from '../anatomy/tissues';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
+import { cross, dot, normalize, smoothstep, sub, type Vec3 } from '../core/vec3';
+import { firstRegionalWallCrossing, probeContact } from '../probe/contact';
+import { CONVEX_C35, probeFrame } from '../probe/probe';
+import chartFixtures from './fixtures/s0028-wall-chart.json';
+import { abdominalAtlas, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { abdominalBody, setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028SourceValue } from './support/legacyPerson/s0028Source';
 import {
-  setS0028Wall,
   s0028InsideWall,
   s0028WallAt,
   s0028WallFaceGradient,
   s0028WallSurface,
   s0028WallUploads,
-} from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
-import { HALF } from '../anatomy/halfFloat';
-import { wallFaceGradient, wallFaceSd } from '../anatomy/organs/wall';
-import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
-import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
-import { firstRegionalWallCrossing, probeContact } from '../probe/contact';
-import { dot, cross, normalize, smoothstep, sub, type Vec3 } from '../core/vec3';
-import { s0028SourceValue } from '../anatomy/s0028Source';
-import { nodeSin } from '../anatomy/compression';
-import chartFixtures from './fixtures/s0028-wall-chart.json';
+  setS0028Wall,
+} from './support/legacyPerson/s0028Wall';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 let scene: AnatomyScene;
 beforeAll(() => {
@@ -280,6 +280,7 @@ it('un paquete enteramente U mantiene el fondo rotulado y nunca produce una band
   new Uint16Array(unknown, 4096 + B.wall.payloadBytes, 512 * 181 * 2).fill(0x7e00);
   try {
     setS0028Wall(unknown, skin);
+    const scene = new AnatomyScene(NORMAL_ADULT);
     const p: Vec3 = [0, 109.03521552681923, -90];
     expect(s0028WallAt(p)).toMatchObject({ kind: 'unknown', reason: 'coverage' });
     expect(scene.classify(p, BASELINE_CALIBER)).toMatchObject({ tissue: Tissue.UnsegmentedSoftTissue, wall: 'U', boundaryDistance: 0 });

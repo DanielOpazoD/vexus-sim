@@ -1,7 +1,7 @@
-import { abdominalAtlas, abdominalAtlasSdf } from './abdominalAtlas';
-import { BODY_ROWS, BODY_STRIDE, COSTAL_BODY_ROWS, COSTAL_BODY_STRIDE, COSTAL_BODY_BLEND_Z } from './referenceBody';
-import { thoracicAtlas, thoracicValue } from './thoracicAtlas';
 import { smoothstep, type Vec3 } from '../core/vec3';
+import { EMPTY_ATLAS } from './emptyAtlas';
+import type { AnatomyPerson } from './person';
+import { BODY_ROWS, BODY_STRIDE, COSTAL_BODY_BLEND_Z, COSTAL_BODY_ROWS, COSTAL_BODY_STRIDE } from './referenceBody';
 
 /** Estimated patient-specific parietal apposition, NOT a new skin segmentation.
  * Registered viscera/bone remain fixed. Outside the hepatic/right-flank territory,
@@ -12,11 +12,12 @@ const flankApposition = (phi: number, z: number): number =>
 let cached:
   | { atlas: Uint16Array; bone: Uint16Array | undefined; source: Float32Array; wall: number; skin: number; profile: Float32Array }
   | undefined;
-export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: number): Float32Array {
-  if (!abdominalAtlas) return Float32Array.from(source, (r, i) => (i % BODY_STRIDE === 0 ? r : r + Math.max(0, wallMm - 10)));
+export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: number, person?: AnatomyPerson): Float32Array {
+  if (!person?.assets.buffers.abdominal)
+    return Float32Array.from(source, (r, i) => (i % BODY_STRIDE === 0 ? r : r + Math.max(0, wallMm - 10)));
   if (
-    cached?.atlas === abdominalAtlas &&
-    cached.bone === thoracicAtlas &&
+    cached?.atlas === person?.assets.buffers.abdominal &&
+    cached.bone === person?.assets.buffers.thoracic &&
     cached.source === source &&
     cached.wall === wallMm &&
     cached.skin === skinMm
@@ -65,9 +66,9 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
         // hepatic crossing is refined below; other surfaces get a 2-mm guard plus one atlas cell in the flank.
         for (let r = 0; r < inherited; r += 1) {
           const p = point(r);
-          if (abdominalAtlasSdf(p, 4) < 0) hepatic = r;
-          if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => abdominalAtlasSdf(p, f) < 0)) other = r;
-          if (thoracicValue(p).d < 0) bone = r;
+          if ((person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 4) < 0) hepatic = r;
+          if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, f) < 0)) other = r;
+          if ((person?.atlas ?? EMPTY_ATLAS).thoracicValue(p).d < 0) bone = r;
         }
         // Continúa el compartimento parietal sobre las vísceras vecinas al
         // terminar el hígado. Retomar aquí el contorno heredado crea un
@@ -77,7 +78,7 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
             hi = hepatic + 1;
           for (let n = 0; hepatic >= 0 && n < 16; n++) {
             const mid = (lo + hi) / 2;
-            if (abdominalAtlasSdf(point(mid), 4) < 0) lo = mid;
+            if ((person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(point(mid), 4) < 0) lo = mid;
             else hi = mid;
           }
           // La grasa preperitoneal ya pertenece al espesor wallMm. El contacto
@@ -132,6 +133,6 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
         profile[i] = Math.max(before[i], Math.min(inheritedProfile[i], v));
       }
   }
-  cached = { atlas: abdominalAtlas, bone: thoracicAtlas, source, wall: wallMm, skin: skinMm, profile };
+  cached = { atlas: person?.assets.buffers.abdominal, bone: person?.assets.buffers.thoracic, source, wall: wallMm, skin: skinMm, profile };
   return profile;
 }

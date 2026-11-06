@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { bootWithoutErrors, budget, withinFrames } from './support';
 import type { CutMapInit, CutMapProgress, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
+import { bootWithoutErrors, budget, withinFrames } from './support';
 
 interface CutPaintWitness {
   acquiredFrame: number;
@@ -175,7 +175,7 @@ async function observe(page: Page) {
       if ('patient' in packet)
         window.cutWitness.initializations.push({
           patient: packet.patient.id,
-          bytes: (packet.abdominalField?.byteLength ?? 0) + (packet.thoracicField?.byteLength ?? 0),
+          bytes: (packet.buffers?.abdominal?.byteLength ?? 0) + (packet.buffers?.thoracic?.byteLength ?? 0),
           postMs: performance.now() - at,
         });
     };

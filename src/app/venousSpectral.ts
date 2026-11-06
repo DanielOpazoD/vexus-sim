@@ -1,21 +1,21 @@
-import { maxPrfForDepth } from './equipment';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
-import type { Vec3 } from '../core/vec3';
 import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
-import type { PhysiologySample } from '../physiology/engine';
-import type { PatientState } from '../physiology/patientState';
-import type { VesselId } from '../physiology/vessels';
+import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
 import type { GateGeometry } from '../doppler/sampleVolume';
 import type { GateVesselSample } from '../doppler/vesselIdentity';
-import { startPointsFor, type StartPoint } from './startPoints';
+import type { PhysiologySample } from '../physiology/engine';
+import type { PatientState } from '../physiology/patientState';
+import type { VesselId } from '../physiology/vessels';
+import { probeContact, type ProbeContact } from '../probe/contact';
+import type { BModeSettings } from '../ultrasound/renderer';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { maxPrfForDepth } from './equipment';
 import { bestGateOnVessel, type GatePlacement } from './gatePlacement';
 import { acousticWindowWeight } from './gateTransmission';
 import { pwGate, type PwGateInfo } from './pwGate';
-import { probeContact, type ProbeContact } from '../probe/contact';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import type { BModeSettings } from '../ultrasound/renderer';
+import { startPointsFor, type StartPoint } from './startPoints';
 
 /** Experimental acquisition settings; calibration is separate from physiological normality. */
 export const VENOUS_SPECTRAL_SCALES = [50, 30, 50] as const;
@@ -81,7 +81,7 @@ export class VenousSpectralAcquisition {
       tr = profile.geometry;
     this.#contexts = windows.map(({ window, vessels, index }) => {
       const paired = window === 'renal' && renalWindow === 'paired';
-      const scene = new AnatomyScene(patient),
+      const scene = new AnatomyScene(patient, undefined, anatomy.scene.person),
         query = new AnatomyQuery(scene);
       // Reuse the exact reference body selected when the observed simulator was constructed.
       const bodyProfile = scene.torso.profile,

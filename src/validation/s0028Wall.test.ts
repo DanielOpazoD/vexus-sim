@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { S0028_BUNDLE } from '../anatomy/anatomyBundle';
 import { personShader } from '../../tools/anatomy/s0028-p1-specialized';
 import { shaderCosts } from '../../tools/anatomy/s0028-shader-metrics';
 import { wallShader } from '../../tools/anatomy/s0028-wall-cost';
+import { S0028_BUNDLE } from './support/legacyPerson/anatomyBundle';
 
 describe('representación P2 offline sobre las ocho fuentes P1 vigentes', () => {
   it('mide el lector con U, halos y proyección sin añadir samplers ni cambiar techos', () => {

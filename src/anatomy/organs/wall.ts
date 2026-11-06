@@ -1,9 +1,7 @@
-import { referenceCartilage } from '../referenceCartilage';
-import { anatomyBundle } from '../anatomyBundle';
-import { s0028WallAt, s0028WallFaceGradient } from '../s0028Wall';
 import type { Vec3 } from '../../core/vec3';
 import { Interface } from '../interfaces';
-import { sdRib, ribShape, torsoDepth, torsoDepthGradient, type Rib, type Spine, type Torso } from '../primitives';
+import { ribShape, sdRib, torsoDepth, torsoDepthGradient, type Rib, type Spine, type Torso } from '../primitives';
+import { referenceCartilage } from '../referenceCartilage';
 
 /**
  * Pared torácica y abdominal en capas (decisión 62) como módulo de órgano (decisión 46): la geometría de
@@ -360,9 +358,9 @@ export function wallFaceDepth(u: number, z: number, face: Interface, t: Torso): 
  * @twin organo-pared
  */
 export function wallFaceSd(m: Vec3, face: Interface, t: Torso): number {
-  if (anatomyBundle.person === 's0028') {
+  if (t.person?.regional) {
     if (face === Interface.SkinFat) return -torsoDepth(m, t) - 1.5;
-    const q = s0028WallAt(m);
+    const q = t.person.regional.s0028WallAt(m);
     if (q?.kind !== 'known') return NaN;
     switch (face) {
       case Interface.DeepFascia:
@@ -422,7 +420,7 @@ export function wallFaceSlope(u: number, z: number, face: Interface, t: Torso): 
  * (con el relieve, cada una son 13–23 senos). Lo usan `faceGradient` (TS y GLSL) y el eco de las copias de la pared.
  */
 export function wallFaceGradient(m: Vec3, face: Interface, t: Torso): Vec3 {
-  if (anatomyBundle.person === 's0028') {
+  if (t.person?.regional) {
     // Analítico, gemelo de la GLSL: una consulta de pared y dos lecturas de la pendiente de la carta, sin seis consultas.
     // @twin organo-pared
     if (face === Interface.SkinFat) {
@@ -430,7 +428,7 @@ export function wallFaceGradient(m: Vec3, face: Interface, t: Torso): Vec3 {
       return [-g[0], -g[1], -g[2]];
     }
     const boundary = face === Interface.DeepFascia ? 0 : face === Interface.Transversalis ? 1 : face === Interface.Peritoneum ? 2 : null;
-    return (boundary === null ? null : s0028WallFaceGradient(m, boundary))?.gradient ?? [NaN, NaN, NaN];
+    return (boundary === null ? null : t.person.regional.s0028WallFaceGradient(m, boundary))?.gradient ?? [NaN, NaN, NaN];
   }
   const [fu, fz] = wallFaceSlope(wallArc(m, t), m[2], face, t);
   const gu = wallArcGradient(m, t);

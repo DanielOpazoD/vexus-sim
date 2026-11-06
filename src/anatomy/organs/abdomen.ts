@@ -1,12 +1,13 @@
-import { anatomyBundle } from '../anatomyBundle';
-import { abdominalAtlasValue, sourceGas, abdominalAtlasGradient, ABDOMINAL_ATLAS_GLSL } from '../abdominalAtlas';
-import { Tissue } from '../tissues';
-import { Interface } from '../interfaces';
 import type { Vec3 } from '../../core/vec3';
+import { ABDOMINAL_ATLAS_GLSL } from '../abdominalAtlas';
+import { EMPTY_ATLAS } from '../emptyAtlas';
+import { Interface } from '../interfaces';
+import type { AnatomyPerson } from '../person';
+import { Tissue } from '../tissues';
 
 /** Lado TS de un par TS/GLSL (`tools/twins/registry.ts`). @twin organo-abdomen */
-export function digestiveWallMm(label: number): number {
-  return label === 1 ? 3 : (anatomyBundle.person === 's0028' ? label === 4 : label >= 5) ? 2.5 : 2;
+export function digestiveWallMm(label: number, person?: AnatomyPerson): number {
+  return person ? person.digestiveWallMm(label) : label === 1 ? 3 : label >= 5 ? 2.5 : 2;
 }
 /** Five sonographic strata, outer serosa -> inner mucosal interface; estimated resting widths. */
 export function digestiveWallTissue(fraction: number): Tissue {
@@ -21,8 +22,8 @@ export function digestiveWallTissue(fraction: number): Tissue {
           : Tissue.GutSubmucosa;
 }
 /** Static nondependent gas patches, clipped by the SAME lumen, with no assigned flow. */
-export function digestiveGasPlane(m: Vec3, label: number): number {
-  if (anatomyBundle.person === 's0028') return sourceGas(m) ? 1 : -1;
+export function digestiveGasPlane(m: Vec3, label: number, person?: AnatomyPerson): number {
+  if (person) return person.digestiveGas(m, label);
   return m[1] - (label === 1 ? 30 : 18) - 7 * Math.sin(m[2] / 17) * Math.cos(m[0] / 21);
 }
 /**
@@ -87,12 +88,12 @@ export function gastricBoundary(depth: number, inner: number, fold: number, rate
   return Math.min(toInner, depth - w.muscularisMm, toMucosa, toLine) / 2;
 }
 
-export function abdomenQuery(m: Vec3) {
+export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
   let field = -1,
     d = 16,
     label = 0;
   for (let k = 0; k < 4; k++) {
-    const q = abdominalAtlasValue(m, k);
+    const q = (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasValue(m, k);
     if (q.d < d) {
       field = k;
       d = q.d;
@@ -100,7 +101,7 @@ export function abdomenQuery(m: Vec3) {
     }
   }
   if (field < 0 || d >= 0) return null;
-  const n = abdominalAtlasGradient(m, field);
+  const n = (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasGradient(m, field);
   if (field === 0 || field === 3)
     return {
       tissue: -d < 0.35 ? Tissue.SoftCapsule : field === 0 ? Tissue.Pancreas : Tissue.Spleen,
@@ -112,7 +113,8 @@ export function abdomenQuery(m: Vec3) {
     };
   const stomach = field === 1 && label === 1;
   const { fold, rate } = stomach ? gastricFold(m) : { fold: 0, rate: 0 };
-  const wall = field === 2 ? 2.5 : stomach ? GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm * (0.5 + 0.5 * fold) : digestiveWallMm(label),
+  const wall =
+      field === 2 ? 2.5 : stomach ? GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm * (0.5 + 0.5 * fold) : digestiveWallMm(label, person),
     inner = d + wall;
   if (field === 2)
     return {
@@ -125,7 +127,7 @@ export function abdomenQuery(m: Vec3) {
     };
   // Source labels 5–9 are cecum/colon/rectum. Their non-gaseous contents are
   // an estimated particulate suspension; source geometry and gas placement stay fixed.
-  const gas = inner < 0 && (anatomyBundle.person === 's0028' ? sourceGas(m) : digestiveGasPlane(m, label) > 0);
+  const gas = inner < 0 && digestiveGasPlane(m, label, person) > 0;
   // Los pliegues son demasiado irregulares para una cara especular: en el estómago solo la serosa da eco de interfaz; la mucosa contra la luz se ve por el contraste de tejidos
   const iface = stomach || Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen;
   return {
@@ -138,27 +140,18 @@ export function abdomenQuery(m: Vec3) {
           ? Tissue.BowelGas
           : stomach
             ? Tissue.GastricContents
-            : (anatomyBundle.person === 's0028' ? label === 4 : label >= 5 && label <= 9)
+            : (person ? person.isColon(label) : label >= 5 && label <= 9)
               ? Tissue.ColonicContents
               : Tissue.Fluid,
     boundaryDistance: stomach
-      ? gastricBoundary(-d, inner, fold, rate, inner < 0 ? Math.abs(digestiveGasPlane(m, label)) / 2 : 1e3)
-      : Math.min(-d, Math.abs(inner), inner < 0 ? Math.abs(digestiveGasPlane(m, label)) / 2 : wall * 0.03) / 2,
+      ? gastricBoundary(-d, inner, fold, rate, inner < 0 ? Math.abs(digestiveGasPlane(m, label, person)) / 2 : 1e3)
+      : Math.min(-d, Math.abs(inner), inner < 0 ? Math.abs(digestiveGasPlane(m, label, person)) / 2 : wall * 0.03) / 2,
     interface: iface,
     interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? d : inner),
     boundaryNormal: n,
     curvature: 0,
   };
 }
-export {
-  registeredDomeHeight,
-  registeredDomeValue,
-  registeredDomeSample,
-  hepaticDomeValue,
-  abdominalAtlasSdf,
-  abdominalAtlasValue,
-  abdominalAtlasGradient,
-} from '../abdominalAtlas';
 /** GLSL de las funciones del abdomen (mismos nombres, decisión 46). @twin organo-abdomen */
 export const ABDOMEN_GLSL = /* glsl */ `
 ${ABDOMINAL_ATLAS_GLSL}

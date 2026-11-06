@@ -1,15 +1,15 @@
-import { afterEach, expect, it } from 'vitest';
+import type { Page } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
-import type { Page } from '@playwright/test';
-import { exportAcquiredFrame } from '../../tools/fidelity/registeredAcquisition';
+import { afterEach, expect, it } from 'vitest';
 import { acquisitionJson } from '../../tools/fidelity/acquisitionJson';
-import { CONVEX_C35 } from '../probe/probe';
-import { AnatomyScene } from '../anatomy/scene';
+import { exportAcquiredFrame } from '../../tools/fidelity/registeredAcquisition';
 import { NORMAL_ADULT } from '../cases';
 import { probeContact } from '../probe/contact';
+import { CONVEX_C35 } from '../probe/probe';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const dirs: string[] = [];
 afterEach(() => {

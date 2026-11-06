@@ -197,7 +197,28 @@ export function scanSource(file: string, code: string): ScannedSource {
     if (name && (ts.isIdentifier(name) || ts.isPrivateIdentifier(name)))
       tsDeclarations.push({ name: name.text, line: lineAt(starts, name.getStart(source)), exported, member, fn, leading });
   };
-  for (const stmt of source.statements) {
+  // Factories expose the named closures returned in their query object.
+  // Only those declarations are public CPU sides; callbacks and local helpers are not exported APIs.
+  const declarations: ts.Statement[] = [...source.statements];
+  for (const factory of source.statements) {
+    if (!ts.isFunctionDeclaration(factory) || !exportedTop(factory) || !factory.body) continue;
+    const last = factory.body.statements.at(-1);
+    if (!last || !ts.isReturnStatement(last) || !last.expression) continue;
+    const expression = last.expression;
+    const object =
+      ts.isCallExpression(expression) && expression.expression.getText(source) === 'Object.freeze' ? expression.arguments[0] : expression;
+    if (!object || !ts.isObjectLiteralExpression(object)) continue;
+    const returned = new Set(object.properties.flatMap((p) => (ts.isShorthandPropertyAssignment(p) ? [p.name.text] : [])));
+    for (const declaration of factory.body.statements) {
+      if (ts.isFunctionDeclaration(declaration) && declaration.name && returned.has(declaration.name.text)) declarations.push(declaration);
+      if (
+        ts.isVariableStatement(declaration) &&
+        declaration.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && returned.has(d.name.text))
+      )
+        declarations.push(declaration);
+    }
+  }
+  for (const stmt of declarations) {
     const leading = leadingOf(stmt);
     if (ts.isFunctionDeclaration(stmt)) add(stmt.name, exportedTop(stmt), false, true, leading);
     else if (ts.isVariableStatement(stmt))

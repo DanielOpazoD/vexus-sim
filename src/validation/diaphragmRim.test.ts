@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { diaphragmRim } from '../anatomy/diaphragmRim';
 import { diaphragmHeight, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
-import { NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION } from '../cases';
-import { cross, sub } from '../core/vec3';
+import { AF_MODERATE_CONGESTION, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { cross, sub } from '../core/vec3';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

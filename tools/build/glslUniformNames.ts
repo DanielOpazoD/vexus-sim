@@ -1,6 +1,7 @@
-import type { Plugin } from 'vite';
 import { join } from 'node:path';
+import type { Plugin } from 'vite';
 import { readSources } from './glslMinify';
+import { personBindingAbi } from './personShaderAbi';
 
 const BINDING = /\b(?:u[A-Z]\w*|(?:IF|T)_[A-Z][A-Z0-9_]*)\b/g;
 /** Uniforms y tags estáticos: los #defines generados y sus consumidores se renombran juntos. */
@@ -25,11 +26,10 @@ export function glslUniformNames(): Plugin {
       root = config.root;
     },
     buildStart() {
-      names = bindingNames(
-        readSources(join(root, 'src'))
-          .map((s) => s.code)
-          .join('\n'),
-      );
+      const code = readSources(join(root, 'src'))
+        .map((s) => s.code)
+        .join('\n');
+      names = personBindingAbi(bindingNames(code), code);
     },
     transform(code, id) {
       if (!/[\\/]src[\\/].*\.ts$/.test(id) || /[\\/]node_modules[\\/]/.test(id)) return null;

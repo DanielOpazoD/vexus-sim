@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { abdominalAtlasValue, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
-import { ABDOMEN_GLSL, GASTRIC_WALL, abdomenQuery, digestiveGasPlane, gastricFold } from '../anatomy/organs/abdomen';
 import { Interface } from '../anatomy/interfaces';
+import { ABDOMEN_GLSL, GASTRIC_WALL, abdomenQuery, digestiveGasPlane, gastricFold } from '../anatomy/organs/abdomen';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
+import { abdominalAtlasValue, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { fixturePerson } from './support/legacyPerson/state';
 
 beforeAll(() => {
   const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
@@ -25,7 +26,7 @@ function stomachPoints(step: number): Array<{ p: Vec3; d: number; c: NonNullable
         const p = f.originMm.map((v, i) => v + ([x, y, z][i] + 0.37) * f.pitchMm) as Vec3;
         const q = abdominalAtlasValue(p, 1);
         if (q.d >= 0 || q.label !== 1) continue;
-        const c = abdomenQuery(p);
+        const c = abdomenQuery(p, fixturePerson().cpu);
         // otro órgano del atlas puede ocupar un vóxel de la superficie
         if (!c || ![Interface.BowelSerosa, Interface.BowelLumen].includes(c.interface)) continue;
         out.push({ p, d: q.d, c });
@@ -54,7 +55,7 @@ describe('estómago con algo de líquido (decisión 310)', () => {
             ? Tissue.GutSubmucosa
             : Tissue.Bowel,
         );
-      else expect(c.tissue).toBe(digestiveGasPlane(p, 1) > 0 ? Tissue.BowelGas : Tissue.GastricContents);
+      else expect(c.tissue).toBe(digestiveGasPlane(p, 1, fixturePerson().cpu) > 0 ? Tissue.BowelGas : Tissue.GastricContents);
     }
     for (const t of [Tissue.GutMuscularis, Tissue.GutSubmucosa, Tissue.Bowel, Tissue.GastricContents])
       expect(counts.get(t) ?? 0).toBeGreaterThan(50);
@@ -90,7 +91,7 @@ describe('estómago con algo de líquido (decisión 310)', () => {
       const a = i * 2.399963229728653;
       return [r * Math.cos(a), r * Math.sin(a), z];
     });
-    const moved = (p: Vec3, d: Vec3, s: number) => abdomenQuery([p[0] + d[0] * s, p[1] + d[1] * s, p[2] + d[2] * s]);
+    const moved = (p: Vec3, d: Vec3, s: number) => abdomenQuery([p[0] + d[0] * s, p[1] + d[1] * s, p[2] + d[2] * s], fixturePerson().cpu);
     // Otro órgano del atlas puede quedar a menos de la frontera del estómago: esa cara no es de esta pared
     const changed = (c: Query, after: Query | null) =>
       after !== null && after.interface === Interface.BowelSerosa && after.tissue !== c.tissue;
@@ -100,13 +101,13 @@ describe('estómago con algo de líquido (decisión 310)', () => {
       [21, 54, -117],
       [36, 54, -117],
     ] as Vec3[])
-      expect(check(p, abdomenQuery(p)!)).toBe(0);
+      expect(check(p, abdomenQuery(p, fixturePerson().cpu)!)).toBe(0);
     const witness: Vec3 = [13.5, 39, -117];
-    const c = abdomenQuery(witness)!;
+    const c = abdomenQuery(witness, fixturePerson().cpu)!;
     expect(changed(c, moved(witness, [-0.429857439, 0.393784626, 0.8125], 0.95 * c.boundaryDistance))).toBe(false);
     // Revisión de Sol: junto al eje la fase se acelera, y la frontera debe encogerse con ella
     const nearAxis: Vec3 = [40.8481, 45.472, -116];
-    expect(check(nearAxis, abdomenQuery(nearAxis)!)).toBe(0);
+    expect(check(nearAxis, abdomenQuery(nearAxis, fixturePerson().cpu)!)).toBe(0);
     for (const rho of [0.0001, 0.001, 0.01, 0.1])
       for (let i = 0; i < 32; i++) {
         const a = (i * Math.PI) / 16;
@@ -115,7 +116,7 @@ describe('estómago con algo de líquido (decisión 310)', () => {
           GASTRIC_WALL.axisMm[1] + GASTRIC_WALL.axisPerMm[1] * -116 + rho * Math.sin(a),
           -116,
         ];
-        const q = abdomenQuery(m);
+        const q = abdomenQuery(m, fixturePerson().cpu);
         if (q) expect(check(m, q), `ρ ${rho}, ángulo ${i}`).toBe(0);
       }
     let trials = 0;

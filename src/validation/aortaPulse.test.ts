@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { gauss, type Beat } from '../physiology/rhythm';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 // Oráculo independiente del cableado del candidato: contorno arterial preexistente,
 // centros mecánicos tras R, no fase de UI ni máximo futuro de cada latido.

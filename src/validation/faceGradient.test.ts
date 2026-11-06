@@ -3,7 +3,6 @@ import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { FACE_GRADIENT_EPS_MM, INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../anatomy/interfaces';
 import { tubeFaceGradient, tubeQuery, type Tube } from '../anatomy/primitives';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, faceGeometryOf } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
@@ -17,6 +16,7 @@ import {
   faceProfile,
 } from '../ultrasound/interfaceEcho';
 import { FRAG_QUERY } from '../ultrasound/shaders/passes.glsl';
+import { AnatomyScene, faceGeometryOf } from './support/legacyPerson/scene';
 
 /**
  * El eco de interfaz evalúa su perfil de integral unidad en δ = ifd/(|∇|·cosθ) (decisión 57): `ifd` es

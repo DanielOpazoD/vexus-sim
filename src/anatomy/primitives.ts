@@ -1,18 +1,10 @@
-import { thoracicAtlas, thoracicValue, thoracicMaterial, boneSurfaceFrame } from './thoracicAtlas';
-import {
-  abdominalAtlas,
-  s0028Depth,
-  s0028DepthGradient,
-  abdominalAtlasSdf,
-  hepaticDomeValue,
-  registeredDomeHeight,
-  registeredDomeSample,
-} from './abdominalAtlas';
-import { referenceCartilage } from './referenceCartilage';
-import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
-import { s0028SkinPoint } from './s0028Wall';
-import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 import type { Vec3 } from '../core/vec3';
+import { EMPTY_ATLAS } from './emptyAtlas';
+import type { AnatomyPerson } from './person';
+import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
+import { referenceCartilage } from './referenceCartilage';
+import { boneSurfaceFrame } from './thoracicAtlas';
+import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 
 /**
  * Primitivas implícitas declarativas. La misma lista se evalúa en TypeScript
@@ -257,7 +249,7 @@ export function diaphragmInteriorEdgeZ(x: number, y: number, d: Diaphragm, t: To
 /** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. @twin cupula */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
   if (d.hepaticContact) {
-    const registered = registeredDomeHeight(x, y);
+    const registered = (torso.person?.atlas ?? EMPTY_ATLAS).registeredDomeHeight(x, y);
     if (registered !== undefined) return registered;
   }
   const edge = diaphragmInteriorEdgeZ(x, y, d, torso);
@@ -269,7 +261,7 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
   const join = DIAPHRAGM_JOIN_MM * t * t * (3 - 2 * t);
   const height = join > 0 ? smoothMax(zr, zl, join) : edge;
   if (!d.hepaticContact) return height;
-  const [contactHeight, support] = hepaticDomeValue(x, y);
+  const [contactHeight, support] = (torso.person?.atlas ?? EMPTY_ATLAS).hepaticDomeValue(x, y);
   return height + support * (contactHeight - height);
 }
 
@@ -278,7 +270,7 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
  * centrales de 0,5 mm; en el borde de una hemicúpula, cuya altura sube con tangente vertical, se dispara).
  */
 export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, number] {
-  const registered = d.hepaticContact ? registeredDomeSample(p[0], p[1]) : undefined;
+  const registered = d.hepaticContact ? (torso.person?.atlas ?? EMPTY_ATLAS).registeredDomeSample(p[0], p[1]) : undefined;
   const zd = registered?.[3] ? registered[0] : diaphragmHeight(p[0], p[1], d, torso),
     h = 0.5;
   const gx = registered?.[3]
@@ -304,7 +296,7 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
         scale = delta / (1 + dx * dx + dy * dy);
       x = p[0] - dx * scale;
       y = p[1] - dy * scale;
-      const sample = registeredDomeSample(x, y);
+      const sample = (torso.person?.atlas ?? EMPTY_ATLAS).registeredDomeSample(x, y);
       if (sample[3]) {
         height = sample[0];
         dx = sample[1];
@@ -322,10 +314,10 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
   // Close to the superior contact, the diaphragm is the 2.5 mm shell of the
   // actual hepatic distance field. A tangent-plane offset alone separates or
   // cuts curved liver surfaces. Outside this bounded shell keep the height field.
-  const [, support] = hepaticDomeValue(p[0], p[1]),
+  const [, support] = (torso.person?.atlas ?? EMPTY_ATLAS).hepaticDomeValue(p[0], p[1]),
     t = Math.min(1, Math.max(0, (zd - p[2] - 6) / 6)),
     contact = support * (1 - t * t * (3 - 2 * t));
-  const liverDistance = abdominalAtlasSdf(p, 4);
+  const liverDistance = (torso.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 4);
   const distance = tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - liverDistance - tangentDistance);
   // A normalized tangent approximation is not a global distance. Near a steep
   // roof it can put muscle deep inside the source liver. The organ remains the
@@ -350,7 +342,7 @@ export function diaphragmSurfaceZ(x: number, y: number, d: Diaphragm, torso: Tor
   let lo = height - 12,
     // The liver obstacle also operates where normal-contact support is zero.
     // Its upper level is bounded by the same hepatic parallel-surface table.
-    hi = Math.max(height, hepaticDomeValue(x, y)[0]) + 12;
+    hi = Math.max(height, (torso.person?.atlas ?? EMPTY_ATLAS).hepaticDomeValue(x, y)[0]) + 12;
   if (sdDiaphragm([x, y, lo], d, torso) < 0 || sdDiaphragm([x, y, hi], d, torso) > 0)
     throw new Error('Diaphragm surface exceeds its registered contact bracket');
   // Numerical root precision keeps the body/rim solve stable; it adds no source resolution.
@@ -377,6 +369,7 @@ export interface CylinderZ {
  * es también el radio del peso respiratorio (`respiratoryWeight`), que no depende de la forma del cuerpo.
  */
 export interface Spine extends CylinderZ {
+  person?: AnatomyPerson;
   archHalfWidth: number;
   archY0: number;
   archY1: number;
@@ -384,6 +377,7 @@ export interface Spine extends CylinderZ {
 
 /** Elipse del tronco (sección transversal) y sus capas parietales. */
 export interface Torso {
+  person?: AnatomyPerson;
   /** Centro anteroposterior del registro común (mm); 0 en fixtures antiguos. */
   y0?: number;
   /** Perfil polar del adulto de referencia; ausente en el modelo previo. */
@@ -478,22 +472,27 @@ export function spineSlabSd(z: number): number {
 
 /** Distancia con signo a la caja del arco posterior (con las apófisis transversas). */
 export function spineArchSd(p: Vec3, sp: Spine): number {
-  if (thoracicAtlas && abdominalAtlas) return 16;
+  if (sp.person?.assets.buffers.thoracic && sp.person?.assets.buffers.abdominal) return 16;
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
   const d = Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
-  return abdominalAtlas ? Math.max(d, -60 - p[2]) : d;
+  return sp.person?.assets.buffers.abdominal ? Math.max(d, -60 - p[2]) : d;
 }
 
 /** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
 export function spineBodySd(p: Vec3, sp: Spine): number {
-  if (thoracicAtlas && abdominalAtlas) {
-    const q = thoracicValue(p);
-    return Math.min(thoracicMaterial(q.label) === 'vertebra' ? q.d : 16, abdominalAtlasSdf(p, 8));
+  if (sp.person?.assets.buffers.thoracic && sp.person?.assets.buffers.abdominal) {
+    const q = (sp.person?.atlas ?? EMPTY_ATLAS).thoracicValue(p);
+    return Math.min(
+      (sp.person?.atlas ?? EMPTY_ATLAS).thoracicMaterial(q.label) === 'vertebra' ? q.d : 16,
+      (sp.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 8),
+    );
   }
   const d = smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
-  return abdominalAtlas ? Math.min(Math.max(d, -60 - p[2]), abdominalAtlasSdf(p, 8)) : d;
+  return sp.person?.assets.buffers.abdominal
+    ? Math.min(Math.max(d, -60 - p[2]), (sp.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 8))
+    : d;
 }
 
 /**
@@ -509,10 +508,10 @@ export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number
   const original = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
   const body = spineBodySd(p, sp);
   const disc =
-    thoracicAtlas && abdominalAtlas
-      ? abdominalAtlasSdf(p, 10)
-      : abdominalAtlas
-        ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10))
+    sp.person?.assets.buffers.thoracic && sp.person?.assets.buffers.abdominal
+      ? (sp.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 10)
+      : sp.person?.assets.buffers.abdominal
+        ? Math.min(Math.max(e, -original, -60 - p[2]), (sp.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 10))
         : Math.max(e, -body);
   return { body, bone: Math.min(body, spineArchSd(p, sp)), disc };
 }
@@ -536,7 +535,7 @@ export function sdSpineDisc(p: Vec3, sp: Spine): number {
  * @twin columna
  */
 export function spineFaceCurvature(p: Vec3, sp: Spine): number {
-  if (thoracicAtlas && abdominalAtlas) return spineFaceFrame(p, sp).curvature;
+  if (sp.person?.assets.buffers.thoracic && sp.person?.assets.buffers.abdominal) return spineFaceFrame(p, sp).curvature;
   const e = spineEllipseSd(p, sp);
   if (spineSlabSd(p[2]) > e) return 0;
   const a = sp.r * SPINE_SHAPE.aspect;
@@ -553,7 +552,7 @@ export function spineFaceCurvature(p: Vec3, sp: Spine): number {
 /** Atlas: same combined source field as the cortical surface, including lumbar
  * bodies outside the thoracic brick. Legacy keeps its analytic cylinder. */
 export function spineFaceFrame(p: Vec3, sp: Spine): { axis: Vec3; curvature: number } {
-  return thoracicAtlas && abdominalAtlas
+  return sp.person?.assets.buffers.thoracic && sp.person?.assets.buffers.abdominal
     ? boneSurfaceFrame(p, (q) => spineBodySd(q, sp))
     : { axis: [0, 0, 1], curvature: spineFaceCurvature(p, sp) };
 }
@@ -741,7 +740,7 @@ export function torsoPhi(x: number, y: number, t: Torso): number {
 
 /** Distancia radial (mm, aproximada) desde la piel: negativa dentro del cuerpo. @twin tronco-primitivas */
 export function torsoDepth(p: Vec3, t: Torso): number {
-  const source = s0028Depth(p);
+  const source = t.person?.regional?.s0028Depth?.(p);
   if (source !== undefined) return source;
   if (t.profile) return bodyDepth(p, t.profile);
   const y = p[1] - (t.y0 ?? 0);
@@ -759,7 +758,7 @@ export function torsoDepth(p: Vec3, t: Torso): number {
  * caras de las capas de la pared sin su ondulación (el eco de cara plana de la serie de la pleura, decisión 62).
  */
 export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
-  const source = s0028DepthGradient(p);
+  const source = t.person?.regional?.s0028DepthGradient?.(p);
   if (source) return source;
   if (t.profile) return bodyGradient(p, t.profile);
   p = [p[0], p[1] - (t.y0 ?? 0), p[2]];
@@ -773,7 +772,7 @@ export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
 
 /** Normal exterior aproximada de la piel en el punto. */
 export function torsoNormal(p: Vec3, t: Torso): Vec3 {
-  const source = s0028DepthGradient(p);
+  const source = t.person?.regional?.s0028DepthGradient?.(p);
   if (source) {
     const n = Math.hypot(...source) || 1;
     return source.map((v) => v / n) as Vec3;
@@ -792,7 +791,7 @@ export function torsoNormal(p: Vec3, t: Torso): Vec3 {
 
 /** Punto de la piel para un ángulo φ y altura z. */
 export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
-  const source = s0028SkinPoint(phi, z);
+  const source = t.person?.regional?.s0028SkinPoint?.(phi, z);
   if (source) return source;
   if (t.profile) {
     const [r, , , cy] = bodySection(phi, z, t.profile);

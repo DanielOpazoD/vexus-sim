@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Simulator } from '../app/simulator';
 import { TISSUES, Tissue } from '../anatomy/tissues';
+import { Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
+import { refractionBeam } from '../ultrasound/aperture';
+import { focalGain, frequencyRatio } from '../ultrasound/beamEcho';
 import {
   AXIAL_SIGMA_MM,
   CONVEX_BEAM,
@@ -14,7 +16,9 @@ import {
   pulseSigmaMm,
   txApertureMm,
 } from '../ultrasound/beamModel';
-import { focalGain, frequencyRatio } from '../ultrasound/beamEcho';
+import { INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { specializeSceneShaders } from '../ultrasound/sceneShader';
 import {
   FRAG_AXIAL as SOURCE_FRAG_AXIAL,
   FRAG_COLOR as SOURCE_FRAG_COLOR,
@@ -24,7 +28,9 @@ import {
   FRAG_TRANSMISSION as SOURCE_FRAG_TRANSMISSION,
   LATERAL_PSF_GLSL as SOURCE_LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
-import { specializeSceneShaders } from '../ultrasound/sceneShader';
+import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
+import { fixtureInstalled } from './support/legacyPerson/state';
+import { recordingGl } from './support/recordingGl';
 const { FRAG_AXIAL, FRAG_COLOR, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION, LATERAL_PSF_GLSL } =
   specializeSceneShaders(
     {
@@ -38,11 +44,6 @@ const { FRAG_AXIAL, FRAG_COLOR, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEER
     },
     false,
   );
-import { refractionBeam } from '../ultrasound/aperture';
-import { INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
-import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { recordingGl } from './support/recordingGl';
 
 /**
  * PSF que cambia con la profundidad (decisión 84): la bajada de la frecuencia central del eco, que ensancha la PSF
@@ -228,7 +229,7 @@ describe('ganancia focal de la emisión (decisión 84)', () => {
 describe('cableado en el renderizador (WebGL falso, decisión 84)', () => {
   function frameAt(focusMm: number, harmonic: boolean) {
     const rec = recordingGl({ width: 320, height: 240 });
-    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
     sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, compound: false, harmonic, focusMm } };
     rec.draws.length = 0;
     sim.render();

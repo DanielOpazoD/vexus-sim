@@ -1,12 +1,11 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity/envelope';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
-import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { frequencyRatio } from '../ultrasound/beamEcho';
+import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import { ElevationAnchor } from '../ultrasound/speckleField';
 import { lookWavenumber, steerBeta } from '../ultrasound/steering';
@@ -18,6 +17,7 @@ import {
   lookPatchEnvelopes,
   type TwinPatch,
 } from './support/compoundTwin';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Composición espacial en el gemelo B → C → D (decisión 58, T3): las tres miradas (0, +θ, −θ) de

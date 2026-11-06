@@ -1,6 +1,6 @@
 import type { Vec3 } from '../../core/vec3';
-import { abdominalAtlas, abdominalAtlasSdf } from '../abdominalAtlas';
-import { sdEllipsoid, spineEllipseSd, spineArchSd, smoothMax, smoothMin, type Ellipsoid, type Spine, type Torso } from '../primitives';
+import { EMPTY_ATLAS } from '../emptyAtlas';
+import { sdEllipsoid, smoothMax, smoothMin, spineArchSd, spineEllipseSd, type Ellipsoid, type Spine, type Torso } from '../primitives';
 import { gallbladderSdf, type GallbladderShape } from './gallbladder';
 import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf, type Kidney } from './kidney';
 import { umbilicalFissureSdf, type UmbilicalFissure } from './liverLigaments';
@@ -205,7 +205,7 @@ export function visceralFaceDistance(m: Vec3, vf: VisceralFace, torso: Torso, wa
 
 /** Hígado sin la fisura umbilical (lo que la fisura excava se clasifica como ligamento redondo). */
 export function liverBaseSdf(m: Vec3, s: LiverShape): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 4);
+  if (s.torso.person?.assets.buffers.abdominal) return (s.torso.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 4);
   let d = smoothMin(sdEllipsoid(m, s.liver), sdEllipsoid(m, s.liverLeft), s.liverBlendMm);
   d = smoothMax(d, -visceralFaceDistance(m, s.visceralFace, s.torso, s.wallThickness()).d, s.visceralFace.edgeRoundMm);
   d = smoothMax(d, medialCutDistance(m), MEDIAL_CUT.roundMm);
@@ -225,7 +225,7 @@ export function liverBaseSdf(m: Vec3, s: LiverShape): number {
  * cara visceral en cuña, impresión renal, fosa vesicular y fisura umbilical.
  */
 export function liverSdf(m: Vec3, s: LiverShape): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 4);
+  if (s.torso.person?.assets.buffers.abdominal) return (s.torso.person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(m, 4);
   const dBase = liverBaseSdf(m, s);
   return smoothMax(dBase, -umbilicalFissureSdf(m, dBase, s.umbilicalFissure), s.umbilicalFissure.roundMm);
 }

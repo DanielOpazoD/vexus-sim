@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { quadratusSdf, RETROPERITONEUM_GLSL } from '../src/anatomy/organs/retroperitoneum';
 import type { Vec3 } from '../src/core/vec3';
+import { fixturePerson } from '../src/validation/support/legacyPerson/state';
 import { budget } from './support';
 
 test('production quadratus field closes at the wall in GPU as in CPU', async ({ page }, info) => {
@@ -89,7 +90,7 @@ void main(){value=vec4(quadratusSdf(point,distances.x,distances.y),0,0,1);}`,
   let maxError = 0;
   let interior = 0;
   for (const [i, input] of inputs.entries()) {
-    const cpu = quadratusSdf(input.p, input.wall, input.peri);
+    const cpu = quadratusSdf(input.p, input.wall, input.peri, fixturePerson().cpu);
     maxError = Math.max(maxError, Math.abs(cpu - result.values[i]));
     if (input.wall < 0) expect(result.values[i], JSON.stringify(input)).toBeGreaterThan(0);
     if (cpu < -0.01) {

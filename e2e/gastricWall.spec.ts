@@ -1,12 +1,13 @@
+import { expect, test } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
-import { abdominalAtlasValue, setAbdominalAtlas } from '../src/anatomy/abdominalAtlas';
 import { ABDOMINAL_FIELDS } from '../src/anatomy/abdominalAtlasData';
-import { abdomenQuery, GASTRIC_WALL } from '../src/anatomy/organs/abdomen';
 import { Interface } from '../src/anatomy/interfaces';
+import { abdomenQuery, GASTRIC_WALL } from '../src/anatomy/organs/abdomen';
 import { Tissue } from '../src/anatomy/tissues';
+import { abdominalAtlasValue, setAbdominalAtlas } from '../src/validation/support/legacyPerson/abdominalAtlas';
+import { fixturePerson } from '../src/validation/support/legacyPerson/state';
+import { bootWithoutErrors, budget } from './support';
 
 /** La pared entera, también fuera del plano: puntos materiales del estómago hasta un poco más allá de sus pliegues, fuera de la rejilla del atlas. */
 function stomachWallPoints(): number[][] {
@@ -20,7 +21,7 @@ function stomachWallPoints(): number[][] {
         const p = [x, y, z].map((v, i) => f.originMm[i] + (v + 0.37) * f.pitchMm) as [number, number, number];
         const q = abdominalAtlasValue(p, 1);
         if (q.d >= 0 || q.label !== 1 || -q.d > GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm + 2) continue;
-        if (abdomenQuery(p)?.interface === Interface.BowelSerosa) out.push(p);
+        if (abdomenQuery(p, fixturePerson().cpu)?.interface === Interface.BowelSerosa) out.push(p);
       }
   setAbdominalAtlas();
   return out;

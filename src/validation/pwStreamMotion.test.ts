@@ -2,13 +2,13 @@
 import { describe, expect, it } from 'vitest';
 import { tubeQuery, type Tube } from '../anatomy/primitives';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import type { VesselDef } from '../anatomy/vesselTree';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { SampleVolumeIQ, type GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /** Lo que estas pruebas leen de la población (decisión 294). */
 interface Particle {

@@ -1,13 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { TubeGrid } from '../anatomy/gpu/tubeGrid';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 function loadAtlas(): void {
   for (const [name, set] of [

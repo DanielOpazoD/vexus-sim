@@ -1,10 +1,10 @@
 // @tier slow
 import fc from 'fast-check';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
 import { clonePatient, validatePatient, type PatientState } from '../physiology/patientState';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Propiedades del motor fisiológico sobre TODO el dominio que acepta `validatePatient`

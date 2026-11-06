@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { SAMPLER_GUARD, SLOT_GUARD, WEBGL2_MIN_FRAGMENT_VECTORS } from '../../tools/ci/shaderBudgets';
-import { AnatomyScene } from '../anatomy/scene';
+import { ANATOMY_GLSL, MAX_NODES, MAX_TUBE_SEGMENTS, MAX_TUBES } from '../anatomy/gpu/anatomy.glsl';
+import { personShader } from '../anatomy/gpu/personShader';
 import { INTERFACE_COUNT } from '../anatomy/interfaces';
 import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
-import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
-import { personShader } from '../anatomy/gpu/personShader';
-import { S0028_BUNDLE } from '../anatomy/anatomyBundle';
+import { STEERED_APERTURE_GLSL } from '../ultrasound/aperture';
+import { COMPOUND } from '../ultrasound/compound';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import {
   FRAG_COMPOUND,
@@ -20,11 +20,11 @@ import {
   STEERED_FIELD_GLSL,
   TISSUE_VEC4,
 } from '../ultrasound/shaders/passes.glsl';
-import { COMPOUND } from '../ultrasound/compound';
-import { STEERED_APERTURE_GLSL } from '../ultrasound/aperture';
 import { SPECKLE_LOOK_GLSL } from '../ultrasound/speckleField';
 import { STEERING_GLSL } from '../ultrasound/steering';
 import { STEERED_PREFIX_GLSL } from '../ultrasound/transmission';
+import { S0028_BUNDLE } from './support/legacyPerson/anatomyBundle';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /** Excepción acotada: una jacobiana analítica al primer impacto, nunca por muestra. */
 function withoutSingleMirrorWarp(src: string): string {

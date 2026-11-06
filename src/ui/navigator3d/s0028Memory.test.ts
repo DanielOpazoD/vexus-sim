@@ -1,26 +1,24 @@
-import { expect, it, vi } from 'vitest';
 import { BufferAttribute, BufferGeometry, Mesh, MeshStandardMaterial } from 'three';
-import { installAnatomyBundle, S0028_BUNDLE } from '../../anatomy/anatomyBundle';
-import { AnatomyScene } from '../../anatomy/scene';
+import { expect, it } from 'vitest';
+import type { PersonSurfaces } from '../../anatomy/person';
 import { NORMAL_ADULT } from '../../cases';
-import { buildOrgans } from './organs';
+import { installAnatomyBundle, S0028_BUNDLE } from '../../validation/support/legacyPerson/anatomyBundle';
+import { AnatomyScene } from '../../validation/support/legacyPerson/scene';
 import { buildSkeleton } from './body';
+import { buildOrgans } from './organs';
 import { bindRespiratoryMotion } from './respiratoryMotion';
-import { s0028Surfaces } from '../s0028Surfaces';
 
-vi.mock('../s0028Surfaces', () => ({
-  s0028Surfaces: ['liver', 'thoracicBone'].map((name) => ({
-    name,
-    asset: name === 'liver' ? 'abdominal' : 'thoracic',
-    positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1]),
-    indices: new Uint32Array([0, 1, 2, 3, 4, 5]),
-  })),
+const s0028Surfaces: PersonSurfaces['indexed'] = ['liver', 'thoracicBone'].map((name) => ({
+  name,
+  asset: name === 'liver' ? 'abdominal' : 'thoracic',
+  positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1]),
+  indices: new Uint32Array([0, 1, 2, 3, 4, 5]),
 }));
 
 it('conserva los triángulos y su iluminación plana sin duplicarlos en normales CPU/GPU', () => {
   installAnatomyBundle(S0028_BUNDLE);
   const scene = new AnatomyScene(NORMAL_ADULT);
-  const groups = [buildOrgans(scene), buildSkeleton(scene)];
+  const groups = [buildOrgans(scene, { indexed: s0028Surfaces }), buildSkeleton(scene, { indexed: s0028Surfaces })];
   for (const group of groups) {
     expect(group.children).toHaveLength(1);
     const mesh = group.children[0];
@@ -51,7 +49,7 @@ it('al cambiar de caso con respiración activa devuelve la fuente compartida a s
   // Cada vuelta es un cambio de caso: el 3D nuevo reutiliza la misma fuente y no debe heredar
   // el desplazamiento de la respiración anterior (antes acumulaba 8 → 16 → 24 mm).
   for (let change = 0; change < 3; change++) {
-    const organs = buildOrgans(scene);
+    const organs = buildOrgans(scene, { indexed: s0028Surfaces });
     const breathing = bindRespiratoryMotion([organs], () => 1);
     breathing.apply(8);
     expect(source).not.toEqual(rest);

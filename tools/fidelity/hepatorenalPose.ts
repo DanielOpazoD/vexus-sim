@@ -1,15 +1,15 @@
 /** Exploración geométrica offline: cortes transhepáticos con corteza y parénquima a igual profundidad. */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { AnatomyQuery } from '../../src/anatomy/query';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
-import { NORMAL_ADULT } from '../../src/cases';
-import { clonePatient } from '../../src/physiology/patientState';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { kidneyLocal } from '../../src/anatomy/organs/kidney';
+import { AnatomyQuery } from '../../src/anatomy/query';
 import { Tissue } from '../../src/anatomy/tissues';
+import { NORMAL_ADULT } from '../../src/cases';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { clonePatient } from '../../src/physiology/patientState';
 import { probeContact } from '../../src/probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../../src/probe/probe';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const results = [];
 for (const reference of [false, true]) {
   if (reference) {

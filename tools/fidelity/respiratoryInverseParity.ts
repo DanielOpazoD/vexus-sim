@@ -1,19 +1,19 @@
 /** Actual anatomy GLSL: respiratory inverse against known material points, with/without probe compression. */
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { RespiratoryDeformation, RESPIRATORY_INVERSE_STEPS } from '../../src/anatomy/deformation';
-import { anatomyWarpAt, respiratoryWeightGradient } from '../../src/anatomy/respiratoryNormals';
-import { warpNormal, warpBound } from '../../src/anatomy/compression';
-import { bodyCoefficients, setReferenceBody } from '../../src/anatomy/referenceBody';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { warpBound, warpNormal } from '../../src/anatomy/compression';
+import { RESPIRATORY_INVERSE_STEPS, RespiratoryDeformation } from '../../src/anatomy/deformation';
 import { ANATOMY_GLSL, BODY_BASE, COMPRESSION_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../../src/anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms } from '../../src/anatomy/gpu/sceneUniforms';
-import { NORMAL_ADULT } from '../../src/cases';
-import { PhysiologyEngine } from '../../src/physiology/engine';
+import { anatomyWarpAt, respiratoryWeightGradient } from '../../src/anatomy/respiratoryNormals';
 import { START_POINTS } from '../../src/app/startPoints';
+import { NORMAL_ADULT } from '../../src/cases';
+import type { Vec3 } from '../../src/core/vec3';
+import { PhysiologyEngine } from '../../src/physiology/engine';
 import { probeContact } from '../../src/probe/contact';
 import { clampPose, CONVEX_C35 } from '../../src/probe/probe';
-import type { Vec3 } from '../../src/core/vec3';
+import { bodyCoefficients, setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const out = process.env.RESP_INVERSE_OUT ?? '/tmp/vexus-respiratory-inverse';

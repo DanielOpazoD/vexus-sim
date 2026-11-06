@@ -7,9 +7,13 @@ on:
   pull_request:
     paths:
       - 'src/probe/contact.ts'
-      - 'src/anatomy/s0028Wall.ts'
+      - 'src/anatomy/people/s0028/wall.ts'
       - 'src/anatomy/gpu/s0028Wall.glsl.ts'
-      - 'src/anatomy/s0028Solids.ts'
+      - 'src/anatomy/people/s0028/solids.ts'
+      - 'src/anatomy/people/s0028/classifier.ts'
+      - 'src/anatomy/people/s0028/cpu.ts'
+      - 'src/anatomy/personAssets.ts'
+      - 'src/validation/support/legacyPerson/**'
       - 'src/anatomy/scene.ts'
       - 'src/anatomy/structureIdentity.ts'
       - 'src/ui/cutMapWorker.ts'

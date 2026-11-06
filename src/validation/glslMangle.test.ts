@@ -21,6 +21,7 @@ import {
   transformWithMangle,
   type SourceModule,
 } from '../../tools/build/glslMinify';
+import { personShaderAbi } from '../../tools/build/personShaderAbi';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import { loadShaderGraph } from './support/shaderGraph';
 
@@ -402,7 +403,7 @@ describe('Renombrado del GLSL en el build: lo que JS puede escribir en un shader
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const SOURCES = readSources(join(ROOT, 'src'));
-const CTX = prepareGlslMangle(SOURCES);
+const CTX = personShaderAbi(prepareGlslMangle(SOURCES));
 const SOURCE_BY_PATH = new Map(SOURCES.map((m) => [m.path, m.code]));
 /** Texto GLSL sin comentarios y sin sangría (el que compara las dos versiones de un programa). */
 const canon = (glsl: string): string =>

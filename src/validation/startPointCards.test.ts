@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { START_POINTS } from '../app/startPoints';
 import { WINDOW_GROUPS, windowMenuPoints } from '../app/windowGroups';
 import { NORMAL_ADULT } from '../cases';
 import { CURRENT_WINDOW_MM, CURRENT_WINDOW_YAW, currentStartPoint, startPointDistanceMm, yawDelta } from '../ui/startPointCards';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Tarjetas de ventanas del carril izquierdo: la tarjeta resaltada es la ventana en la que está la sonda

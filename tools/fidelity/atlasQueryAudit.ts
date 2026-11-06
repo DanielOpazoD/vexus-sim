@@ -1,21 +1,21 @@
 /** Offline paired source-reader audit. Does not loosen UI/CI deadlines or certify anatomy. */
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { arch, cpus, platform } from 'node:os';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { cpus, platform, arch } from 'node:os';
-import type { Vec3 } from '../../src/core/vec3';
-import { START_POINTS, startPointsFor } from '../../src/app/startPoints';
-import { CONVEX_C35, probeFrame, pointOnLine } from '../../src/probe/probe';
-import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../src/cases';
-import type * as AbdominalReader from '../../src/anatomy/abdominalAtlas';
-import type * as ThoracicReader from '../../src/anatomy/thoracicAtlas';
-import type * as BodyReader from '../../src/anatomy/referenceBody';
-import type * as SceneModule from '../../src/anatomy/scene';
 import type * as AbdominalMeta from '../../src/anatomy/abdominalAtlasData';
 import type * as ThoracicMeta from '../../src/anatomy/thoracicAtlasData';
+import { START_POINTS, startPointsFor } from '../../src/app/startPoints';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../src/cases';
+import type { Vec3 } from '../../src/core/vec3';
+import { CONVEX_C35, pointOnLine, probeFrame } from '../../src/probe/probe';
+import type * as AbdominalReader from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import type * as BodyReader from '../../src/validation/support/legacyPerson/referenceBody';
+import type * as SceneModule from '../../src/validation/support/legacyPerson/scene';
+import type * as ThoracicReader from '../../src/validation/support/legacyPerson/thoracicAtlas';
 
 const [beforeArg, afterArg, output] = process.argv.slice(2);
 if (!beforeArg || !afterArg || !output) throw new Error('Usage: atlasQueryAudit.ts BASELINE_CHECKOUT CANDIDATE_CHECKOUT OUTPUT.json');

@@ -2,11 +2,11 @@
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { AnatomyScene } from '../../src/anatomy/scene';
 import { NORMAL_ADULT } from '../../src/cases';
 import { PhysiologyEngine } from '../../src/physiology/engine';
 import { clonePatient, type PatientState } from '../../src/physiology/patientState';
 import { venousComparisonTrace } from '../../src/physiology/venousComparison';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 import { measurePhysiologyTruth } from '../../src/vexus/measurements';
 
 type ScalarKey = 'rapMeanMmHg' | 'intraAbdominalPressureMmHg' | 'rvFunction' | 'raCompliance' | 'tricuspidRegurgitation';

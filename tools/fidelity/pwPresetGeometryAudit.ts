@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { NORMAL_ADULT } from '../../src/cases';
-import { openSession, probeAt, placeGate } from '../../src/validation/support/studentChain';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { openSession, placeGate, probeAt } from '../../src/validation/support/studentChain';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 const results = [];

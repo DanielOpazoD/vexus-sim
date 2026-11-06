@@ -1,7 +1,7 @@
-import type { Vec3 } from '../../src/core/vec3';
-import type { AnatomyScene } from '../../src/anatomy/scene';
-import { heartChambers, HEART_WALLS } from '../../src/anatomy/organs/heart';
+import { HEART_WALLS, heartChambers } from '../../src/anatomy/organs/heart';
 import { kidneyLocal, kidneyOuterSdf } from '../../src/anatomy/organs/kidney';
+import type { Vec3 } from '../../src/core/vec3';
+import type { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 
 /** Campos individuales en coordenadas materiales del tronco; negativo significa interior. */
 export function organSignedFields(scene: AnatomyScene) {
@@ -11,6 +11,6 @@ export function organSignedFields(scene: AnatomyScene) {
     liverAfterWallAndDiaphragmClip: (p: Vec3) => -scene.liverInteriorMargin(p),
     kidneyRight: (p: Vec3) => kidneyOuterSdf(kidneyLocal(p, scene.kidneyRight), scene.kidneyRight),
     kidneyLeft: (p: Vec3) => kidneyOuterSdf(kidneyLocal(p, scene.kidneyLeft), scene.kidneyLeft),
-    heartBeforeDiaphragmClip: (p: Vec3) => Math.min(...heartChambers(p).map((x, i) => x - walls[i])),
+    heartBeforeDiaphragmClip: (p: Vec3) => Math.min(...heartChambers(p, scene.person.cpu).map((x, i) => x - walls[i])),
   };
 }

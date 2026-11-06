@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AF_MODERATE_CONGESTION, CASES, CIRRHOSIS_PULMONARY_HYPERTENSION, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import {
   BOLUS_TAU_S,
@@ -20,9 +19,10 @@ import {
 } from '../physiology/circulation';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type PatientState } from '../physiology/patientState';
+import { peepPleuralShiftMmHg } from '../physiology/respiratory';
 import { RhythmGenerator } from '../physiology/rhythm';
 import { RightAtriumModel, caseAtrialLoad, raWaveParams } from '../physiology/rightAtrium';
-import { peepPleuralShiftMmHg } from '../physiology/respiratory';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Lazo cerrado de la media (decisión 79), en el nivel rápido: las dos curvas, su cruce, la IT dependiente de la

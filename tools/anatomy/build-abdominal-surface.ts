@@ -1,16 +1,16 @@
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene } from '../../src/anatomy/scene';
-import { NORMAL_ADULT } from '../../src/cases';
 import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf, RENAL_FASCIA_MM } from '../../src/anatomy/organs/kidney';
-import { meshFromSdf } from '../../src/ui/navigator3d/organs';
+import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { meshFromSdf } from '../../src/ui/navigator3d/organs';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 /** Offline extraction of the SAME signed distance nodes as CPU/GPU; no source mesh replacement. */
-import { readFileSync, writeFileSync } from 'node:fs';
-import { gzipSync, gunzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
-import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { MeshBasicMaterial } from 'three';
+import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../../src/anatomy/abdominalAtlasData';
 const half = (bits: number) => {
   const sign = bits & 0x8000 ? -1 : 1,

@@ -1,7 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { CASES } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import {
   SCENE_SAMPLERS,
@@ -11,6 +8,9 @@ import {
   uploadSceneUniforms,
   type UniformSink,
 } from '../anatomy/gpu/sceneUniforms';
+import { CASES } from '../cases';
+import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Esquema único de uniforms de la anatomía (Fase 2): ANATOMY_GLSL no declara uniforms a mano,

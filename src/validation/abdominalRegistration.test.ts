@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { NORMAL_ADULT } from '../cases';
 import { abdominalRegistrationAudit } from '../../tools/fidelity/abdominalRegistrationAudit';
-import { Tissue } from '../anatomy/tissues';
 import { PSOAS_NODES } from '../anatomy/organs/retroperitoneum';
+import { Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));

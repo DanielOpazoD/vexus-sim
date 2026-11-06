@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
@@ -20,6 +19,7 @@ import {
 } from '../ultrasound/speckleField';
 import { lookPhase, lookPhaseGrad, lookWavenumber } from '../ultrasound/steering';
 import { lookPatchEnvelopes } from './support/compoundTwin';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { rng } from './syntheticSpeckle';
 
 /**

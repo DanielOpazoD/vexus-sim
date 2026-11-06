@@ -1,15 +1,14 @@
 import { dot, smoothstep, type Vec3 } from '../core/vec3';
 import { warpAt, type ProbeCompression, type Warp } from './compression';
 import { torsoDepth, torsoDepthGradient } from './primitives';
-import { s0028RespiratoryRamp, s0028WallFaceGradient } from './s0028Wall';
 import { RESPIRATORY_DIRECTION as DIR } from './respiratoryDirection';
 import type { AnatomyScene } from './scene';
 
 /** Derivada analítica del mismo peso, fuera de las uniones no diferenciables del perfil torácico. @twin deformacion */
 export function respiratoryWeightGradient(scene: AnatomyScene, m: Vec3): Vec3 {
-  const s0028 = scene.identity.person === 's0028' ? s0028WallFaceGradient(m, 2) : undefined;
+  const s0028 = scene.person?.cpu.regional?.s0028WallFaceGradient(m, 2);
   // s0028 U: sin cara interna; el peso es la rampa por profundidad de su fila, smoothstep(p10, p90, −τ), y ∇ = −∇τ.
-  const ramp = s0028 === null ? s0028RespiratoryRamp(m) : null;
+  const ramp = s0028 === null ? scene.person.cpu.regional!.s0028RespiratoryRamp(m) : null;
   if (s0028 === null && ramp === null) return [0, 0, 0];
   const [lo, hi] = ramp ? [ramp.d0, ramp.d1] : [0, 25];
   const inside = ramp ? ramp.x : s0028 ? s0028.sd : -torsoDepth(m, scene.torso) - scene.wallThickness();

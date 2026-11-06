@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { Interface } from '../anatomy/interfaces';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 beforeAll(() => {
   const b = readFileSync('src/anatomy/reference-body.bin');

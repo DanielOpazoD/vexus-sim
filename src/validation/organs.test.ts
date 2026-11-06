@@ -1,10 +1,10 @@
-import { tokenizeGlsl, glslDeclarations } from '../../tools/build/glslMangle';
 import { describe, expect, it } from 'vitest';
+import { glslDeclarations, tokenizeGlsl } from '../../tools/build/glslMangle';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
-import { ORGAN_MODULES, ORGAN_GLSL } from '../anatomy/organs';
 import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM } from '../anatomy/organs/kidney';
+import { LIGAMENTUM_VENOSUM, ligamentumVenosumSdf, UMBILICAL_FISSURE, umbilicalFissureSdf } from '../anatomy/organs/liverLigaments';
 import { LUNG_CURTAIN, lungCurtainDistance } from '../anatomy/organs/lungCurtain';
-import { LIGAMENTUM_VENOSUM, ligamentumVenosumSdf, umbilicalFissureSdf, UMBILICAL_FISSURE } from '../anatomy/organs/liverLigaments';
+import { ORGAN_GLSL, ORGAN_MODULES } from './support/organRegistry';
 
 /** Módulos de órgano (decisión 46): gemelos TS/GLSL juntos y con el mismo nombre. */
 describe('Módulos de órgano', () => {

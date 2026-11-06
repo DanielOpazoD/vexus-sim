@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { Interface } from '../anatomy/interfaces';
 import { HEPATIC_SPINE_GAP_MM, hepaticSpineEnvelopeSd } from '../anatomy/organs/liver';
 import { SPINE_SHAPE, sdSpine } from '../anatomy/primitives';
-import { Interface } from '../anatomy/interfaces';
 import { LIVER_CAPSULE_MM, Tissue } from '../anatomy/tissues';
-import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { NORMAL_ADULT } from '../cases';
-import { retroTexture, visceralFatLobules } from '../ultrasound/retroTexture';
 import type { Vec3 } from '../core/vec3';
+import { retroTexture, visceralFatLobules } from '../ultrasound/retroTexture';
+import { setReferenceBody, validateReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 const b = readFileSync('src/anatomy/reference-body.bin');
 const profile = validateReferenceBody(new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)));
 

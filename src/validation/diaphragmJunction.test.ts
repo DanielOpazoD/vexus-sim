@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
+import { DIAPHRAGM_JOIN_MM, diaphragmHeight, diaphragmInteriorEdgeZ, type Dome } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
-import { DIAPHRAGM_JOIN_MM, diaphragmInteriorEdgeZ, diaphragmHeight, type Dome } from '../anatomy/primitives';
-import { setReferenceBody } from '../anatomy/referenceBody';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 afterEach(() => setReferenceBody());

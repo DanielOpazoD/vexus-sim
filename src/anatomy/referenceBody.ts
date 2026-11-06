@@ -18,12 +18,6 @@ export const COSTAL_BODY_STRIDE = 129;
 export function bodyStride(data: Float32Array): number {
   return data.length === COSTAL_BODY_ROWS * COSTAL_BODY_STRIDE ? COSTAL_BODY_STRIDE : BODY_STRIDE;
 }
-export let referenceBody: Float32Array | undefined;
-export let abdominalBody: Float32Array | undefined;
-export function setAbdominalBody(values?: Float32Array): void {
-  if (values && values.length !== ABDOMINAL_BODY_ROWS * BODY_STRIDE) throw new Error('Perfil abdominal inválido');
-  abdominalBody = values ? validateReferenceBody(values) : undefined;
-}
 export function validateReferenceBody(values: Float32Array): Float32Array {
   if (
     ![
@@ -38,9 +32,6 @@ export function validateReferenceBody(values: Float32Array): Float32Array {
   for (let i = 0; i < values.length; i++)
     if (i % bodyStride(values) !== 0 && (values[i] < 40 || values[i] > 300)) throw new Error('Radio corporal fuera del dominio del asset');
   return values;
-}
-export function setReferenceBody(values?: Float32Array): void {
-  referenceBody = values ? validateReferenceBody(values) : undefined;
 }
 /** Coeficientes bicúbicos compartidos por CPU/GPU; cuatro téxeles por celda y uno
  * para el centro de cada franja. Perfiles cargados inmutables por identidad (216). */

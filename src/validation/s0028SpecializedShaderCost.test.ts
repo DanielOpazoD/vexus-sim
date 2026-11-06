@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { FRAG_COLOR, FRAG_RAWFIELD_CLASS } from '../ultrasound/shaders/passes.glsl';
-import { S0028_BUNDLE as bundle } from '../anatomy/anatomyBundle';
 import { personShader } from '../../tools/anatomy/s0028-p1-specialized';
 import { shaderCosts } from '../../tools/anatomy/s0028-shader-metrics';
+import { FRAG_COLOR, FRAG_RAWFIELD_CLASS } from '../ultrasound/shaders/passes.glsl';
+import { S0028_BUNDLE as bundle } from './support/legacyPerson/anatomyBundle';
 
 describe('especialización previa por persona, sin selector de sampler en GLSL', () => {
   it('conserva las fuentes actuales exactamente y elimina las lecturas del otro donante en s0028', () => {

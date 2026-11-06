@@ -13,10 +13,11 @@ import {
   retroperitoneum,
 } from '../anatomy/organs/retroperitoneum';
 import { SPINE_SHAPE, sdSpine, torsoDepth, tubeQuery } from '../anatomy/primitives';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { TISSUES, TISSUE_GLSL_NAME, Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { fixturePerson } from './support/legacyPerson/state';
 
 /**
  * Retroperitoneo (decisión 81): psoas mayor, cuadrado lumbar y grasa retroperitoneal. Antes todo lo que rodeaba al riñón
@@ -109,7 +110,7 @@ describe('Retroperitoneo (decisión 81)', () => {
     for (let x = -120; x <= 120; x += 2)
       for (let y = 0; y <= 100; y += 2) expect(cls([x, y, -150]).tissue).not.toBe(Tissue.QuadratusLumborum);
     // donde el riñón apoya en la pared (su grasa gruesa de detrás llega a ella) el músculo le deja sitio
-    expect(quadratusSdf([-65, -62, -85], insideWall([-65, -62, -85]), dPeri([-65, -62, -85]))).toBeGreaterThan(0);
+    expect(quadratusSdf([-65, -62, -85], insideWall([-65, -62, -85]), dPeri([-65, -62, -85]), fixturePerson().cpu)).toBeGreaterThan(0);
   });
 
   it('no invaden el riñón, el hígado, la VCI, la aorta ni la columna del adulto de referencia', () => {
@@ -123,7 +124,7 @@ describe('Retroperitoneo (decisión 81)', () => {
           const m: Vec3 = [x, y, z];
           const w = insideWall(m);
           if (w < 0) continue;
-          if (psoasSdf(m) >= 0 && quadratusSdf(m, w, dPeri(m)) >= 0) continue;
+          if (psoasSdf(m, fixturePerson().cpu) >= 0 && quadratusSdf(m, w, dPeri(m), fixturePerson().cpu) >= 0) continue;
           inside++;
           near.kidney = Math.min(near.kidney, ...[scene.kidneyRight, scene.kidneyLeft].map((k) => kidneyOuterSdf(kidneyLocal(m, k), k)));
           near.fat = Math.min(near.fat, dPeri(m));
@@ -150,7 +151,7 @@ describe('Retroperitoneo (decisión 81)', () => {
       for (let x = 17; x <= 46; x += 0.2)
         for (let y = -60; y <= -34; y += 0.2) {
           const m: Vec3 = [-x, y, z];
-          if (psoasSdf(m) >= 0) continue;
+          if (psoasSdf(m, fixturePerson().cpu) >= 0) continue;
           bone = Math.min(bone, sdSpine(m, scene.spine));
           fat = Math.min(fat, dPeri(m));
         }
@@ -213,7 +214,9 @@ describe('Retroperitoneo (decisión 81)', () => {
     expect(next.get(Tissue.QuadratusLumborum) ?? 0, tag).toBeGreaterThan(20);
     expect(next.get(Tissue.Liver) ?? 0, tag).toBeGreaterThan(50);
     // delante del retroperitoneo queda mesenterio; no se inventa una luz intestinal sin eje geométrico
-    expect(cls([k.center[0], retroFrontY(Math.abs(k.center[0]), k.center[2]) + 5, k.center[2]]).tissue).toBe(Tissue.MesentericFat);
+    expect(cls([k.center[0], retroFrontY(Math.abs(k.center[0]), k.center[2], fixturePerson().cpu) + 5, k.center[2]]).tissue).toBe(
+      Tissue.MesentericFat,
+    );
   });
 
   it('el compartimento: detrás del peritoneo parietal posterior, por delante de los grandes vasos y hasta el flanco', () => {
@@ -223,12 +226,12 @@ describe('Retroperitoneo (decisión 81)', () => {
     // entre la VCI y la aorta (la ventana del flanco): grasa, no asas
     expect(cls([-3, -18, -60]).tissue).toBe(Tissue.RetroperitonealFat);
     // en el flanco la grasa llega a la pared detrás de la línea axilar posterior; delante, la pared lateral toca asas
-    expect(retroFrontY(RETRO_FAT.xLateral, -100)).toBeCloseTo(RETRO_FAT.yLateral, 9);
-    expect(retroFatSdf([RETRO_FAT.xLateral + 1, -60, -100])).toBeGreaterThan(0);
+    expect(retroFrontY(RETRO_FAT.xLateral, -100, fixturePerson().cpu)).toBeCloseTo(RETRO_FAT.yLateral, 9);
+    expect(retroFatSdf([RETRO_FAT.xLateral + 1, -60, -100], fixturePerson().cpu)).toBeGreaterThan(0);
     // bajo los riñones solo queda la gotera paravertebral
-    expect(retroFrontY(20, RETRO_FAT.zLow - RETRO_FAT.zRamp - 10)).toBeCloseTo(RETRO_FAT.yLow, 9);
+    expect(retroFrontY(20, RETRO_FAT.zLow - RETRO_FAT.zRamp - 10, fixturePerson().cpu)).toBeCloseTo(RETRO_FAT.yLow, 9);
     // la pared anterior nunca es retroperitoneo
-    for (let x = -120; x <= 120; x += 5) expect(retroFatSdf([x, 20, -100])).toBeGreaterThan(0);
+    for (let x = -120; x <= 120; x += 5) expect(retroFatSdf([x, 20, -100], fixturePerson().cpu)).toBeGreaterThan(0);
   });
 
   it('la distancia a la frontera de lo retroperitoneal no pasa de la real', () => {
@@ -292,9 +295,9 @@ describe('Retroperitoneo (decisión 81)', () => {
       'c.tissue = retroperitoneum(retroPoint, uAbdominalAtlasEnabled!=0 ? m : retroPoint, -depth - wall, dPeri, bdRetro);',
     );
     // la función TS da los mismos tejidos que classify en el resto (el orden: psoas, cuadrado, grasa, asas)
-    expect(retroperitoneum([-30, -46, -97], 10, 1e3)[0]).toBe(Tissue.Psoas);
-    expect(retroperitoneum([-65, -60, -150], 5, 1e3)[0]).toBe(Tissue.QuadratusLumborum);
-    expect(retroperitoneum([-65, -60, -150], 5, -1)[0]).toBe(Tissue.RetroperitonealFat);
-    expect(retroperitoneum([0, 20, -120], 60, 1e3)[0]).toBe(Tissue.Bowel);
+    expect(retroperitoneum([-30, -46, -97], 10, 1e3, undefined, fixturePerson().cpu)[0]).toBe(Tissue.Psoas);
+    expect(retroperitoneum([-65, -60, -150], 5, 1e3, undefined, fixturePerson().cpu)[0]).toBe(Tissue.QuadratusLumborum);
+    expect(retroperitoneum([-65, -60, -150], 5, -1, undefined, fixturePerson().cpu)[0]).toBe(Tissue.RetroperitonealFat);
+    expect(retroperitoneum([0, 20, -120], 60, 1e3, undefined, fixturePerson().cpu)[0]).toBe(Tissue.Bowel);
   });
 });

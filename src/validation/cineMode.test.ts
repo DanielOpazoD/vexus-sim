@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { findCase } from '../cases';
-import { AnatomyScene } from '../anatomy/scene';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, lineAngle } from '../probe/probe';
@@ -8,6 +7,7 @@ import { ecgT, ecgX, traceRight } from '../ui/sweep';
 import { CINE_FRAMES, CINE_RATE_HZ, CineRing, persistenceReplay } from '../ultrasound/cine';
 import { M_MAX_GAP_S, MColumnRing, mLineU } from '../ultrasound/mmode';
 import { collapsibilityIndex, ivcFromCalipers, ivcPixelInterval, ivcTruth } from '../vexus/ivcCollapse';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Cine y modo M (decisión 80): la lógica pura que la e2e no puede recorrer caso a caso — el anillo del cine y su

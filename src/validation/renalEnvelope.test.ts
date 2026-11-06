@@ -1,11 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { abdominalAtlasSdf, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
+import { Interface } from '../anatomy/interfaces';
 import {
   ATLAS_KIDNEY_CLEARANCE_MM,
   RENAL_FASCIA_MM,
@@ -15,9 +12,12 @@ import {
   kidneyWorld,
   perirenalOuterSdf,
 } from '../anatomy/organs/kidney';
-import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { abdominalAtlasSdf, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const body = readFileSync('src/anatomy/abdominal-body.bin');
 const surface = gunzipSync(readFileSync('src/anatomy/abdominal-surface.gzip.bin'));

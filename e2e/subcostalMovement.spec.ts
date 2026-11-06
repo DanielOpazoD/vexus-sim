@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
+import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 
 interface WorkerWitness {
   init?: CutMapInit;
@@ -67,7 +67,7 @@ test('the anatomical worker receives the exact acquisition wall and costal atlas
     return {
       sameProfile,
       profileLength: witness.init!.referenceProfile!.length,
-      thoracicBytes: witness.init!.thoracicField?.byteLength,
+      thoracicBytes: witness.init!.buffers?.thoracic?.byteLength,
       bones,
       mismatches,
     };

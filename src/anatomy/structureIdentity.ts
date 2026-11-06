@@ -1,10 +1,10 @@
-import { abdominalAtlasSdf, abdominalAtlasValue } from './abdominalAtlas';
-import { kidneyLocal, kidneyOuterSdf } from './organs/kidney';
-import { Interface } from './interfaces';
-import { Tissue } from './tissues';
 import type { Vec3 } from '../core/vec3';
+import { EMPTY_ATLAS } from './emptyAtlas';
+import { Interface } from './interfaces';
+import { kidneyLocal, kidneyOuterSdf } from './organs/kidney';
+import type { S0028Ownership } from './people/s0028/solids';
 import type { AnatomyScene } from './scene';
-import type { S0028Ownership } from './s0028Solids';
+import { Tissue } from './tissues';
 
 /** Stable anatomical regions, separate from the acoustic tissue and vascular identity. */
 export const STRUCTURE_LABELS = [
@@ -32,6 +32,7 @@ export const STRUCTURE_LABELS = [
 ] as const;
 
 export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, scene: AnatomyScene, solids?: S0028Ownership): number {
+  const { abdominalAtlasSdf, abdominalAtlasValue } = scene.person?.cpu.atlas ?? EMPTY_ATLAS;
   const owner = solids?.owners[0]?.id;
   if (solids?.state === 'conflict') return 17;
   if (owner === 'kidney_right') return 18;

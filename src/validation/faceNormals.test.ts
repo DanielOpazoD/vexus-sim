@@ -1,24 +1,24 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
+import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
+import { Interface } from '../anatomy/interfaces';
+import { hilumNotchActive, kidneyLocal, kidneyOuterSdf, type Kidney } from '../anatomy/organs/kidney';
+import { sdEllipsoidLocal } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
+import { Tissue } from '../anatomy/tissues';
 import { centralGradient } from '../app/fidelity/grid';
 import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { faceNormalStats } from '../app/testHooks';
-import { hilumNotchActive, kidneyLocal, kidneyOuterSdf, type Kidney } from '../anatomy/organs/kidney';
-import { sdEllipsoidLocal } from '../anatomy/primitives';
-import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
-import { FRAG_QUERY } from '../ultrasound/shaders/passes.glsl';
-import { AnatomyQuery } from '../anatomy/query';
-import { Interface } from '../anatomy/interfaces';
-import { AnatomyScene, type Classification, type FaceGeometry } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { VESSEL_META } from '../physiology/vessels';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
+import { FRAG_QUERY } from '../ultrasound/shaders/passes.glsl';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { AnatomyScene, type Classification, type FaceGeometry } from './support/legacyPerson/scene';
 
 /**
  * Filas de la e2e de normales (`faceNormalStats`) sin GPU. Una GPU simulada clasifica como la CPU y

@@ -1,19 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { uncompress } from '../anatomy/compression';
 import { Interface, interfaceReflectivity } from '../anatomy/interfaces';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { reflectionCoefficient, Tissue } from '../anatomy/tissues';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { startPointsFor } from '../app/startPoints';
 import { CASES } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
 import { ATLAS_LOBE_EPS_MM, atlasCapsuleLobeNormal, capsuleExteriorGain, INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   const load = (name: string) => {

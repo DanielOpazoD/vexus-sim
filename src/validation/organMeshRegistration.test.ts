@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
 import { MeshBasicMaterial } from 'three';
-import { AnatomyScene } from '../anatomy/scene';
+import { describe, expect, it } from 'vitest';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { CM } from '../ui/navigator3d/common';
 import { buildLiverMesh, meshFromSdf } from '../ui/navigator3d/organs';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function pointsMm(mesh: ReturnType<typeof meshFromSdf>): Vec3[] {
   const p = mesh.geometry.getAttribute('position');

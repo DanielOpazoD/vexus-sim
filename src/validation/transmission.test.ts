@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, pointOnLine, pointOnSteeredLine, probeFrame } from '../probe/probe';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import { IFACE_REACH_MM } from '../ultrasound/interfaceEcho';
-import { COARSE_DEPTH } from '../ultrasound/renderer';
 import { glslFloat } from '../ultrasound/receiver';
+import { COARSE_DEPTH } from '../ultrasound/renderer';
 import {
   FRAG_LATERAL,
   FRAG_RAWFIELD,
@@ -34,6 +33,7 @@ import {
   transmissionLerp,
 } from '../ultrasound/transmission';
 import { mirrorLookaheadRows, prefixDb, steeredPrefixDb } from '../ultrasound/transmissionTwin';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { GRID_GEOMETRY, emptyGrid, gridLineAngle, segmentGridFromScene, setMirror } from './support/segmentGrid';
 
 /** Regla de atenuación compartida por la puerta PW y la pasada A (GLSL). */

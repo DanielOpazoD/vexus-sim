@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { Interface } from '../anatomy/interfaces';
 import { WALL, wallDepths, wallFace, wallPerimeter, wallPlaneDepth, wallPlaneGap } from '../anatomy/organs/wall';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('soporte regional de los planos musculares de la pared', () => {
   for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])

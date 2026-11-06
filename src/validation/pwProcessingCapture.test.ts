@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
+import { captureProtocolVessel } from '../doppler/capture';
 import { PwDopplerChain } from '../doppler/pwChain';
 import { WALL_SETTLE_S } from '../doppler/spectral';
-import { captureProtocolVessel } from '../doppler/capture';
+import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const equipment = { prfHz: 4000, f0Hz: 2.5e6, gainDb: 0, wallFilterHz: 25 };
 function setup(maxColumns?: number) {

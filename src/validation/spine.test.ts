@@ -11,6 +11,7 @@ import {
   interfaceReflectivity,
   isBoneCortex,
 } from '../anatomy/interfaces';
+import { HEPATIC_SPINE_GAP_MM } from '../anatomy/organs/liver';
 import {
   SPINE_SHAPE,
   sdSpine,
@@ -22,9 +23,6 @@ import {
   spineFaceCurvature,
   spineSlabSd,
 } from '../anatomy/primitives';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { HEPATIC_SPINE_GAP_MM } from '../anatomy/organs/liver';
-import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
@@ -41,6 +39,8 @@ import {
   interfaceEchoField,
 } from '../ultrasound/interfaceEcho';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { setReferenceBody, validateReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 /**
  * Columna con cortical y discos (PR119; recuperación provisional de la decisión 103). La ronda 5 del juez ciego vio en la subxifoidea, bajo y a la derecha de la

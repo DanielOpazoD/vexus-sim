@@ -1,15 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { nodeSin, warpAt, warpBound } from '../anatomy/compression';
+import { HALF } from '../anatomy/halfFloat';
 import { torsoDepth, torsoDepthGradient, torsoSkinPoint } from '../anatomy/primitives';
-import { NORMAL_ADULT } from '../cases';
-import { CONVEX_C35, type ProbePose } from '../probe/probe';
+import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
+import { indexedSurfaces } from '../anatomy/s0028Surface';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
+import { smoothstep, type Vec3 } from '../core/vec3';
+import { CONTACT, probeContact, type ProbeContact } from '../probe/contact';
+import { CONVEX_C35, type ProbePose } from '../probe/probe';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { setS0028Solids } from './support/legacyPerson/s0028Solids';
 import {
   s0028ContactFace,
   s0028ContactInside,
@@ -18,14 +23,9 @@ import {
   s0028WallAt,
   s0028WallUploads,
   setS0028Wall,
-} from '../anatomy/s0028Wall';
-import { setS0028Solids } from '../anatomy/s0028Solids';
-import { HALF } from '../anatomy/halfFloat';
-import { CONTACT, probeContact, type ProbeContact } from '../probe/contact';
-import { nodeSin, warpAt, warpBound } from '../anatomy/compression';
-import { respiratoryWeightGradient } from '../anatomy/respiratoryNormals';
-import { smoothstep, type Vec3 } from '../core/vec3';
-import { indexedSurfaces } from '../anatomy/s0028Surface';
+} from './support/legacyPerson/s0028Wall';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 // Ronda r2b-U (decisiones del propietario 04-11-2026): la sonda acopla por la piel en todo el dominio; un nodo U comprime
 // contra la cara interna E del nodo conocido más cercano a ≤12 mm (rotulada) o, sin él, sólo por la piel; la respiración de

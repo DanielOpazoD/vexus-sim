@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { signedContactSamples } from '../../tools/anatomy/signed-contact';
 import { organSignedFields } from '../../tools/anatomy/organ-fields';
-import { AnatomyScene } from '../anatomy/scene';
+import { signedContactSamples } from '../../tools/anatomy/signed-contact';
 import { NORMAL_ADULT } from '../cases';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 it('contacto con signo distingue penetración, separación muestreada y una medición inválida', () => {
   // Esfera analítica independiente de los campos del simulador: 3 mm dentro, 2 mm fuera.

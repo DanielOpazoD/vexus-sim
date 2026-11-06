@@ -1,23 +1,23 @@
-import { rayAttenuationDb } from '../ultrasound/transmission';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Interface } from '../anatomy/interfaces';
 import {
+  BOWEL_BOUNDS,
+  BOWEL_GAS,
+  BOWEL_GROUP_SIZE,
+  BOWEL_NODES,
   BOWEL_RADIUS_MM,
   BOWEL_REST_RADII,
   BOWEL_WALL_MM,
-  BOWEL_NODES,
-  BOWEL_GAS,
-  BOWEL_BOUNDS,
-  BOWEL_GROUP_SIZE,
-  bowelQuery,
   bowelGasSdf,
+  bowelQuery,
 } from '../anatomy/organs/bowel';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { rayAttenuationDb } from '../ultrasound/transmission';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 const unit = (v: Vec3): Vec3 => v.map((x) => x / Math.hypot(...v)) as Vec3;
 const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 

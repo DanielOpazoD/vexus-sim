@@ -11,10 +11,8 @@ import {
   type ProbeCompression,
   type RigidNode,
 } from '../anatomy/compression';
+import type { AnatomyPerson } from '../anatomy/person';
 import { torsoDepth, torsoDepthGradient, type Torso } from '../anatomy/primitives';
-import { anatomyBundle } from '../anatomy/anatomyBundle';
-import { s0028ContactFace, s0028ContactInside, s0028WallAt } from '../anatomy/s0028Wall';
-import { s0028RigidSpan } from '../anatomy/s0028Solids';
 import { dot, length, smoothstep, type Vec3 } from '../core/vec3';
 import { probeFrame, skinSoftness, type ProbeFrame, type ProbePose, type Transducer } from './probe';
 
@@ -242,14 +240,16 @@ function measureFace(frame: ProbeFrame, tr: Transducer, t: Torso, W: number): Fa
     // transmitter. The negative search interval represents indentation only;
     // it must not turn an outward beam into an internal ultrasound source.
     const rs = dot(dir, frame.skinNormal) >= 0 ? null : skinEntry(E, dir, t, -60, 200);
-    if (anatomyBundle.person === 's0028') {
+    if (t.person?.regional) {
       // La piel (EDT) se conoce en todo el dominio: el nodo acopla donde toca piel, sea cual sea la celda de la carta. Su
       // cara interna es la de la carta (D/E) o, en celda U, la E del nodo conocido más cercano a ≤12 mm (rotulada); el
       // cruce la sigue a través de los huecos U con E. Sin cara: sólo piel, sin resistencia de pared.
       const at = (r: number): Vec3 => [E[0] + dir[0] * r, E[1] + dir[1] * r, E[2] + dir[2] * r];
-      const face = rs === null ? null : s0028ContactFace(at(rs));
+      const face = rs === null ? null : t.person.regional.s0028ContactFace(at(rs));
       const crossing =
-        rs === null || face === null ? null : firstRegionalWallCrossing((r) => s0028ContactInside(at(r)), rs, rs + WALL_SEARCH_FACTOR * 80);
+        rs === null || face === null
+          ? null
+          : firstRegionalWallCrossing((r) => t.person!.regional!.s0028ContactInside(at(r)), rs, rs + WALL_SEARCH_FACTOR * 80);
       nodes.push({
         rs,
         rW: crossing ?? Infinity,
@@ -308,8 +308,8 @@ export interface ProbeContact extends ProbeCompression {
 /** Contacto, marco efectivo y tabla de compresión de un cuadro, desde la pose. */
 export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeContact {
   const rigidFrame = probeFrame({ ...pose, lift: Math.max(0, pose.lift) }, t, tr);
-  const regional = s0028WallAt(rigidFrame.skinPoint);
-  const W = anatomyBundle.person === 's0028' ? (regional?.kind === 'known' ? regional.interfaceMm : 0) : compressionPlateMm(t);
+  const regional = t.person?.regional?.s0028WallAt(rigidFrame.skinPoint);
+  const W = t.person?.regional ? (regional?.kind === 'known' ? regional.interfaceMm : 0) : compressionPlateMm(t);
   const target = W + CONTACT.wallTolMm;
   // la sonda se hunde a lo largo de su eje (el operador empuja el mango): el plano de imagen no cambia, solo su
   // origen baja por la línea central. Lo que el usuario aprieta (lift < 0) se suma a lo largo del mismo eje (por
@@ -325,7 +325,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   const rigid = measureFace(frameAt(0), tr, t, W);
   const capacity = CONTACT.pressMm + CONTACT.pressSoftMm * skinSoftness(pose);
   const maxIndent =
-    anatomyBundle.person === 's0028' && !rigid.nodes.some((g) => g.regionalTarget !== null && g.regionalTarget !== undefined)
+    t.person?.regional && !rigid.nodes.some((g) => g.regionalTarget !== null && g.regionalTarget !== undefined)
       ? 0
       : Math.max(0, capacity - Math.max(0, rigid.penetration));
   let q0 = shortfall(rigid);
@@ -378,7 +378,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   for (const g of face.nodes) {
     const localTarget = g.regionalTarget ?? target;
     if (g.rs === null) {
-      nodes.push([0, 0, anatomyBundle.person === 's0028' ? SKIN_ONLY_DEPTH_MM : target]);
+      nodes.push([0, 0, t.person?.regional ? SKIN_ONLY_DEPTH_MM : target]);
       hover.push(0);
       parallel.push(0);
       continue;
@@ -409,7 +409,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
   const at = (v: number[], k: number): number => v[Math.min(n - 1, Math.max(0, k))];
   const eroded = hover.map((h, k) => h * Math.min(at(parallel, k - 1), parallel[k], at(parallel, k + 1)));
   const contact = eroded.map((c, k) => 0.25 * at(eroded, k - 1) + 0.5 * c + 0.25 * at(eroded, k + 1));
-  const rigidNodes = anatomyBundle.person === 's0028' ? s0028RigidNodes(frame, tr, nodes) : undefined;
+  const rigidNodes = t.person?.regional ? s0028RigidNodes(frame, tr, nodes, t.person) : undefined;
   return {
     center: [frame.curvatureCenter[0], frame.curvatureCenter[1], frame.curvatureCenter[2]],
     radiusMm: tr.curvatureRadius,
@@ -432,7 +432,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
       wallTargetMm: target,
       skinAlongMm: face.nodes.map((g) => g.rs ?? NaN),
       wallAlongMm: face.nodes.map((g) => g.rW),
-      ...(anatomyBundle.person === 's0028' ? { wallSourceByNode: face.nodes.map((g) => g.wallSource ?? 'none') } : {}),
+      ...(t.person?.regional ? { wallSourceByNode: face.nodes.map((g) => g.wallSource ?? 'none') } : {}),
     },
   };
 }
@@ -443,7 +443,7 @@ export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeCo
  * quedaba a medio fijar (hepatorrenal: 12 píxeles hasta 4,3 mm). Un nodo sin riñón toma la d₁ del vecino más cercano que
  * lo tiene: entre ellos la interpolación lineal sólo adelgaza el tramo, sin moverlo.
  */
-function s0028RigidNodes(frame: ProbeFrame, tr: Transducer, nodes: readonly CompressionNode[]): RigidNode[] {
+function s0028RigidNodes(frame: ProbeFrame, tr: Transducer, nodes: readonly CompressionNode[], person: AnatomyPerson): RigidNode[] {
   // Los parámetros que se evalúan en la línea del nodo: los de la B-spline en su σ, no el control.
   const smooth = nodes.map((_, k) => tableAt(nodeSin(k, tr.halfSector), { halfAngle: tr.halfSector, nodes } as ProbeCompression).v);
   const spans = smooth.map((v, k) => {
@@ -451,7 +451,7 @@ function s0028RigidNodes(frame: ProbeFrame, tr: Transducer, nodes: readonly Comp
       c = Math.sqrt(1 - s * s),
       dir = [0, 1, 2].map((i) => frame.axial[i] * c + frame.lateral[i] * s) as Vec3,
       E = [0, 1, 2].map((i) => frame.curvatureCenter[i] + dir[i] * tr.curvatureRadius) as Vec3;
-    return s0028RigidSpan(E, dir, v[2] + compressionSpanMm(v[1]) + 120);
+    return person.regional!.s0028RigidSpan(E, dir, v[2] + compressionSpanMm(v[1]) + 120);
   });
   const out = smooth.map((v, k) =>
     rigidNode(

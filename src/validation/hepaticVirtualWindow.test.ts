@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { NORMAL_ADULT, TRICUSPID_REGURGITATION } from '../cases';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
-import { setReferenceBody } from '../anatomy/referenceBody';
-import { PhysiologyEngine } from '../physiology/engine';
 import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
+import { NORMAL_ADULT, TRICUSPID_REGURGITATION } from '../cases';
+import { PhysiologyEngine } from '../physiology/engine';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 const bytes = readFileSync(new URL('../anatomy/reference-body.bin', import.meta.url));
 const body = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 afterEach(() => setReferenceBody());

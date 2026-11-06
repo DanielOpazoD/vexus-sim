@@ -7,8 +7,9 @@ import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import { UltrasoundRenderer, type FrameInputs, type PassRepeat } from '../ultrasound/renderer';
-import { recordingGl } from './support/recordingGl';
 import { FRAG_COMPOUND, FRAG_SPECKLE } from '../ultrasound/shaders/passes.glsl';
+import { fixtureInstalled } from './support/legacyPerson/state';
+import { recordingGl } from './support/recordingGl';
 
 /** Renderizador falso: registra lo que pide cada cuadro (el coste en GPU lo mide el banco, no vitest). */
 class FakeRenderer {
@@ -31,7 +32,13 @@ class FakeRenderer {
 /** Simulador real con el renderizador falso y el equipo gobernado por comandos, como en `SimulationSession`. */
 function rig() {
   const fake = new FakeRenderer();
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), {} as HTMLCanvasElement, undefined, fake as unknown as UltrasoundRenderer);
+  const sim = new Simulator(
+    clonePatient(NORMAL_ADULT),
+    {} as HTMLCanvasElement,
+    undefined,
+    fake as unknown as UltrasoundRenderer,
+    fixtureInstalled(),
+  );
   const equipment = new EquipmentController(defaultEquipment(), { halfSectorRad: sim.transducer.halfSector, cMmS: C_RECONSTRUCTION_MM_S });
   sim.equipment = equipment.state;
   equipment.subscribe((next) => {
@@ -259,7 +266,7 @@ describe('finishForTiming: drenaje independiente del framebuffer que dejó el ci
  */
 function realRig() {
   const rec = recordingGl({ width: 320, height: 240 });
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
   sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, compound: false } };
   return { ...rec, sim };
 }

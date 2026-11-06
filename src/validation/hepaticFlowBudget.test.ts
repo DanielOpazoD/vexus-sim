@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { hepaticFlowShares } from '../physiology/vessels';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('suprahepáticas: velocidad del Doppler y reparto entre colectoras', () => {
   it.each([NORMAL_ADULT, SEVERE_CONGESTION])('$id: no acelera el flujo periférico ni pierde la inversión real', (patient) => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment } from '../anatomy/couinaud';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 /**
  * Segmentación de Couinaud (decisión 42): los planos salen de las suprahepáticas, la

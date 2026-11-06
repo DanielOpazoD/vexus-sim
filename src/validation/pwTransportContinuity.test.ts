@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { NORMAL_ADULT } from '../cases';
-import { PhysiologyEngine } from '../physiology/engine';
 import { Tissue } from '../anatomy/tissues';
+import { NORMAL_ADULT } from '../cases';
+import { dopplerShiftHz } from '../core/units';
 import { PwDopplerChain } from '../doppler/pwChain';
 import type { GateGeometry } from '../doppler/sampleVolume';
-import { dopplerShiftHz } from '../core/units';
+import { PhysiologyEngine } from '../physiology/engine';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /** Analytical uniform-flow phantom. No haemodynamic waveform or clinical grade is used. */
 function acquire(u: number, prf: number, seed: number, angle = 0) {

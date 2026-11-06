@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { Tissue } from '../anatomy/tissues';
 import { tubeShapeOf } from '../anatomy/primitives';
-import type { VesselDef } from '../anatomy/vesselTree';
-import type { VesselId } from '../physiology/vessels';
-import { VESSEL_META } from '../physiology/vessels';
 import { AnatomyQuery } from '../anatomy/query';
+import { Tissue } from '../anatomy/tissues';
+import type { VesselDef } from '../anatomy/vesselTree';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
+import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META } from '../physiology/vessels';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 import { HEPATIC_JUNCTIONS, junctionWitness } from './support/vascularJunctions';
 
 describe('continuidad vascular en los calibres de la fisiología', () => {

@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
+import { ribCentre, ribShape, sdRib, torsoDepth } from '../../src/anatomy/primitives';
 import { referenceCartilage } from '../../src/anatomy/referenceCartilage';
 import { CARTILAGE_ROWS, CARTILAGE_X0, CARTILAGE_X1 } from '../../src/anatomy/referenceCartilageData';
-import { AnatomyScene, BASELINE_CALIBER } from '../../src/anatomy/scene';
-import { NORMAL_ADULT } from '../../src/cases';
-import { ribCentre, ribShape, sdRib, torsoDepth } from '../../src/anatomy/primitives';
 import { Tissue } from '../../src/anatomy/tissues';
+import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from '../../src/validation/support/legacyPerson/scene';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 setReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));

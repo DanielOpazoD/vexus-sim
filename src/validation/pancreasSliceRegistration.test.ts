@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene } from '../anatomy/scene';
-import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { NORMAL_ADULT } from '../cases';
 import { probeContact } from '../probe/contact';
 import { CONVEX_C35 } from '../probe/probe';
 import { PANCREAS_SLICE_POSE } from './fixtures/pancreasSlice';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
+import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   for (const [setter, name] of [

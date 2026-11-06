@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
-import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
+import { nonFiniteFields, PhysiologyEngine } from '../physiology/engine';
 import { validatePatient } from '../physiology/patientState';
 import { defaultNetworkParams, VenousNetwork } from '../physiology/venousNetwork';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 const initial = { pSplanchnic: 10, pHepatic: 2, pLowerBody: 8, pIvcTransmural: 3 };
 describe('compliance de reservorios venosos: ley volumen-presión', () => {

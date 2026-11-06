@@ -1,24 +1,24 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
-import { setAbdominalAtlas, abdominalAtlasSdf, abdominalAtlasValue } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
+import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
+import { loadPinnedGzip } from '../anatomy/loadPinnedAsset';
 import { atlasKidneyOuter } from '../anatomy/organs/kidney';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { tubeQuery } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
+import { Tissue } from '../anatomy/tissues';
+import { wallThicknessMm } from '../anatomy/vesselTree';
+import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
-import { Tissue } from '../anatomy/tissues';
-import { VESSEL_IDS } from '../physiology/vessels';
-import { AnatomyQuery } from '../anatomy/query';
 import { PhysiologyEngine } from '../physiology/engine';
-import { VenousSpectralAcquisition } from '../app/venousSpectral';
+import { VESSEL_IDS } from '../physiology/vessels';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
-import { loadPinnedGzip } from '../anatomy/loadAbdominalAtlas';
-import { tubeQuery } from '../anatomy/primitives';
-import { wallThicknessMm } from '../anatomy/vesselTree';
+import { abdominalAtlasSdf, abdominalAtlasValue, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 const compressed = readFileSync('src/anatomy/abdominal-atlas.gzip.bin');
 const raw = gunzipSync(compressed);
@@ -244,13 +244,19 @@ describe('registered abdomen: actual shipped acoustic data', () => {
         }
       }
   });
-  it('rejects a changed physical body profile during venous acquisition', () => {
+  it('keeps the installed body across contexts and rejects an altered observed profile', () => {
     const scene = new AnatomyScene(NORMAL_ADULT),
       anatomy = new AnatomyQuery(scene);
     const engine = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas());
     const changed = new Float32Array(profile.buffer.slice(profile.byteOffset, profile.byteOffset + profile.byteLength));
     changed[1] += 0.5;
     setAbdominalBody(changed);
+    expect(
+      () => new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE, 'venous', 'standard', 0),
+    ).not.toThrow();
+    // Un contexto nuevo no cambia esta adquisición; alterar el perfil observado sí se rechaza.
+    scene.torso.profile = new Float32Array(scene.torso.profile!);
+    scene.torso.profile[1] += 0.5;
     expect(() => new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE)).toThrow('reference body changed');
   });
   it('rejects damaged compressed data and oversized decompression before using it', async () => {

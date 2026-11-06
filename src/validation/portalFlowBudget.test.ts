@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { portalFlowShares } from '../physiology/vessels';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 describe('ramas portales: presupuesto de caudal y velocidad', () => {
   it.each([NORMAL_ADULT, SEVERE_CONGESTION])('$id: el tronco se reparte entre sus ramas y la periferia no acelera', (patient) => {

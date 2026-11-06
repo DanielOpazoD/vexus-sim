@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bodyGradient, bodySection, BODY_STRIDE } from '../anatomy/referenceBody';
 import type { Vec3 } from '../core/vec3';
+import { BODY_STRIDE, bodyGradient, bodySection } from './support/legacyPerson/referenceBody';
 
 const profiles = ['reference', 'abdominal'].map((name) => {
   const b = readFileSync(`src/anatomy/${name}-body.bin`);

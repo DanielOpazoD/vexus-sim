@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
-import * as PASSES from '../ultrasound/shaders/passes.glsl';
-import { personShader } from '../anatomy/gpu/personShader';
-import { RIGID_BASE } from '../anatomy/gpu/anatomy.glsl';
-import { S0028_BUNDLE as bundle } from '../anatomy/anatomyBundle';
 import { shaderCosts } from '../../tools/anatomy/s0028-shader-metrics';
 import { minifyGlslBody } from '../../tools/build/glslMinify';
+import { RIGID_BASE } from '../anatomy/gpu/anatomy.glsl';
+import { personShader } from '../anatomy/gpu/personShader';
+import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import baseline from './fixtures/s0028-shader-default.json';
+import { S0028_BUNDLE as bundle } from './support/legacyPerson/anatomyBundle';
 
 it('conserva los ocho GLSL default byte a byte respecto de main 8ee9fbd', () => {
   for (const [name, hash] of Object.entries(baseline)) {

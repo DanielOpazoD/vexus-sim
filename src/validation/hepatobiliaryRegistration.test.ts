@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { setAbdominalAtlas, abdominalAtlasSdf } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { tubeQuery, type Tube } from '../anatomy/primitives';
 import { GALLBLADDER_WALL_MM, gallbladderSdf } from '../anatomy/organs/gallbladder';
-import { wallThicknessMm } from '../anatomy/vesselTree';
+import { tubeQuery, type Tube } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
+import { wallThicknessMm } from '../anatomy/vesselTree';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { abdominalAtlasSdf, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 beforeAll(() => {
   const a = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));

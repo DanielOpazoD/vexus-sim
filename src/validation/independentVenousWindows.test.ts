@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
-import { setReferenceBody } from '../anatomy/referenceBody';
+import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
-import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 afterEach(() => setReferenceBody());
 describe('territorios PW independientes, misma cadena física', () => {

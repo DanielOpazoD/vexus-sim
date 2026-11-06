@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { AnatomyScene } from '../anatomy/scene';
+import { afterEach, describe, expect, it } from 'vitest';
 import { RespiratoryDeformation } from '../anatomy/deformation';
 import { diaphragmRim } from '../anatomy/diaphragmRim';
-import { setReferenceBody } from '../anatomy/referenceBody';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import type { RespiratorySample } from '../physiology/respiratory';
 import { CM } from '../ui/navigator3d/common';
 import { bindRespiratoryMotion } from '../ui/navigator3d/respiratoryMotion';
+import { setReferenceBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function mesh(points: number[] = [0, 0, 0, 1, 0, 0, 0, 1, 0]) {
   const g = new THREE.BufferGeometry();

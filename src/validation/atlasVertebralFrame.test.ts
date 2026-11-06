@@ -1,11 +1,11 @@
-import { afterAll, beforeAll, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas, boneSurfaceFrame } from '../anatomy/thoracicAtlas';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
+import { boneSurfaceFrame, setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
   for (const [path, set] of [

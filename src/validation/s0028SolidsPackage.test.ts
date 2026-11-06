@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { HALF } from '../anatomy/halfFloat';
-import { setS0028Solids, s0028CompatibleFat, s0028FatPages } from '../anatomy/s0028Solids';
 import type { Vec3 } from '../core/vec3';
 import fixture from './fixtures/s0028-fat-r1.json';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { s0028CompatibleFat, s0028FatPages, setS0028Solids } from './support/legacyPerson/s0028Solids';
 
 const gz = readFileSync('src/anatomy/s0028/annotation-capacity.gzip.bin');
 const raw = () => new Uint8Array(gunzipSync(gz)).buffer;

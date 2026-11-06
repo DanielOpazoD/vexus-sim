@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, vesselApScale } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { venousExperimentPatient } from '../app/venousExperiment';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
 import { supraIvcAreaMm2, supraIvcSection } from '../physiology/supraIvc';
+import { AnatomyScene, vesselApScale } from './support/legacyPerson/scene';
 
 describe('regional cava area before velocity and rendering', () => {
   it('has monotonic pressure response and preserves ellipse area through flattening', () => {

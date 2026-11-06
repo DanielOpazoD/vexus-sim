@@ -1,11 +1,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../../src/anatomy/scene';
-import { NORMAL_ADULT } from '../../src/cases';
 import { Tissue } from '../../src/anatomy/tissues';
+import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from '../../src/validation/support/legacyPerson/scene';
 const b = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 setAbdominalAtlas(new Uint16Array(b.buffer, b.byteOffset, b.byteLength / 2));
 const body = readFileSync('src/anatomy/abdominal-body.bin');

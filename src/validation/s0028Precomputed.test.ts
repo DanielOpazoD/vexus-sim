@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
-import { gunzipSync } from 'node:zlib';
-import { S0028_SURFACE as M } from '../anatomy/s0028SurfaceData';
-import { S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { indexedSurfaces, verifySurfaceProvenance } from '../anatomy/s0028Surface';
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
+import { indexedSurfaces, verifySurfaceProvenance } from '../anatomy/s0028Surface';
+import { S0028_SURFACE as M } from '../anatomy/s0028SurfaceData';
+import { S0028_BUNDLE as B } from './support/legacyPerson/anatomyBundle';
 it('libera al menos 4 MB de descarga sin cambiar el formato residente Float32/Uint32', () => {
   expect(M.gzipBytes).toBeLessThanOrEqual(9_672_026 - 4_000_000);
   expect(M.format).toBe('indexed-delta32-v1');
@@ -24,7 +24,7 @@ it('libera al menos 4 MB de descarga sin cambiar el formato residente Float32/Ui
   expect(createHash('sha256').update(new Uint8Array(raw)).digest('hex')).toBe(M.sha256DecodedRaw);
 });
 it('el primer cuadro s0028 carga superficies offline sin extracción Worker', () => {
-  const loader = readFileSync('src/ui/s0028Surfaces.ts', 'utf8');
+  const loader = readFileSync('src/anatomy/people/s0028/surfaces.ts', 'utf8');
   const worker = readFileSync('src/ui/cutMapWorker.ts', 'utf8');
   expect(loader).not.toMatch(/new Worker|type: 'surfaces'/);
   expect(worker).not.toMatch(/sourceSurface|type: 'surfaces'/);

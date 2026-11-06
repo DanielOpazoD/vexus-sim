@@ -1,14 +1,14 @@
-import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
-import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
-import { dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { AnatomyScene } from '../../src/anatomy/scene';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { AnatomyQuery } from '../../src/anatomy/query';
-import { NORMAL_ADULT } from '../../src/cases';
-import { PhysiologyEngine } from '../../src/physiology/engine';
 import { VenousSpectralAcquisition } from '../../src/app/venousSpectral';
+import { NORMAL_ADULT } from '../../src/cases';
 import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../../src/doppler/spectralMeasure';
+import { PhysiologyEngine } from '../../src/physiology/engine';
+import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
+import { setReferenceBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene } from '../../src/validation/support/legacyPerson/scene';
 if (process.argv.includes('--reference')) {
   const b = readFileSync('src/anatomy/reference-body.bin');
   setReferenceBody(new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)));

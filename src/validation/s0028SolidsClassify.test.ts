@@ -1,30 +1,30 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { beforeAll, expect, it, vi } from 'vitest';
-import { installAnatomyBundle, S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
-import { abdominalAtlas, setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setThoracicAtlas, thoracicAtlas } from '../anatomy/thoracicAtlas';
-import { abdominalBody, setAbdominalBody } from '../anatomy/referenceBody';
-import { setS0028Wall, s0028WallAt } from '../anatomy/s0028Wall';
-import { setS0028Solids, s0028CompatibleFat, s0028Owners } from '../anatomy/s0028Solids';
-import { torsoDepth } from '../anatomy/primitives';
-import { s0028SourceValue } from '../anatomy/s0028Source';
-import { AnatomyScene, BASELINE_CALIBER, type Classification } from '../anatomy/scene';
-import { AnatomyQuery } from '../anatomy/query';
+import { HALF } from '../anatomy/halfFloat';
 import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
+import { torsoDepth } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
 import { STRUCTURE_LABELS, structureIdentity } from '../anatomy/structureIdentity';
+import { Tissue } from '../anatomy/tissues';
+import { startPointsFor } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
+import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
-import { startPointsFor } from '../app/startPoints';
 import { cutMapDirections, cutMapPoint } from '../ui/cutMapGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWorker';
-import type { Vec3 } from '../core/vec3';
-import fat from './fixtures/s0028-fat-r1.json';
 import conflicts from './fixtures/s0028-conflict-witnesses.json';
 import cysts from './fixtures/s0028-cyst-witnesses.json';
-import { HALF } from '../anatomy/halfFloat';
+import fat from './fixtures/s0028-fat-r1.json';
+import { abdominalAtlas, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { S0028_BUNDLE as B, installAnatomyBundle } from './support/legacyPerson/anatomyBundle';
+import { abdominalBody, setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { s0028CompatibleFat, s0028Owners, setS0028Solids } from './support/legacyPerson/s0028Solids';
+import { s0028SourceValue } from './support/legacyPerson/s0028Source';
+import { s0028WallAt, setS0028Wall } from './support/legacyPerson/s0028Wall';
+import { AnatomyScene, BASELINE_CALIBER, type Classification } from './support/legacyPerson/scene';
+import { setThoracicAtlas, thoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
 let scene: AnatomyScene, capacity: ArrayBuffer, skin: ArrayBuffer;
@@ -322,14 +322,13 @@ it('Worker real del corte: el riñón es U rotulado «Riñón derecho · interio
   const sample = engine.sample;
   const init: CutMapInit = {
     type: 'init',
-    identity: B,
+    identity: scene.person.identity,
+    assetKey: scene.person.assetKey,
+    epoch: 1,
     id: 1,
     patient: NORMAL_ADULT,
     referenceProfile: abdominalBody,
-    abdominalField: abdominalAtlas,
-    thoracicField: thoracicAtlas,
-    wall: capacity,
-    skin,
+    buffers: { abdominal: abdominalAtlas, thoracic: thoracicAtlas, body: abdominalBody, capacity, skin },
   };
   // Mismo proceso: si el Worker no instalase su bloque P3, la grasa quedaría la vacía de esta reserva previa.
   const empty = capacity.slice(0);
@@ -338,11 +337,15 @@ it('Worker real del corte: el riñón es U rotulado «Riñón derecho · interio
   const fatPoint = B.solids.boxes[0].originMm.map((o, k) => o + 1.5 * fat.rows[0].index[k]) as Vec3;
   expect([fat.rows[0].kind, s0028CompatibleFat(fatPoint)]).toEqual(['fat', false]);
   await handler({ data: init });
-  expect(s0028CompatibleFat(fatPoint)).toBe(true);
+  expect(s0028CompatibleFat(fatPoint)).toBe(false);
+  expect(posted).toContainEqual(expect.objectContaining({ type: 'ready', epoch: 1, assetKey: scene.person.assetKey }));
+  setS0028Solids(capacity);
   const pose = startPointsFor(scene.torso, B).find((p) => p.id === 'renal')!;
   const frame = probeFrame({ ...pose, rock: pose.rock ?? 0, tilt: pose.tilt ?? 0, lift: 0 }, scene.torso, CONVEX_C35);
   const req: CutMapRequest = {
     type: 'map',
+    epoch: 1,
+    assetKey: scene.person.assetKey,
     id: 2,
     frame,
     transducer: CONVEX_C35,

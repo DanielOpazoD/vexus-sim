@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { acquisitionSnapshot, validateAcquisition } from '../../tools/fidelity/acquisitionSnapshot';
-import { probeFrame, CONVEX_C35 } from '../probe/probe';
-import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
+import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { DEFAULT_COLOR } from '../ultrasound/renderer';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 function acquisition() {
   const pose = { phi: 2, z: -80, yaw: 0.2, rock: 0, tilt: 0, lift: 0 };

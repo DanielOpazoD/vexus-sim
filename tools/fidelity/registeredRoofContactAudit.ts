@@ -1,16 +1,16 @@
 /** Identical source surface samples against the real runtime shell, before/after. */
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../../src/anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { AnatomyScene, BASELINE_CALIBER } from '../../src/anatomy/scene';
 import { sdDiaphragm } from '../../src/anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, Tissue } from '../../src/anatomy/tissues';
 import { NORMAL_ADULT } from '../../src/cases';
 import type { Vec3 } from '../../src/core/vec3';
+import { setAbdominalAtlas } from '../../src/validation/support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from '../../src/validation/support/legacyPerson/referenceBody';
+import { AnatomyScene, BASELINE_CALIBER } from '../../src/validation/support/legacyPerson/scene';
+import { setThoracicAtlas } from '../../src/validation/support/legacyPerson/thoracicAtlas';
 const [input, output] = process.argv.slice(2);
 if (!input || !output) throw Error('Input bank and output required');
 const bytes = readFileSync(input),

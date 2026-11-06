@@ -1,3 +1,4 @@
+import { fixtureInstalled } from './support/legacyPerson/state';
 // @tier slow
 import { describe, expect, it } from 'vitest';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
@@ -8,11 +9,11 @@ import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import { pointOnLine } from '../probe/probe';
 import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
-import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COMPOUND_STEER_RANGE_DEG, lookTheta } from '../ultrasound/compound';
+import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { GAS_DB_PER_CM, lumenExcessPerMm, type SegmentGrid } from '../ultrasound/transmission';
-import { GRID_GEOMETRY as G, emptyGrid } from './support/segmentGrid';
 import { recordingGl } from './support/recordingGl';
+import { GRID_GEOMETRY as G, emptyGrid } from './support/segmentGrid';
 
 /**
  * Paridad de la mirada dirigida (G8, decisión 58) sin GPU: el detector de empates de redondeo de
@@ -59,7 +60,7 @@ function float32RoundingError(theta: number): { path: number } {
 /** A1 de la vista en CPU (sin espejo): el tejido del centro de cada segmento con las reglas de la pasada A. */
 function viewGrid(view: StartPoint['id']): { grid: SegmentGrid; ap: ApertureGeometry } {
   const rec = recordingGl({ width: 320, height: 240 });
-  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+  const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas, undefined, undefined, fixtureInstalled());
   const sp = START_POINTS.find((p) => p.id === view)!;
   sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
   sim.advance(0.05);

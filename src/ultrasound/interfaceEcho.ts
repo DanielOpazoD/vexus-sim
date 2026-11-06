@@ -1,8 +1,8 @@
 import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
-import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
+import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue, reflectionCoefficient } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { valueNoise } from './speckleField';
@@ -157,10 +157,10 @@ export interface WallAcrossScene {
  */
 export function fatAcrossWall(m: Vec3, scene: WallAcrossScene): boolean {
   return (
-    retroFatSdf(m) < 0 &&
+    retroFatSdf(m, scene.torso.person) < 0 &&
     scene.liverSdf(m) > WALL_ACROSS_MM &&
     sdDiaphragm(m, scene.diaphragm, scene.torso) > DIAPHRAGM_THICKNESS_MM + WALL_ACROSS_MM &&
-    quadratusSdf(m, 0, 1e3) > 0
+    quadratusSdf(m, 0, 1e3, scene.torso.person) > 0
   );
 }
 /** Ganancia de la reflectividad de la cara `face` en el punto material m (1 salvo la cara de la pared con grasa detrás). */

@@ -1,9 +1,9 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
 import { liverLobes, visceralHeight } from '../anatomy/organs/liver';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 /**
  * Forma del hígado (decisión 72): cara visceral en cuña, borde inferior agudo apoyado en la pared, tamaño y lóbulo

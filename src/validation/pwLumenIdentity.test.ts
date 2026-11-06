@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { pwGate } from '../app/pwGate';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
@@ -9,6 +8,7 @@ import { SampleVolumeIQ, type GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { VesselId } from '../physiology/vessels';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import { AnatomyScene } from './support/legacyPerson/scene';
 import { openSession, placeGate, probeAt, PROFILE } from './support/studentChain';
 
 /** Lo que estas pruebas leen de la población (decisión 294): identidad, punto material, peso y dominio de cada dispersor. */

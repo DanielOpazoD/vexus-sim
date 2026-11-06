@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
-import { ANATOMY_GLSL, NODE_BASE, MAX_TUBES, TUBE_HEADER_TEXELS } from '../anatomy/gpu/anatomy.glsl';
+import { ANATOMY_GLSL, MAX_TUBES, NODE_BASE, TUBE_HEADER_TEXELS } from '../anatomy/gpu/anatomy.glsl';
 import {
   TUBE_SHAPE,
   tubeFaceGradient,
@@ -13,6 +11,7 @@ import {
   tubeShapeTexel,
   type Tube,
 } from '../anatomy/primitives';
+import { AnatomyQuery } from '../anatomy/query';
 import { Tissue } from '../anatomy/tissues';
 import { PW_GATE_VESSELS, tubeShapeClassOf } from '../anatomy/vesselTree';
 import { CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
@@ -20,6 +19,7 @@ import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { VESSEL_META } from '../physiology/vessels';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Vasos orgánicos (decisión 90): la sección anisótropa y el radio modulado de cada vaso, su gemelo GLSL (la forma viaja en

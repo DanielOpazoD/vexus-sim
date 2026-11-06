@@ -1,11 +1,12 @@
-import type { Vec3 } from '../../core/vec3';
-import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
+import { uncompress } from '../../anatomy/compression';
 import { domeFloor } from '../../anatomy/organs/heart';
 import { heartChamber } from '../../anatomy/organs/heartChamber';
+import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import { Tissue, TISSUES } from '../../anatomy/tissues';
-import { uncompress } from '../../anatomy/compression';
-import { probeContact, contactCoupling } from '../../probe/contact';
+import type { Vec3 } from '../../core/vec3';
+import { contactCoupling, probeContact } from '../../probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../../probe/probe';
+import { fixturePerson } from './legacyPerson/state';
 
 /** Contrato fijado antes del candidato 315. Rejilla de la auditoría: 97 rayos, 0,5 mm.
  * Cinco líneas vecinas y 20 mm de anchura rechazan un único voxel/franja marginal.
@@ -36,7 +37,7 @@ export function atriumWindow(scene: AnatomyScene, caliber: VesselCaliber, pose: 
       const q = scene.classify(m, caliber);
       if (atriumMm === 0 && q.tissue === Tissue.Liver) liverMm += 0.5;
       if (atriumMm === 0 && liverMm >= 10 && (q.tissue === Tissue.Diaphragm || q.tissue === Tissue.Mediastinum)) barrier = true;
-      if (q.tissue === Tissue.Blood && heartChamber(m, domeFloor(m, scene.diaphragm, scene.torso)) === 'ra') {
+      if (q.tissue === Tissue.Blood && heartChamber(m, domeFloor(m, scene.diaphragm, scene.torso), fixturePerson().cpu) === 'ra') {
         atriumMm += 0.5;
         if (!blocker) lateral.push(world.reduce((sum, x, k) => sum + (x - contact.frame.face[k]) * contact.frame.lateral[k], 0));
       } else if (!blocker && q.tissue !== Tissue.Air && (TISSUES[q.tissue].gas || TISSUES[q.tissue].bone)) blocker = q.tissue;

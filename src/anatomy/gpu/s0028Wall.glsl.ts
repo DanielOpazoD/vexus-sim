@@ -1,4 +1,4 @@
-import { S0028_BUNDLE as B } from '../anatomyBundle';
+import { S0028_BUNDLE as B } from '../people/s0028/descriptor';
 import { s0028SolidsShader } from './s0028Solids.glsl';
 
 const offsets = (rows: readonly (readonly number[])[]) => rows.map((v) => `ivec3(${v.join(',')})`).join(',');

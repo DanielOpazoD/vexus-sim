@@ -8,7 +8,7 @@ import type { MutantManifest } from '../manifest';
  * misma profundidad: el mutante no cambia ningún resultado observable (revisión de #334).
  */
 export const s0028Solids: MutantManifest = {
-  module: 'src/anatomy/s0028Solids.ts',
+  module: 'src/anatomy/people/s0028/solids.ts',
   mutants: [
     {
       name: 'conflicto-por-precedencia',

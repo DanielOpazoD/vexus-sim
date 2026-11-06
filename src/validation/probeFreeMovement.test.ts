@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterEach, expect, it } from 'vitest';
-import { AnatomyScene } from '../anatomy/scene';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { setAbdominalBody } from '../anatomy/referenceBody';
-import { NORMAL_ADULT } from '../cases';
 import { startPointsFor } from '../app/startPoints';
+import { NORMAL_ADULT } from '../cases';
+import { probeContact } from '../probe/contact';
 import { clampPose, CONVEX_C35, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
 import { translateProbe } from '../probe/translation';
-import { probeContact } from '../probe/contact';
+import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
+import { setAbdominalBody } from './support/legacyPerson/referenceBody';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 afterEach(() => {
   setAbdominalAtlas();

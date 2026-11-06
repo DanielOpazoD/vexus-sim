@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vitest';
-import ties from './fixtures/s0028-nearest-ties.json';
-import admission from './fixtures/s0028-boundary-admission.json';
-import { S0028_BUNDLE as B } from '../anatomy/anatomyBundle';
 import { HALF } from '../anatomy/halfFloat';
 import { sourceLabel } from '../anatomy/sourceVolume';
 import type { Vec3 } from '../core/vec3';
+import admission from './fixtures/s0028-boundary-admission.json';
+import ties from './fixtures/s0028-nearest-ties.json';
+import { S0028_BUNDLE as B } from './support/legacyPerson/anatomyBundle';
 
 it('explica los siete empates del lector real y lung crudo sin omitir ninguna etiqueta', () => {
   expect(ties).toHaveLength(8);

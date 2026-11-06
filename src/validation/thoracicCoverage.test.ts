@@ -1,14 +1,14 @@
 // @tier fast
+import type { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { ribCentre, sdRib, torsoDepth } from '../anatomy/primitives';
-import { sternumSd, STERNUM } from '../anatomy/organs/sternum';
 import { Interface } from '../anatomy/interfaces';
+import { STERNUM, sternumSd } from '../anatomy/organs/sternum';
+import { ribCentre, sdRib, torsoDepth } from '../anatomy/primitives';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
-import { buildSkeleton } from '../ui/navigator3d/body';
 import type { Vec3 } from '../core/vec3';
-import type { Mesh } from 'three';
+import { buildSkeleton } from '../ui/navigator3d/body';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
 const s = new AnatomyScene(NORMAL_ADULT);
 describe('cobertura costal y esternón acústico, decisión 166', () => {

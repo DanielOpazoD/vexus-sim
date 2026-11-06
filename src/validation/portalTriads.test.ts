@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
@@ -18,6 +17,7 @@ import {
   type Triad,
 } from '../ultrasound/portalTriads';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRIAD_QUERY } from '../ultrasound/shaders/passes.glsl';
+import { AnatomyScene } from './support/legacyPerson/scene';
 
 /**
  * Tríadas portales finas (decisión 78): segmentos con vaina brillante y luz diminuta, anclados al material, una como

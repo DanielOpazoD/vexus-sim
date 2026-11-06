@@ -8,7 +8,7 @@ Generado por `tools/docs/evidence-index.ts` desde `index.json`, que guarda adem�
 presente, `node --import tsx tools/docs/evidence-index.ts --check` verifica tipo, bytes y hash de cada entrada; sin
 ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ruta` de sus archivos, ordenadas.
 
-69 artefactos; 1.566.995.124 bytes.
+79 artefactos; 1.574.350.537 bytes.
 
 | Id | Ruta en la raíz | Tipo | Archivos | Bytes | SHA-256 | Citado en (decisión) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -80,4 +80,14 @@ ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ru
 | <a id="migration-p3-r4-report-md"></a>`migration-p3-r4-report-md` | `migration-p3-r4/report.md` | archivo | 1 | 13.093 | `49557c2fb25e` | evidence/s0028-p3/README.md |
 | <a id="migration-p3-r4-review-html"></a>`migration-p3-r4-review-html` | `migration-p3-r4/review.html` | archivo | 1 | 6149 | `b40a107d956d` | evidence/s0028-p3/README.md |
 | <a id="migration-plan-md"></a>`migration-plan-md` | `migration/plan.md` | archivo | 1 | 21.976 | `2a86d4622e4a` | anatomia/migracion-s0028.md |
+| <a id="structure-322-p3-impl-closure-20261106-2022-focales-log"></a>`structure-322-p3-impl-closure-20261106-2022-focales-log` | `structure-322/p3-impl/closure-20261106-2022/focales.log` | archivo | 1 | 3515 | `f543f7c78daa` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-closure-20261106-2022-main-bundle-json"></a>`structure-322-p3-impl-closure-20261106-2022-main-bundle-json` | `structure-322/p3-impl/closure-20261106-2022/main-bundle.json` | archivo | 1 | 3927 | `67d95acf79f4` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-closure-20261106-2022-metal-repeat-report-json"></a>`structure-322-p3-impl-closure-20261106-2022-metal-repeat-report-json` | `structure-322/p3-impl/closure-20261106-2022/metal-repeat/report.json` | archivo | 1 | 2.886.782 | `aa971f755e93` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-closure-20261106-2022-metal-report-json"></a>`structure-322-p3-impl-closure-20261106-2022-metal-report-json` | `structure-322/p3-impl/closure-20261106-2022/metal/report.json` | archivo | 1 | 3.432.322 | `6447cc1082c7` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-closure-20261106-2022-summary-json"></a>`structure-322-p3-impl-closure-20261106-2022-summary-json` | `structure-322/p3-impl/closure-20261106-2022/summary.json` | archivo | 1 | 2208 | `d9f964194b9b` | evidence/structure-322-p3/README.md, evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json"></a>`structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json` | `structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json` | archivo | 1 | 2932 | `09cc37468ca4` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-review-fixes-20261106-final-main-metal-report-json"></a>`structure-322-p3-impl-review-fixes-20261106-final-main-metal-report-json` | `structure-322/p3-impl/review-fixes-20261106/final-main-metal/report.json` | archivo | 1 | 593.195 | `71d3ef8bec98` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-review-fixes-20261106-red-worker-ui-metal-2-log"></a>`structure-322-p3-impl-review-fixes-20261106-red-worker-ui-metal-2-log` | `structure-322/p3-impl/review-fixes-20261106/red-worker-ui-metal-2.log` | archivo | 1 | 19.364 | `b7e3df94ac9c` | evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json"></a>`structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json` | `structure-322/p3-impl/review-fixes-20261106/shader-parity-final.json` | archivo | 1 | 17.068 | `1d9749c62969` | evidence/structure-322-p3/README.md, evidence/structure-322-p3/review-fixes.json |
+| <a id="structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png"></a>`structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png` | `structure-322/p3-impl/review-fixes-20261106/worker-warning-main-8ed26cf.png` | archivo | 1 | 394.100 | `4e9e40817c8b` | evidence/structure-322-p3/README.md, evidence/structure-322-p3/review-fixes.json |
 | <a id="structure-322-readme-md"></a>`structure-322-readme-md` | `structure-322/README.md` | archivo | 1 | 226 | `8b80e9fd3764` | DECISIONS.md (322) |

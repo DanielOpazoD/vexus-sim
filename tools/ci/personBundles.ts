@@ -1,3 +1,5 @@
+import { TOTAL_JS_BUDGET } from './bundleBudgets';
+
 export type BundlePerson = 'default' | 's0028';
 export interface PersonChunk {
   file: string;
@@ -17,7 +19,7 @@ export interface PersonBundleGraph {
   selections: Array<{ from: string; to: string; person: BundlePerson; importer: string; module: string }>;
 }
 
-export const PERSON_JS_CEILING = 1_070_080;
+export const PERSON_JS_CEILING = TOTAL_JS_BUDGET;
 // Medido tras corregir Worker/ABI main: 1.028.605 B; reserva de 963 B. Ningún techo sube.
 export const DEFAULT_JS_BUDGET = 1_029_568;
 export const S0028_JS_BUDGET = PERSON_JS_CEILING;

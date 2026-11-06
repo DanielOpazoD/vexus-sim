@@ -3,17 +3,18 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { S0028_BUNDLE } from '../../src/anatomy/anatomyBundle';
+import { S0028_BUNDLE } from '../../src/anatomy/people/s0028/descriptor';
 import { personShader } from '../../src/anatomy/gpu/personShader';
 import { shaderCosts } from '../anatomy/s0028-shader-metrics';
 import { bundleAssets } from '../ci/bundleAssets';
-import { BUDGETS, TOTAL_JS_BUDGET } from '../ci/bundleBudgets';
+import { BUDGETS } from '../ci/bundleBudgets';
+import { DEFAULT_JS_BUDGET, S0028_JS_BUDGET, measurePersonBundles, type PersonBundleGraph } from '../ci/personBundles';
 import { SAMPLER_GUARD, SLOT_GUARD } from '../ci/shaderBudgets';
 
 /**
  * Presupuestos vigentes (decisión 322, punto 9): cada techo leído de la fuente que lo aplica y su valor actual medido con
  * las mismas funciones (`bundleAssets` + `bundleBudgets.ts` sobre `dist`, `shaderCosts` sobre los ocho programas de
- * `shaderLimits.test.ts`, los descriptores de `anatomyBundle.ts`). Escribe `docs/estado/medidas.json` y la tabla generada
+ * `shaderLimits.test.ts`, los descriptores de `people/s0028/descriptor.ts`). Escribe `docs/estado/medidas.json` y la tabla generada
  * de `docs/estado/presupuestos.md`. Uso, tras `vite build`: `node --import tsx tools/docs/estado.ts --write`.
  */
 
@@ -137,7 +138,7 @@ const literal = (repo: string, file: string, re: RegExp, nth = 0): number => {
   return Number(m[1].replace(/_/g, ''));
 };
 
-/** Texturas s0028 que sube `loadS0028.ts` (la misma cuenta que su comprobación de techo). */
+/** Texturas s0028 que sube `people/s0028/runtime.ts` (la misma cuenta que su comprobación de techo). */
 export function s0028Textures(): { abdominal: number; thoracic: number } {
   const B = S0028_BUNDLE;
   return {
@@ -146,7 +147,7 @@ export function s0028Textures(): { abdominal: number; thoracic: number } {
   };
 }
 
-/** Expresión de `loadS0028.ts` que `s0028Textures` reproduce: si cambia allí, la prueba lo detecta. */
+/** Expresión de `people/s0028/runtime.ts` que `s0028Textures` reproduce: si cambia allí, la prueba lo detecta. */
 export const LOAD_S0028_GUARD = [
   'B.abdominal.rawBytes + B.capacity.rawBytes - 1179648 + B.skin.rawBytes + B.manifest.bytes + 960 >',
   'B.thoracic.rawBytes + 1179648 >',
@@ -159,6 +160,23 @@ export const descriptorSha256 = (): string =>
     )
     .digest('hex');
 
+const PERSON_CEILINGS: Ceiling[] = [
+  {
+    what: 'JS clausura default (Workers y ganchos incluidos)',
+    limit: DEFAULT_JS_BUDGET,
+    unit: 'B',
+    decision: 322,
+    source: 'tools/ci/personBundles.ts',
+  },
+  {
+    what: 'JS clausura s0028 (Workers y ganchos incluidos)',
+    limit: S0028_JS_BUDGET,
+    unit: 'B',
+    decision: 322,
+    source: 'tools/ci/personBundles.ts',
+  },
+];
+
 /** Techos que no dependen del build, leídos de la fuente que los aplica. */
 export function staticCeilings(repo: string): Ceiling[] {
   const ci = read(repo, '.github/workflows/ci.yml');
@@ -167,34 +185,35 @@ export function staticCeilings(repo: string): Ceiling[] {
     minutes: Number(m[2]),
   }));
   return [
+    ...PERSON_CEILINGS,
     {
       what: 'Descarga del paquete s0028 (gzip)',
-      limit: literal(repo, 'src/ui/s0028Surfaces.ts', /gzipLimit:\s*([\d_]+)/),
+      limit: literal(repo, 'src/anatomy/people/s0028/surfaces.ts', /gzipLimit:\s*([\d_]+)/),
       unit: 'B',
       decision: 318,
-      source: 'src/ui/s0028Surfaces.ts',
+      source: 'src/anatomy/people/s0028/surfaces.ts',
     },
     {
       what: 'Cada `.gzip` fijado del paquete s0028 (por archivo)',
-      limit: literal(repo, 'src/anatomy/loadS0028.ts', /gzipLimit:\s*([\d_]+)/),
+      limit: literal(repo, 'src/anatomy/people/s0028/runtime.ts', /gzipLimit:\s*([\d_]+)/),
       unit: 'B',
       decision: 317,
-      source: 'src/anatomy/loadS0028.ts',
+      source: 'src/anatomy/people/s0028/runtime.ts',
     },
     {
       what: 'Textura abdominal s0028 en memoria (RAW)',
-      limit: literal(repo, 'src/anatomy/loadS0028.ts', /rawLimit:\s*([\d_]+)/),
+      limit: literal(repo, 'src/anatomy/people/s0028/runtime.ts', /rawLimit:\s*([\d_]+)/),
       unit: 'B',
       decision: 317,
-      source: 'src/anatomy/loadS0028.ts',
+      source: 'src/anatomy/people/s0028/runtime.ts',
     },
     {
       what: 'Textura torácica s0028 en memoria (RAW)',
       // el segundo `rawLimit` de la carga es el del tórax
-      limit: literal(repo, 'src/anatomy/loadS0028.ts', /rawLimit:\s*([\d_]+)/, 1),
+      limit: literal(repo, 'src/anatomy/people/s0028/runtime.ts', /rawLimit:\s*([\d_]+)/, 1),
       unit: 'B',
       decision: 317,
-      source: 'src/anatomy/loadS0028.ts',
+      source: 'src/anatomy/people/s0028/runtime.ts',
     },
     {
       what: 'Samplers por programa (las dos personas)',
@@ -220,7 +239,7 @@ export function staticCeilings(repo: string): Ceiling[] {
   ];
 }
 
-/** Techos del bundle (`bundleBudgets.ts`), uno por activo de `dist`, y el JS total. */
+/** Techos por activo y por clausura: usa el mismo grafo verificado por bundle-budget. */
 export function bundleRows(dist: string): Measured[] {
   const files = bundleAssets(dist);
   const rows: Measured[] = [];
@@ -239,24 +258,18 @@ export function bundleRows(dist: string): Measured[] {
     });
   }
   rows.sort((a, b) => (a.what < b.what ? -1 : 1));
-  const totalJs = files.filter((f) => f.file.endsWith('.js')).reduce((n, f) => n + f.size, 0);
+  const graph = JSON.parse(readFileSync(join(dist, 'person-bundle-graph.json'), 'utf8')) as PersonBundleGraph;
+  const closures = measurePersonBundles(graph);
   const download = files.filter((f) => S0028_DOWNLOAD.some((re) => re.test(basename(f.file)))).reduce((n, f) => n + f.size, 0);
   return [
-    {
-      what: 'JS total (todo `dist`, Workers y ganchos incluidos)',
-      limit: TOTAL_JS_BUDGET,
-      unit: 'B',
-      decision: 294,
-      source: 'tools/ci/bundleBudgets.ts',
-      actual: totalJs,
-    },
+    ...PERSON_CEILINGS.map((c, i) => ({ ...c, actual: closures[i === 0 ? 'default' : 's0028'].bytes })),
     ...rows,
     {
       what: 'Descarga del paquete s0028 (gzip)',
       limit: Number.NaN,
       unit: 'B',
       decision: 318,
-      source: 'src/ui/s0028Surfaces.ts',
+      source: 'src/anatomy/people/s0028/surfaces.ts',
       actual: download,
     },
   ];
@@ -292,7 +305,8 @@ export function measure(repo: string, main: string, date: string): Medidas {
   const bundle = bundleRows(dist);
   const shaders = shaderRows();
   const actual = (c: Ceiling): number | null => {
-    if (c.what.startsWith('Descarga')) return bundle.find((b) => b.what.startsWith('Descarga'))!.actual;
+    const bundled = bundle.find((b) => b.what === c.what);
+    if (bundled) return bundled.actual;
     if (c.what.startsWith('Textura abdominal')) return textures.abdominal;
     if (c.what.startsWith('Textura torácica')) return textures.thoracic;
     if (c.what.startsWith('Cada `.gzip`'))
@@ -309,7 +323,7 @@ export function measure(repo: string, main: string, date: string): Medidas {
     schema: 1,
     date,
     main,
-    rows: [...bundle.filter((b) => !b.what.startsWith('Descarga')), ...statics.map((c) => ({ ...c, actual: actual(c) }))],
+    rows: [...bundle.filter((b) => b.source === 'tools/ci/bundleBudgets.ts'), ...statics.map((c) => ({ ...c, actual: actual(c) }))],
     shaders,
     s0028DescriptorSha256: descriptorSha256(),
     tests: testCounts(repo),
@@ -352,7 +366,7 @@ export function renderTable(m: Medidas): string {
   ].join('\n');
 }
 
-const stamp = (m: Medidas): string => `Medido sobre main \`${m.main}\` el ${m.date} con \`tools/docs/estado.ts\`.`;
+const stamp = (m: Medidas): string => `Medido en el candidato basado en main \`${m.main}\` el ${m.date} con \`tools/docs/estado.ts\`.`;
 
 /** Programas por persona: samplers, ranuras y uso de los techos (página de imagen). */
 export function renderShaders(m: Medidas): string {
@@ -432,7 +446,7 @@ export const withTable = (doc: string, table: string): string => withBlock(doc, 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const repo = resolve(import.meta.dirname, '../..');
   process.chdir(repo); // `shaderCosts` lee shaderLimits.test.ts desde la raíz
-  // el commit de main que se mide: la base de la rama (el árbol no cambia `src` respecto a ella al regenerar)
+  // Base del candidato medido; el build y las cifras proceden del checkout actual.
   const main = execFileSync(
     'git',
     ['rev-parse', '--short', execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { encoding: 'utf8' }).trim()],

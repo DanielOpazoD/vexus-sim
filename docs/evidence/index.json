@@ -1067,6 +1067,168 @@
    ]
   },
   {
+   "id": "structure-322-p3-impl-closure-20261106-2022-focales-log",
+   "path": "structure-322/p3-impl/closure-20261106-2022/focales.log",
+   "kind": "file",
+   "bytes": 3515,
+   "sha256": "f543f7c78daa9519a43416cf7209fb67f929a991792a3df01d0b61b24c4fb553",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-closure-20261106-2022-main-bundle-json",
+   "path": "structure-322/p3-impl/closure-20261106-2022/main-bundle.json",
+   "kind": "file",
+   "bytes": 3927,
+   "sha256": "67d95acf79f4f335b8681776c5895f8bb8f684fcaba65498e9be4549134cc31c",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-closure-20261106-2022-metal-repeat-report-json",
+   "path": "structure-322/p3-impl/closure-20261106-2022/metal-repeat/report.json",
+   "kind": "file",
+   "bytes": 2886782,
+   "sha256": "aa971f755e93ed4d8f692657d9410abb9620418dc7bc4c25c98979b50081a383",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-closure-20261106-2022-metal-report-json",
+   "path": "structure-322/p3-impl/closure-20261106-2022/metal/report.json",
+   "kind": "file",
+   "bytes": 3432322,
+   "sha256": "6447cc1082c7c8adfe105a56d3069d5836237524e27bfbcd581d43bb7f6e511f",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-closure-20261106-2022-summary-json",
+   "path": "structure-322/p3-impl/closure-20261106-2022/summary.json",
+   "kind": "file",
+   "bytes": 2208,
+   "sha256": "d9f964194b9b9e312e5337e681f3005fabf5c99a40435a3c64a281708c0f4739",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json",
+   "path": "structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json",
+   "kind": "file",
+   "bytes": 2932,
+   "sha256": "09cc37468ca4f209c4d6f3a0b3ec8d6b3529f0f8ed424ee77dc304179294246c",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-review-fixes-20261106-final-main-metal-report-json",
+   "path": "structure-322/p3-impl/review-fixes-20261106/final-main-metal/report.json",
+   "kind": "file",
+   "bytes": 593195,
+   "sha256": "71d3ef8bec98b1aea2fe40dbeadb3ee5d144a84e48ad532660db65b92c67f4f2",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-review-fixes-20261106-red-worker-ui-metal-2-log",
+   "path": "structure-322/p3-impl/review-fixes-20261106/red-worker-ui-metal-2.log",
+   "kind": "file",
+   "bytes": 19364,
+   "sha256": "b7e3df94ac9c4c7ddda40653ff41b680da024f5919e67e60e2859e47034162d4",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json",
+   "path": "structure-322/p3-impl/review-fixes-20261106/shader-parity-final.json",
+   "kind": "file",
+   "bytes": 17068,
+   "sha256": "1d9749c629692cee7b0093f9d3babdf907a8ed74ea9994158509d93a7f3b2ed6",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png",
+   "path": "structure-322/p3-impl/review-fixes-20261106/worker-warning-main-8ed26cf.png",
+   "kind": "file",
+   "bytes": 394100,
+   "sha256": "4e9e40817c8b38123e7e0a62995045036a5ab292b5bbce7ba059ffe796aed9c8",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/structure-322-p3/review-fixes.json",
+     "decision": null
+    }
+   ]
+  },
+  {
    "id": "structure-322-readme-md",
    "path": "structure-322/README.md",
    "kind": "file",

@@ -1,0 +1,317 @@
+{
+  "reviewedHead": "15733a8e8002e38f7a77acafd73d4aa3a420ab52",
+  "base": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+  "beforeReview": {
+    "default": 1027918,
+    "s0028": 1065618,
+    "defaultCeiling": 1029966,
+    "s0028Ceiling": 1070080
+  },
+  "after": {
+    "default": {
+      "bytes": 1028605,
+      "ceiling": 1029568,
+      "margin": 963
+    },
+    "s0028": {
+      "bytes": 1066305,
+      "ceiling": 1070080,
+      "margin": 3775
+    }
+  },
+  "transformedPrograms": {
+    "default": {
+      "matching": 39,
+      "total": 39,
+      "mainAggregateSha256": "f07e913ca686d5b1940be40650c51db09eca6936d59aff36647806d55120f29b",
+      "headAggregateSha256": "f07e913ca686d5b1940be40650c51db09eca6936d59aff36647806d55120f29b"
+    },
+    "s0028": {
+      "matching": 39,
+      "total": 39,
+      "mainAggregateSha256": "d7830ec698bc5f6d3b17e4d14fed17e05ab69a3d22110d5f5866df97905dfdec",
+      "headAggregateSha256": "d7830ec698bc5f6d3b17e4d14fed17e05ab69a3d22110d5f5866df97905dfdec"
+    }
+  },
+  "aggregateEncoding": "SHA256 de UTF-8, filas name:sha256\\n ordenadas por nombre",
+  "sources": {
+    "default": "39/39",
+    "s0028": "39/39"
+  },
+  "defaultCpu": {
+    "label": "head",
+    "person": "current",
+    "points": 82251,
+    "pointsWithSolids": 0,
+    "hash": "3a6c5010a3904d08d7fe5002b23a4cf579300349e218a0d3bf05ceba25e003ee",
+    "semanticHash": "e223ec29216fb23c8867486e82ced1149670a54b25a29fccb3642a08ede529c2",
+    "frames": 10,
+    "framesSha256": "adf6e763fd4c5cb1b6c42d546e05c9811a3e8b32b0a4640737fe7b2b122028cb",
+    "contactCases": 30,
+    "contactSha256": "a8b1b1dd367f1f5c958bfc2e0b71fe7dad00c348db133f757228483e88f318b9"
+  },
+  "vascularExporter": {
+    "default": {
+      "planes": 10,
+      "binaryHashesEqual": 20,
+      "geometryEqual": true
+    },
+    "s0028": {
+      "planes": 10,
+      "binaryHashesEqual": 10,
+      "geometryEqual": true
+    }
+  },
+  "metalAfterRebase": {
+    "stats": {
+      "startTime": "2026-11-06T13:13:54.272Z",
+      "duration": 16532.213,
+      "expected": 7,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "rows": 57,
+    "points": 144110,
+    "same": 143994,
+    "interior": 66557,
+    "interiorSame": 66556,
+    "analyticGpu": 0,
+    "cyst": 40,
+    "fatConflict": 29
+  },
+  "metalNavigation": {
+    "passed": 8,
+    "retried": 0,
+    "base": "c3197a7",
+    "context": "new Scene recibe InstalledCpuPerson; código de navegación idéntico tras rebase P9"
+  },
+  "ciSwiftShader": {
+    "prHead": "15733a8e8002e38f7a77acafd73d4aa3a420ab52",
+    "run": 42214091216,
+    "testedMergeSha": "7dd1ff5fd9ae085801cd1fc5a39571c25c3c1492",
+    "status": "passed",
+    "durationMs": 22871,
+    "retry": 0,
+    "startup": {
+      "query": "?e2e=1&abdomen=s0028",
+      "bootCompleted": true,
+      "stages": [
+        {
+          "stage": "bootstrap:begin",
+          "timeMs": 907.0999999999767
+        },
+        {
+          "stage": "surfaces:begin",
+          "timeMs": 907.6999999999534
+        },
+        {
+          "stage": "surfaces:ready",
+          "timeMs": 1118.3000000000466
+        },
+        {
+          "stage": "simulation:begin",
+          "timeMs": 1128.9000000000233
+        },
+        {
+          "stage": "simulation:ready",
+          "timeMs": 2640.9000000000233
+        },
+        {
+          "stage": "cut:import",
+          "timeMs": 2641.5
+        },
+        {
+          "stage": "controls:ready",
+          "timeMs": 2652.6999999999534
+        },
+        {
+          "stage": "navigator:import",
+          "timeMs": 2653.6999999999534
+        },
+        {
+          "stage": "hooks:import",
+          "timeMs": 2654.5999999999767
+        },
+        {
+          "stage": "cut:ready",
+          "timeMs": 2708.5
+        },
+        {
+          "stage": "navigator:surface:begin",
+          "timeMs": 2714.4000000000233
+        },
+        {
+          "stage": "navigator:surface:ready",
+          "timeMs": 2714.5999999999767
+        },
+        {
+          "stage": "navigator:construct",
+          "timeMs": 2714.6999999999534
+        },
+        {
+          "stage": "navigator:draw",
+          "timeMs": 3917.3000000000466
+        },
+        {
+          "stage": "navigator:drawn",
+          "timeMs": 4379.800000000047
+        },
+        {
+          "stage": "navigator:ready",
+          "timeMs": 4379.900000000023
+        },
+        {
+          "stage": "loop:scheduled",
+          "timeMs": 4381.900000000023
+        },
+        {
+          "stage": "frame:begin",
+          "timeMs": 4383.099999999977
+        },
+        {
+          "stage": "advance:begin",
+          "timeMs": 4383.699999999953
+        },
+        {
+          "stage": "advance:ready",
+          "timeMs": 4396.199999999953
+        },
+        {
+          "stage": "ultrasound:begin",
+          "timeMs": 4396.199999999953
+        },
+        {
+          "stage": "ultrasound:ready",
+          "timeMs": 4412.099999999977
+        },
+        {
+          "stage": "ultrasound:gpu-submitted",
+          "timeMs": 4412.199999999953
+        },
+        {
+          "stage": "frame:first",
+          "timeMs": 4633.199999999953
+        },
+        {
+          "stage": "hooks:ready",
+          "timeMs": 4640.900000000023
+        },
+        {
+          "stage": "ultrasound:gpu-ready",
+          "timeMs": 15334.699999999953
+        },
+        {
+          "stage": "frame:second",
+          "timeMs": 15376.300000000047
+        }
+      ],
+      "lastObserved": {
+        "stage": "frame:second",
+        "timeMs": 15376.300000000047
+      }
+    },
+    "scope": "SwiftShader CI s0028Load: carga, Worker real y rechazo de procedencia corrupta; no acredita CI global ni el futuro head"
+  },
+  "redTests": [
+    "personShaders: 35/39 transformados diferentes frente a main, ambas personas",
+    "Metal: chunk CPU real del Worker bloqueado, aviso inexistente",
+    "cutMapLifecycle: falta notificación del corte inválido",
+    "Metal intermedio: aviso visible; clic de recarga capturado por ProbeInput",
+    "estado: tabla anterior no publica las dos clausuras"
+  ],
+  "limits": [
+    "SwiftShader local no se repite: negativos anteriores conservados",
+    "No check completo local, no CI aprobada de este nuevo head, no validación clínica",
+    "Mutantes completos: evidencia inicial 29/29; en esta corrección sólo se revalida el registro porque las anclas no cambian",
+    "No se toca el worktree r5"
+  ],
+  "externalEvidence": [
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/review-fixes-20261106/shader-parity-final.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/review-fixes-20261106/worker-warning-main-8ed26cf.png",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/review-fixes-20261106/final-main-metal/report.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/review-fixes-20261106/red-worker-ui-metal-2.log",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/closure-20261106-2022/main-bundle.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/closure-20261106-2022/summary.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/closure-20261106-2022/focales.log",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/closure-20261106-2022/metal/report.json",
+    "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/closure-20261106-2022/metal-repeat/report.json"
+  ],
+  "purpose": "Recuperar margen JS para mejorar la anatomía default; instalación de nuevas fases s0028 pausada por el propietario.",
+  "beforeMain": {
+    "totalJs": 1069787,
+    "clean": true,
+    "ceiling": 1070080,
+    "margin": 293
+  },
+  "closureResumption": {
+    "base": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+    "testCheckoutSha": "c7b785252ee071a400b2a3c026b2b5ff78b6120f",
+    "scope": "Candidato con regeneración de P9 sin commit; no CI protegida ni validación clínica.",
+    "purpose": "Margen para anatomía default; nuevas fases s0028 pausadas.",
+    "mainBuild": {
+      "totalJs": 1069787,
+      "clean": true,
+      "ceiling": 1070080,
+      "margin": 293
+    },
+    "closures": {
+      "default": {
+        "bytes": 1028605,
+        "ceiling": 1029568,
+        "margin": 963,
+        "savingVsMain": 41182,
+        "marginToHistoricalCeiling": 41475
+      },
+      "s0028": {
+        "bytes": 1066305,
+        "ceiling": 1070080,
+        "margin": 3775,
+        "savingVsMain": 3482
+      }
+    },
+    "focalTests": {
+      "files": 16,
+      "passed": 133,
+      "failed": 0,
+      "durationSeconds": 15.56
+    },
+    "metalInitial": {
+      "stats": {
+        "startTime": "2026-11-06T20:26:10.101Z",
+        "duration": 631669.252,
+        "expected": 13,
+        "skipped": 0,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "failure": "probeFreeNavigation regiones 4–6 normal-adult: corte sin avance durante 3 s; geometría y paridad completadas antes de la aserción del registro de errores.",
+      "observedLoad": [68.82, 181.05, 123.39]
+    },
+    "metalNavigationRepeat": {
+      "stats": {
+        "startTime": "2026-11-06T20:39:05.187Z",
+        "duration": 91999.55,
+        "expected": 8,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "sourceOrAssertionsChanged": false,
+      "automaticRetries": 0,
+      "loadBefore": "15:38  up 2 days,  7:32, 1 user, load averages: 11.68 115.86 105.73",
+      "loadAfter": "15:41  up 2 days,  7:34, 1 user, load averages: 6.56 70.15 88.55"
+    },
+    "metalOtherPassed": ["compressionSpline", "personBoundary (5 casos, incluido fallo CPU real del Worker)"],
+    "shaderHashes": {
+      "default": "39/39 fuente y transformados, 38 fragmentos + vértice",
+      "s0028": "39/39 fuente y transformados",
+      "base": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f"
+    },
+    "limits": [
+      "La repetición verde no borra el fallo previo ni demuestra por sí sola su causa.",
+      "CI del futuro head pendiente; no check completo local."
+    ]
+  }
+}

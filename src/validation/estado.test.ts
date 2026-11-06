@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BUDGETS, TOTAL_JS_BUDGET } from '../../tools/ci/bundleBudgets';
+import { BUDGETS } from '../../tools/ci/bundleBudgets';
+import { DEFAULT_JS_BUDGET, S0028_JS_BUDGET } from '../../tools/ci/personBundles';
 import { SAMPLER_GUARD, SLOT_GUARD } from '../../tools/ci/shaderBudgets';
 import { parseDecisions } from '../../tools/docs/decisions-index';
 import {
@@ -92,10 +93,6 @@ describe('Páginas de estado vigente (decisión 322, punto 9)', () => {
     const m = medidas();
     // bundle: el techo de cada activo es el primer patrón de bundleBudgets.ts que encaja con su nombre en dist
     for (const r of m.rows.filter((r) => r.source === 'tools/ci/bundleBudgets.ts')) {
-      if (r.what.startsWith('JS total')) {
-        expect(r.limit, r.what).toBe(TOTAL_JS_BUDGET);
-        continue;
-      }
       const name = r.what.replace(/`/g, '').replace(/(\.\w+)$/, '-abcdefgh$1');
       expect(r.limit, r.what).toBe(BUDGETS.find(([re]) => re.test(name))?.[1]);
     }
@@ -103,6 +100,19 @@ describe('Páginas de estado vigente (decisión 322, punto 9)', () => {
     const statics = staticCeilings(ROOT);
     for (const c of statics) expect(m.rows, c.what).toContainEqual(expect.objectContaining(c));
     expect(m.rows.filter((r) => r.source !== 'tools/ci/bundleBudgets.ts')).toHaveLength(statics.length);
+  });
+
+  it('publica las dos clausuras JS y conserva sus techos independientes', () => {
+    const rows = medidas().rows.filter((r) => r.source === 'tools/ci/personBundles.ts');
+    expect(rows.map((r) => [r.what, r.limit])).toEqual([
+      ['JS clausura default (Workers y ganchos incluidos)', DEFAULT_JS_BUDGET],
+      ['JS clausura s0028 (Workers y ganchos incluidos)', S0028_JS_BUDGET],
+    ]);
+    for (const row of rows) {
+      expect(row.actual).toBeGreaterThan(0);
+      expect(row.actual).toBeLessThanOrEqual(row.limit);
+      expect(row.limit).toBeLessThanOrEqual(1_070_080);
+    }
   });
 
   it.each([
@@ -126,8 +136,8 @@ describe('Páginas de estado vigente (decisión 322, punto 9)', () => {
       if (now.current.sourceSha256 === s.current.sourceSha256) expect(now.current, `${s.name} default`).toEqual(s.current);
       if (now.s0028.sourceSha256 === s.s0028.sourceSha256) expect(now.s0028, `${s.name} s0028`).toEqual(s.s0028);
     }
-    // la cuenta de las texturas es la de loadS0028.ts
-    const loader = read('src/anatomy/loadS0028.ts').replace(/\s+/g, ' ');
+    // la cuenta de las texturas es la de la carga instalada
+    const loader = read('src/anatomy/people/s0028/runtime.ts').replace(/\s+/g, ' ');
     for (const expr of LOAD_S0028_GUARD) expect(loader, expr).toContain(expr);
     if (m.s0028DescriptorSha256 === descriptorSha256()) {
       const t = s0028Textures();

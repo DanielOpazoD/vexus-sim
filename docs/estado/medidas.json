@@ -1,16 +1,8 @@
 {
  "schema": 1,
  "date": "2026-11-06",
- "main": "bd2f575",
+ "main": "8ed26cf",
  "rows": [
-  {
-   "what": "JS total (todo `dist`, Workers y ganchos incluidos)",
-   "limit": 1070080,
-   "unit": "B",
-   "decision": 294,
-   "source": "tools/ci/bundleBudgets.ts",
-   "actual": 1069860
-  },
   {
    "what": "`abdominal-atlas.gzip.bin`",
    "limit": 6291456,
@@ -44,20 +36,12 @@
    "actual": 5914463
   },
   {
-   "what": "`abdominalAtlas.js`",
+   "what": "`anatomy.glsl.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 22357
-  },
-  {
-   "what": "`abdominalSurface.js`",
-   "limit": 122880,
-   "unit": "B",
-   "decision": null,
-   "source": "tools/ci/bundleBudgets.ts",
-   "actual": 3568
+   "actual": 23151
   },
   {
    "what": "`anatomyScene.js`",
@@ -65,7 +49,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 22519
+   "actual": 16051
   },
   {
    "what": "`annotation-capacity.gzip.bin`",
@@ -81,7 +65,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 289434
+   "actual": 249512
   },
   {
    "what": "`candidate-manifest.bin`",
@@ -92,12 +76,28 @@
    "actual": 38309
   },
   {
+   "what": "`cpu.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 10126
+  },
+  {
+   "what": "`cpu.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 24137
+  },
+  {
    "what": "`cutMapView.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 16105
+   "actual": 16821
   },
   {
    "what": "`cutMapWorker.js`",
@@ -105,7 +105,15 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 2517
+   "actual": 3663
+  },
+  {
+   "what": "`deformation.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1559
   },
   {
    "what": "`doppler-worklet.js`",
@@ -121,7 +129,15 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 1164
+   "actual": 1200
+  },
+  {
+   "what": "`gateTransmission.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 26029
   },
   {
    "what": "`index.css`",
@@ -129,7 +145,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 20433
+   "actual": 20475
   },
   {
    "what": "`index.js`",
@@ -137,15 +153,15 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 5181
+   "actual": 2878
   },
   {
-   "what": "`loadS0028.js`",
+   "what": "`loadPinnedAsset.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 1874
+   "actual": 1081
   },
   {
    "what": "`navigator3d.js`",
@@ -153,7 +169,23 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 28288
+   "actual": 28405
+  },
+  {
+   "what": "`personAssets.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 4393
+  },
+  {
+   "what": "`preload-helper.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1417
   },
   {
    "what": "`pwMeasurements.js`",
@@ -161,7 +193,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 15854
+   "actual": 15821
   },
   {
    "what": "`query.js`",
@@ -169,7 +201,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 104478
+   "actual": 3703
   },
   {
    "what": "`reference-body.bin`",
@@ -180,20 +212,28 @@
    "actual": 2080
   },
   {
-   "what": "`s0028Solids.js`",
+   "what": "`retroperitoneum.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 11490
+   "actual": 5081
   },
   {
-   "what": "`s0028Surfaces.js`",
+   "what": "`runtime.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 5964
+   "actual": 20075
+  },
+  {
+   "what": "`runtime.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1631
   },
   {
    "what": "`series.js`",
@@ -201,7 +241,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 2199
+   "actual": 2204
   },
   {
    "what": "`skin-polar.gzip.bin`",
@@ -212,12 +252,20 @@
    "actual": 947509
   },
   {
-   "what": "`speckleField.js`",
+   "what": "`sourceVolume.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 9580
+   "actual": 1582
+  },
+  {
+   "what": "`startPoints.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 9543
   },
   {
    "what": "`structureIdentity.js`",
@@ -225,7 +273,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 1457
+   "actual": 1480
   },
   {
    "what": "`surfaces.gzip.bin`",
@@ -236,12 +284,28 @@
    "actual": 5340216
   },
   {
+   "what": "`surfaces.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": 318,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5730
+  },
+  {
+   "what": "`surfaces.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": 318,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 485
+  },
+  {
    "what": "`teacherTab.js`",
    "limit": 122880,
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 46604
+   "actual": 46687
   },
   {
    "what": "`testHooks.js`",
@@ -249,7 +313,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 69636
+   "actual": 69645
   },
   {
    "what": "`thoracic-atlas.gzip.bin`",
@@ -276,20 +340,20 @@
    "actual": 3341604
   },
   {
+   "what": "`thoracicSurfaceData.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 3122
+  },
+  {
    "what": "`three.js`",
    "limit": 385024,
    "unit": "B",
    "decision": 307,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 380390
-  },
-  {
-   "what": "`transducerProfile.js`",
-   "limit": 122880,
-   "unit": "B",
-   "decision": null,
-   "source": "tools/ci/bundleBudgets.ts",
-   "actual": 25984
+   "actual": 369107
   },
   {
    "what": "`units.js`",
@@ -300,11 +364,35 @@
    "actual": 388
   },
   {
+   "what": "`vesselTree.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 109011
+  },
+  {
+   "what": "JS clausura default (Workers y ganchos incluidos)",
+   "limit": 1029568,
+   "unit": "B",
+   "decision": 322,
+   "source": "tools/ci/personBundles.ts",
+   "actual": 1028605
+  },
+  {
+   "what": "JS clausura s0028 (Workers y ganchos incluidos)",
+   "limit": 1070080,
+   "unit": "B",
+   "decision": 322,
+   "source": "tools/ci/personBundles.ts",
+   "actual": 1066305
+  },
+  {
    "what": "Descarga del paquete s0028 (gzip)",
    "limit": 25000000,
    "unit": "B",
    "decision": 318,
-   "source": "src/ui/s0028Surfaces.ts",
+   "source": "src/anatomy/people/s0028/surfaces.ts",
    "actual": 20433526
   },
   {
@@ -312,7 +400,7 @@
    "limit": 19510002,
    "unit": "B",
    "decision": 317,
-   "source": "src/anatomy/loadS0028.ts",
+   "source": "src/anatomy/people/s0028/runtime.ts",
    "actual": 8567375
   },
   {
@@ -320,7 +408,7 @@
    "limit": 139921010,
    "unit": "B",
    "decision": 317,
-   "source": "src/anatomy/loadS0028.ts",
+   "source": "src/anatomy/people/s0028/runtime.ts",
    "actual": 139917029
   },
   {
@@ -328,7 +416,7 @@
    "limit": 60413664,
    "unit": "B",
    "decision": 317,
-   "source": "src/anatomy/loadS0028.ts",
+   "source": "src/anatomy/people/s0028/runtime.ts",
    "actual": 60413664
   },
   {
@@ -536,11 +624,11 @@
  ],
  "s0028DescriptorSha256": "e8921fbedfd3c7322fa950b7b875ce2c49f55fc92ecc1f12af759ebf0b2fec72",
  "tests": {
-  "vitestFiles": 312,
+  "vitestFiles": 321,
   "slowFiles": 34,
-  "e2eSpecs": 84,
-  "e2eTestCalls": 139,
+  "e2eSpecs": 85,
+  "e2eTestCalls": 143,
   "e2eShards": 12,
-  "pythonContracts": 18
+  "pythonContracts": 20
  }
 }

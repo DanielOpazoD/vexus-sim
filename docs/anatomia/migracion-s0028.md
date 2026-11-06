@@ -66,16 +66,20 @@ TRANS_HITS_GRID 1, GRADIENT 0, TRANS_HITS ≤ 1.024 (línea Metal), COLOR 5. Sin
 
 Contorno renal: `RenalCapsule` a < 1,2 mm del borde O de la máscara a ambos lados (también U/U), normal del gradiente
 trilineal analítico en CPU y GPU (1,5 mm coincidía con el umbral de lectura exacta y daba 4/364 caras distintas).
-Compresión: tabla rígida por nodo (κ, d₁, L); pared intacta; el primer hueso alcanzable con κ ≤ 3 queda quieto y el
-riñón delante se traslada entero. En apnea: vértebras 0 mm en las diez ventanas (main ≤ 1,44), riñón |∂s/∂r| p95 0
-(flanco 0,06; máx 0,38 en bordes laterales; main 0,25); costillas/cartílagos bajo la cara como main (≤ 19,4 mm, P8);
-tejido blando ≤ 0,54 por ventana (main ≤ 0,51). Con respiración 10/20 mm la tabla (de apnea) no sigue al riñón: renal
-p95 0,34/0,35 (main 0,25), flanco 10 mm vértebra ≤ 5,8 mm (main 0,23); mejor que main en subcostal, flanco (riñón) y
-epigástrica (vértebra).
+Compresión: tabla rígida por nodo (κ, d₁, L), con la pared intacta. La revisión B1 encontró que dos riñones separados
+por una vértebra se trataban como un solo tramo: el flanco desplazaba L2 hasta 11,0824 mm incluso en apnea. Se
+comprueba cada pareja entrada/salida y la reserva termina en la salida del tramo que realmente cruza el anclaje.
+En el sector completo (129 líneas, 0–320 mm, paso 0,5 mm), el máximo vertebral por compresión del flanco pasa de
+11,0824/11,0824/11,0824 a 0/0,0127/0,0038 mm con D = 0/10/20; las otras nueve ventanas dan 0/0/0. El alcance baja
+303 → 175,5 mm. Estas cifras miden compresión: el movimiento respiratorio del hueso sigue abierto (P4/P7).
+La tabla sigue calculada en apnea; el renal |∂s/∂r| p95 del sector es 0/0,2900/0,3490 y el hepatorrenal
+0/0,1030/0,2226. El riñón del flanco pasa de un máximo de 11,0824 mm de traslación a 6,5011/6,5011/0 mm.
+Los 5,8 mm publicados en el plano cartesiano del flanco a D = 10 eran B1, no una medida del movimiento respiratorio.
+Costillas/cartílagos que acompañan la pared siguen pendientes de P8. [Tabla antes/después](../evidence/s0028-p3/review-fixes.md).
 
 Paridad CPU = GPU (Metal): nodos/grasa/119 testigos de conflicto 99,990 % (D = 0); con D = 0/10/20, planos renales
 interior 0/0/1 de ~14.100 y ventanas con compresión interior 0; cara renal 100 % a D = 0; CPU = Worker bit a bit con la
-tabla rígida. SwiftShader x64 (Rosetta, `e72ab01`, código de app igual al final): 7/8 en verde (s0028WallGpu con 18
+tabla rígida. SwiftShader x64 (Rosetta, `e72ab01`, medición histórica anterior a la corrección B1): 7/8 en verde (s0028WallGpu con 18
 testigos sólidos, s0028SolidsGpu, cutMapRafStall y aortaPulse ×4), 0 gpu-failed, primeros cuadros dentro de BOOT_MS;
 s0028Load falla sólo en la espera de 15 s del tercer arranque con el comprimido alterado: la traza da bootstrap a +22,6
 s y el rechazo a +24,4 s, como main (+21,9 s; main falla 1 de 2 pares alternos y r3 2 de 2), antes de cualquier trabajo
@@ -87,6 +91,15 @@ tareas largas y 5,83 s frente a main 51 y 5,66 s. Default = main 8555a2c (82.251
 Láminas: 16 abiertas, CPU ≠ GPU 2–73 píxeles por lámina (carta P2 en Metal). La eco r3 muestra el contorno como línea
 sólo con incidencia casi normal; el interior U no tiene corteza ni seno. Sin validación clínica. [Evidencia
 P3](../evidence/s0028-p3/README.md).
+
+### Pendientes P4/P7 de movimiento tras la revisión de r3
+
+- P4: la tabla de compresión se calcula en apnea y no acompaña al riñón durante la respiración; el sector completo tras B1
+  da p95 0/0,2900/0,3490 con el mismo estímulo D = 0/10/20 mm. La rejilla cartesiana histórica, recalculada, da 0,3440/0,3498 a D = 10/20; es otro dominio.
+- P4/P7: el peso respiratorio sigue usando el cilindro espinal de la otra persona, centro (0, −60) mm y radio 17 mm.
+  La revisión independiente midió pesos L1–L5 de 0,17/0,38/0,52/0,56/0,31 y 0,77–0,92 en el flanco: el hueso de s0028
+  se mueve al respirar aunque su desplazamiento por compresión sea cero. Resolver el anclaje respiratorio con los
+  huesos de esta persona y comprobar CPU/GPU; no se corrige en esta PR.
 
 ## P3 r2: clasificador CPU/Worker de sólidos y posterior, pendiente (321)
 

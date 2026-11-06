@@ -195,6 +195,8 @@ const RENAL_FACE_GLSL = /* glsl */ `vec3 renalAtlasFaceGradient(vec3 m,bool fat)
 // Zonas rígidas por dueño en la compresión (par GLSL de `rigidDepth` y `tableAt`): (κ, d₁, L) por nodo, interpolados
 // como la CPU entre los dos nodos del tramo; la pared (d < D) no cambia; bajo ella
 // σ = D + κ·(d − D − clamp(d − d₁, 0, L)).
+// Orden requerido: compressionSpline escribe s28R para la línea actual antes de cada llamada al perfil. El perfil
+// sólo lee esa global; no se puede adelantar ni intercalar una consulta de otra línea entre las dos llamadas.
 // @twin s0028-compresion-rigida
 const RIGID_FETCH = (i: string, t: string) =>
   /* glsl */ `s28R=mix(sceneTexel(${RIGID_BASE}+${i}).xyz,sceneTexel(${RIGID_BASE}+${i}+1).xyz,${t});`;

@@ -969,7 +969,7 @@ export const TWINS: readonly TwinPair[] = [
   },
   {
     id: 's0028-compresion-rigida',
-    what: 'Zonas rígidas por dueño en la compresión s0028: σ(d) por nodo (κ, d₁, L), interpolada entre nodos bajo la pared.',
+    what: 'Zonas rígidas por dueño en la compresión s0028: σ(d) por nodo (κ, d₁, L), interpolada bajo la pared; la reserva termina en el tramo renal que cruza el anclaje.',
     kind: 'cpu-glsl',
     cpu: [{ file: 'src/anatomy/compression.ts', symbols: ['rigidDepth', 'tableAt'] }],
     gpu: [{ file: 'src/anatomy/gpu/s0028Solids.glsl.ts', symbols: [], templates: ['RIGID_PROFILE', 'RIGID_FETCH'] }],
@@ -981,7 +981,7 @@ export const TWINS: readonly TwinPair[] = [
         title: 'compresión rígida s0028 (r3): el perfil se evalúa sobre σ(d) con la tabla (κ, d₁, L) del tramo; el default no la lee',
       },
     ],
-    gap: 'La jacobiana con σ′ (las normales bajo compresión) no se compara: la e2e compara tejido y cara en las ventanas comprimidas.',
+    gap: 'La jacobiana con σ′ (las normales bajo compresión) no se compara: la e2e compara tejido y cara en las ventanas comprimidas. rigidNode calcula la tabla en CPU; s0028RigidSector comprueba el anclaje en todo el sector. La tabla sigue en apnea (P4).',
   },
 
   // ——— CPU de la página ↔ Worker del corte ———

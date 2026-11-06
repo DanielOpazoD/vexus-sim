@@ -212,9 +212,10 @@ function rigidDepth(d: number, [kappa, d1, L]: RigidNode, D: number): [number, n
  * s0028 (r3): el nodo rígido de una línea (parámetros (s₀, s_D, D) ya suavizados por la B-spline, los que se evalúan en
  * ella) con huesos o cartílagos a las profundidades rígidas `bones` y tramos renales `renal` ([entrada, salida], …). La
  * caída del empuje acaba en Z: el primer hueso bajo la pared al que llega con κ ≤ 3 (queda quieto) o, sin él, donde ya
- * acababa (D + S). El riñón delante de Z, de su primera entrada a su última salida, se traslada entero: κ = S/(Z − D − L)
- * y d₁ resuelve d₁ + g(σ(d₁)) = entrada (monótona). Si el riñón cruza Z o no cabe con κ ≤ 3, la caída se retrasa tras él
- * (κ = 1; el alcance crece en L).
+ * acababa (D + S). El riñón delante de Z, de su primera entrada a su última salida antes de Z, se traslada entero:
+ * κ = S/(Z − D − L) y d₁ resuelve d₁ + g(σ(d₁)) = entrada (monótona). Si un tramo renal cruza Z, o el riñón no cabe con
+ * κ ≤ 3, la caída se retrasa tras él (κ = 1; el alcance crece en L, que acaba en la salida del tramo que cruza). Los
+ * tramos más allá de Z no cuentan: con un riñón a cada lado de una vértebra (flanco), la vértebra queda quieta.
  */
 export function rigidNode(n: CompressionNode, bones: readonly number[], renal: readonly number[]): RigidNode {
   const D = n[2],
@@ -230,9 +231,10 @@ export function rigidNode(n: CompressionNode, bones: readonly number[], renal: r
   }
   let L = Math.max(0, ahead(Z)),
     kappa = S / Math.max(Z - D - L, 1e-3);
-  if ((renal.length && renal[0] < Z && renal[renal.length - 1] > Z) || kappa > RIGID_KAPPA_MAX) {
+  const cross = renal.findIndex((x, i) => !(i % 2) && x < Z && renal[i + 1] > Z);
+  if (cross >= 0 || kappa > RIGID_KAPPA_MAX) {
     kappa = 1;
-    L = renal.length ? renal[renal.length - 1] - renal[0] : 0;
+    if (cross >= 0) L = renal[cross + 1] - renal[0];
   }
   if (!L) return [kappa, 0, 0];
   const k1 = renal[0],

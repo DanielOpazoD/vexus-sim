@@ -23,6 +23,7 @@ import type { CutMapInit, CutMapRequest, CutMapResponse } from '../ui/cutMapWork
 import type { Vec3 } from '../core/vec3';
 import fat from './fixtures/s0028-fat-r1.json';
 import conflicts from './fixtures/s0028-conflict-witnesses.json';
+import cysts from './fixtures/s0028-cyst-witnesses.json';
 import { HALF } from '../anatomy/halfFloat';
 
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
@@ -146,6 +147,27 @@ it('testigos de conflicto de la e2e GPU (r3): la CPU da U con los dos dueños de
     expect(c.solids?.state, `${x},${y},${z}`).toBe('conflict');
     expect(ids(c).sort().join('+')).toBe(conflicts.pairs[k]);
     expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
+  }
+  // Revisión de #336 (I1): grasa D + banda en la sub-banda de grasa de la pared, donde la banda sola daría Fat.
+  expect(conflicts.fatBand.length).toBeGreaterThan(20);
+  for (const [x, y, z] of conflicts.fatBand) {
+    const c = at([x, y, z]),
+      q = s0028WallAt([x, y, z]);
+    expect(c.solids?.state, `${x},${y},${z}`).toBe('conflict');
+    expect(ids(c).sort().join('+')).toBe('compatible_fat+wall');
+    expect(q?.kind === 'known' && q.outerMm - q.depthMm >= 0.5, `${x},${y},${z} sub-banda de grasa`).toBe(true);
+    expect(c.tissue).toBe(Tissue.UnsegmentedSoftTissue);
+  }
+});
+
+it('testigos del quiste de la e2e GPU (revisión de #336): dueño kidney_cyst_left, líquido E, a ≥ 0,3 mm de su borde', () => {
+  expect(cysts.cyst.length).toBeGreaterThan(30);
+  for (const [x, y, z] of cysts.cyst) {
+    const c = at([x, y, z]);
+    expect(c.solids?.state, `${x},${y},${z}`).toBe('known');
+    expect(c.solids?.owners[0].id).toBe('kidney_cyst_left');
+    expect(c.solids!.owners[0].d).toBeLessThan(-0.3);
+    expect(c.tissue).toBe(Tissue.Fluid);
   }
 });
 

@@ -4,6 +4,7 @@ import { S0028_BUNDLE as B } from '../src/anatomy/anatomyBundle';
 import { Interface } from '../src/anatomy/interfaces';
 import { Tissue } from '../src/anatomy/tissues';
 import conflicts from '../src/validation/fixtures/s0028-conflict-witnesses.json' with { type: 'json' };
+import cysts from '../src/validation/fixtures/s0028-cyst-witnesses.json' with { type: 'json' };
 
 /**
  * P3 r3 (decisión 321): la GPU clasifica los sólidos s0028 con la misma política que la CPU. Mismos puntos MATERIALES
@@ -33,6 +34,8 @@ const ARGS = {
   kidneys: [field('kidneyRight'), field('kidneyLeft')].map((f) => ({ o: f.originMm, n: f.dimensions })),
   fat: B.solids.boxes.map((b) => ({ o: b.originMm, n: b.dimensions })),
   conflicts: conflicts.points.flatMap((p) => p.slice(0, 3)),
+  fatBand: conflicts.fatBand.flat(),
+  cysts: cysts.cyst.flat(),
   lattice: B.fields[0].originMm,
   analytic: ANALYTIC.map(Number),
   renal: Number(Interface.RenalCapsule),
@@ -50,6 +53,13 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
 }) => {
   budget(600_000);
   const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=s0028');
+  const renderer = await page.evaluate(() => {
+    const gl = window.__vexusTest!.sim().renderer.gl;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    return String(gl.getParameter(ext?.UNMASKED_RENDERER_WEBGL ?? gl.RENDERER));
+  });
+  await test.info().attach('renderer', { body: renderer, contentType: 'text/plain' });
+  if (process.env.VEXUS_GPU === 'metal') expect(renderer).toContain('Metal');
   const rows = await page.evaluate((a) => {
     const T = window.__vexusTest!;
     const sim = T.sim();
@@ -191,6 +201,10 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
     }
     // Testigos de conflicto (nueve pares del censo, fuera de las mitades de celda): U con los dos dueños, sin elegir material.
     out.push(compare('conflictos', 0, NO, a.conflicts));
+    // La banda sola daría Fat en estos puntos; con grasa D superpuesta debe dar conflicto U.
+    out.push(compare('conflictos grasa P2', 0, NO, a.fatBand));
+    // El quiste es pequeño: los planos y las cajas gruesas no garantizan una clase E con suficientes muestras.
+    out.push(compare('quiste E', 0, NO, a.cysts));
     // Tres planos por riñón (fuera de la rejilla del TAC), con respiración D = 0, 10 y 20 mm.
     for (const [ki, kb] of a.kidneys.entries()) {
       const c = kb.o.map((o, ax) => o + (1.5 * (kb.n[ax] - 1)) / 2 + [0.37, 0.29, 0.41][ax]);
@@ -248,6 +262,14 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
   }, ARGS);
   await test.info().attach('paridad-solidos-s0028', { body: JSON.stringify(rows, null, 1), contentType: 'application/json' });
   const tag = (r: Row) => `${r.id}: ${JSON.stringify(r)}`;
+  for (const [id, cls, count] of [
+    ['quiste E D=0', 'cystE', cysts.cyst.length],
+    ['conflictos grasa P2 D=0', 'conflictU', conflicts.fatBand.length],
+  ] as const) {
+    const r = rows.find((r) => r.id === id)!;
+    expect(count, id).toBeGreaterThanOrEqual(20);
+    expect(r.classes[cls], tag(r)).toEqual([count, count]);
+  }
   for (const r of rows) {
     const still = r.id.endsWith('D=0');
     // Ningún tejido renal analítico de la otra persona en la GPU s0028, y desacuerdo interior ≤ 0,5 % (P2).
@@ -263,10 +285,14 @@ test('la GPU s0028 clasifica los sólidos con la política P3 de la CPU: dueños
     expect(r.ifdMax, tag(r)).toBeLessThan(1e-3);
     if (r.id.startsWith('riñón') && r.id.includes('nodos')) expect(r.normalMin, tag(r)).toBeGreaterThan(0.999);
   }
-  // Con dientes: las clases P3 aparecen y el contorno renal se dibuja en los puntos materiales.
-  const total = (cls: string) => rows.reduce((s, r) => s + (r.classes[cls]?.[0] ?? 0), 0);
-  for (const cls of ['kidneyU', 'cystE', 'fatD', 'conflictU', 'noOwnerU'])
-    expect(total(cls), cls).toBeGreaterThan(cls === 'cystE' ? 5 : 30);
+  // Cada clase se comprueba siempre: agrupar las filas de apnea evita que una clase escasa eluda la aserción.
+  for (const cls of ['kidneyU', 'cystE', 'fatD', 'conflictU', 'noOwnerU']) {
+    const still = rows.filter((r) => r.id.endsWith('D=0'));
+    const count = still.reduce((s, r) => s + (r.classes[cls]?.[0] ?? 0), 0);
+    const same = still.reduce((s, r) => s + (r.classes[cls]?.[1] ?? 0), 0);
+    expect(count, cls).toBeGreaterThan(30);
+    expect(same / count, cls).toBeGreaterThanOrEqual(0.99);
+  }
   expect(rows.find((r) => r.id === 'conflictos D=0')!.classes.conflictU).toEqual([conflicts.points.length, conflicts.points.length]);
   expect(rows.reduce((s, r) => s + r.renalCpu, 0)).toBeGreaterThan(2000);
   expect(errors).toEqual([]);

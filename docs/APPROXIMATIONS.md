@@ -385,8 +385,11 @@ P3 r2 (321, pendiente; CPU y Worker): la clasificación s0028 reúne los dueños
 y no elige material en un conflicto (U). La grasa compatible D es composición por vóxel (HU [−190, −30], ≤30 mm del
 riñón, fuera de las 117 máscaras y de la envolvente renal) y se dibuja con el material genérico de grasa: no identifica
 Gerota ni compartimento perirrenal/pararrenal. El riñón conserva su borde D e interior U (sin corteza, médula, seno,
-cápsula ni vasos procedurales dentro) y el quiste izquierdo se trata como líquido de un quiste simple [ESTIMADO]. Fuera
-de los dueños P3 siguen los vasos procedurales (P5) y la cúpula E (P7). [Migración](anatomia/migracion-s0028.md).
+cápsula ni vasos procedurales dentro) y el quiste izquierdo se trata como líquido de un quiste simple [ESTIMADO]. Los
+vasos procedurales de la otra persona se evalúan antes del material de un único dueño: pueden entrar en hígado,
+páncreas, grasa compatible D y puntos sin dueño. El conflicto U se resuelve antes y el riñón/quiste excluye esos tubos;
+no existe una exclusión general de los vasos por los dueños P3. Las redes de la misma persona quedan para P5 y la
+cúpula E para P7. [Migración](anatomia/migracion-s0028.md).
 
 P3 r3 (321, pendiente; GPU, contorno y compresión): la GPU reproduce la política P3 sin bucles con los mismos campos y
 páginas. El borde O de la máscara renal se trata como cara acústica de cápsula (`RenalCapsule`) a < 1,2 mm a ambos

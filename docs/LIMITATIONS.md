@@ -690,11 +690,16 @@ compartimentos perirrenal/pararrenal son U. El contorno renal es una cara acúst
 también con U a ambos lados; en la eco sólo se ve como línea donde la incidencia es casi normal. Se conservan sin
 resolver los conflictos de dos dueños (693 puntos a 1,5 mm, casi todos grasa compatible D dentro de la banda P2 conocida
 y hueso+cartílago) y el solape real hígado/bazo con la banda P2 (4 y 2 vóxeles fuente). La compresión rígida por dueño
-se calcula en la geometría de apnea: deja quietas las vértebras y traslada entero el riñón sin respiración, pero con
-respiración el tramo rígido no sigue a los sólidos desplazados (ventana renal: riñón |∂s/∂r| p95 0,34–0,35 frente a 0,25
-de main; flanco con 10 mm: vértebra ≤ 5,8 mm); costillas y cartílagos bajo la cara se desplazan con la pared como en
-main (≤ 19,4 mm, P8) y el tejido blando concentra la deformación (hasta 0,54 por ventana; main hasta 0,51). La
-respiración vigente no conserva la forma renal (peso de superficie 0,044–1). Vasos procedurales de la otra persona
+se calcula en apnea. Tras B1, las vértebras del sector completo tienen desplazamiento máximo por compresión
+0/0/0 mm en nueve ventanas y 0/0,0127/0,0038 mm en flanco, con D = 0/10/20 mm (129 líneas, 0–320 mm a 0,5 mm).
+Antes B1, L2 del flanco se trasladaba hasta 11,0824 mm incluso en apnea: los 5,8 mm de la rejilla cartesiana a D = 10
+se debían a esa reserva errónea, no a respiración. La tabla no sigue al riñón al respirar: |∂s/∂r| p95 renal
+0/0,2900/0,3490 en el sector, y 0,3440/0,3498 a D = 10/20 en la rejilla cartesiana recalculada, pendiente P4. Costillas/cartílagos que acompañan la pared siguen como en main (P8).
+La
+respiración vigente no conserva la forma renal (peso de superficie 0,044–1). Tampoco ancla el hueso de s0028: usa el
+cilindro espinal de la otra persona, centro (0, −60) mm y radio 17 mm. La revisión independiente midió pesos de
+0,17/0,38/0,52/0,56/0,31 en L1–L5 y 0,77–0,92 en el flanco (desplazamiento respiratorio = peso × D, incluso sin
+presión). Este fallo previo a r3 queda para P4/P7; es distinto del error de compresión B1, corregido en esta PR. Vasos procedurales de la otra persona
 cruzan sólidos s0028 (P5) y el tórax E del corazón da distancias de frontera negativas (P7). No es validación clínica.
 
 P0 prepara herramientas; P1 r4c carga un candidato local sólo por `?abdomen=s0028`.

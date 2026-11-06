@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vite
 import { installDefaultCpu } from '../anatomy/people/default/cpu';
 import type { InstalledCpuPerson } from '../anatomy/person';
 import { AnatomyScene } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import type { CutMapInit, CutMapReply, CutMapRequest } from '../ui/cutMapProtocol';
@@ -53,6 +53,23 @@ function deferred() {
   });
   return { promise, resolve, reject };
 }
+
+it('instala CPU una vez por assetKey y reutiliza el contexto entre cortes y casos', async () => {
+  const posted: CutMapReply[] = [];
+  const install = vi.fn(() => Promise.resolve(person));
+  const receive = createWorker((m) => posted.push(m), install);
+  await receive(init(1));
+  for (const [i, patient] of [NORMAL_ADULT, SEVERE_CONGESTION, NORMAL_ADULT].entries()) {
+    const epoch = i + 1;
+    if (i) await receive({ ...init(epoch), type: 'patient', patient, buffers: undefined });
+    await receive(map(epoch, epoch * 10 + 1));
+    await receive(map(epoch, epoch * 10 + 2));
+  }
+  expect(install).toHaveBeenCalledExactlyOnceWith(init(1));
+  expect(posted.filter((m) => m.type === 'map')).toHaveLength(6);
+  expect(posted.filter((m) => m.type === 'ready').map((m) => m.epoch)).toEqual([1, 2, 3]);
+  expect(posted.some((m) => m.type === 'error')).toBe(false);
+});
 
 it.each([false, true])('espera CPU, publica ready y conserva sólo el mapa pendiente más reciente (progreso=%s)', async (progress) => {
   let now = 0;

@@ -32,7 +32,16 @@ declare global {
       duplicateTracePaints: TracePaintWitness[];
       unkeyedTracePaints: UnkeyedTracePaintWitness[];
       progress: Array<{ id: number; rows: number }>;
-      initializations: Array<{ patient: string; bytes: number; postMs: number }>;
+      initializations: Array<{
+        type: CutMapInit['type'];
+        epoch: number;
+        assetKey: string;
+        patient: string;
+        bytes: number;
+        copiedBytes: number;
+        profileBytes: number;
+        postMs: number;
+      }>;
       replies: Array<{
         id: number;
         patient: string;
@@ -172,12 +181,29 @@ async function observe(page: Page) {
         });
       }
       Reflect.apply(original, this, [message, transfer]);
-      if ('patient' in packet)
+      if ('patient' in packet) {
+        const postMs = performance.now() - at;
+        const buffers = new Set<ArrayBuffer>();
+        const transferred = Array.isArray(transfer) ? transfer : (transfer.transfer ?? []);
+        // Every buffer the structured clone copies: the profile and each person asset not transferred.
+        const sent: Array<ArrayBuffer | ArrayBufferView | undefined> = [packet.referenceProfile];
+        if (packet.buffers) sent.push(...(Object.values(packet.buffers) as Array<ArrayBuffer | ArrayBufferView | undefined>));
+        for (const value of sent) {
+          if (!value) continue;
+          const buffer = value instanceof ArrayBuffer ? value : value.buffer;
+          if (buffer instanceof ArrayBuffer && !transferred.includes(buffer)) buffers.add(buffer);
+        }
         window.cutWitness.initializations.push({
+          type: packet.type,
+          epoch: packet.epoch,
+          assetKey: packet.assetKey,
           patient: packet.patient.id,
           bytes: (packet.buffers?.abdominal?.byteLength ?? 0) + (packet.buffers?.thoracic?.byteLength ?? 0),
-          postMs: performance.now() - at,
+          copiedBytes: [...buffers].reduce((n, buffer) => n + buffer.byteLength, 0),
+          profileBytes: packet.referenceProfile?.buffer.byteLength ?? 0,
+          postMs,
         });
+      }
     };
   });
 }
@@ -310,8 +336,11 @@ test('two live atlas views keep producing the current cut through probe and case
       expect(traces.keyedPaints).toBeGreaterThan(0);
       expect(traces.duplicates).toEqual([]);
       const loads = await p.evaluate(() => window.cutWitness.initializations);
+      expect(loads.filter((i) => i.type === 'init')).toHaveLength(1);
+      expect(new Set(loads.map((i) => i.assetKey)).size).toBe(1);
       expect(loads[0].bytes).toBeGreaterThan(100_000_000);
       expect(loads.slice(1).every((i) => i.bytes === 0)).toBe(true);
+      expect(loads.slice(1).every((i) => i.type === 'patient' && i.copiedBytes === i.profileBytes)).toBe(true);
     }
     for (const p of pages) expect(await p.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
     for (const errors of consoleErrors) expect(errors).toEqual([]);

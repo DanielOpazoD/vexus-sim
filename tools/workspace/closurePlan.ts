@@ -3,7 +3,7 @@
  * de carga y un `closure.json` de esquema estable. Sustituye los scripts de cierre de cada ronda; no sustituye el
  * veredicto protegido de la CI. Este módulo no lanza procesos: ejecutor, muestreo, reloj y escritura se inyectan.
  */
-import { HOOK_BUDGET_SECONDS, TIMING_MAX_LOAD } from '../ci/testTiers';
+import { BUDGET_UNAVAILABLE_EXIT_CODE, HOOK_BUDGET_SECONDS, TIMING_MAX_LOAD } from '../ci/testTiers';
 
 export const CLOSURE_SCHEMA = 'vexus-closure/1';
 
@@ -40,6 +40,8 @@ export interface StageDefinition {
   budgetMaxLoad?: number;
   /** Archivos del checkout que se copian a `{dir}` al terminar, también si falla. */
   artifacts?: string[];
+  /** Código reservado del informe de presupuesto cuando la carga impide evaluarlo. */
+  unevaluatedExitCode?: number;
 }
 
 export interface ClosureConfig {
@@ -88,7 +90,12 @@ export function closureStages(config: ClosureConfig): StageDefinition[] {
       budgetSeconds: HOOK_BUDGET_SECONDS,
       budgetMaxLoad: TIMING_MAX_LOAD,
     },
-    { name: 'tests-fast', commands: tierRun(['npm', 'test'], 'fast', config.tierBudget ?? TIER_BUDGET), optional: false },
+    {
+      name: 'tests-fast',
+      commands: tierRun(['npm', 'test'], 'fast', config.tierBudget ?? TIER_BUDGET),
+      optional: false,
+      unevaluatedExitCode: BUDGET_UNAVAILABLE_EXIT_CODE,
+    },
     { name: 'tests-slow', commands: tierRun(['npm', 'run', 'test:slow'], 'slow', config.tierBudget ?? TIER_BUDGET), optional: false },
     {
       name: 'python-contracts',
@@ -142,7 +149,15 @@ export function selectStages(all: StageDefinition[], opts: { only: string[]; ski
 
 /** Identidad de una etapa para reanudar: mismos comandos, entorno, prioridad y presupuesto. */
 export function stageKey(def: StageDefinition): string {
-  return JSON.stringify([def.commands, def.env ?? {}, def.niceless ?? false, def.budgetSeconds ?? null, def.budgetMaxLoad ?? null]);
+  return JSON.stringify([
+    def.commands,
+    def.env ?? {},
+    def.niceless ?? false,
+    def.budgetSeconds ?? null,
+    def.budgetMaxLoad ?? null,
+    def.unevaluatedExitCode ?? null,
+    def.artifacts ?? [],
+  ]);
 }
 
 export interface LoadSample {
@@ -156,7 +171,7 @@ export interface LoadSample {
 export interface StageAttempt {
   attempt: number;
   key: string;
-  status: 'passed' | 'failed' | 'over-budget' | 'interrupted';
+  status: 'passed' | 'failed' | 'over-budget' | 'budget-unavailable' | 'interrupted';
   exitCode: number | null;
   signal: string | null;
   error: string | null;
@@ -177,7 +192,7 @@ export interface StageRecord {
   name: StageName;
   optional: boolean;
   budgetSeconds: number | null;
-  status: 'passed' | 'failed' | 'over-budget' | 'interrupted' | 'pending' | 'excluded';
+  status: StageAttempt['status'] | 'pending' | 'excluded';
   excludedReason: string | null;
   /** Último intento (el que decide el estado). */
   current: StageAttempt | null;
@@ -222,6 +237,7 @@ export interface ClosureRecord {
     aborted: string | null;
     failed: StageName[];
     pending: StageName[];
+    unevaluated: StageName[];
   };
 }
 
@@ -241,6 +257,7 @@ export interface PreparedStage {
   log: string;
   dir: string;
   artifacts: string[];
+  startedUtc: string;
 }
 
 export interface ExecutionResult {
@@ -252,6 +269,7 @@ export interface ExecutionResult {
 }
 
 export interface ClosureDeps {
+  signal?: AbortSignal;
   state(): CheckoutState;
   sample(): LoadSample;
   execute(stage: PreparedStage): Promise<ExecutionResult>;
@@ -293,7 +311,9 @@ export function progressLine(head: string, stage: StageRecord): string {
     a.status === 'over-budget'
       ? ` fuera de presupuesto (${a.seconds} s > ${stage.budgetSeconds} s)`
       : a.budgetEvaluated === false
-        ? ` (presupuesto ${stage.budgetSeconds} s no evaluable: carga ${a.load.before.load[0].toFixed(2)} al empezar)`
+        ? stage.budgetSeconds === null
+          ? ` (presupuesto por archivo no evaluable; véase ${a.dir}/tier.json)`
+          : ` (presupuesto ${stage.budgetSeconds} s no evaluable: carga ${a.load.before.load[0].toFixed(2)} al empezar)`
         : '';
   const max = a.load.during.max === null ? '' : `, máx. durante ${a.load.during.max.toFixed(2)}`;
   const power = a.load.before.lowPowerMode === null ? '' : `; bajo consumo ${a.load.before.lowPowerMode ? 'sí' : 'no'}`;
@@ -306,13 +326,21 @@ export function progressLine(head: string, stage: StageRecord): string {
 function summarize(record: ClosureRecord, selected: Set<StageName>): ClosureRecord['result'] {
   const failed = record.stages.filter((s) => ['failed', 'over-budget', 'interrupted'].includes(s.status)).map((s) => s.name);
   const pending = record.stages.filter((s) => s.status === 'pending').map((s) => s.name);
+  const unevaluated = record.stages.filter((s) => s.status === 'budget-unavailable').map((s) => s.name);
   const r = record.result;
-  const clean = r.headUnchanged !== false && r.fingerprintUnchanged !== false && !(record.treeCleanAtStart && r.treeCleanAtEnd === false);
-  const passed = r.aborted === null && clean && record.stages.filter((s) => selected.has(s.name)).every((s) => s.status === 'passed');
+  const clean = r.headUnchanged === true && r.fingerprintUnchanged === true && (!record.treeCleanAtStart || r.treeCleanAtEnd === true);
+  const passed =
+    r.aborted === null &&
+    clean &&
+    !failed.length &&
+    !pending.length &&
+    !unevaluated.length &&
+    record.stages.filter((s) => selected.has(s.name)).every((s) => s.status === 'passed');
   return {
     ...r,
     failed,
     pending,
+    unevaluated,
     passed,
     complete: passed && record.stages.filter((s) => !s.optional).every((s) => s.status === 'passed'),
   };
@@ -330,6 +358,7 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
   if (run.previous) {
     if (run.previous.schema !== CLOSURE_SCHEMA) throw new Error(`Esquema distinto: ${String(run.previous.schema)}`);
     if (run.previous.head !== start.head) throw new Error(`closure.json es de otro HEAD (${run.previous.head.slice(0, 7)})`);
+    if (run.previous.checkout !== run.checkout) throw new Error(`closure.json es de otro checkout (${run.previous.checkout})`);
     if (run.previous.fingerprint !== start.fingerprint) throw new Error('El contenido del checkout cambió desde el intento anterior');
   }
   const now = () => deps.now().toISOString();
@@ -363,8 +392,7 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
       const prev = previousStages.get(name);
       const def = byName.get(name);
       const reusable = def && prev?.status === 'passed' && prev.current?.key === stageKey(def);
-      const keepPassed = !def && prev?.status === 'passed';
-      if (reusable || keepPassed) return { ...prev, excludedReason: def ? null : excluded.get(name)!.reason };
+      if (reusable || (!def && prev)) return { ...prev, excludedReason: def ? null : excluded.get(name)!.reason };
       const history = prev ? [...prev.previousAttempts, ...(prev.current ? [prev.current] : [])] : [];
       return {
         name,
@@ -385,6 +413,7 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
       aborted: null,
       failed: [],
       pending: [],
+      unevaluated: [],
     },
   };
   const selected = new Set(run.selection.selected.map((d) => d.name));
@@ -392,6 +421,10 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
   deps.save(record);
 
   for (const stage of record.stages) {
+    if (deps.signal?.aborted) {
+      record.result.aborted = `${String(deps.signal.reason)} antes de ${stage.name}`;
+      break;
+    }
     const def = byName.get(stage.name);
     if (!def || stage.status !== 'pending') continue;
     const now0 = deps.state();
@@ -403,7 +436,7 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
       timedOut = false;
     const poll = run.pollMs ?? 30_000;
     if (run.waitLoad !== null)
-      while (deps.sample().load[0] >= run.waitLoad) {
+      while (!deps.signal?.aborted && deps.sample().load[0] >= run.waitLoad) {
         if (run.maxWaitMinutes !== null && waited >= run.maxWaitMinutes * 60_000) {
           timedOut = true;
           break;
@@ -412,7 +445,12 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
         await deps.wait(poll);
         waited += poll;
       }
+    if (deps.signal?.aborted) {
+      record.result.aborted = `${String(deps.signal.reason)} durante la espera de ${stage.name}`;
+      break;
+    }
     const attempt = stage.previousAttempts.length + 1;
+    const startedUtc = now();
     const prepared: PreparedStage = {
       name: stage.name,
       attempt,
@@ -422,9 +460,9 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
       log: `logs/${stage.name}-${attempt}.log`,
       dir: `runs/${stage.name}-${attempt}`,
       artifacts: def.artifacts ?? [],
+      startedUtc,
     };
     const before = deps.sample();
-    const startedUtc = now();
     deps.log(`START ${stage.name} (intento ${attempt})`);
     let result: ExecutionResult;
     try {
@@ -434,15 +472,22 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
     }
     const after = deps.sample();
     const during = result.loadDuring;
-    const budgetEvaluated = def.budgetSeconds === undefined ? null : def.budgetMaxLoad === undefined || before.load[0] <= def.budgetMaxLoad;
+    const unevaluatedReport = result.exitCode === def.unevaluatedExitCode;
+    const budgetEvaluated = unevaluatedReport
+      ? false
+      : def.budgetSeconds === undefined
+        ? null
+        : def.budgetMaxLoad === undefined || before.load[0] <= def.budgetMaxLoad;
     const status: StageAttempt['status'] =
       result.signal !== null
         ? 'interrupted'
-        : result.exitCode !== 0
+        : result.exitCode !== 0 && !unevaluatedReport
           ? 'failed'
-          : budgetEvaluated && result.seconds > def.budgetSeconds!
-            ? 'over-budget'
-            : 'passed';
+          : budgetEvaluated === false
+            ? 'budget-unavailable'
+            : budgetEvaluated && result.seconds > def.budgetSeconds!
+              ? 'over-budget'
+              : 'passed';
     stage.current = {
       attempt,
       key: stageKey(def),

@@ -9,6 +9,7 @@ import { loadavg } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
+  BUDGET_UNAVAILABLE_EXIT_CODE,
   FAST_FILE_BUDGET_MS,
   HOOK_BUDGET_SECONDS,
   testTierFiles,
@@ -61,4 +62,4 @@ if (tier === 'fast' && !evaluated)
     `Presupuesto por archivo no evaluable: carga media de 5 min ${load5} > ${TIMING_MAX_LOAD} (sólo se comprueba la capa completa).`,
   );
 for (const v of violations) console.error(`Presupuesto de capa: ${v}`);
-process.exit(violations.length ? 1 : 0);
+process.exit(violations.length ? 1 : tier === 'fast' && !evaluated ? BUDGET_UNAVAILABLE_EXIT_CODE : 0);

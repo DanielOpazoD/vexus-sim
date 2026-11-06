@@ -11,11 +11,13 @@ export type TestTier = 'fast' | 'slow';
 
 /** Gancho de push completo (formato, lint, tipos y capa rápida), medido en el equipo de trabajo sin carga ajena. */
 export const HOOK_BUDGET_SECONDS = 180;
+/** El informe está completo pero la carga no permite acreditar su presupuesto. Distinto de un fallo de pruebas. */
+export const BUDGET_UNAVAILABLE_EXIT_CODE = 3;
 
 /**
  * Carga máxima (media de 1 o 5 min) con la que un tiempo de pared vale para un presupuesto. El equipo de trabajo tiene 4
  * núcleos de rendimiento y 6 de eficiencia: con más carga, un proceso serial pasa parte del tiempo en núcleos de
- * eficiencia (la capa rápida con un trabajador tardó 541 s con carga media 12, frente a 194 s con carga 4). Por encima,
+ * eficiencia (la capa rápida con un trabajador tardó 541 s con carga media 12, frente a 395 s con carga 4,9). Por encima,
  * el presupuesto se declara no evaluable; nunca se da por cumplido ni por incumplido.
  */
 export const TIMING_MAX_LOAD = 5;

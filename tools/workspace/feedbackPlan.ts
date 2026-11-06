@@ -14,6 +14,17 @@ export function feedbackFiles(root: string, base: string, explicit: string[]): s
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: root, encoding: 'utf8', env: feedbackGitEnvironment() }).split('\0').filter(Boolean);
   if (base.startsWith('-')) throw new Error('La base debe ser una revisión Git');
+  if (!explicit.length) {
+    try {
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${base}^{commit}`], {
+        cwd: root,
+        stdio: 'pipe',
+        env: feedbackGitEnvironment(),
+      });
+    } catch {
+      throw new Error(`Falta la base Git ${base}; ejecuta git fetch origin main o indica --base <ref-local>. El push sigue bloqueado.`);
+    }
+  }
   const inputs = explicit.length
     ? explicit
     : [...git('diff', '--name-only', '-z', base, '--'), ...git('ls-files', '--others', '--exclude-standard', '-z')];

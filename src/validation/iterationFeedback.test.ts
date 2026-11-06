@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { availableParallelism, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { feedbackFiles, feedbackFingerprint, feedbackGitEnvironment, feedbackPlan } from '../../tools/workspace/feedbackPlan';
 
@@ -27,6 +27,7 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       git('add', '.');
       git('commit', '-m', 'baseline');
       const base = git('rev-parse', 'HEAD').toString().trim();
+      expect(() => feedbackFiles(root, 'origin/main', [])).toThrow('Falta la base Git origin/main');
       writeFileSync(join(root, 'src/a.ts'), 'committed');
       git('add', '.');
       git('commit', '-m', 'change');
@@ -94,6 +95,7 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
   it.each([
     ['sólo borrados', `(delete) ${ZERO} refs/heads/x ${SHA}\n(delete) ${ZERO} refs/heads/y ${SHA}\n`, false],
     ['borrado y publicación', `(delete) ${ZERO} refs/heads/x ${SHA}\nrefs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
+    ['publicación y borrado', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n(delete) ${ZERO} refs/heads/x ${SHA}\n`, true],
     ['publicación', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
     ['sin líneas', '', true],
   ])('el gancho real con un push de %s corre la capa rápida: %s', (_case, stdin, runs) => {
@@ -109,17 +111,27 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       git('add', '.');
       git('commit', '-m', 'one');
       mkdirSync(join(root, 'bin'));
-      writeFileSync(join(root, 'bin/npm'), '#!/bin/sh\necho "$@" >> "$FIXTURE_CALLS"\nexit 0\n', { mode: 0o755 });
+      writeFileSync(
+        join(root, 'bin/npm'),
+        '#!/bin/sh\necho "$@" >> "$FIXTURE_CALLS"\necho "$VITEST_MAX_WORKERS" >> "$FIXTURE_CALLS"\nexit 0\n',
+        { mode: 0o755 },
+      );
       const calls = join(root, 'calls');
       const result = spawnSync('sh', [join(import.meta.dirname, '../../.githooks/pre-push'), 'origin', 'https://example.invalid/x.git'], {
         cwd: root,
         encoding: 'utf8',
         input: stdin,
-        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_CALLS: calls },
+        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_CALLS: calls, VITEST_MAX_WORKERS: '999' },
       });
       expect(result.status, result.stderr).toBe(0);
       expect(existsSync(calls)).toBe(runs);
       if (!runs) expect(result.stdout).toContain('sólo borra ramas');
+      else {
+        const workers = Number(readFileSync(calls, 'utf8').trim().split('\n')[1]);
+        expect(workers).toBeGreaterThanOrEqual(1);
+        expect(workers).toBeLessThanOrEqual(Math.max(1, Math.floor(availableParallelism() / 2)));
+        expect(workers).toBeLessThanOrEqual(4);
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

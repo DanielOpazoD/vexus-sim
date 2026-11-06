@@ -18,12 +18,12 @@ Ver [criterios de selección, costes observados y recibo CI](engineering/iterati
 
 ## Qué corre dónde (decisión 322, punto 7)
 
-| Dónde                                     | Qué corre                                                                                                      | Tiempo medido en este equipo                                                                                                      |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Gancho de push (`.githooks/pre-push`)     | `npm run feedback -- --all-fast`: formato y lint de lo cambiado frente a `origin/main`, tipos y la capa rápida | antes (tipos + rápidas) 113–119 s; ahora 120–122 s (formato y lint de 22 archivos: 8,5 s), con carga 15–18 al empezar; tope 180 s |
-| `npm run check`                           | formato, índice, lint, tipos, build, presupuesto y todas las pruebas con cobertura (core y matrices)           | 62 min en serie con un trabajador (cierre del punto 8); 75–86 min en los cierres de P2 r2b-U y P3 r2                              |
-| CI protegida (`.github/workflows/ci.yml`) | lo de `check` repartido en core y matrices, la E2E en doce fragmentos y el tríplex temprano                    | core y matrices con techo de 25 min, E2E de 40; su recibo es la puerta de fusión                                                  |
-| Cierre de ronda (`npm run closure`)       | las etapas de abajo, en serie y con un trabajador                                                              | ≈102 min de etapas en el cierre del punto 8: `check` 62, lentas 29, rápidas 7, gancho 2,3                                         |
+| Dónde                                     | Qué corre                                                                                                      | Tiempo medido en este equipo                                                                                                             |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Gancho de push (`.githooks/pre-push`)     | `npm run feedback -- --all-fast`: formato y lint de lo cambiado frente a `origin/main`, tipos y la capa rápida | pool anterior: 120–122 s en ABBA, pero 230,2 s y timeout en el cierre de d580cac; se acota a cuatro trabajadores como máximo; tope 180 s |
+| `npm run check`                           | formato, índice, lint, tipos, build, presupuesto y todas las pruebas con cobertura (core y matrices)           | 62 min en serie con un trabajador (cierre del punto 8); 75–86 min en los cierres de P2 r2b-U y P3 r2                                     |
+| CI protegida (`.github/workflows/ci.yml`) | lo de `check` repartido en core y matrices, la E2E en doce fragmentos y el tríplex temprano                    | core y matrices con techo de 25 min, E2E de 40; su recibo es la puerta de fusión                                                         |
+| Cierre de ronda (`npm run closure`)       | las etapas de abajo, en serie y con un trabajador                                                              | ≈102 min de etapas en el cierre del punto 8: `check` 62, lentas 29, rápidas 7, gancho 2,3                                                |
 
 El gancho adelanta los errores baratos antes de publicar; no acredita nada. Un push que sólo borra ramas remotas
 (`git push --delete`: todas las sha locales que recibe el gancho en ceros) no publica código y no corre nada: 0,02 s
@@ -31,7 +31,12 @@ frente a ≈120 s. Lentas, matrices, cobertura, build y E2E
 quedan en `check` y en la CI protegida, que ya es la puerta de fusión (`CONTRIBUTING.md`). Una rama sólo puede introducir
 errores de formato o de lint en lo que cambia, y la CI sigue comprobando todo el repo; un cambio de configuración de
 Prettier o ESLint conviene comprobarlo entero (`npm run format:check`, `npm run lint`). Con carga ajena el gancho sigue
-siendo el mismo: sus pruebas conservan plazos y aserciones.
+limitado a `max(1, min(4, floor(availableParallelism() / 2)))` trabajadores (cuatro en este equipo),
+con el plazo por prueba de 60 s y las aserciones intactos. El pool anterior no garantizaba caber: con carga 7,32 al empezar,
+el cierre de `d580cac` tardó 230,2 s y una prueba de `s0028SolidsClassify` 62,8 s. No se cambia su archivo ni se mueve ninguna prueba de capa.
+El gancho incluye deliberadamente los archivos sin seguimiento que Git no ignora, igual que el feedback: forman parte del
+checkout que compilan y prueban las herramientas y no deben ocultar errores. Los borrados se conservan en el plan pero no se
+pasan a formato/lint. Si falta `origin/main`, bloquea con un mensaje que pide `git fetch origin main`, sin traza de Node.
 
 Presupuestos (`tools/ci/testTiers.ts`), medidos en este equipo (10 núcleos: 4 de rendimiento y 6 de eficiencia; modo de
 bajo consumo activo):
@@ -44,15 +49,16 @@ bajo consumo activo):
   archivo que lo supera se etiqueta `// @tier slow` o se aligera, y el PR dice su tiempo.
 - **Un tiempo sólo vale con carga ≤ 5** (`TIMING_MAX_LOAD`): con más, un proceso serial pasa parte del tiempo en núcleos
   de eficiencia y la inflación es muy desigual por archivo (la capa rápida serial tardó 541 s con carga media 12 frente a
-  395 s con 4,9; pleura ×4,9, mediana ×1,08). Por encima, el presupuesto se declara no evaluable con la carga medida;
+  395 s con 4,9; mediana de los cocientes `before2 / before3` ×1,16 en los 274 archivos emparejados y ×1,06 en los 48 con base > 2 s). Por encima, el presupuesto se declara no evaluable con la carga medida;
   nunca se da por cumplido ni por incumplido. `tier-budget.ts` mira la media de 5 min al terminar; `push-hook`, la carga
-  al empezar.
+  al empezar. Una etapa con presupuesto no evaluable queda `budget-unavailable`, no `passed`, y el cierre sale con 1;
+  el informe de capa devuelve el código reservado 3. Sus pruebas pueden estar verdes sin acreditar el presupuesto.
 - Los quince archivos más lentos de cada capa quedan en `runs/tests-{fast,slow}-N/tier.json` de cada cierre.
 
 ```bash
 npm run closure -- --evidence ../evidencia/cierre-$(git rev-parse --short HEAD) --wait-load 15 \
   --python "$VEXUS_PYTHON" --python-exclude a_test.py --python-exclude-reason 'motivo'
-npm run closure -- --evidence ../evidencia/cierre-abc1234 --resume   # sólo lo que no terminó en 0
+npm run closure -- --evidence ../evidencia/cierre-abc1234 --resume   # sólo las etapas no aprobadas
 npm run closure -- --evidence /tmp/plan --only lint,typecheck --dry-run
 npm run closure -- --checkout ../otro-worktree --evidence ../evidencia/otro   # cierra otro checkout con esta herramienta
 ```
@@ -63,9 +69,13 @@ Todas salvo `push-hook` corren con `nice -n 10`, `VITEST_MAX_WORKERS=1` y `VEXUS
 de cada etapa se anotan la carga (`vm.loadavg`, la de `uptime`) y el modo de energía (`pmset`), y durante, una muestra
 cada 30 s. El cierre rechaza un árbol con cambios salvo `--allow-dirty`, se detiene si HEAD o el contenido cambian entre
 etapas, comprueba HEAD y árbol al final y añade a `progress.md` una línea «Cierre <etapa>: código N; HEAD …» por etapa.
-`--resume` conserva las etapas aprobadas del mismo HEAD y definición y repite el resto desde la primera que no terminó
-en 0; cada intento conserva su log (`logs/<etapa>-<intento>.log`) y queda en `previousAttempts`. `check` copia además sus
-informes `.validation/` a la carpeta del intento.
+`--resume` conserva las etapas aprobadas del mismo checkout (ruta real), HEAD, contenido y definición; rechaza otro clon.
+Repite las no aprobadas, incluso un presupuesto no evaluable con pruebas verdes. Excluir una etapa antes fallida con
+`--skip` o `--only` conserva el fallo y la salida no es 0. Cada intento conserva su log (`logs/<etapa>-<intento>.log`)
+y queda en `previousAttempts`. `check` copia sólo informes `.validation/` modificados desde `startedUtc` del intento.
+SIGINT, SIGTERM y SIGHUP finalizan `closure.json`, también durante la espera de carga, y terminan el grupo de procesos
+de la etapa (incluidos nietos), con SIGKILL si persisten. Un cierre parcial desde cero puede aprobar sólo lo pedido;
+`complete` exige todas las etapas obligatorias. Ningún cierre se aprueba antes de comprobar HEAD y contenido al final.
 
 ## Principios
 

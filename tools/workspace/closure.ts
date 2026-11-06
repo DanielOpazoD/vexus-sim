@@ -4,23 +4,24 @@
  * después de cada etapa; logs por etapa e intento; `closure.json` y líneas «Cierre <etapa>: código N; HEAD …».
  * No sustituye el veredicto protegido de la CI.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   appendFileSync,
   closeSync,
-  copyFileSync,
   existsSync,
   mkdirSync,
   openSync,
   readdirSync,
   readFileSync,
   renameSync,
+  realpathSync,
   writeFileSync,
   writeSync,
 } from 'node:fs';
 import { availableParallelism, loadavg } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { closureSignals, copyAttemptArtifacts, spawnLogged, waitForLoad } from './closureRuntime';
 import { feedbackFingerprint, feedbackGitEnvironment } from './feedbackPlan';
 import {
   closureStages,
@@ -76,7 +77,7 @@ const { values } = parseArgs({
 });
 // El checkout que se acredita; por omisión, el de esta herramienta. Con otro, sus etapas son las suyas (scripts, gancho,
 // contratos) y sólo el informe de capas sale de esta herramienta, que se lo pide con --root.
-const root = resolve(values.checkout ?? toolRoot);
+const root = realpathSync(resolve(values.checkout ?? toolRoot));
 
 const list = (v: string | undefined) =>
   v
@@ -126,34 +127,6 @@ function sysctl(name: string): number | null {
   } catch {
     return null;
   }
-}
-
-/** Un hijo con su salida al log; reenvía SIGINT/SIGTERM y devuelve código y señal. */
-function spawnLogged(argv: string[], env: NodeJS.ProcessEnv, fd: number): Promise<{ code: number | null; signal: string | null }> {
-  return new Promise((done, fail) => {
-    const child = spawn(argv[0], argv.slice(1), { cwd: root, env, stdio: ['ignore', fd, fd] });
-    let requested: NodeJS.Signals | null = null;
-    const forward = (signal: NodeJS.Signals) => () => {
-      requested = signal;
-      child.kill(signal);
-    };
-    const interrupt = forward('SIGINT'),
-      terminate = forward('SIGTERM');
-    process.on('SIGINT', interrupt);
-    process.on('SIGTERM', terminate);
-    const cleanup = () => {
-      process.off('SIGINT', interrupt);
-      process.off('SIGTERM', terminate);
-    };
-    child.once('error', (error) => {
-      cleanup();
-      fail(error);
-    });
-    child.once('close', (code, signal) => {
-      cleanup();
-      done({ code, signal: signal ?? requested });
-    });
-  });
 }
 
 async function main(): Promise<number> {
@@ -216,91 +189,97 @@ async function main(): Promise<number> {
   };
   const head = () => git('rev-parse', 'HEAD').trim();
 
-  const execute = async (stage: PreparedStage): Promise<ExecutionResult> => {
-    const dir = join(evidence, stage.dir);
-    // Sólo las etapas que escriben en su carpeta (informes, E2E, artefactos) la crean.
-    if (stage.artifacts.length || stage.commands.some((c) => c.some((a) => a.includes(dir)))) mkdirSync(dir, { recursive: true });
-    const fd = openSync(join(evidence, stage.log), 'a');
-    const env: NodeJS.ProcessEnv = { ...baseEnv };
-    for (const [k, v] of Object.entries(stage.env)) {
-      if (v === null) delete env[k];
-      else env[k] = v;
-    }
-    const during: number[] = [];
-    const timer = setInterval(() => during.push(load1()), 30_000);
-    const t0 = performance.now();
-    const seconds = () => (performance.now() - t0) / 1000;
-    try {
-      for (const argv of stage.commands) {
-        const full = stage.nice ? ['nice', '-n', String(NICE_LEVEL), ...argv] : argv;
-        writeSync(fd, `\n$ ${full.join(' ')}\n# ${new Date().toISOString()} · HEAD ${head()}\n`);
-        const r = await spawnLogged(full, env, fd);
-        if (r.code !== 0 || r.signal) return { exitCode: r.code, signal: r.signal, error: null, seconds: seconds(), loadDuring: during };
+  const signals = closureSignals();
+  try {
+    const execute = async (stage: PreparedStage): Promise<ExecutionResult> => {
+      const dir = join(evidence, stage.dir);
+      // Sólo las etapas que escriben en su carpeta (informes, E2E, artefactos) la crean.
+      if (stage.artifacts.length || stage.commands.some((c) => c.some((a) => a.includes(dir)))) mkdirSync(dir, { recursive: true });
+      const fd = openSync(join(evidence, stage.log), 'a');
+      const env: NodeJS.ProcessEnv = { ...baseEnv };
+      for (const [k, v] of Object.entries(stage.env)) {
+        if (v === null) delete env[k];
+        else env[k] = v;
       }
-      return { exitCode: 0, signal: null, error: null, seconds: seconds(), loadDuring: during };
-    } finally {
-      clearInterval(timer);
-      for (const a of stage.artifacts) if (existsSync(join(root, a))) copyFileSync(join(root, a), join(dir, a.replaceAll('/', '_')));
-      closeSync(fd);
-    }
-  };
+      const during: number[] = [];
+      const timer = setInterval(() => during.push(load1()), 30_000);
+      const t0 = performance.now();
+      const seconds = () => (performance.now() - t0) / 1000;
+      try {
+        for (const argv of stage.commands) {
+          const full = stage.nice ? ['nice', '-n', String(NICE_LEVEL), ...argv] : argv;
+          writeSync(fd, `\n$ ${full.join(' ')}\n# ${new Date().toISOString()} · HEAD ${head()}\n`);
+          const r = await spawnLogged(full, root, env, fd, signals.signal);
+          if (r.code !== 0 || r.signal) return { exitCode: r.code, signal: r.signal, error: null, seconds: seconds(), loadDuring: during };
+        }
+        return { exitCode: 0, signal: null, error: null, seconds: seconds(), loadDuring: during };
+      } finally {
+        clearInterval(timer);
+        copyAttemptArtifacts(root, dir, stage.artifacts, stage.startedUtc);
+        closeSync(fd);
+      }
+    };
 
-  const record = await runClosure(
-    {
-      evidence,
-      selection,
-      previous,
-      resume: Boolean(values.resume),
-      allowDirty: Boolean(values['allow-dirty']),
-      waitLoad: positive(values['wait-load'], '--wait-load'),
-      maxWaitMinutes: positive(values['max-wait-min'], '--max-wait-min'),
-      failFast: Boolean(values['fail-fast']),
-      only: list(values.only),
-      skip: list(values.skip),
-      branch: git('rev-parse', '--abbrev-ref', 'HEAD').trim(),
-      checkout: root,
-      environment: {
-        node: process.version,
-        platform: process.platform,
-        arch: process.arch,
-        cpus: availableParallelism(),
-        performanceCores: sysctl('hw.perflevel0.physicalcpu'),
-        efficiencyCores: sysctl('hw.perflevel1.physicalcpu'),
-        python,
-        tool: toolRoot,
-        toolHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: toolRoot, encoding: 'utf8', env: feedbackGitEnvironment() }).trim(),
-        ...SERIAL_ENV,
+    const record = await runClosure(
+      {
+        evidence,
+        selection,
+        previous,
+        resume: Boolean(values.resume),
+        allowDirty: Boolean(values['allow-dirty']),
+        waitLoad: positive(values['wait-load'], '--wait-load'),
+        maxWaitMinutes: positive(values['max-wait-min'], '--max-wait-min'),
+        failFast: Boolean(values['fail-fast']),
+        only: list(values.only),
+        skip: list(values.skip),
+        branch: git('rev-parse', '--abbrev-ref', 'HEAD').trim(),
+        checkout: root,
+        environment: {
+          node: process.version,
+          platform: process.platform,
+          arch: process.arch,
+          cpus: availableParallelism(),
+          performanceCores: sysctl('hw.perflevel0.physicalcpu'),
+          efficiencyCores: sysctl('hw.perflevel1.physicalcpu'),
+          python,
+          tool: toolRoot,
+          toolHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: toolRoot, encoding: 'utf8', env: feedbackGitEnvironment() }).trim(),
+          ...SERIAL_ENV,
+        },
+        pythonExcluded: { files: pythonExcluded, reason },
+        includedPython: pythonTests,
       },
-      pythonExcluded: { files: pythonExcluded, reason },
-      includedPython: pythonTests,
-    },
-    {
-      state: () => ({
-        head: head(),
-        dirty: git('status', '--porcelain=v1', '--untracked-files=all').split('\n').filter(Boolean),
-        fingerprint: feedbackFingerprint(root, evidence),
-      }),
-      sample,
-      execute,
-      wait: (ms) => new Promise((r) => setTimeout(r, ms)),
-      now: () => new Date(),
-      save: (r) => {
-        writeFileSync(recordPath + '.tmp', JSON.stringify(r, null, 2) + '\n');
-        renameSync(recordPath + '.tmp', recordPath);
+      {
+        signal: signals.signal,
+        state: () => ({
+          head: head(),
+          dirty: git('status', '--porcelain=v1', '--untracked-files=all').split('\n').filter(Boolean),
+          fingerprint: feedbackFingerprint(root, evidence),
+        }),
+        sample,
+        execute,
+        wait: (ms) => waitForLoad(ms, signals.signal),
+        now: () => new Date(),
+        save: (r) => {
+          writeFileSync(recordPath + '.tmp', JSON.stringify(r, null, 2) + '\n');
+          renameSync(recordPath + '.tmp', recordPath);
+        },
+        progress: (line) => {
+          appendFileSync(progressPath, line + '\n');
+          console.log(line);
+        },
+        log: (line) => console.log(`[cierre ${new Date().toISOString()}] ${line}`),
       },
-      progress: (line) => {
-        appendFileSync(progressPath, line + '\n');
-        console.log(line);
-      },
-      log: (line) => console.log(`[cierre ${new Date().toISOString()}] ${line}`),
-    },
-  );
-  const r = record.result;
-  console.log(
-    `Cierre ${r.passed ? 'aprobado' : 'NO aprobado'}${r.complete ? ' y completo' : ''}: HEAD ${record.head.slice(0, 7)}, ` +
-      `fallidas [${r.failed.join(', ')}], pendientes [${r.pending.join(', ')}]${r.aborted ? `, ${r.aborted}` : ''}. ${recordPath}`,
-  );
-  return r.passed ? 0 : 1;
+    );
+    const r = record.result;
+    console.log(
+      `Cierre ${r.passed ? 'aprobado' : 'NO aprobado'}${r.complete ? ' y completo' : ''}: HEAD ${record.head.slice(0, 7)}, ` +
+        `fallidas [${r.failed.join(', ')}], pendientes [${r.pending.join(', ')}], no evaluadas [${r.unevaluated.join(', ')}]${r.aborted ? `, ${r.aborted}` : ''}. ${recordPath}`,
+    );
+    return r.passed ? 0 : 1;
+  } finally {
+    signals.dispose();
+  }
 }
 
 main().then(

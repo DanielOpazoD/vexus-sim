@@ -10578,22 +10578,26 @@ sustitución s0028). Sin cambio de producto: 38 programas × 2 variantes y 85 co
 del build idénticos salvo su procedencia (commit y hora; 1.061.770 B); en `src/validation` el registro costaba +4.657 B
 porque `glslMinify` no renombra lo que aparece en cadenas. No es validación clínica.
 
-**Punto 7** (dieta de tiempo y cierre). El gancho de push corre sólo la capa rápida: `npm run feedback -- --all-fast`
-(formato y lint de lo que cambia frente a `origin/main`, tipos y las 1.936 pruebas rápidas de 277 archivos); las lentas
-(266 pruebas en 33 archivos), matrices, cobertura, build y E2E quedan en `check` y en la CI con recibo. Medido alternando
-(ABBA) con la misma carga, 15–18 al empezar (no hubo ventana sin carga ajena en la jornada): gancho anterior (tipos +
-rápidas) 119 y 113 s, nuevo 122 y 120 s, dentro del tope de 180 s; con formato y lint de todo el repo había costado 265 s. Un push que sólo borra ramas no corre
-nada (0,02 s).
-Capas con presupuesto (`tools/ci/testTiers.ts`, regla única del marcador `// @tier slow`): cada archivo rápido ≤ 49 s con
-un trabajador, el doble del más lento medido (`equivalenceSweep`, 24,5 s). Un tiempo sólo vale con carga ≤ 5: con 4
-núcleos de rendimiento, la capa rápida serial pasó de 395 s (carga 4,9) a 541 s (carga 12), con inflación muy desigual
-por archivo; por encima, el presupuesto se declara no evaluable, nunca cumplido ni incumplido. Ninguna prueba cambia de
-capa: el gancho cabe sin moverlas, y lo que lo tumba con carga ajena son pruebas individuales cerca del plazo de 60 s
-(con carga 45, 43 s una de `s0028SolidsClassify`), que no se amplía. `npm run closure` sustituye los scripts de cierre
-de cada ronda: etapas nombradas, `nice` y un trabajador, `push-hook` como un push real con su presupuesto, carga y modo
-de energía por etapa, `--resume`, `--checkout`, `closure.json` y líneas «Cierre»; deja en cada cierre los quince archivos
-más lentos por capa. `check` no cambia de composición: 62 min en serie en el cierre del punto 8 (75–86 min en los cierres
-de P2 r2b-U y P3 r2, con más carga). Ningún archivo de producto cambia.
+**Punto 7** (dieta de tiempo y cierre). El gancho de push corre la capa rápida mediante `npm run feedback -- --all-fast`:
+formato/lint de lo cambiado frente a `origin/main` (incluidos nuevos sin seguimiento), tipos y todas las pruebas rápidas.
+Lentas, matrices, cobertura, build y E2E siguen en `check` y en la CI con recibo; ninguna prueba cambia de capa. Un push
+que sólo borra ramas no ejecuta la capa rápida (0,02 s). Si falta `origin/main`, bloquea con instrucciones para traer la referencia.
+El ABBA inicial había medido 120–122 s frente a 113–119 s del gancho anterior, pero no acreditaba estabilidad: los cierres
+posteriores fallaron en una prueba de `s0028SolidsClassify` a los 62,8/63,4 s, con plazo 60 s; el de `d580cac` duró 230,2 s
+con carga 7,32 al empezar. Tras la revisión independiente, se limita el pool a la mitad de las plazas disponibles,
+con mínimo uno y máximo cuatro (`VITEST_MAX_WORKERS`; cuatro en este equipo). Se conservan el plazo de 60 s y el archivo
+`s0028SolidsClassify.test.ts`, que modifica otra PR.
+
+Capas con presupuesto (`tools/ci/testTiers.ts`, regla única del marcador en la primera línea): gancho ≤ 180 s y cada
+archivo rápido ≤ 49 s con un trabajador (2 × 24,5 s de `equivalenceSweep`). No se elevan. La capa rápida serial midió
+395 s con carga 4,9 y 541 s con carga 12; la mediana de cocientes entre los 274 archivos emparejados es ×1,16 (×1,06 en
+los 48 cuya base supera 2 s). Con carga > 5 el presupuesto es no evaluable: estado `budget-unavailable`, nunca aprobado.
+`npm run closure` ejecuta las etapas en serie, con `nice` y un trabajador salvo el gancho real, y guarda carga, energía,
+logs y los quince archivos más lentos por capa. `--resume` exige el mismo checkout, HEAD, contenido y definición;
+excluir una etapa fallida conserva el fallo. HEAD y contenido se comprueban antes del veredicto final. Los artefactos
+`.validation/` se copian sólo si se modificaron durante el intento. SIGINT/SIGTERM/SIGHUP cierran el recibo incluso
+durante `--wait-load` y terminan el grupo del hijo. `--checkout` permite acreditar otro checkout sin reutilizar el suyo.
+`check` conserva su composición y la CI protegida sigue siendo la puerta. No cambia el producto ni hay validación clínica.
 
 **Punto 8** (mutantes reproducibles). `tools/mutants/` tiene un manifiesto por módulo (nombre, `from`/`to` exactos con una
 sola aparición, comportamiento que rompe, ronda de origen y pruebas focales) y un ejecutor, `npm run mutants`: corre las

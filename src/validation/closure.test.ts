@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOOK_BUDGET_SECONDS, TIMING_MAX_LOAD } from '../../tools/ci/testTiers';
+import { BUDGET_UNAVAILABLE_EXIT_CODE, HOOK_BUDGET_SECONDS, TIMING_MAX_LOAD } from '../../tools/ci/testTiers';
 import {
   closureStages,
   runClosure,
@@ -157,12 +157,23 @@ describe('Ejecución y reanudación con un ejecutor falso', () => {
       failed: [],
       pending: [],
     });
+    expect(h.saved.at(-2)!.result).toMatchObject({ passed: false, headUnchanged: null });
     // Sin las E2E opcionales el cierre es completo; las etapas excluidas quedan declaradas.
     expect(record.stages.filter((s) => s.status === 'excluded').map((s) => s.name)).toEqual(['e2e-swiftshader', 'e2e-metal']);
     expect(record.exclusions.python).toEqual(config.pythonExcluded);
     expect(h.progress[0]).toMatch(/^- Cierre prettier: código 0; HEAD aaaaaaa; 2 s; intento 1; carga antes «1\.50 2\.00 3\.00», /);
     expect(h.progress[0]).toContain('máx. durante 4.00; bajo consumo sí; log logs/prettier-1.log.');
     expect(record.stages.find((s) => s.name === 'check')!.current!.load.during).toEqual({ samples: 2, max: 4, mean: 3 });
+  });
+
+  it.each(['skip', 'only'] as const)('--resume --%s no oculta una etapa antes fallida', async (filter) => {
+    const failed = await runClosure(run(null), harness({ outcomes: { check: [{ exitCode: 1 }] } }).deps);
+    const opts = { only: filter === 'only' ? ['lint'] : [], skip: filter === 'skip' ? ['check'] : [], requested: [] };
+    const h = harness();
+    const resumed = await runClosure(run(failed, { ...opts, selection: selectStages(all, opts) }), h.deps);
+    expect(h.calls).toEqual([]);
+    expect(resumed.result).toMatchObject({ passed: false, complete: false, failed: ['check'] });
+    expect(resumed.stages.find((s) => s.name === 'check')).toMatchObject({ status: 'failed', current: { exitCode: 1 } });
   });
 
   it('una etapa fallida no detiene el cierre; --resume corre sólo lo no aprobado y conserva el intento previo', async () => {
@@ -213,6 +224,19 @@ describe('Ejecución y reanudación con un ejecutor falso', () => {
     await expect(runClosure(run(done), edited.deps)).rejects.toThrow('contenido del checkout cambió');
     await expect(runClosure(run(null, { resume: true }), harness().deps)).rejects.toThrow('No hay closure.json');
     await expect(runClosure(run(done, { resume: false }), harness().deps)).rejects.toThrow('ya tiene closure.json');
+    await expect(runClosure(run(done, { checkout: '/otro-clon' }), harness().deps)).rejects.toThrow('otro checkout');
+  });
+
+  it('un cambio de HEAD en la última etapa tampoco aprueba, aunque no quede otra etapa donde abortar', async () => {
+    const h = harness();
+    const execute = h.deps.execute.bind(h.deps);
+    h.deps.execute = async (stage) => {
+      const result = await execute(stage);
+      h.state.head = 'b'.repeat(40);
+      return result;
+    };
+    const record = await runClosure(run(null, { selection: selectStages(all, { only: ['lint'], skip: [], requested: [] }) }), h.deps);
+    expect(record.result).toMatchObject({ passed: false, complete: false, headUnchanged: false, aborted: null });
   });
 
   it('árbol sucio: rechazado salvo --allow-dirty, que queda declarado', async () => {
@@ -252,7 +276,16 @@ describe('Ejecución y reanudación con un ejecutor falso', () => {
     const only = { selection: selectStages(all, { only: ['push-hook'], skip: [], requested: [] }), only: ['push-hook'] };
     const loaded = harness({ loads: [TIMING_MAX_LOAD + 4], outcomes: { 'push-hook': [{ seconds: HOOK_BUDGET_SECONDS + 60 }] } });
     const busy = await runClosure(run(null, only), loaded.deps);
-    expect(busy.stages.find((s) => s.name === 'push-hook')!.current).toMatchObject({ status: 'passed', budgetEvaluated: false });
+    expect(busy.stages.find((s) => s.name === 'push-hook')!.current).toMatchObject({
+      status: 'budget-unavailable',
+      budgetEvaluated: false,
+    });
+    expect(busy.result).toMatchObject({ passed: false, complete: false, unevaluated: ['push-hook'] });
+    const skipped = await runClosure(
+      run(busy, { selection: selectStages(all, { only: ['lint'], skip: [], requested: [] }) }),
+      harness().deps,
+    );
+    expect(skipped.result.passed).toBe(false);
     expect(loaded.progress[0]).toContain(
       `(presupuesto ${HOOK_BUDGET_SECONDS} s no evaluable: carga ${(TIMING_MAX_LOAD + 4).toFixed(2)} al empezar)`,
     );
@@ -269,6 +302,19 @@ describe('Ejecución y reanudación con un ejecutor falso', () => {
     const late = await runClosure(run(null, { ...only, waitLoad: 15, maxWaitMinutes: 1 }), capped.deps);
     expect(capped.waits).toEqual([30_000, 30_000]);
     expect(late.stages.find((s) => s.name === 'lint')!.current).toMatchObject({ waitedSeconds: 60, waitTimedOut: true, status: 'passed' });
+  });
+
+  it('un informe de capa con presupuesto no evaluable tampoco cuenta como aprobado', async () => {
+    const first = harness({ outcomes: { 'tests-fast': [{ exitCode: BUDGET_UNAVAILABLE_EXIT_CODE }] } });
+    const record = await runClosure(run(null), first.deps);
+    expect(record.result).toMatchObject({ passed: false, complete: false, failed: [], unevaluated: ['tests-fast'] });
+    expect(record.stages.find((s) => s.name === 'tests-fast')!.current).toMatchObject({
+      status: 'budget-unavailable',
+      budgetEvaluated: false,
+    });
+    const second = harness();
+    expect((await runClosure(run(record), second.deps)).result.passed).toBe(true);
+    expect(second.calls.map((s) => s.name)).toEqual(['tests-fast']);
   });
 
   it('--fail-fast se detiene; una interrupción siempre detiene; un error del ejecutor queda como fallo sin código', async () => {

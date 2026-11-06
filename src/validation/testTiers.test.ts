@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { EXHAUSTIVE_MATRIX_FILES } from '../../tools/ci/coveragePartition';
-import { SLOW_MARKER, testFiles, testTierFiles, tierBudgetViolations, tierTimings, type VitestJsonReport } from '../../tools/ci/testTiers';
+import {
+  SLOW_MARKER,
+  testFiles,
+  testTierFiles,
+  tierOf,
+  tierBudgetViolations,
+  tierTimings,
+  type VitestJsonReport,
+} from '../../tools/ci/testTiers';
 
 /** Capas de prueba y gancho de push de la decisión 322 (punto 7). */
 const root = join(import.meta.dirname, '../..');
@@ -22,6 +30,11 @@ describe('Capas de prueba', () => {
     // Este archivo nombra el marcador en sus pruebas, no en su primera línea.
     expect(misplaced.filter((m) => !m.startsWith('src/validation/testTiers.test.ts:'))).toEqual([]);
     expect(SLOW_MARKER).toBe('// @tier slow');
+    expect(tierOf('// @tier slow\nconst test = 1;')).toBe('slow');
+    expect(tierOf('  // @tier slow\r\nconst test = 1;')).toBe('slow');
+    expect(tierOf('// explicación\n// @tier slow\n')).toBe('fast');
+    expect(tierOf('\n// @tier slow\n')).toBe('fast');
+    expect(tierOf('// @tier slower\n')).toBe('fast');
   });
 
   it('las dos capas parten la colección y las matrices exhaustivas quedan fuera de la capa rápida', () => {

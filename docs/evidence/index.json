@@ -1146,6 +1146,36 @@
    ]
   },
   {
+   "id": "structure-322-p3-impl-default-ceiling-20261106-budget-json",
+   "path": "structure-322/p3-impl/default-ceiling-20261106/budget.json",
+   "kind": "file",
+   "bytes": 572,
+   "sha256": "f3176b21cb284650324fef81e344c20f1607c854cb99bfaa0507dc47e97dbf9c",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-default-ceiling-20261106-red-log",
+   "path": "structure-322/p3-impl/default-ceiling-20261106/red.log",
+   "kind": "file",
+   "bytes": 5675,
+   "sha256": "d008957b2132607236a91195485627dc846bb308a928bb2582be7ae08bd107ad",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
    "id": "structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json",
    "path": "structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json",
    "kind": "file",

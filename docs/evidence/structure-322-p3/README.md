@@ -2,7 +2,7 @@
 
 Base funcional: r3 `5d79321`. La revisión independiente de `15733a8` encontró dos fallos: el rechazo del import CPU del Worker no se mostraba y 35/39 programas transformados cambiaban frente a main. Esta corrección rebasa sólo los commits propios sobre `8ed26cf` (#338 y #340 fusionadas), regenera la ABI desde esa base limpia y muestra el error del Worker. Este recibo acredita pruebas locales; la nueva CI protegida y la revisión independiente siguen siendo la puerta de aceptación. No es validación clínica.
 
-El propietario pausa la instalación de nuevas fases s0028. Este cierre recupera **41.182 B de JS default frente a main `8ed26cf`** (41.255 B frente a r3), dejando **41.475 B hasta el techo histórico de 1.070.080 B** para mejoras del default; su guarda actual de 1.029.568 B conserva una reserva inmediata de 963 B.
+El propietario pausa la instalación de nuevas fases s0028. Este cierre recupera **41.182 B de JS default frente a main `8ed26cf`** (41.255 B frente a r3), dejando **41.475 B de margen para mejoras del default**. Por decisión del propietario, ambas clausuras conservan el techo de main de **1.070.080 B**; se rectifica la reducción provisional del default. Las pruebas aceptan exactamente ese límite y rechazan 1.070.081 B en cualquiera de las dos personas. [Medición de los dos presupuestos](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-budget-json); [negativo del techo reducido](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-red-log).
 
 ## Clausuras de JavaScript
 
@@ -10,7 +10,7 @@ Se incluyen imports estáticos y diferidos, hooks, preloads HTML, Worker y workl
 
 | Medida               |        r3 | Main `8ed26cf` |   Después |     Techo | Margen |
 | -------------------- | --------: | -------------: | --------: | --------: | -----: |
-| Default              | 1.069.860 |      1.069.787 | 1.028.605 | 1.029.568 |    963 |
+| Default              | 1.069.860 |      1.069.787 | 1.028.605 | 1.070.080 | 41.475 |
 | s0028                | 1.069.860 |      1.069.787 | 1.066.305 | 1.070.080 |  3.775 |
 | Unión de ambas rutas | 1.069.860 |      1.069.787 | 1.078.547 |         — |      — |
 | Compartido           | 1.069.860 |      1.069.787 | 1.016.363 |         — |      — |
@@ -21,7 +21,7 @@ Descarga: 20.433.526 / 25.000.000 B. Incremento de metadatos: 3.788 / 4.096 B. N
 
 ## Paridad y pruebas
 
-Los 38 fragmentos y el vértice conservan los hashes de **main `8ed26cf`**, de fuente y transformados, para default y s0028 (39/39 en cada comparación). La ABI anterior de r3 daba 4/39 transformados iguales a main; se conserva ese negativo. Un símbolo/uniform privado añadido no altera default. Fixture completa: [person-shaders-main.json](../../../src/validation/fixtures/person-shaders-main.json); mapa ABI con SHA de origen: [person-glsl-abi.json](../../../tools/build/fixtures/person-glsl-abi.json). [Recibo de las correcciones](review-fixes.json).
+Los 38 fragmentos y el vértice conservan los hashes de **main `8ed26cf`**, de fuente y transformados, para default y s0028 (39/39 en cada comparación). La ABI anterior de r3 daba 4/39 transformados iguales a main; se conserva ese negativo. Un símbolo/uniform privado añadido no altera default. Fixture completa: [person-shaders-main.json](../../../src/validation/fixtures/person-shaders-main.json); mapa ABI con SHA de origen: [person-glsl-abi.json](../../../tools/build/fixtures/person-glsl-abi.json). [Recibo histórico de las correcciones](review-fixes.json), anterior a la restitución del techo default de main; las cifras vigentes están en [clausuras y hashes](closures.json).
 
 Paridad default exacta: 82.251 puntos, 10 marcos y 30 contactos. SHA-256:
 
@@ -74,4 +74,4 @@ Se conservan los registros iniciales fallidos, trazas y reportes de las corridas
 
 Los JSON pequeños de esta carpeta permiten revisar las cifras. Los registros completos están en la carpeta externa de evidencia `structure-322/p3-impl`, con `progress.md`, comandos, hashes, negativos, trazas y recibos de GPU/Worker.
 
-La actualización de P9 conserva los párrafos de la 322 por número y la 323 después. Las cifras de las clausuras anteriores a la revisión (1.027.918 B y 1.065.618 B) quedan en `review-fixes.json`; ningún techo crece. La [captura final del aviso](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png) y la [comparación completa de hashes](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json) se registran por el índice de evidencia.
+La actualización de P9 conserva los párrafos de la 322 por número y la 323 después. Las cifras de las clausuras anteriores a la revisión (1.027.918 B y 1.065.618 B) quedan en `review-fixes.json`; sus techos reducidos son históricos y ambas clausuras conservan ahora el techo de main. La [captura final del aviso](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png) y la [comparación completa de hashes](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json) se registran por el índice de evidencia.

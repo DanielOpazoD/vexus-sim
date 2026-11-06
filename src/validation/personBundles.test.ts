@@ -4,6 +4,7 @@ import {
   DEFAULT_JS_BUDGET,
   measurePersonBundles,
   PERSON_JS_CEILING,
+  S0028_JS_BUDGET,
   type PersonBundleGraph,
   type PersonChunk,
 } from '../../tools/ci/personBundles';
@@ -66,11 +67,18 @@ describe('clausuras completas por persona', () => {
     expect(result.s0028.bytes).toBe(86);
     expect(result.totalJsBytes).toBe(106);
   });
-  it.each(['default', 's0028'] as const)('rechaza +1 B sobre el techo %s', (person) => {
+  it('conserva el techo JS de main para las dos personas', () => {
+    expect(DEFAULT_JS_BUDGET).toBe(1_070_080);
+    expect(S0028_JS_BUDGET).toBe(1_070_080);
+    expect(PERSON_JS_CEILING).toBe(1_070_080);
+  });
+  it.each(['default', 's0028'] as const)('acepta el techo de main y rechaza +1 B en %s', (person) => {
     const g = fixture();
-    const ceiling = person === 'default' ? DEFAULT_JS_BUDGET : PERSON_JS_CEILING;
-    g.chunks.find((c) => c.file === (person === 'default' ? 'current.js' : 'private.js'))!.bytes +=
-      ceiling - (person === 'default' ? 36 : 86) + 1;
+    const ceiling = 1_070_080;
+    const chunk = g.chunks.find((c) => c.file === (person === 'default' ? 'current.js' : 'private.js'))!;
+    chunk.bytes += ceiling - (person === 'default' ? 36 : 86);
+    expect(measurePersonBundles(g)[person]).toMatchObject({ bytes: ceiling, ceiling, margin: 0 });
+    chunk.bytes += 1;
     expect(() => measurePersonBundles(g)).toThrow(`${person}: ${ceiling + 1} B`);
   });
   it.each(['worker.js', 'worklet.js'])('rechaza omitir %s', (file) => {
@@ -106,10 +114,10 @@ describe('clausuras completas por persona', () => {
     g.chunks[0].modules.push('src/anatomy/people/s0028/cpu.ts');
     expect(() => measurePersonBundles(g)).toThrow('CPU/módulo duplicado');
   });
-  it('no permite ampliar ningún techo', () => {
-    expect(() => measurePersonBundles(fixture(), { default: PERSON_JS_CEILING, s0028: PERSON_JS_CEILING + 1 })).toThrow(
-      'Techo de persona ampliado',
-    );
+  it.each(['default', 's0028'] as const)('no permite ampliar el techo %s', (person) => {
+    const limits = { default: PERSON_JS_CEILING, s0028: PERSON_JS_CEILING };
+    limits[person] += 1;
+    expect(() => measurePersonBundles(fixture(), limits)).toThrow('Techo de persona ampliado');
   });
   it('rechaza una dependencia GPU en la entrada CPU del Worker', () => {
     const g = fixture();

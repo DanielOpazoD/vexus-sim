@@ -7,27 +7,27 @@
     "union": 1069860
   },
   "after": {
-    "graphSha256": "8f40849d45af434818ac8445a2c365d55efb23360929b20548ef701bf2fcd109",
+    "graphSha256": "7d872d6f76f9160ba119a57b07006235ea9665a70304713acca8f12231eb82a3",
     "default": {
       "bytes": 1028605,
-      "margin": 963,
-      "ceiling": 1029568,
+      "margin": 41475,
+      "ceiling": 1070080,
       "files": [
         "assets/anatomy.glsl-BXC9pSRH.js",
         "assets/anatomyScene-B8qHU6c9.js",
-        "assets/bootstrap-yRIWQXBg.js",
+        "assets/bootstrap-BktXfcHJ.js",
         "assets/cpu-Bp1VtQJR.js",
-        "assets/cutMapView-CRcXmmsr.js",
+        "assets/cutMapView-D_hiznBw.js",
         "assets/cutMapWorker-Bc3yMmfi.js",
         "assets/deformation-BjRR9F6i.js",
         "assets/gatePlacement-BKbuvxMv.js",
         "assets/gateTransmission-B1EEn-WH.js",
-        "assets/index-B02be-Sc.js",
+        "assets/index-CM0P2fO-.js",
         "assets/loadPinnedAsset-DAtuIsXb.js",
-        "assets/navigator3d-3Mfo_iIV.js",
+        "assets/navigator3d-BkN1kaZt.js",
         "assets/personAssets-Doo4e92b.js",
         "assets/preload-helper-CZsVA0r5.js",
-        "assets/pwMeasurements-DqV3UJgP.js",
+        "assets/pwMeasurements-Cxi7z5go.js",
         "assets/query-CZXLoyfE.js",
         "assets/retroperitoneum-B6bv0fgp.js",
         "assets/runtime-BzaqoGWY.js",
@@ -36,8 +36,8 @@
         "assets/startPoints-J0RsCXWp.js",
         "assets/structureIdentity-B3L48vgX.js",
         "assets/surfaces-D-As3fAw.js",
-        "assets/teacherTab-CD2_kYV8.js",
-        "assets/testHooks-BOMQ4_Hj.js",
+        "assets/teacherTab-CAtU2wXT.js",
+        "assets/testHooks-Bx96o0yO.js",
         "assets/thoracicSurfaceData-CpIQN-cX.js",
         "assets/three-BQ-1owfN.js",
         "assets/units-CmjDNvh2.js",
@@ -52,19 +52,19 @@
       "files": [
         "assets/anatomy.glsl-BXC9pSRH.js",
         "assets/anatomyScene-B8qHU6c9.js",
-        "assets/bootstrap-yRIWQXBg.js",
+        "assets/bootstrap-BktXfcHJ.js",
         "assets/cpu-DUuGDKQA.js",
-        "assets/cutMapView-CRcXmmsr.js",
+        "assets/cutMapView-D_hiznBw.js",
         "assets/cutMapWorker-Bc3yMmfi.js",
         "assets/deformation-BjRR9F6i.js",
         "assets/gatePlacement-BKbuvxMv.js",
         "assets/gateTransmission-B1EEn-WH.js",
-        "assets/index-B02be-Sc.js",
+        "assets/index-CM0P2fO-.js",
         "assets/loadPinnedAsset-DAtuIsXb.js",
-        "assets/navigator3d-3Mfo_iIV.js",
+        "assets/navigator3d-BkN1kaZt.js",
         "assets/personAssets-Doo4e92b.js",
         "assets/preload-helper-CZsVA0r5.js",
-        "assets/pwMeasurements-DqV3UJgP.js",
+        "assets/pwMeasurements-Cxi7z5go.js",
         "assets/query-CZXLoyfE.js",
         "assets/retroperitoneum-B6bv0fgp.js",
         "assets/runtime-BaskhOzv.js",
@@ -73,8 +73,8 @@
         "assets/startPoints-J0RsCXWp.js",
         "assets/structureIdentity-B3L48vgX.js",
         "assets/surfaces-BQxOQC-z.js",
-        "assets/teacherTab-CD2_kYV8.js",
-        "assets/testHooks-BOMQ4_Hj.js",
+        "assets/teacherTab-CAtU2wXT.js",
+        "assets/testHooks-Bx96o0yO.js",
         "assets/thoracicSurfaceData-CpIQN-cX.js",
         "assets/three-BQ-1owfN.js",
         "assets/units-CmjDNvh2.js",
@@ -85,8 +85,8 @@
     "worker": {
       "default": {
         "bytes": 158066,
-        "margin": 871502,
-        "ceiling": 1029568,
+        "margin": 912014,
+        "ceiling": 1070080,
         "files": [
           "assets/anatomyScene-B8qHU6c9.js",
           "assets/cpu-Bp1VtQJR.js",
@@ -133,19 +133,35 @@
         "src/anatomy/people/default/classifier.ts",
         "src/anatomy/people/default/cpu.ts",
         "src/anatomy/people/default/kidneyInterior.ts"
-      ]
+      ],
+      "imports": [
+        "assets/vesselTree-tpt1t5fZ.js",
+        "assets/personAssets-Doo4e92b.js",
+        "assets/retroperitoneum-B6bv0fgp.js",
+        "assets/anatomyScene-B8qHU6c9.js"
+      ],
+      "dynamicImports": []
     },
     {
       "file": "assets/runtime-BzaqoGWY.js",
       "bytes": 1631,
       "sha256": "96a099a3719ed7785a8a25c24a2cb403e707098aac217de2b51416743ad25e7d",
-      "modules": ["src/anatomy/people/default/runtime.ts"]
+      "modules": ["src/anatomy/people/default/runtime.ts"],
+      "imports": [
+        "assets/preload-helper-CZsVA0r5.js",
+        "assets/vesselTree-tpt1t5fZ.js",
+        "assets/cpu-Bp1VtQJR.js",
+        "assets/loadPinnedAsset-DAtuIsXb.js"
+      ],
+      "dynamicImports": ["assets/surfaces-D-As3fAw.js"]
     },
     {
       "file": "assets/surfaces-D-As3fAw.js",
       "bytes": 485,
       "sha256": "7e2e65f287527efde0e503b9c8315b6fe068c70465604560eb541056aa32d0d5",
-      "modules": ["src/anatomy/people/default/surfaces.ts"]
+      "modules": ["src/anatomy/people/default/surfaces.ts"],
+      "imports": ["assets/loadPinnedAsset-DAtuIsXb.js", "assets/thoracicSurfaceData-CpIQN-cX.js"],
+      "dynamicImports": []
     }
   ],
   "privateDefaultModules": [],
@@ -159,5 +175,5 @@
     "default": 1027918,
     "s0028": 1065618
   },
-  "measurementScope": "build de la correcci\u00f3n, checkout c7b7852 con cambios de integraci\u00f3n P9; el cierre final se registra fuera de Git"
+  "measurementScope": "build de la rectificación del techo default, checkout 5e775ea con cambios de presupuesto; ambas personas conservan el techo de main; el cierre final se registra fuera de Git"
 }

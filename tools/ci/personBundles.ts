@@ -20,8 +20,8 @@ export interface PersonBundleGraph {
 }
 
 export const PERSON_JS_CEILING = TOTAL_JS_BUDGET;
-// Medido tras corregir Worker/ABI main: 1.028.605 B; reserva de 963 B. Ningún techo sube.
-export const DEFAULT_JS_BUDGET = 1_029_568;
+// Ambas conservan el techo de main: el margen liberado queda disponible para la anatomía default (322.3).
+export const DEFAULT_JS_BUDGET = PERSON_JS_CEILING;
 export const S0028_JS_BUDGET = PERSON_JS_CEILING;
 
 export function measurePersonBundles(graph: PersonBundleGraph, limits = { default: DEFAULT_JS_BUDGET, s0028: S0028_JS_BUDGET }) {

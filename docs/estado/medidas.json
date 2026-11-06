@@ -373,7 +373,7 @@
   },
   {
    "what": "JS clausura default (Workers y ganchos incluidos)",
-   "limit": 1029568,
+   "limit": 1070080,
    "unit": "B",
    "decision": 322,
    "source": "tools/ci/personBundles.ts",

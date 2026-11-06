@@ -72,7 +72,7 @@ Medido en el candidato basado en main `8ed26cf` el 2026-11-06 con `tools/docs/es
 | `three.js`                                          |     385.024 |     369.107 |     15.917 | B        | 307      | `tools/ci/bundleBudgets.ts`            |
 | `units.js`                                          |     122.880 |         388 |    122.492 | B        | —        | `tools/ci/bundleBudgets.ts`            |
 | `vesselTree.js`                                     |     122.880 |     109.011 |     13.869 | B        | —        | `tools/ci/bundleBudgets.ts`            |
-| JS clausura default (Workers y ganchos incluidos)   |   1.029.568 |   1.028.605 |        963 | B        | 322      | `tools/ci/personBundles.ts`            |
+| JS clausura default (Workers y ganchos incluidos)   |   1.070.080 |   1.028.605 |     41.475 | B        | 322      | `tools/ci/personBundles.ts`            |
 | JS clausura s0028 (Workers y ganchos incluidos)     |   1.070.080 |   1.066.305 |       3775 | B        | 322      | `tools/ci/personBundles.ts`            |
 | Descarga del paquete s0028 (gzip)                   |  25.000.000 |  20.433.526 |  4.566.474 | B        | 318      | `src/anatomy/people/s0028/surfaces.ts` |
 | Cada `.gzip` fijado del paquete s0028 (por archivo) |  19.510.002 |   8.567.375 | 10.942.627 | B        | 317      | `src/anatomy/people/s0028/runtime.ts`  |

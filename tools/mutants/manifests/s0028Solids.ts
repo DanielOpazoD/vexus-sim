@@ -12,10 +12,10 @@ export const s0028Solids: MutantManifest = {
   mutants: [
     {
       name: 'conflicto-por-precedencia',
-      origin: 'P3 r2 (decisión 321)',
+      origin: 'P3 r2 (decisión 321); reanclado tras la cara renal de r3',
       breaks: 'Dos dueños se resuelven por el orden de la tabla (gana el primero) en vez de quedar en conflicto con todos conservados.',
-      from: "  return { state: owners.length > 1 ? 'conflict' : owners.length ? 'known' : 'U', owners };",
-      to: "  return { state: owners.length ? 'known' : 'U', owners: owners.slice(0, 1) };",
+      from: "  return { state: owners.length > 1 ? 'conflict' : owners.length ? 'known' : 'U', owners, kidneyMm };",
+      to: "  return { state: owners.length ? 'known' : 'U', owners: owners.slice(0, 1), kidneyMm };",
       tests: ['src/validation/s0028SolidsClassify.test.ts'],
     },
     {

@@ -22,9 +22,9 @@ export const scene: MutantManifest = {
     },
     {
       name: 'rinon-analitico-de-otra-persona',
-      origin: 'P3 r2 (decisión 321)',
+      origin: 'P3 r2 (decisión 321); reanclado tras la cara renal de r3',
       breaks: 's0028 recupera los riñones analíticos de la otra persona (arquitectura, estiramiento W 0,8 y grasa perirrenal).',
-      from: "    if (renal)\n      return {\n        ...NONE,\n        tissue: owner === 'kidney_cyst_left' ? Tissue.Fluid : Tissue.UnsegmentedSoftTissue,\n        boundaryDistance: -solids!.owners[0].d,\n      };\n    const kidney = isS0028 ? NO_KIDNEY : this.classifyKidneys(m);",
+      from: "    if (renal)\n      return renalFace(\n        {\n          ...NONE,\n          tissue: owner === 'kidney_cyst_left' ? Tissue.Fluid : Tissue.UnsegmentedSoftTissue,\n          boundaryDistance: -solids!.owners[0].d,\n        },\n        solids!,\n      );\n    const kidney = isS0028 ? NO_KIDNEY : this.classifyKidneys(m);",
       to: '    const kidney = this.classifyKidneys(m);',
       tests: ['src/validation/s0028SolidsClassify.test.ts'],
     },
@@ -38,10 +38,10 @@ export const scene: MutantManifest = {
     },
     {
       name: 'U-pared-como-musculo',
-      origin: 'P3 r2 (decisión 321)',
+      origin: 'P3 r2 (decisión 321); reanclado tras la cara renal de r3',
       breaks: 'La pared U, sin cara interna demostrada, se clasifica como músculo.',
-      from: "      return { ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' };",
-      to: "      return { ...NONE, tissue: Tissue.Muscle, boundaryDistance: 0, wall: 'U' };",
+      from: "      return renalFace({ ...NONE, tissue: Tissue.UnsegmentedSoftTissue, boundaryDistance: 0, wall: 'U' }, solids!);",
+      to: "      return renalFace({ ...NONE, tissue: Tissue.Muscle, boundaryDistance: 0, wall: 'U' }, solids!);",
       tests: ['src/validation/s0028SolidsClassify.test.ts', 'src/validation/s0028WallRuntime.test.ts'],
     },
     {

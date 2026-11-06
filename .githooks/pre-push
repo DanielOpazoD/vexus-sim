@@ -22,7 +22,8 @@ hook_index=$(git write-tree)
 hook_config=$(git hash-object "$(git rev-parse --git-common-dir)/config")
 hook_start=$(date +%s)
 # Acota la contención del pool: la mitad de las plazas disponibles, como máximo cuatro. No cambia plazos ni capas.
-VITEST_MAX_WORKERS=$(node -p 'Math.max(1, Math.min(4, Math.floor(require("node:os").availableParallelism() / 2)))')
+# Un límite explícito menor (p. ej. VITEST_MAX_WORKERS=3) se conserva.
+VITEST_MAX_WORKERS=$(node -p 'const requested = Number(process.env.VITEST_MAX_WORKERS); Math.max(1, Math.min(4, Math.floor(require("node:os").availableParallelism() / 2), Number.isInteger(requested) && requested > 0 ? requested : 4))')
 export VITEST_MAX_WORKERS
 echo "Gancho: VITEST_MAX_WORKERS=$VITEST_MAX_WORKERS."
 npm run feedback --silent -- --all-fast

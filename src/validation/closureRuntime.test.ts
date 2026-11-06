@@ -53,15 +53,35 @@ describe('Evidencia y procesos reales del cierre', () => {
   it('SIGHUP durante una etapa termina también el nieto que ignora la señal', async () => {
     await signalFixture('SIGHUP', false);
   });
+  it.each(['EPERM', 'ESRCH', 'EIO'])('SIGHUP con kill %s finaliza el recibo y conserva la interrupción', async (code) => {
+    await signalFixture('SIGHUP', false, code);
+  });
 });
 
-async function signalFixture(signal: NodeJS.Signals, waiting: boolean): Promise<void> {
+async function signalFixture(signal: NodeJS.Signals, waiting: boolean, killError?: string): Promise<void> {
   const dir = mkdtempSync(join(tmpdir(), 'vexus-closure-signal-'));
   const checkout = join(dir, 'checkout');
   const evidence = join(dir, 'evidence');
   const output = join(dir, 'output.log');
   const pids = join(dir, 'pids.json');
   const ready = join(dir, 'ready');
+  const injected = join(dir, 'kill-error');
+  const preload = join(dir, 'kill-error.mjs');
+  if (killError)
+    writeFileSync(
+      preload,
+      `import { writeFileSync } from 'node:fs';
+const kill = process.kill.bind(process);
+process.kill = (pid, signal) => {
+  if (pid < 0 && signal === 'SIGKILL') {
+    // Termina primero los procesos del fixture; sólo simula el error devuelto al cierre.
+    try { kill(pid, signal); } catch (error) { if (!['ESRCH', 'EPERM'].includes(error.code)) throw error; }
+    writeFileSync(${JSON.stringify(injected)}, ${JSON.stringify(killError)});
+    throw Object.assign(new Error('kill ${killError} inyectado'), { code: '${killError}' });
+  }
+  return kill(pid, signal);
+};\n`,
+    );
   const env = {
     ...feedbackGitEnvironment(),
     FIXTURE_PIDS: pids,
@@ -87,6 +107,7 @@ async function signalFixture(signal: NodeJS.Signals, waiting: boolean): Promise<
   const child = spawn(
     process.execPath,
     [
+      ...(killError ? ['--import', preload] : []),
       '--import',
       'tsx',
       tool,
@@ -108,16 +129,21 @@ async function signalFixture(signal: NodeJS.Signals, waiting: boolean): Promise<
     await until(() => (waiting ? readFileSync(output, 'utf8').includes('espera carga') : existsSync(ready)));
     child.kill(signal);
     await until(() => child.exitCode !== null || child.signalCode !== null);
-    expect(await ended, readFileSync(output, 'utf8')).toBe(1);
+    const exitCode = await ended;
     const record = JSON.parse(readFileSync(join(evidence, 'closure.json'), 'utf8')) as ClosureRecord;
+    if (killError) expect(readFileSync(injected, 'utf8')).toBe(killError);
     expect(record.endedUtc).not.toBeNull();
     expect(record.result).toMatchObject({ passed: false, complete: false });
     expect(record.result.aborted).not.toBeNull();
+    expect(exitCode, readFileSync(output, 'utf8')).toBe(1);
     if (waiting) {
       expect(record.result.aborted).toContain(signal);
       expect(record.stages[0]).toMatchObject({ status: 'pending', current: null });
     } else {
       expect(record.stages[0].current).toMatchObject({ status: 'interrupted', signal });
+      // Los errores inesperados también finalizan el recibo, pero no se ocultan como grupo desaparecido.
+      if (killError === 'EIO') expect(record.stages[0].current!.error).toContain('kill EIO inyectado');
+      else expect(record.stages[0].current!.error).toBeNull();
       const descendants = JSON.parse(readFileSync(pids, 'utf8')) as number[];
       await until(() => descendants.every((pid) => !alive(pid)));
     }

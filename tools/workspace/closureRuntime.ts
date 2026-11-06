@@ -46,7 +46,9 @@ export function spawnLogged(
         if (grouped) process.kill(-child.pid, requested);
         else child.kill(requested);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
+        // ESRCH/EPERM se tratan como grupo ya inaccesible; no impiden finalizar el recibo.
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== 'ESRCH' && code !== 'EPERM') fail(error instanceof Error ? error : new Error(String(error), { cause: error }));
       }
     };
     const interrupt = () => {

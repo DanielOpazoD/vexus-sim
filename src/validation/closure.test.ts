@@ -141,6 +141,19 @@ describe('Planificador del cierre', () => {
 });
 
 describe('Ejecución y reanudación con un ejecutor falso', () => {
+  it('finaliza el recibo incluso si falla la escritura del progreso después de una etapa interrumpida', async () => {
+    const h = harness({ outcomes: { prettier: [{ exitCode: 129, signal: 'SIGHUP' }] } });
+    h.deps.progress = () => {
+      throw new Error('no se pudo escribir progress.md');
+    };
+    const record = await runClosure(run(null), h.deps);
+    expect(record.endedUtc).not.toBeNull();
+    expect(record.result).toMatchObject({ passed: false, complete: false });
+    expect(record.result.aborted).toContain('no se pudo escribir progress.md');
+    expect(record.stages[0].current).toMatchObject({ exitCode: 129, signal: 'SIGHUP', status: 'interrupted' });
+    expect(h.saved.at(-1)).toEqual(record);
+  });
+
   it('cierre completo: etapas en orden, evidencia por intento, closure.json tras cada etapa y líneas «Cierre»', async () => {
     const h = harness();
     const record = await runClosure(run(null), h.deps);

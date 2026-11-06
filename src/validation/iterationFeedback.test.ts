@@ -93,12 +93,13 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
   const ZERO = '0'.repeat(40),
     SHA = 'a'.repeat(40);
   it.each([
-    ['sólo borrados', `(delete) ${ZERO} refs/heads/x ${SHA}\n(delete) ${ZERO} refs/heads/y ${SHA}\n`, false],
-    ['borrado y publicación', `(delete) ${ZERO} refs/heads/x ${SHA}\nrefs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
-    ['publicación y borrado', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n(delete) ${ZERO} refs/heads/x ${SHA}\n`, true],
-    ['publicación', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true],
-    ['sin líneas', '', true],
-  ])('el gancho real con un push de %s corre la capa rápida: %s', (_case, stdin, runs) => {
+    ['sólo borrados', `(delete) ${ZERO} refs/heads/x ${SHA}\n(delete) ${ZERO} refs/heads/y ${SHA}\n`, false, '999'],
+    ['borrado y publicación', `(delete) ${ZERO} refs/heads/x ${SHA}\nrefs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true, '999'],
+    ['publicación y borrado', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n(delete) ${ZERO} refs/heads/x ${SHA}\n`, true, '999'],
+    ['publicación', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true, '999'],
+    ['publicación con tres trabajadores', `refs/heads/feat ${SHA} refs/heads/feat ${ZERO}\n`, true, '3'],
+    ['sin líneas', '', true, '999'],
+  ])('el gancho real con un push de %s corre la capa rápida: %s', (_case, stdin, runs, requestedWorkers) => {
     // `git push --delete` no publica código: con todas las sha locales en ceros el gancho no corre las ~1.900 pruebas.
     const root = mkdtempSync(join(tmpdir(), 'vexus-hook-delete-'));
     const env = feedbackGitEnvironment();
@@ -121,7 +122,7 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
         cwd: root,
         encoding: 'utf8',
         input: stdin,
-        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_CALLS: calls, VITEST_MAX_WORKERS: '999' },
+        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_CALLS: calls, VITEST_MAX_WORKERS: requestedWorkers },
       });
       expect(result.status, result.stderr).toBe(0);
       expect(existsSync(calls)).toBe(runs);
@@ -131,6 +132,7 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
         expect(workers).toBeGreaterThanOrEqual(1);
         expect(workers).toBeLessThanOrEqual(Math.max(1, Math.floor(availableParallelism() / 2)));
         expect(workers).toBeLessThanOrEqual(4);
+        expect(workers).toBeLessThanOrEqual(Number(requestedWorkers));
       }
     } finally {
       rmSync(root, { recursive: true, force: true });

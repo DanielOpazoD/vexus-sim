@@ -420,120 +420,136 @@ export async function runClosure(run: ClosureRun, deps: ClosureDeps): Promise<Cl
   record.result = summarize(record, selected);
   deps.save(record);
 
-  for (const stage of record.stages) {
-    if (deps.signal?.aborted) {
-      record.result.aborted = `${String(deps.signal.reason)} antes de ${stage.name}`;
-      break;
-    }
-    const def = byName.get(stage.name);
-    if (!def || stage.status !== 'pending') continue;
-    const now0 = deps.state();
-    if (now0.head !== start.head || now0.fingerprint !== start.fingerprint) {
-      record.result.aborted = `el checkout cambió antes de ${stage.name}`;
-      break;
-    }
-    let waited = 0,
-      timedOut = false;
-    const poll = run.pollMs ?? 30_000;
-    if (run.waitLoad !== null)
-      while (!deps.signal?.aborted && deps.sample().load[0] >= run.waitLoad) {
-        if (run.maxWaitMinutes !== null && waited >= run.maxWaitMinutes * 60_000) {
-          timedOut = true;
-          break;
-        }
-        if (waited % (10 * 60_000) === 0) deps.log(`${stage.name}: espera carga < ${run.waitLoad}`);
-        await deps.wait(poll);
-        waited += poll;
+  try {
+    for (const stage of record.stages) {
+      if (deps.signal?.aborted) {
+        record.result.aborted = `${String(deps.signal.reason)} antes de ${stage.name}`;
+        break;
       }
-    if (deps.signal?.aborted) {
-      record.result.aborted = `${String(deps.signal.reason)} durante la espera de ${stage.name}`;
-      break;
-    }
-    const attempt = stage.previousAttempts.length + 1;
-    const startedUtc = now();
-    const prepared: PreparedStage = {
-      name: stage.name,
-      attempt,
-      commands: substitute(def.commands, `${run.evidence}/runs/${stage.name}-${attempt}`),
-      env: def.env ?? {},
-      nice: !def.niceless,
-      log: `logs/${stage.name}-${attempt}.log`,
-      dir: `runs/${stage.name}-${attempt}`,
-      artifacts: def.artifacts ?? [],
-      startedUtc,
-    };
-    const before = deps.sample();
-    deps.log(`START ${stage.name} (intento ${attempt})`);
-    let result: ExecutionResult;
-    try {
-      result = await deps.execute(prepared);
-    } catch (error) {
-      result = { exitCode: null, signal: null, error: error instanceof Error ? error.message : String(error), seconds: 0, loadDuring: [] };
-    }
-    const after = deps.sample();
-    const during = result.loadDuring;
-    const unevaluatedReport = result.exitCode === def.unevaluatedExitCode;
-    const budgetEvaluated = unevaluatedReport
-      ? false
-      : def.budgetSeconds === undefined
-        ? null
-        : def.budgetMaxLoad === undefined || before.load[0] <= def.budgetMaxLoad;
-    const status: StageAttempt['status'] =
-      result.signal !== null
-        ? 'interrupted'
-        : result.exitCode !== 0 && !unevaluatedReport
-          ? 'failed'
-          : budgetEvaluated === false
-            ? 'budget-unavailable'
-            : budgetEvaluated && result.seconds > def.budgetSeconds!
-              ? 'over-budget'
-              : 'passed';
-    stage.current = {
-      attempt,
-      key: stageKey(def),
-      status,
-      exitCode: result.exitCode,
-      signal: result.signal,
-      error: result.error,
-      seconds: Math.round(result.seconds * 10) / 10,
-      startedUtc,
-      endedUtc: now(),
-      waitedSeconds: Math.round(waited / 1000),
-      waitTimedOut: timedOut,
-      budgetEvaluated,
-      log: prepared.log,
-      dir: prepared.dir,
-      argv: prepared.commands,
-      load: {
-        before,
-        after,
-        during: {
-          samples: during.length,
-          max: during.length ? Math.max(...during) : null,
-          mean: during.length ? Math.round((during.reduce((a, b) => a + b, 0) / during.length) * 100) / 100 : null,
+      const def = byName.get(stage.name);
+      if (!def || stage.status !== 'pending') continue;
+      const now0 = deps.state();
+      if (now0.head !== start.head || now0.fingerprint !== start.fingerprint) {
+        record.result.aborted = `el checkout cambió antes de ${stage.name}`;
+        break;
+      }
+      let waited = 0,
+        timedOut = false;
+      const poll = run.pollMs ?? 30_000;
+      if (run.waitLoad !== null)
+        while (!deps.signal?.aborted && deps.sample().load[0] >= run.waitLoad) {
+          if (run.maxWaitMinutes !== null && waited >= run.maxWaitMinutes * 60_000) {
+            timedOut = true;
+            break;
+          }
+          if (waited % (10 * 60_000) === 0) deps.log(`${stage.name}: espera carga < ${run.waitLoad}`);
+          await deps.wait(poll);
+          waited += poll;
+        }
+      if (deps.signal?.aborted) {
+        record.result.aborted = `${String(deps.signal.reason)} durante la espera de ${stage.name}`;
+        break;
+      }
+      const attempt = stage.previousAttempts.length + 1;
+      const startedUtc = now();
+      const prepared: PreparedStage = {
+        name: stage.name,
+        attempt,
+        commands: substitute(def.commands, `${run.evidence}/runs/${stage.name}-${attempt}`),
+        env: def.env ?? {},
+        nice: !def.niceless,
+        log: `logs/${stage.name}-${attempt}.log`,
+        dir: `runs/${stage.name}-${attempt}`,
+        artifacts: def.artifacts ?? [],
+        startedUtc,
+      };
+      const before = deps.sample();
+      deps.log(`START ${stage.name} (intento ${attempt})`);
+      let result: ExecutionResult;
+      try {
+        result = await deps.execute(prepared);
+      } catch (error) {
+        result = {
+          exitCode: null,
+          signal: deps.signal?.aborted ? String(deps.signal.reason) : null,
+          error: error instanceof Error ? error.message : String(error),
+          seconds: 0,
+          loadDuring: [],
+        };
+      }
+      const after = deps.sample();
+      const during = result.loadDuring;
+      const unevaluatedReport = result.exitCode === def.unevaluatedExitCode;
+      const budgetEvaluated = unevaluatedReport
+        ? false
+        : def.budgetSeconds === undefined
+          ? null
+          : def.budgetMaxLoad === undefined || before.load[0] <= def.budgetMaxLoad;
+      const status: StageAttempt['status'] =
+        result.signal !== null
+          ? 'interrupted'
+          : result.exitCode !== 0 && !unevaluatedReport
+            ? 'failed'
+            : budgetEvaluated === false
+              ? 'budget-unavailable'
+              : budgetEvaluated && result.seconds > def.budgetSeconds!
+                ? 'over-budget'
+                : 'passed';
+      stage.current = {
+        attempt,
+        key: stageKey(def),
+        status,
+        exitCode: result.exitCode,
+        signal: result.signal,
+        error: result.error,
+        seconds: Math.round(result.seconds * 10) / 10,
+        startedUtc,
+        endedUtc: now(),
+        waitedSeconds: Math.round(waited / 1000),
+        waitTimedOut: timedOut,
+        budgetEvaluated,
+        log: prepared.log,
+        dir: prepared.dir,
+        argv: prepared.commands,
+        load: {
+          before,
+          after,
+          during: {
+            samples: during.length,
+            max: during.length ? Math.max(...during) : null,
+            mean: during.length ? Math.round((during.reduce((a, b) => a + b, 0) / during.length) * 100) / 100 : null,
+          },
         },
-      },
-    };
-    stage.status = status;
+      };
+      stage.status = status;
+      record.result = summarize(record, selected);
+      deps.save(record);
+      deps.progress(progressLine(record.head, stage));
+      deps.log(`END ${stage.name}: ${status}`);
+      if (status === 'interrupted') {
+        record.result.aborted = `interrumpida en ${stage.name}`;
+        break;
+      }
+      if (run.failFast && status !== 'passed') {
+        record.result.aborted = `--fail-fast tras ${stage.name}`;
+        break;
+      }
+    }
+  } catch (error) {
+    record.result.aborted = `error del cierre: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    try {
+      const end = deps.state();
+      record.result.headUnchanged = end.head === start.head;
+      record.result.fingerprintUnchanged = end.fingerprint === start.fingerprint;
+      record.result.treeCleanAtEnd = end.dirty.length === 0;
+    } catch (error) {
+      record.result.aborted ??= `no se pudo comprobar el checkout: ${error instanceof Error ? error.message : String(error)}`;
+    }
+    if (deps.signal?.aborted) record.result.aborted ??= String(deps.signal.reason);
+    record.endedUtc = now();
     record.result = summarize(record, selected);
     deps.save(record);
-    deps.progress(progressLine(record.head, stage));
-    deps.log(`END ${stage.name}: ${status}`);
-    if (status === 'interrupted') {
-      record.result.aborted = `interrumpida en ${stage.name}`;
-      break;
-    }
-    if (run.failFast && status !== 'passed') {
-      record.result.aborted = `--fail-fast tras ${stage.name}`;
-      break;
-    }
   }
-  const end = deps.state();
-  record.result.headUnchanged = end.head === start.head;
-  record.result.fingerprintUnchanged = end.fingerprint === start.fingerprint;
-  record.result.treeCleanAtEnd = end.dirty.length === 0;
-  record.endedUtc = now();
-  record.result = summarize(record, selected);
-  deps.save(record);
   return record;
 }

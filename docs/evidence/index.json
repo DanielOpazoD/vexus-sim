@@ -1176,6 +1176,21 @@
    ]
   },
   {
+   "id": "structure-322-p3-impl-default-ceiling-20261106-worker-progress-red-log",
+   "path": "structure-322/p3-impl/default-ceiling-20261106/worker-progress-red.log",
+   "kind": "file",
+   "bytes": 4626,
+   "sha256": "b681a9062471ebfaa0029ea519956fcc5cc5f7a8ba69bb664e6dc36c040f1826",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
    "id": "structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json",
    "path": "structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json",
    "kind": "file",

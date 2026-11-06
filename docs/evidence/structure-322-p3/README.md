@@ -4,6 +4,8 @@ Base funcional: r3 `5d79321`. La revisión independiente de `15733a8` encontró 
 
 El propietario pausa la instalación de nuevas fases s0028. Este cierre recupera **41.182 B de JS default frente a main `8ed26cf`** (41.255 B frente a r3), dejando **41.475 B de margen para mejoras del default**. Por decisión del propietario, ambas clausuras conservan el techo de main de **1.070.080 B**; se rectifica la reducción provisional del default. Las pruebas aceptan exactamente ese límite y rechazan 1.070.081 B en cualquiera de las dos personas. [Medición de los dos presupuestos](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-budget-json); [negativo del techo reducido](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-red-log).
 
+El gancho de esta rectificación detectó una expectativa dependiente de la carga en `personWorker`: una fila de más de 16 ms publica `progress`, que la prueba rechazaba. Se conserva el [fallo reproducido con reloj controlado](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-worker-progress-red-log). La prueba comprueba ahora las dos secuencias exactas, con y sin progreso, incluida la fila completada, el último mapa y su identidad; no cambia el Worker ni sus plazos.
+
 ## Clausuras de JavaScript
 
 Se incluyen imports estáticos y diferidos, hooks, preloads HTML, Worker y worklet. Sólo se poda la entrada de la otra persona. Cada archivo se cuenta una vez por ruta; se rechaza cualquier JS huérfano o módulo duplicado. La comprobación relee los bytes finales de `dist` y sus hashes.

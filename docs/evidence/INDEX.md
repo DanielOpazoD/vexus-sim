@@ -8,7 +8,7 @@ Generado por `tools/docs/evidence-index.ts` desde `index.json`, que guarda adem�
 presente, `node --import tsx tools/docs/evidence-index.ts --check` verifica tipo, bytes y hash de cada entrada; sin
 ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ruta` de sus archivos, ordenadas.
 
-81 artefactos; 1.574.356.784 bytes.
+82 artefactos; 1.574.361.410 bytes.
 
 | Id | Ruta en la raíz | Tipo | Archivos | Bytes | SHA-256 | Citado en (decisión) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -87,6 +87,7 @@ ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ru
 | <a id="structure-322-p3-impl-closure-20261106-2022-summary-json"></a>`structure-322-p3-impl-closure-20261106-2022-summary-json` | `structure-322/p3-impl/closure-20261106-2022/summary.json` | archivo | 1 | 2208 | `d9f964194b9b` | evidence/structure-322-p3/README.md, evidence/structure-322-p3/review-fixes.json |
 | <a id="structure-322-p3-impl-default-ceiling-20261106-budget-json"></a>`structure-322-p3-impl-default-ceiling-20261106-budget-json` | `structure-322/p3-impl/default-ceiling-20261106/budget.json` | archivo | 1 | 572 | `f3176b21cb28` | evidence/structure-322-p3/README.md |
 | <a id="structure-322-p3-impl-default-ceiling-20261106-red-log"></a>`structure-322-p3-impl-default-ceiling-20261106-red-log` | `structure-322/p3-impl/default-ceiling-20261106/red.log` | archivo | 1 | 5675 | `d008957b2132` | evidence/structure-322-p3/README.md |
+| <a id="structure-322-p3-impl-default-ceiling-20261106-worker-progress-red-log"></a>`structure-322-p3-impl-default-ceiling-20261106-worker-progress-red-log` | `structure-322/p3-impl/default-ceiling-20261106/worker-progress-red.log` | archivo | 1 | 4626 | `b681a9062471` | evidence/structure-322-p3/README.md |
 | <a id="structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json"></a>`structure-322-p3-impl-review-fixes-20261106-ci-s0028-load-json` | `structure-322/p3-impl/review-fixes-20261106/ci-s0028-load.json` | archivo | 1 | 2932 | `09cc37468ca4` | evidence/structure-322-p3/review-fixes.json |
 | <a id="structure-322-p3-impl-review-fixes-20261106-final-main-metal-report-json"></a>`structure-322-p3-impl-review-fixes-20261106-final-main-metal-report-json` | `structure-322/p3-impl/review-fixes-20261106/final-main-metal/report.json` | archivo | 1 | 593.195 | `71d3ef8bec98` | evidence/structure-322-p3/review-fixes.json |
 | <a id="structure-322-p3-impl-review-fixes-20261106-red-worker-ui-metal-2-log"></a>`structure-322-p3-impl-review-fixes-20261106-red-worker-ui-metal-2-log` | `structure-322/p3-impl/review-fixes-20261106/red-worker-ui-metal-2.log` | archivo | 1 | 19.364 | `b7e3df94ac9c` | evidence/structure-322-p3/review-fixes.json |

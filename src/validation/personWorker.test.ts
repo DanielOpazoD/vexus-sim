@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import { installDefaultCpu } from '../anatomy/people/default/cpu';
 import type { InstalledCpuPerson } from '../anatomy/person';
 import { AnatomyScene } from '../anatomy/scene';
@@ -14,6 +14,11 @@ beforeAll(async () => {
   createWorker = (await import('../ui/cutMapWorker')).createCutMapWorker;
 });
 afterAll(() => vi.unstubAllGlobals());
+// La carga de la máquina no decide si una fila emite progreso: se prueban ambos recorridos.
+beforeEach(() => {
+  vi.spyOn(performance, 'now').mockReturnValue(0);
+});
+afterEach(() => vi.restoreAllMocks());
 const person = installDefaultCpu({}, true);
 const scene = new AnatomyScene(NORMAL_ADULT, undefined, person);
 const sample = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas()).sample;
@@ -49,7 +54,9 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-it('espera CPU, publica ready y conserva sólo el mapa pendiente más reciente', async () => {
+it.each([false, true])('espera CPU, publica ready y conserva sólo el mapa pendiente más reciente (progreso=%s)', async (progress) => {
+  let now = 0;
+  if (progress) vi.spyOn(performance, 'now').mockImplementation(() => (now += 17));
   const loading = deferred(),
     posted: CutMapReply[] = [];
   const receive = createWorker(
@@ -64,8 +71,10 @@ it('espera CPU, publica ready y conserva sólo el mapa pendiente más reciente',
   await installing;
   expect(posted.map((m) => [m.type, m.id, m.epoch, m.assetKey])).toEqual([
     ['ready', 10, 1, person.assetKey],
+    ...(progress ? [['progress', 12, 1, person.assetKey]] : []),
     ['map', 12, 1, person.assetKey],
   ]);
+  if (progress) expect(posted[1]).toEqual({ type: 'progress', id: 12, epoch: 1, assetKey: person.assetKey, rows: 1 });
 });
 
 it.each(['resolve', 'reject'] as const)(

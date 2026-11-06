@@ -15,7 +15,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function fixture(onMapReady?: () => void) {
+function fixture(onMapReady?: () => void, onUnavailable?: (unavailable: boolean) => void) {
   const workers: Array<{
     postMessage: Mock<(message: CutMapInit | CutMapRequest) => void>;
     terminate: ReturnType<typeof vi.fn>;
@@ -52,7 +52,7 @@ function fixture(onMapReady?: () => void) {
     setAttribute() {},
     getContext: () => null,
   };
-  const view = new CutMapView(canvas as unknown as HTMLCanvasElement, onMapReady);
+  const view = new CutMapView(canvas as unknown as HTMLCanvasElement, onMapReady, onUnavailable);
   const sim = {
     patient: { id: 'normal-adult' },
     scene: {
@@ -178,7 +178,8 @@ it('presents between animation frames and immediately coalesces to the latest ac
   let now = 1000;
   let service = () => {};
   const ready = vi.fn(() => service());
-  const { view, sim, workers, canvas } = fixture(ready);
+  const unavailable = vi.fn();
+  const { view, sim, workers, canvas } = fixture(ready, unavailable);
   const ctx = {
     createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }),
     putImageData: vi.fn(),
@@ -207,8 +208,8 @@ it('presents between animation frames and immediately coalesces to the latest ac
   sim.pose = { ...shown.anatomy.pose, z: 999 };
   const requests = () => workers[0].postMessage.mock.calls.flatMap(([message]) => (message.type === 'map' ? [message] : []));
   expect(requests()).toHaveLength(1);
-  const deliver = (id: number) =>
-    workers[0].onmessage({
+  const deliver = (id: number, worker = workers[0]) =>
+    worker.onmessage({
       data: {
         type: 'map',
         id,
@@ -250,9 +251,29 @@ it('presents between animation frames and immediately coalesces to the latest ac
   view.draw(sim, now + 125);
   expect(requests()).toHaveLength(3);
   const clears = ctx.clearRect.mock.calls.length;
+  vi.spyOn(performance, 'now').mockReturnValue(now);
   workers[0].onmessage({ data: { type: 'error', id: requests()[2].id, message: 'chunk failed' } });
   expect(ctx.clearRect).toHaveBeenCalledTimes(clears + 1);
   expect(canvas.dataset.acquiredFrame).toBeUndefined();
+  expect(unavailable.mock.calls).toEqual([[true]]);
+
+  // Neither a replacement Worker's ready nor an unpainted map clears the warning.
+  now += 1000;
+  Object.assign(canvas, { clientHeight: 0 });
+  view.draw(sim, now);
+  expect(workers).toHaveLength(2);
+  expect(unavailable.mock.calls).toEqual([[true]]);
+  const retry = workers[1].postMessage.mock.calls.at(-1)![0];
+  deliver(retry.id, workers[1]);
+  expect(unavailable.mock.calls).toEqual([[true]]);
+  expect(canvas.dataset.acquiredFrame).toBeUndefined();
+  Object.assign(canvas, { clientHeight: 12 });
+  view.draw(sim, now);
+  expect(canvas.dataset.acquiredFrame).toBe(String(shown.n));
+  expect(unavailable.mock.calls).toEqual([[true], [false]]);
+  // A late failure from the replaced worker cannot hide the valid cut.
+  workers[0].onmessage({ data: { type: 'error', id: requests()[2].id, message: 'obsolete failure' } });
+  expect(unavailable.mock.calls).toEqual([[true], [false]]);
 
   view.dispose();
 });

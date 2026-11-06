@@ -142,6 +142,25 @@ export async function start(person: InstalledPerson, signal: AbortSignal): Promi
     // Mapa del plano (el corte del carril izquierdo) con carga diferida, como el navegador 3D: la imagen no lo necesita
     // para su primer cuadro y el chunk principal no carga su código; si falla, la aplicación sigue sin él.
     let cutMap: CutMapView | null = null;
+    let cutNotice: HTMLDivElement | null = null;
+    const cutUnavailable = (unavailable: boolean): void => {
+      if (!unavailable) {
+        cutNotice?.remove();
+        cutNotice = null;
+      } else if (!cutNotice) {
+        cutNotice = document.createElement('div');
+        cutNotice.className = 'banner cut-error';
+        cutNotice.setAttribute('role', 'alert');
+        cutNotice.textContent = `No se pudo cargar el plano anatómico de ${person.identity.person}. El corte no está disponible. `;
+        const reload = document.createElement('button');
+        reload.className = 'primary';
+        reload.textContent = 'Recargar esta persona';
+        reload.onpointerdown = (event) => event.stopPropagation();
+        reload.onclick = () => location.reload();
+        cutNotice.append(reload);
+        sectorWrap.append(cutNotice);
+      }
+    };
     markStartup('cut:import');
     void import('./ui/cutMapView')
       .then(({ CutMapView }) => {
@@ -154,7 +173,7 @@ export async function start(person: InstalledPerson, signal: AbortSignal): Promi
             }
           }
         };
-        cutMap = new CutMapView(cutCanvas, drawCutMap);
+        cutMap = new CutMapView(cutCanvas, drawCutMap, cutUnavailable);
         // GPU backpressure can suspend RAF delivery while CPU tasks still run.
         // Service the real acquired snapshot at its existing idle cadence; these
         // ticks neither acquire GPU frames nor advance the active-frame watchdog.
@@ -165,7 +184,10 @@ export async function start(person: InstalledPerson, signal: AbortSignal): Promi
         cutMap.setLabels(store.get().debug);
         markStartup('cut:ready');
       })
-      .catch((e: unknown) => errorLog.report('corte', e));
+      .catch((e: unknown) => {
+        errorLog.report('corte', e);
+        cutUnavailable(true);
+      });
     const panel = new ControlPanel($('panel'), sim, store, dispatch, setPoseManual);
     markStartup('controls:ready');
     panel.onCapture = () => drawTraces(sim());

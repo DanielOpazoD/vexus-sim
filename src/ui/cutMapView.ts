@@ -211,6 +211,7 @@ export class CutMapView {
   private readonly watchdog = new RequestWatchdog(WORKER_TIMEOUT_MS);
   /** Fallos consecutivos del Worker (error, caída o tiempo agotado) y próximo reintento. */
   private failures = 0;
+  private unavailable = false;
   private retryAt = 0;
   private requestId = 0;
   private map: CutMapResponse | null = null;
@@ -237,6 +238,7 @@ export class CutMapView {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly onMapReady: () => void = () => {},
+    private readonly onUnavailable: (unavailable: boolean) => void = () => {},
   ) {
     this.tooltip = document.createElement('div');
     this.tooltip.className = 'anatomy-tooltip';
@@ -438,6 +440,13 @@ export class CutMapView {
     this.canvas.removeEventListener('click', this.onClick);
     this.canvas.removeEventListener('keydown', this.onKey);
     this.tooltip.remove();
+    this.setUnavailable(false);
+  }
+
+  private setUnavailable(value: boolean): void {
+    if (value === this.unavailable) return;
+    this.unavailable = value;
+    this.onUnavailable(value);
   }
 
   /** Registra el fallo, descarta el Worker y programa un reintento con espera creciente (1 s → 30 s). */
@@ -454,6 +463,7 @@ export class CutMapView {
     this.drawn = null;
     this.clearBitmap();
     this.workerReady = false;
+    this.setUnavailable(true);
   }
 
   private clearBitmap(): void {
@@ -687,6 +697,7 @@ export class CutMapView {
     }
     this.updateSelection(sim);
     this.paintContour(ctx, sim, false);
+    this.setUnavailable(false);
     // rótulos (el alumno no los ve: identificar la estructura es parte del examen)
     if (!acc) return;
     ctx.font = `bold ${Math.round(11 * (W / 300))}px sans-serif`;

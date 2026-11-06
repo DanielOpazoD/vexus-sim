@@ -153,7 +153,7 @@ async function parity(page: Page) {
     // use or mutate the current simulator query to judge an acquired snapshot.
     const Scene = s.scene.constructor as typeof AnatomyScene;
     const Query = s.anatomy.constructor as typeof AnatomyQuery;
-    const cpuScene = new Scene(structuredClone(model.patient), model.referenceProfile);
+    const cpuScene = new Scene(structuredClone(model.patient), model.referenceProfile, s.scene.person);
     const cpu = new Query(cpuScene);
     cpu.setProbeCompression(structuredClone(req.compression));
     const sample = structuredClone(req.sample) as PhysiologySample;

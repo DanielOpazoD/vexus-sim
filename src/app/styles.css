@@ -645,6 +645,11 @@ button.secondary {
   border-radius: 6px;
   font-size: 12px;
 }
+.cut-error {
+  top: auto;
+  bottom: 52px;
+  z-index: 4;
+}
 .traces {
   display: grid;
   grid-template-rows: 40px;

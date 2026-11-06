@@ -1,13 +1,13 @@
-import baseline from './fixtures/person-glsl-r3.json' with { type: 'json' };
+import baseline from './fixtures/person-glsl-abi.json' with { type: 'json' };
 import type { GlslMangleContext } from './glslMinify';
 
-/** ABI r3 de los programas compartidos. Este artefacto sólo se usa durante el build. */
+/** ABI capturada de main; el SHA de origen está en el artefacto. Este artefacto sólo se usa durante el build. */
 export function personShaderAbi(context: GlslMangleContext): GlslMangleContext {
   const names = new Map<string, string>(baseline.names as [string, string][]);
   const afterDot = new Set(baseline.afterDot);
   const used = new Set(names.values());
   for (const value of used) {
-    if (context.analysis.seen.has(value)) throw new Error(`Colisión con ABI GLSL r3: ${value}`);
+    if (context.analysis.seen.has(value)) throw new Error(`Colisión con ABI GLSL fijada: ${value}`);
   }
   let index = 0;
   for (const name of [...context.map.names.keys()].sort()) {

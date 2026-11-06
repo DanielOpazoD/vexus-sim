@@ -4,10 +4,11 @@ import { expect, it } from 'vitest';
 import { prepareGlslMangle, readSources, transformWithMangle } from '../../tools/build/glslMinify';
 import { packGlslTemplates } from '../../tools/build/glslPacking';
 import { bindingNames, compactBindings } from '../../tools/build/glslUniformNames';
+import abi from '../../tools/build/fixtures/person-glsl-abi.json';
 import { personBindingAbi, personShaderAbi } from '../../tools/build/personShaderAbi';
 import type { personShader } from '../anatomy/gpu/personShader';
 import { S0028_BUNDLE } from '../anatomy/people/s0028/descriptor';
-import baseline from './fixtures/person-shaders-r3.json';
+import baseline from './fixtures/person-shaders-main.json';
 import { loadShaderGraph } from './support/shaderGraph';
 
 const root = process.cwd();
@@ -48,7 +49,9 @@ function programs(privateExtension = false) {
   );
 }
 
-it('conserva los 38 fragmentos y el vértice r3, fuente y transformados', () => {
+it('conserva los 38 fragmentos y el vértice de main, fuente y transformados', () => {
+  expect(abi.base).toBe(baseline.base);
+  expect(abi.base).toMatch(/^[0-9a-f]{40}$/);
   const result = programs();
   for (const mode of ['source', 'productionTransforms'] as const) {
     expect(Object.keys(result[mode])).toHaveLength(39);

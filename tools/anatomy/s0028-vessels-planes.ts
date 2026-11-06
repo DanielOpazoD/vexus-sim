@@ -4,12 +4,9 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
-import { CURRENT_BUNDLE, installAnatomyBundle, S0028_BUNDLE } from '../../src/anatomy/anatomyBundle';
-import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
-import { setThoracicAtlas } from '../../src/anatomy/thoracicAtlas';
-import { setAbdominalBody } from '../../src/anatomy/referenceBody';
-import { setS0028Wall } from '../../src/anatomy/s0028Wall';
-import { setS0028Solids } from '../../src/anatomy/s0028Solids';
+import { installDefaultCpu } from '../../src/anatomy/people/default/cpu';
+import { installS0028Cpu } from '../../src/anatomy/people/s0028/cpu';
+import { S0028_BUNDLE } from '../../src/anatomy/people/s0028/descriptor';
 import { AnatomyScene } from '../../src/anatomy/scene';
 import { tubeQuery } from '../../src/anatomy/primitives';
 import { kidneyLocal, kidneyOuterSdf } from '../../src/anatomy/organs/kidney';
@@ -25,21 +22,18 @@ if (!process.argv[2] || out === resolve('.') || out.startsWith(resolve('.') + '/
 mkdirSync(out, { recursive: true });
 const current = process.argv.includes('--current');
 const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/s0028/${name}.gzip.bin`))).buffer;
-if (current) {
-  installAnatomyBundle(CURRENT_BUNDLE);
-  const oldRaw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/${name}-atlas.gzip.bin`))).buffer;
-  setAbdominalAtlas(new Uint16Array(oldRaw('abdominal')));
-  setThoracicAtlas(new Uint16Array(oldRaw('thoracic')));
-} else {
-  installAnatomyBundle(S0028_BUNDLE);
-  setAbdominalAtlas(new Uint16Array(raw('abdominal-direct')));
-  setThoracicAtlas(new Uint16Array(raw('thoracic-direct')));
-  const capacity = raw('annotation-capacity');
-  setS0028Wall(capacity, raw('skin-polar'));
-  setS0028Solids(capacity);
-}
-setAbdominalBody(new Float32Array(new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin')).buffer));
-const scene = new AnatomyScene(NORMAL_ADULT);
+const body = new Float32Array(new Uint8Array(readFileSync('src/anatomy/abdominal-body.bin')).buffer);
+const oldRaw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/${name}-atlas.gzip.bin`))).buffer;
+const person = current
+  ? installDefaultCpu({ abdominal: new Uint16Array(oldRaw('abdominal')), thoracic: new Uint16Array(oldRaw('thoracic')), body })
+  : installS0028Cpu({
+      abdominal: new Uint16Array(raw('abdominal-direct')),
+      thoracic: new Uint16Array(raw('thoracic-direct')),
+      capacity: raw('annotation-capacity'),
+      skin: raw('skin-polar'),
+      body,
+    });
+const scene = new AnatomyScene(NORMAL_ADULT, undefined, person);
 const planes = startPointsFor(scene.torso, scene.identity).map((sp) => ({
   id: sp.id,
   label: sp.label,

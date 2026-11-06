@@ -47,7 +47,7 @@
     },
     {
       "label": "geometry",
-      "args": ["node", "--import", "tsx", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/geometry.mts"],
+      "args": ["node", "--import", "tsx", "$VEXUS_EVIDENCE_ROOT/migration-mesh/geometry.mts"],
       "exitCode": 0,
       "seconds": 1.0588504579500295
     },
@@ -71,221 +71,109 @@
     },
     {
       "label": "measure-before-1",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "before",
-        "metal",
-        "s0028",
-        "1"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "before", "metal", "s0028", "1"],
       "exitCode": 0,
       "seconds": 21.229852749966085
     },
     {
       "label": "measure-after-1",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "after",
-        "metal",
-        "s0028",
-        "1"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "after", "metal", "s0028", "1"],
       "exitCode": 0,
       "seconds": 20.770057999994606
     },
     {
       "label": "measure-before-2",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "before",
-        "metal",
-        "s0028",
-        "2"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "before", "metal", "s0028", "2"],
       "exitCode": 0,
       "seconds": 20.74178587499773
     },
     {
       "label": "measure-after-2",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "after",
-        "metal",
-        "s0028",
-        "2"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "after", "metal", "s0028", "2"],
       "exitCode": 0,
       "seconds": 20.721780791995116
     },
     {
       "label": "measure-before-3",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "before",
-        "metal",
-        "s0028",
-        "3"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "before", "metal", "s0028", "3"],
       "exitCode": 0,
       "seconds": 20.747442582971416
     },
     {
       "label": "measure-after-3",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure.mjs",
-        "after",
-        "metal",
-        "s0028",
-        "3"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure.mjs", "after", "metal", "s0028", "3"],
       "exitCode": 0,
       "seconds": 20.73287895799149
     },
     {
       "label": "measure-clean-before-1",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-before",
-        "metal",
-        "s0028",
-        "1"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-before", "metal", "s0028", "1"],
       "exitCode": 0,
       "seconds": 19.16900200000964
     },
     {
       "label": "measure-clean-after-1",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-after",
-        "metal",
-        "s0028",
-        "1"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-after", "metal", "s0028", "1"],
       "exitCode": 0,
       "seconds": 19.282019292004406
     },
     {
       "label": "measure-clean-before-2",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-before",
-        "metal",
-        "s0028",
-        "2"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-before", "metal", "s0028", "2"],
       "exitCode": 0,
       "seconds": 19.120468999957666
     },
     {
       "label": "measure-clean-after-2",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-after",
-        "metal",
-        "s0028",
-        "2"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-after", "metal", "s0028", "2"],
       "exitCode": 0,
       "seconds": 19.417175584007055
     },
     {
       "label": "measure-clean-before-3",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-before",
-        "metal",
-        "s0028",
-        "3"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-before", "metal", "s0028", "3"],
       "exitCode": 0,
       "seconds": 19.17662774998462
     },
     {
       "label": "measure-clean-after-3",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-after",
-        "metal",
-        "s0028",
-        "3"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-after", "metal", "s0028", "3"],
       "exitCode": 0,
       "seconds": 19.235729667008854
     },
     {
       "label": "http",
-      "args": ["node", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/http.mjs"],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/http.mjs"],
       "exitCode": 0,
       "seconds": 0.1983182500116527
     },
     {
       "label": "plates",
-      "args": ["node", "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/plates.mjs"],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/plates.mjs"],
       "exitCode": 0,
       "seconds": 7.802689208008815
     },
     {
       "label": "measure-clean-before-4",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-before",
-        "metal",
-        "s0028",
-        "4"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-before", "metal", "s0028", "4"],
       "exitCode": 0,
       "seconds": 19.063453499984462
     },
     {
       "label": "measure-clean-after-4",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-after",
-        "metal",
-        "s0028",
-        "4"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-after", "metal", "s0028", "4"],
       "exitCode": 0,
       "seconds": 19.1228616249864
     },
     {
       "label": "measure-clean-before-5",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-before",
-        "metal",
-        "s0028",
-        "5"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-before", "metal", "s0028", "5"],
       "exitCode": 0,
       "seconds": 19.1330862500472
     },
     {
       "label": "measure-clean-after-5",
-      "args": [
-        "node",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/measure-clean.mjs",
-        "clean-after",
-        "metal",
-        "s0028",
-        "5"
-      ],
+      "args": ["node", "$VEXUS_EVIDENCE_ROOT/migration-mesh/measure-clean.mjs", "clean-after", "metal", "s0028", "5"],
       "exitCode": 0,
       "seconds": 19.24951020797016
     },
@@ -299,7 +187,7 @@
         "--backend",
         "metal",
         "--out",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/e2e-metal",
+        "$VEXUS_EVIDENCE_ROOT/migration-mesh/e2e-metal",
         "--",
         "e2e/s0028Load.spec.ts",
         "e2e/startupContexts.spec.ts",
@@ -317,7 +205,7 @@
         "playwright",
         "test",
         "--config",
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/x64.config.mts",
+        "$VEXUS_EVIDENCE_ROOT/migration-mesh/x64.config.mts",
         "e2e/s0028Load.spec.ts",
         "e2e/smoke.spec.ts",
         "--grep",
@@ -378,11 +266,7 @@
     },
     {
       "label": "python-all",
-      "args": [
-        "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0b/.venv-cgal/bin/python",
-        "-I",
-        "tools/anatomy/run-tests.py"
-      ],
+      "args": ["$VEXUS_EVIDENCE_ROOT/migration-p0b/.venv-cgal/bin/python", "-I", "tools/anatomy/run-tests.py"],
       "exitCode": 0,
       "seconds": 8.250126792001538
     },

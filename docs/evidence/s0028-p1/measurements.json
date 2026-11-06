@@ -561,35 +561,35 @@
   ],
   "rawEvidence": [
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-1/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-current-1/result.json",
       "sha256": "cd2249bdf110fe2bb60a43b5d21769fd3c3dcfe1fe53203ea6e4ad8943fd013a"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-2/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-current-2/result.json",
       "sha256": "b4f09ae2d2f9eecce5708291b368750d2c0d6712b87737f6c05934c835bddb25"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-current-3/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-current-3/result.json",
       "sha256": "67b069293a23c32b5a825c8a7dae2e36be67812fc386c8ad353a1489b00479c9"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-1/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-s0028-1/result.json",
       "sha256": "b0a161ebd61f808723bc7d7434d30b76c1a902ed556840b538d4113472b71bd8"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-2/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-s0028-2/result.json",
       "sha256": "571a654e825d716b5e08eb7e6501cb7b4faf0bea06e39dc40f0ff88b7d3b46eb"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-metal-s0028-3/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-metal-s0028-3/result.json",
       "sha256": "0ff16c9d9b1b3f43794cfb0bdefe7802ab5258055c4a856a30ff7b525be1b446"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-swiftshader-current-1/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-swiftshader-current-1/result.json",
       "sha256": "00d9da0bd079caca302f6f9035e023404b244598d5115010948057ac0aeb7c55"
     },
     {
-      "file": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/r4c-swiftshader-s0028-1/result.json",
+      "file": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final/r4c-swiftshader-s0028-1/result.json",
       "sha256": "3d352fc8ff77a60268c79c9a9bf98a998ea20a3bba6cc2da3932b42912fe0539"
     }
   ],

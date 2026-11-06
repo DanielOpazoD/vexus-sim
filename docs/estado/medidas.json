@@ -1,0 +1,546 @@
+{
+ "schema": 1,
+ "date": "2026-11-06",
+ "main": "bd2f575",
+ "rows": [
+  {
+   "what": "JS total (todo `dist`, Workers y ganchos incluidos)",
+   "limit": 1070080,
+   "unit": "B",
+   "decision": 294,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1069860
+  },
+  {
+   "what": "`abdominal-atlas.gzip.bin`",
+   "limit": 6291456,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5806258
+  },
+  {
+   "what": "`abdominal-body.bin`",
+   "limit": 3640,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 3640
+  },
+  {
+   "what": "`abdominal-direct.gzip.bin`",
+   "limit": 8567375,
+   "unit": "B",
+   "decision": 317,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 8567375
+  },
+  {
+   "what": "`abdominal-surface.gzip.bin`",
+   "limit": 6291456,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5914463
+  },
+  {
+   "what": "`abdominalAtlas.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 22357
+  },
+  {
+   "what": "`abdominalSurface.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 3568
+  },
+  {
+   "what": "`anatomyScene.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 22519
+  },
+  {
+   "what": "`annotation-capacity.gzip.bin`",
+   "limit": 856999,
+   "unit": "B",
+   "decision": 320,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 284466
+  },
+  {
+   "what": "`bootstrap.js`",
+   "limit": 343040,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 289434
+  },
+  {
+   "what": "`candidate-manifest.bin`",
+   "limit": 38617,
+   "unit": "B",
+   "decision": 321,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 38309
+  },
+  {
+   "what": "`cutMapView.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 16105
+  },
+  {
+   "what": "`cutMapWorker.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 2517
+  },
+  {
+   "what": "`doppler-worklet.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 2829
+  },
+  {
+   "what": "`gatePlacement.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1164
+  },
+  {
+   "what": "`index.css`",
+   "limit": 20480,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 20433
+  },
+  {
+   "what": "`index.js`",
+   "limit": 343040,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5181
+  },
+  {
+   "what": "`loadS0028.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1874
+  },
+  {
+   "what": "`navigator3d.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 28288
+  },
+  {
+   "what": "`pwMeasurements.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 15854
+  },
+  {
+   "what": "`query.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 104478
+  },
+  {
+   "what": "`reference-body.bin`",
+   "limit": 2080,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 2080
+  },
+  {
+   "what": "`s0028Solids.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 11490
+  },
+  {
+   "what": "`s0028Surfaces.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5964
+  },
+  {
+   "what": "`series.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 2199
+  },
+  {
+   "what": "`skin-polar.gzip.bin`",
+   "limit": 947509,
+   "unit": "B",
+   "decision": 317,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 947509
+  },
+  {
+   "what": "`speckleField.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 9580
+  },
+  {
+   "what": "`structureIdentity.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 1457
+  },
+  {
+   "what": "`surfaces.gzip.bin`",
+   "limit": 9672026,
+   "unit": "B",
+   "decision": 318,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5340216
+  },
+  {
+   "what": "`teacherTab.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 46604
+  },
+  {
+   "what": "`testHooks.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 69636
+  },
+  {
+   "what": "`thoracic-atlas.gzip.bin`",
+   "limit": 6291456,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 4444037
+  },
+  {
+   "what": "`thoracic-direct.gzip.bin`",
+   "limit": 5252011,
+   "unit": "B",
+   "decision": 317,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 5252011
+  },
+  {
+   "what": "`thoracic-surface.gzip.bin`",
+   "limit": 6291456,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 3341604
+  },
+  {
+   "what": "`three.js`",
+   "limit": 385024,
+   "unit": "B",
+   "decision": 307,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 380390
+  },
+  {
+   "what": "`transducerProfile.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 25984
+  },
+  {
+   "what": "`units.js`",
+   "limit": 122880,
+   "unit": "B",
+   "decision": null,
+   "source": "tools/ci/bundleBudgets.ts",
+   "actual": 388
+  },
+  {
+   "what": "Descarga del paquete s0028 (gzip)",
+   "limit": 25000000,
+   "unit": "B",
+   "decision": 318,
+   "source": "src/ui/s0028Surfaces.ts",
+   "actual": 20433526
+  },
+  {
+   "what": "Cada `.gzip` fijado del paquete s0028 (por archivo)",
+   "limit": 19510002,
+   "unit": "B",
+   "decision": 317,
+   "source": "src/anatomy/loadS0028.ts",
+   "actual": 8567375
+  },
+  {
+   "what": "Textura abdominal s0028 en memoria (RAW)",
+   "limit": 139921010,
+   "unit": "B",
+   "decision": 317,
+   "source": "src/anatomy/loadS0028.ts",
+   "actual": 139917029
+  },
+  {
+   "what": "Textura torácica s0028 en memoria (RAW)",
+   "limit": 60413664,
+   "unit": "B",
+   "decision": 317,
+   "source": "src/anatomy/loadS0028.ts",
+   "actual": 60413664
+  },
+  {
+   "what": "Samplers por programa (las dos personas)",
+   "limit": 16,
+   "unit": "samplers",
+   "decision": 317,
+   "source": "tools/ci/shaderBudgets.ts",
+   "actual": 16
+  },
+  {
+   "what": "Ranuras vec4 de uniforms por programa",
+   "limit": 179,
+   "unit": "ranuras",
+   "decision": 317,
+   "source": "tools/ci/shaderBudgets.ts",
+   "actual": 138
+  },
+  {
+   "what": "Trabajo «check» de la CI",
+   "limit": 25,
+   "unit": "min",
+   "decision": null,
+   "source": ".github/workflows/ci.yml",
+   "actual": null
+  },
+  {
+   "what": "Trabajo «matrix-validation» de la CI",
+   "limit": 25,
+   "unit": "min",
+   "decision": null,
+   "source": ".github/workflows/ci.yml",
+   "actual": null
+  },
+  {
+   "what": "Trabajo «triplex-early» de la CI",
+   "limit": 10,
+   "unit": "min",
+   "decision": null,
+   "source": ".github/workflows/ci.yml",
+   "actual": null
+  },
+  {
+   "what": "Trabajo «e2e» de la CI",
+   "limit": 40,
+   "unit": "min",
+   "decision": null,
+   "source": ".github/workflows/ci.yml",
+   "actual": null
+  }
+ ],
+ "shaders": [
+  {
+   "name": "FRAG_RAWFIELD",
+   "tokenLimit": 1385000,
+   "branchLimit": 11060,
+   "current": {
+    "tokens": 1260863,
+    "branches": 10108,
+    "slots": 136,
+    "samplers": 10,
+    "sourceSha256": "be1c7be1bca41c8c59e9da5c412233dd4942f8f6143eac0ad8a19c8f59eb2adc"
+   },
+   "s0028": {
+    "tokens": 407897,
+    "branches": 2926,
+    "slots": 136,
+    "samplers": 10,
+    "sourceSha256": "22863f2ca59544f1a82a7e1190dc40f2575afbcec65b22ee9631d6efb66653a2"
+   }
+  },
+  {
+   "name": "FRAG_RAWFIELD_ECHO",
+   "tokenLimit": 577000,
+   "branchLimit": 4640,
+   "current": {
+    "tokens": 525694,
+    "branches": 4239,
+    "slots": 137,
+    "samplers": 16,
+    "sourceSha256": "22d4821fdeb31b190616e75c73ffdaa140f8c7662c1e69c4724e574738593c90"
+   },
+   "s0028": {
+    "tokens": 166402,
+    "branches": 1169,
+    "slots": 137,
+    "samplers": 16,
+    "sourceSha256": "bcb133ebf08201be56402e468b9729733fa8d61d36d198010ec31e7850cd3258"
+   }
+  },
+  {
+   "name": "FRAG_RAWFIELD_CLASS",
+   "tokenLimit": 455000,
+   "branchLimit": 3830,
+   "current": {
+    "tokens": 414230,
+    "branches": 3503,
+    "slots": 136,
+    "samplers": 10,
+    "sourceSha256": "77092da6c8e457017f22799b7ad75f119880ae1d7df37f0e87e42715f1349e8f"
+   },
+   "s0028": {
+    "tokens": 120890,
+    "branches": 853,
+    "slots": 136,
+    "samplers": 10,
+    "sourceSha256": "ebccf334d49e3fb113f30188ae2aa0635966b7db59bc5e5eb2f395467cfa977d"
+   }
+  },
+  {
+   "name": "FRAG_RAWFIELD_ELEVATION",
+   "tokenLimit": 455000,
+   "branchLimit": 3830,
+   "current": {
+    "tokens": 414370,
+    "branches": 3505,
+    "slots": 137,
+    "samplers": 15,
+    "sourceSha256": "b90d8c1d1ffeea60cb2d5e3808471705ced3a7ea83dfe50dc8d1fa6fe38c685b"
+   },
+   "s0028": {
+    "tokens": 121030,
+    "branches": 855,
+    "slots": 137,
+    "samplers": 15,
+    "sourceSha256": "fd5e90da33fb5ce8063ad97a2a1e5bb54c54d2b649494f5c6a3d067d6d78a397"
+   }
+  },
+  {
+   "name": "FRAG_RAWFIELD_GRADIENT",
+   "tokenLimit": 351000,
+   "branchLimit": 2760,
+   "current": {
+    "tokens": 318190,
+    "branches": 2501,
+    "slots": 138,
+    "samplers": 15,
+    "sourceSha256": "6dd4ddefed5f3ff4f185b32c729598115fb4600a6879e091aebe243bd2557468"
+   },
+   "s0028": {
+    "tokens": 96635,
+    "branches": 599,
+    "slots": 138,
+    "samplers": 15,
+    "sourceSha256": "b741851b8c98f93a85654253f2d8757ab3bf069c0be0a7b9960ec62456161aa5"
+   }
+  },
+  {
+   "name": "FRAG_TRANS_HITS",
+   "tokenLimit": 513000,
+   "branchLimit": 4470,
+   "current": {
+    "tokens": 468025,
+    "branches": 4104,
+    "slots": 101,
+    "samplers": 6,
+    "sourceSha256": "2a0119dd74a9f8bb1a988ac3b387234535e05d5805f227b31ac1cb78a1b3104d"
+   },
+   "s0028": {
+    "tokens": 168324,
+    "branches": 1262,
+    "slots": 101,
+    "samplers": 6,
+    "sourceSha256": "57efb0909175be83760247ee5d2b84f2ba47ebef37768aea25221dad1493d505"
+   }
+  },
+  {
+   "name": "FRAG_TRANS_HITS_GRID",
+   "tokenLimit": 252000,
+   "branchLimit": 2210,
+   "current": {
+    "tokens": 230028,
+    "branches": 2030,
+    "slots": 102,
+    "samplers": 11,
+    "sourceSha256": "5e62dbe91a7a42302a34ab77d97f7bae55d5943a1361f5fa2de69f96b1086ba5"
+   },
+   "s0028": {
+    "tokens": 78134,
+    "branches": 611,
+    "slots": 102,
+    "samplers": 11,
+    "sourceSha256": "98124a0ef549da7585accd1d643137787d8c78d3f857b35e231b229308953be6"
+   }
+  },
+  {
+   "name": "FRAG_COLOR",
+   "tokenLimit": 248000,
+   "branchLimit": 2160,
+   "current": {
+    "tokens": 226512,
+    "branches": 1987,
+    "slots": 110,
+    "samplers": 7,
+    "sourceSha256": "79f7aefbdd283981a69295c3ff8a00d0b05295c704bbe7f522f267b63f6ce67f"
+   },
+   "s0028": {
+    "tokens": 73008,
+    "branches": 568,
+    "slots": 110,
+    "samplers": 7,
+    "sourceSha256": "4cf09483f0a0b2c778227a123d6a21b72a6ac6f0a6551e4a650610a8fa633f66"
+   }
+  }
+ ],
+ "s0028DescriptorSha256": "e8921fbedfd3c7322fa950b7b875ce2c49f55fc92ecc1f12af759ebf0b2fec72",
+ "tests": {
+  "vitestFiles": 312,
+  "slowFiles": 34,
+  "e2eSpecs": 84,
+  "e2eTestCalls": 139,
+  "e2eShards": 12,
+  "pythonContracts": 18
+ }
+}

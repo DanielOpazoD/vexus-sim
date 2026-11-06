@@ -9,7 +9,9 @@
    acotado de `check` cuenta como una carga; no superponer GPU, build ni hook mientras corre.
    Durante la edición usa feedback focalizado según `docs/engineering/iteration.md`; check y CI
    completos siguen siendo obligatorios para aceptar el candidato final.
-4. Consulta `docs/DECISIONS_INDEX.md` antes de abrir el historial completo. No conviertas un pendiente
+4. Estado vigente por subsistema, corto y con cifras medidas: `docs/estado/` (anatomía, imagen, pruebas y
+   presupuestos). La evidencia pesada se cita por `docs/evidence/INDEX.md`, nunca por una ruta absoluta.
+   Consulta `docs/DECISIONS_INDEX.md` antes de abrir el historial completo. No conviertas un pendiente
    histórico en trabajo actual sin revisar el cierre y Git/CI.
 
 No amplíes plazos, reduzcas física/resolución/aserciones ni omitas hooks para conseguir verde.

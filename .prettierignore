@@ -2,6 +2,11 @@ dist
 node_modules
 coverage
 docs/DECISIONS_INDEX.md
+# generados por tools/docs/evidence-index.ts
+docs/evidence/INDEX.md
+docs/evidence/index.json
+# generado por tools/docs/estado.ts
+docs/estado/medidas.json
 package-lock.json
 
 # generado por npm run fidelity (tools/fidelity/bench.ts)

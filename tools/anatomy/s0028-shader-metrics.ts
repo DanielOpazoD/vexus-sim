@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { runInNewContext } from 'node:vm';
 import { transpileModule, ScriptTarget } from 'typescript';
 import * as PASSES from '../../src/ultrasound/shaders/passes.glsl';
+import { SAMPLER_GUARD, SLOT_GUARD } from '../ci/shaderBudgets';
 
 const guard = readFileSync('src/validation/shaderLimits.test.ts', 'utf8');
 const extract = (from: string, to: string): string => {
@@ -45,7 +46,7 @@ function measure(source: string, tokenLimit: number, branchLimit: number) {
     slots: value.slots,
     samplers,
     sourceSha256: hash(source),
-    pass: value.tokens <= tokenLimit && value.branches <= branchLimit && value.slots <= 179 && samplers <= 16,
+    pass: value.tokens <= tokenLimit && value.branches <= branchLimit && value.slots <= SLOT_GUARD && samplers <= SAMPLER_GUARD,
   };
 }
 

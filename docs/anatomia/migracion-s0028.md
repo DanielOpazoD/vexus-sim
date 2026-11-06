@@ -306,7 +306,7 @@ Pruebas rojas de cero/perfil corporal, cúpula e inversa13 mm→verdes; once mut
 rechazados. Default idéntico a main 8ee9fbd en 82.251 puntos y diez marcos.
 GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 GB quedan
 para r2b. No ecografía, validación clínica, PR, push ni CI remota.
-[Informe y códigos del cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+[Informe y códigos del cierre serial r2a](../evidence/INDEX.md#migration-p2-r2a-report-md).
 
 ## P2 r1c: superficie continua offline, aceptada (320)
 
@@ -364,7 +364,7 @@ de contexto. No se atribuye aceleración universal ni máximo continuo. XOR prob
 por ahorro insuficiente; cuantización/WASM no necesarios.
 
 [Mediciones, contratos y cierre 319](../evidence/s0028-mesh/README.md),
-[seis láminas 3D abiertas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/plates/)
+[seis láminas 3D abiertas](../evidence/INDEX.md#migration-mesh-plates)
 con ID de formato visible, misma cámara/luz/capas y región 3D idéntica píxel a píxel.
 Pared/poses y aceptación anatómica P2–P8 siguen pendientes; no es validación clínica.
 Las cifras de la sección siguiente documentan históricamente P1 antes de esta compactación.
@@ -456,7 +456,7 @@ bordes Z de D y envolvente de 6 mm; contrafactual retira B y cambia consumidores
 Acredita cableado/continuidad utilizable, no exactitud fuera de CT ni aceptación de pared.
 
 Diez láminas finales **abiertas individualmente**, con ID bundle/mallas/marco visible, en
-[r4c/plates](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final/plates/), inventario/poses/hashes en
+[r4c/plates](../evidence/INDEX.md#migration-p1-r4-r4c-final-plates), inventario/poses/hashes en
 [plates.json](../evidence/s0028-p1/plates.json). Poses y pared actuales, **provisionales P2–P8**.
 Se conservan sombras costales, apoyo parcial lateral y una renal focal sin seno claramente
 demostrado; no se retocan poses para fabricar ventanas aceptadas. El primer juego con mapa/UI
@@ -473,7 +473,7 @@ Default/atlas y legacy vigentes se conservan durante las fases. La activación y
 fixtures y código exclusivos viejos ocurren juntas en una PR final, tras las diez ventanas y las
 14 relaciones de [relaciones TAC](relaciones-tac.md) revisadas sobre láminas del mismo plano físico.
 No se injertan órganos de otro donante. Estómago lleno y grasa de pared son rasgos de esta persona.
-El [plan original](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration/plan.md)
+El [plan original](../evidence/INDEX.md#migration-plan-md)
 describe dependencias, tejidos, ventanas y retirada; las decisiones siguientes actualizan sus paradas.
 
 B conserva 19 campos físicos RG16F de 1,5 mm y un alias lógico de gas: distancia R con filtrado
@@ -574,10 +574,10 @@ split-cost.ts,split-package.py}`. Los contratos exclusivos de formatos rechazado
 gas/directo, capacidad, periodicidad y desconocidos se conservan en los contratos de B.
 Mapa/superficies quedan como experimentos externos para P1, sin elegir una implementación en P0.
 Originales de `e788905` (29 archivos), con SHA256 por archivo, están en el
-[manifiesto de archivo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0-close/archive-e788905/manifest.json)
+[manifiesto de archivo](../evidence/INDEX.md#migration-p0-close-archive-e788905-manifest-json)
 (SHA256 `a25526df0f4474b4d144d6d7bfb25b133b2bdca472e30dcbe95f8279456f0759`).
 Los informes enlazados de P0–P0e conservan todas sus cifras y negativos. El
-[informe del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0-close/report.md)
+[informe del cierre](../evidence/INDEX.md#migration-p0-close-report-md)
 registra SHA, diff, códigos y límites de la verificación actual.
 
 Reproducción offline nueva, salidas en un directorio externo vacío; Node 24 vía wrapper,
@@ -683,8 +683,8 @@ los campos útiles; la lista de máscaras incluidas en cada campo queda en el ma
 
 ## Historial P0 y P0b: denso y paginado rechazados
 
-[Evidencia P0](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0/report.md),
-[evidencia P0b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0b/report.md).
+[Evidencia P0](../evidence/INDEX.md#migration-p0-report-md),
+[evidencia P0b](../evidence/INDEX.md#migration-p0b-report-md).
 Las cifras y dictámenes siguientes corresponden a esas rondas, anteriores a la decisión 317.
 
 P0 ensayó un atlas denso con soportes volumétricos conservadores y perfil 14×65 C1. Falló:
@@ -778,7 +778,7 @@ P6 16–28; P7 20–36; P8 20–32; corte 12–20. **P1 en adelante: 196–336 h
 previas y 12–24 h del propietario. Ninguna fase posterior está implementada por este informe.
 
 La reproducción histórica de candidatos rechazados usa las copias con hash del
-[archivo externo](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0-close/archive-e788905/manifest.json),
+[archivo externo](../evidence/INDEX.md#migration-p0-close-archive-e788905-manifest-json),
 no herramientas mantenidas en el producto. Los comandos originales están en el informe de cada ronda.
 
 El arnés `run-tests.py` limpia argv antes de unittest; el fallo anterior de todas las suites no
@@ -790,12 +790,12 @@ Esta reanudación no solicita otra revisión independiente por instrucción expl
 
 ## Historial P0c: directo frente a paginado
 
-[Evidencia P0c](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0c/report.md).
+[Evidencia P0c](../evidence/INDEX.md#migration-p0c-report-md).
 
 **No admite P1:** el lector directo sí cabe en los ocho techos estáticos, pero los ladrillos
 nativos completos no caben en memoria y el nuevo ensayo axial mantiene el fallo cutáneo.
 Informe y protocolo prefijado:
-`/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0c/report.md`.
+[`migration-p0c/report.md`](../evidence/INDEX.md#migration-p0c-report-md).
 No cambia runtime, activos, presupuestos ni tolerancias. No es validación clínica.
 
 Los veinte campos se conservan a 1,5 mm; gas pasa a un bit nearest del digestivo, con sus
@@ -848,10 +848,10 @@ Sólo commit local con el trailer indicado; sin revisión delegada por instrucci
 
 ## Historial P0d: división con halo, dominio cutáneo y profundidad
 
-[Evidencia P0d](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0d/report.md).
+[Evidencia P0d](../evidence/INDEX.md#migration-p0d-report-md).
 
 **No admite P1.** Base `655e936`; protocolo previo e informe completos en
-`/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0d/`.
+[`migration-p0d/`](../evidence/INDEX.md#migration-p0d).
 El dominio fijado antes de medir es **Z [−210; +60] mm y φ completo periódico**:
 52,4 mm caudales y 80 mm craneales de margen sobre las diez huellas congeladas.
 La sonda libre puede rodear el tronco; no se reduce el dominio al sector de las tarjetas.
@@ -914,7 +914,7 @@ SHA/trailer, estado y evidencia <1 GB se acreditan en el informe y recibo de est
 
 ## Historial P0e antes de las decisiones del propietario: A y B medidos
 
-[Evidencia P0e](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0e/report.md).
+[Evidencia P0e](../evidence/INDEX.md#migration-p0e-report-md).
 El bloqueo histórico se levanta en la decisión 317 con las condiciones del inicio de este documento;
 los fallos medidos siguen conservados y no pasan a ser resultados aprobados.
 
@@ -923,7 +923,7 @@ shaders completos. B pasa los ocho shaders y samplers, pero falla descarga; ambo
 el fallo cutáneo de D y la cobertura exterior de profundidad sin acreditar. No es validación clínica.
 Base local `3c485774f7a7de7b7765ac6e3648a9a2a9edbfe6`; SHA final y cierre en el recibo externo.
 Protocolo anterior a los ensayos y evidencia nueva:
-`/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p0e/`.
+[`migration-p0e/`](../evidence/INDEX.md#migration-p0e).
 No se cambian runtime, activos, 5174, techos de shader, pitch de 1,5 mm, soporte ni estructuras.
 
 A ensayó 16/24/32 celdas cúbicas con halo positivo de un nodo, tabla de dos texeles RG16F

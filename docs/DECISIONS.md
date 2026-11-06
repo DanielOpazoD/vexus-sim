@@ -9895,7 +9895,7 @@ Detalle: banco pos-PSF 192×1024 a 80 mm, paso lateral 0,866 mm, FWHM lateral 1,
 
 **Consecuencias.** Sin tubos, nodos, segmentos, uniforms, samplers ni GLSL nuevos. La esfera CPU existente (factor 1,6) contiene el máximo medido y `tubeGridReach` conserva el alcance redondeado hacia arriba; el renderer ya reindexa cuando cambia ese alcance. Se añade capacidad con atlas sin sustituir el gate de margen sin atlas: 128/128 tubos, 367/640 nodos, 8/8 segmentos. Ramas fijas y ostia continuos en el banco de todo el ciclo. La pared radial visible NO aporta velocidad tisular al Doppler: solo se conserva Q/A axial y el movimiento respiratorio previo. Retirado `aorta-fixed-caliber` tras abrir las láminas B, conservada esta limitación distinta. La transversa final en apnea mide Ao 19,77→21,48 mm frente a VCI 14,22→14,96 en normal; Ao 19,49→21,15 frente a VCI 24,65→25,02 en grave. El eje largo oblicuo incluye ambas luces: Ao 16,12→17,98 frente a VCI 15,09→15,66 (normal), y Ao 15,41→17,22 frente a VCI 22,07→22,24 (grave). La excursión aórtica supera la venosa en estos cuatro pares. Son calipers de gris 64 en PNG adquiridos, 0,331 mm/píxel y coordenadas relativas al ápice del framebuffer; no radios del clasificador ni precisión clínica. Planos y ajustes constantes dentro de cada par; los diámetros son cuerdas visibles del plano y no siempre el diámetro anatómico completo. El eje largo inicial sin VCI y la línea posterior no medible por sombra/ostium se conservan como negativos en el informe. El control adicional R→R, con B cada 16 ms y persistencia normal, mide excursiones completas Ao/VCI de 1,636/0,758 mm en normal y 1,584/0,932 mm en grave (17/13 cuadros de cine). Incluye el máximo venoso aunque no coincida con el arterial; los umbrales auxiliares 48 y 80 conservan el orden. No se generaliza a todos los planos o respiración.
 
-**Verificación.** `aortaPulse.test.ts` nace rojo en la base. Mutaciones reales de escala fija, inversión, pulso en R, doble retraso y Q/A discordante dan exit 1; candidato pasa FA, dt 0,004/0,002 y congelado. `arterialVelocities.test.ts` recupera caudal con el área instantánea aórtica; sus intervalos no cambian. `aortaGeometry.test.ts` añade capacidad atlas, esfera y continuidad; `aortaPulse.spec.ts` exige en los extremos, normal y grave, identidad TS/GPU exacta y error de velocidad <1e-3. Las láminas de imagen y la exportación de un RR completo se usaron como evidencia en Metal y no entran en CI: en SwiftShader superan los 5 min por caso. En los puntos medios de segmentos de Metal: cero discrepancias y máximo 6,32e-5. Los nodos de tangente no única y la superficie exterior exacta dieron negativos de redondeo en el arnés inicial: se conservan en el informe, sin relajar gates existentes. Láminas abiertas, PNG originales, secuencias de cine con tiempos originales, hashes de programas y logs: `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/aorta/report.md`. El informe distingue verificaciones locales, fallos y trabajo pendiente; no acredita CI protegida ni aceptación clínica.
+**Verificación.** `aortaPulse.test.ts` nace rojo en la base. Mutaciones reales de escala fija, inversión, pulso en R, doble retraso y Q/A discordante dan exit 1; candidato pasa FA, dt 0,004/0,002 y congelado. `arterialVelocities.test.ts` recupera caudal con el área instantánea aórtica; sus intervalos no cambian. `aortaGeometry.test.ts` añade capacidad atlas, esfera y continuidad; `aortaPulse.spec.ts` exige en los extremos, normal y grave, identidad TS/GPU exacta y error de velocidad <1e-3. Las láminas de imagen y la exportación de un RR completo se usaron como evidencia en Metal y no entran en CI: en SwiftShader superan los 5 min por caso. En los puntos medios de segmentos de Metal: cero discrepancias y máximo 6,32e-5. Los nodos de tangente no única y la superficie exterior exacta dieron negativos de redondeo en el arnés inicial: se conservan en el informe, sin relajar gates existentes. Láminas abiertas, PNG originales, secuencias de cine con tiempos originales, hashes de programas y logs: [`aorta/report.md`](evidence/INDEX.md#aorta-report-md). El informe distingue verificaciones locales, fallos y trabajo pendiente; no acredita CI protegida ni aceptación clínica.
 
 **Revisión.** Una revisión independiente halló que el latido redibujaba la vista 3D aun con sus vasos ocultos, de ≈0,07 a 5,5–5,7 ms por adquisición en modo alumno, y el flujo `navigator-respiration` falló porque la imagen 3D ya no volvía exacta a su estado inicial. **El navegador 3D queda sin latido:** es un mapa espacial, 1,6 mm no se distinguen en él y no compensa su coste. No halló defectos en física, geometría ni grado. También confirmó que la renal derecha cruza ≈14,3 mm de vértebra en la base, sin relación con este cambio.
 
@@ -10277,7 +10277,7 @@ Pruebas rojas de cero/perfil corporal, cúpula e inversa13 mm→verdes; once mut
 rechazados. Default idéntico a main 8ee9fbd en 82.251 puntos y diez marcos.
 GPU, distribución Worker/mapa/3D, paridad, JIT/primer cuadro y pico Metal≤2 GB quedan
 para r2b. No ecografía, validación clínica, PR, push ni CI remota.
-[Informe y códigos del cierre serial r2a](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+[Informe y códigos del cierre serial r2a](evidence/INDEX.md#migration-p2-r2a-report-md).
 
 **Ronda P2 r2b, GPU/Worker/3D (04-11-2026).** Sigue pendiente del propietario; r2c la cierra.
 Regla de runtime idéntica en CPU, Worker del corte y GPU: proyección EDT directa `p − τ·∇τ/|∇τ|²`,
@@ -10312,7 +10312,7 @@ Hallazgo heredado de r2a: el contacto regional deja sin acoplar la línea cuya e
 hasta la cara interna cae en celda U, y la ecografía sale negra ahí: 1.060/1.920 líneas acopladas en las
 diez poses (r2a 1.061, main 1.558; portal 11/192). Acoplar los nodos U por la piel, sin exigir presión,
 daría 1.717 (ensayo aislado, compresión de esos nodos sin validar): decisión de r2c.
-[Informe y códigos del cierre serial r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md).
+[Informe y códigos del cierre serial r2b](evidence/INDEX.md#migration-p2-r2b-report-md).
 
 **Ronda P2 r2b-U, contacto y respiración sobre U (04-11-2026).** Sigue pendiente del propietario; r2c la cierra.
 Decisiones del propietario sobre el hallazgo anterior, sin cambiar la clasificación (U sigue sin identidad ni
@@ -10330,7 +10330,7 @@ Quietos al respirar sólo 8 vértices de hígado y 4 de bazo (celda D/E, dentro 
 órganos 0 px; saltos |Δw| ≥ 0,5 en la frontera D/E↔E, 70–398 pares por plano (con la cara E también en la respiración
 bajarían a 0–68: medido, no instalado). Paridad Metal con respiración profunda ≤0,043 % interior y ≤0,036 % en U; la
 de r2b corrió en apnea. Pico Metal 1,732 GB respirando (main 1,857). Diez láminas abiertas, casillas vacías.
-[Informe r2b-U y códigos del cierre](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md).
+[Informe r2b-U y códigos del cierre](evidence/INDEX.md#migration-p2-r2b-u-round-report-md).
 
 **Aceptación del propietario (04-11-2026, r2c).** El propietario revisó las láminas v2 de r1c (seis casillas: sí) y, tras
 las decisiones de r2b-U, delegó el cierre y la fusión de P2 sin nueva revisión por PR. Se aceptan la anotación
@@ -10550,7 +10550,7 @@ techos (decisiones 318–320, `shaderLimits.test.ts`, `bundle-budget.ts`) no se 
 
 **Verificación.** Cada punto cierra con `npm run check` local (o la capa que corresponda, dicho explícitamente), revisión
 adversarial en contexto limpio y recibo de CI; las cifras antes/después quedan en el párrafo del punto y en la
-[evidencia estructural](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/structure-322/README.md) hasta que el
+[evidencia estructural](evidence/INDEX.md#structure-322-readme-md) hasta que el
 punto 9 traslade la evidencia a su índice.
 
 **Punto 5** (05-11-2026, rama `feat/322-p5-twins-20261105`). Registro de gemelos en `tools/twins/registry.ts`, inventario
@@ -10618,6 +10618,26 @@ el mismo PR. Medido sobre el código de esta PR: línea base verde (6 archivos f
 carga media 11 (cada mutante 1–61 s); con 27 mutantes, 507 s con carga 10–13 y 404 s el paso de CI (462 s el trabajo). No
 entra en el veredicto protegido: el workflow `Mutantes reproducibles` corre a mano o cuando cambian esos módulos, sus
 focales, el ejecutor, `vite.config.ts` o `package.json`. Ningún archivo de producto cambia.
+
+**Punto 9** (05-11-2026, rama `feat/322-p9-docs-20261105`). Estado vigente: `docs/estado/anatomia.md`, `imagen.md`,
+`pruebas.md` y `presupuestos.md` (88, 66, 64 y 100 líneas), cada una con «Actualizado: <fecha> sobre main <sha>» y las
+decisiones que la sustentan. Sus cifras no se copian: `tools/docs/estado.ts` lee cada techo de la fuente que lo aplica y
+mide su valor actual con las mismas funciones (47 techos y 8 programas sobre main `bd2f575`: JS 1.069.860 de 1.070.080
+B, descarga s0028 20.433.526 de 25.000.000 B, 16 de 16 samplers en `FRAG_RAWFIELD_ECHO`), y `estado.test.ts` exige que
+existan, que citen decisiones que existen, que sus bloques sean los de `medidas.json` y que cada techo sea el del código
+(dos mutantes caen). Los techos del bundle pasan a `tools/ci/bundleBudgets.ts` con la misma salida de
+`bundle-budget.ts`. Evidencia: `tools/docs/evidence-index.ts` genera `docs/evidence/index.json` e `INDEX.md` con 69
+artefactos de 23 rondas (56 archivos, 11 carpetas con 9.706 archivos, 1 enlace y 1 ausente; 1.566.995.124 B), cada uno
+con ruta en la raíz (`$VEXUS_EVIDENCE_ROOT`, por defecto `~/.t3/scratch/vexus-owner-evidence-20261031`), tipo, bytes,
+SHA-256 y quién lo cita (80 citas de 15 documentos); verifica los hashes cuando la raíz existe y solo avisa cuando no.
+Rutas absolutas a la raíz sobre main `bd2f575`: 96 en 14 documentos antes (88 de la base de la decisión 322, 3 de
+#333 y 5 de #336), 0 después (60 enlaces del índice en Markdown y 36 rutas relativas a la raíz en JSON), hechas con la herramienta.
+Se reescriben también las cinco de este libro mayor: solo cambia el destino del enlace, el texto de las decisiones queda
+igual y el enlace deja de romperse fuera de esta máquina. Rutas absolutas de cualquier tipo en `docs/`: 102 en 19
+documentos antes, 6 en 5 después, históricas y fuera de la raíz (carpeta de trabajo de octubre, evidencia de la
+elevación independiente, la orden que espera a EchoTwin), congeladas: `evidenceIndex.test.ts` rompe ante cualquier otra.
+La cita a `migration-p0d/report.md` ya estaba rota (el informe no existe) y queda como ausente. No se mueve ni se borra
+ningún artefacto. Sin cambio de producto. No es validación clínica.
 
 **Punto 10a** (05-11-2026, base `d761509`, rama `refactor/322-p10a-fidelity-20261105`). Se divide el banco de fidelidad
 por responsabilidad, con el patrón de `ui/panel.ts` y `ui/panel/`: `src/app/fidelity.ts` conserva exclusivamente el

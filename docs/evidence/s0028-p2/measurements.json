@@ -88,7 +88,7 @@
   },
   "payloadSha256": "92091898ad47a9ecf3435f2abea34b40a54d7c60cdce5dd363a4a7dff5aa3107",
   "shaderEstimateAllPass": true,
-  "evidenceRoot": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2",
+  "evidenceRoot": "$VEXUS_EVIDENCE_ROOT/migration-p2-r1c/logical-surface-v2",
   "files": [
     "review.html",
     "reviewed-images.json",
@@ -138,7 +138,7 @@
       "exp-u-skin": 1717,
       "of": 1920
     },
-    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md"
+    "evidence": "$VEXUS_EVIDENCE_ROOT/migration-p2-r2b/report.md"
   },
   "r2bU": {
     "rule": "skin coupling everywhere; U node face = nearest known interface within 12 mm (E) or skin only; U respiration smoothstep(p10, p90, -tau) per chart row",
@@ -205,7 +205,7 @@
     "jsBytes": 1058034,
     "downloadBytes": 20393770,
     "manifestBytes": 37502,
-    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md",
+    "evidence": "$VEXUS_EVIDENCE_ROOT/migration-p2-r2b/u-round/report.md",
     "swiftshaderSpecsPassed": "7/7 (third run; first two lost 15 s cut-map waits under load)",
     "respirationGpuCpuMaxAbsDiff": {
       "known": 5.06e-5,

@@ -52,8 +52,8 @@ deltas exactos ya ahorran 4.331.810 B con sólo 381 B netos de JS añadidos.
 
 ## Láminas y cierre
 
-[Evidencia y reanudación](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/progress.md).
-[Seis láminas](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-mesh/plates/),
+[Evidencia y reanudación](../INDEX.md#migration-mesh-progress-md).
+[Seis láminas](../INDEX.md#migration-mesh-plates),
 abiertas individualmente: oblicua anterior, lateral y posterior, misma cámara/luz/capas.
 ID de formato visible y región 3D idéntica píxel a píxel en las tres parejas. Las transparencias,
 pared/poses provisionales y anatomía P2–P8 pendientes se conservan; no acredita relaciones

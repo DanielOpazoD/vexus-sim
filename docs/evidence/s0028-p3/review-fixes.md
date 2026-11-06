@@ -61,10 +61,10 @@ metadatos 3.788 / 4.096 B. Sin subir techos. M2 sólo añade un comentario TS (0
 Se regeneran las dieciséis láminas originales y una lámina radial antes/después del flanco, con casillas de revisión
 sin rellenar. Sólo cambia la tabla/contacto del flanco; los otros nueve contactos son idénticos byte a byte en JSON.
 La clasificación material CPU/GPU permanece igual; la lámina radial extiende la vista al borde profundo que faltaba.
-[Láminas y lista del propietario](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r3/review-fixes/review.html).
+[Láminas y lista del propietario](../INDEX.md#migration-p3-r3-review-fixes-review-html).
 Verificación dirigida aprobada: prettier, docs-index, lint, typecheck, 24 archivos/150 pruebas (s0028, compression,
 shaderLimits y twinRegistry), calibración y build con sus presupuestos. Las 17 imágenes están abiertas y registradas
 por SHA-256; sus casillas no equivalen a aceptación del propietario.
 
-Evidencia local: `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r3/review-fixes/`.
+Evidencia local: [`migration-p3-r3/review-fixes/`](../INDEX.md#migration-p3-r3-review-fixes).
 La CI protegida «CI verde (check + e2e)» del nuevo SHA sigue siendo la puerta. No se ejecuta otro cierre serial completo.

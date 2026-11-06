@@ -49,7 +49,7 @@ se fijan en el informe externo `vexus-owner-evidence-20261031/ivc-atrium/report.
 y versión histórica; esta tabla incorpora las veinte filas de la propuesta de la auditoría `c577e33`, revisadas aquí.
 Las filas ajenas al bloque conservan el juicio y las limitaciones de esa auditoría; no se atribuye una nueva reconstrucción vascular.
 
-Láminas fuera del repositorio, bajo `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/ivc-atrium/`: `s0028-hitos.png`,
+Láminas fuera del repositorio, bajo [`ivc-atrium/`](../evidence/INDEX.md#ivc-atrium): `s0028-hitos.png`,
 `figures/01-ivc-sagittal.png`, `figures/02-ivc-sagittal-medial.png`, `figures/03-hepatic-confluence.png`,
 `ivc-ad-antes-despues.png` y `poses-vecinas.png`. El informe registra cuáles se abrieron y su juicio.
 Los datos TAC no entran en el producto. **NM** = no medido/homologado; no significa que la relación esté ausente.

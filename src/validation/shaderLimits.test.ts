@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { SAMPLER_GUARD, SLOT_GUARD, WEBGL2_MIN_FRAGMENT_VECTORS } from '../../tools/ci/shaderBudgets';
 import { AnatomyScene } from '../anatomy/scene';
 import { INTERFACE_COUNT } from '../anatomy/interfaces';
 import { TISSUE_COUNT } from '../anatomy/tissues';
@@ -280,10 +281,6 @@ function steeredIdentifiers(look0: string, steered: string): string[] {
 const steeredLeaks = (src: string, ids: readonly string[]): string[] =>
   ids.filter((id) => new RegExp(`\\b${id}\\b`).test(uncommented(src)));
 
-/** Mínimo de MAX_FRAGMENT_UNIFORM_VECTORS en WebGL2; la guarda deja un 20 % de margen. */
-const WEBGL2_MIN_FRAGMENT_VECTORS = 224;
-const SLOT_GUARD = Math.floor(0.8 * WEBGL2_MIN_FRAGMENT_VECTORS);
-
 /**
  * Límites fijos del shader frente a la escena real (Fase 0). Superarlos no da error de
  * compilación: el renderer lanza en ejecución o, peor, el shader trunca tubos en
@@ -356,7 +353,7 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
   // que el eco de interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee; 105 antes de las
   // 9 caras de la pared y las costillas de la decisión 62, en uIface); su programa dirigido (decisión 58),
   // 116: uSteer y uLookSalt. Los programas dirigidos son FRAG_* y entran aquí.
-  it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
+  it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (mínimo WebGL2: ${WEBGL2_MIN_FRAGMENT_VECTORS})`, () => {
     expect(FRAGMENT_SHADERS.length).toBeGreaterThan(8);
     for (const [name, src] of FRAGMENT_SHADERS) {
       const { slots, arrays } = uniformSlots(src);
@@ -389,8 +386,8 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
   // fragmentos. Los programas de la mirada 0 conservan los samplers de siempre; el dirigido de B cambia A o0
   // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada. Los
   // dos de B leen además la pleura parietal de A0 (uHits2) y el rayo único de A (uTrans2), decisión 61.
-  it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
-    for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
+  it(`cada shader de fragmentos declara ≤ ${SAMPLER_GUARD} samplers; B, A y K, los de su diseño`, () => {
+    for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(SAMPLER_GUARD);
     expect(samplersOf(FRAG_RAWFIELD)).toEqual([
       'uSceneTex',
       'uAbdominalAtlas',
@@ -558,7 +555,7 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
     }
   });
 
-  it('los ocho programas especializados s0028 caben en los mismos techos, con ≤ 16 samplers y ≤ 179 ranuras', () => {
+  it(`los ocho programas especializados s0028 caben en los mismos techos, con ≤ ${SAMPLER_GUARD} samplers y ≤ ${SLOT_GUARD} ranuras`, () => {
     const sources = PASSES as unknown as Record<string, string>;
     for (const [name, [tokens, branches]] of Object.entries(limits)) {
       const source = personShader(sources[name], S0028);
@@ -566,7 +563,7 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
       const graph = glslCallGraph(source);
       expect(expandedTokens(graph, 'main'), name).toBeLessThanOrEqual(tokens);
       expect(expandedBranches(graph, 'main'), name).toBeLessThanOrEqual(branches);
-      expect(samplersOf(source).length, name).toBeLessThanOrEqual(16);
+      expect(samplersOf(source).length, name).toBeLessThanOrEqual(SAMPLER_GUARD);
       expect(uniformSlots(source).slots, name).toBeLessThanOrEqual(SLOT_GUARD);
     }
   });

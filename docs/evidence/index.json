@@ -1,0 +1,1085 @@
+{
+ "schema": 1,
+ "root": "$VEXUS_EVIDENCE_ROOT (por defecto ~/.t3/scratch/vexus-owner-evidence-20261031)",
+ "entries": [
+  {
+   "id": "aorta-report-md",
+   "path": "aorta/report.md",
+   "kind": "file",
+   "bytes": 29028,
+   "sha256": "8e77e9f307fdeb5dc1c70945aae34b4ac1bc5db00f72ce0fb0e5a08dc005efce",
+   "files": 1,
+   "round": "aorta",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 314
+    }
+   ]
+  },
+  {
+   "id": "ivc-atrium",
+   "path": "ivc-atrium",
+   "kind": "dir",
+   "bytes": 643426112,
+   "sha256": "9013f3287ccfffd95eb9e37fc6da4f0e2e000dc1450eada1bdb2344802b1e689",
+   "files": 2755,
+   "round": "ivc-atrium",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/relaciones-tac.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "ivc-wall",
+   "path": "ivc-wall",
+   "kind": "dir",
+   "bytes": 295397275,
+   "sha256": "24c336129e5fd38b92fd14f586ce0fde58bb767bec461dea9bc38cf3852b28ef",
+   "files": 1474,
+   "round": "ivc-wall",
+   "citedBy": [
+    {
+     "doc": "docs/fidelity/ivc-wall-frontier.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-e2e-metal",
+   "path": "migration-mesh/e2e-metal",
+   "kind": "dir",
+   "bytes": 107880,
+   "sha256": "7f3a934ea02f5ef8724d2de1abc25e931e4da66504921684e4e1592b001ce5f0",
+   "files": 5,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-geometry-mts",
+   "path": "migration-mesh/geometry.mts",
+   "kind": "file",
+   "bytes": 2920,
+   "sha256": "bad4f2347d2eec95418bf6c4618e80c540dc32be16ff746e192310a16831ad86",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-http-mjs",
+   "path": "migration-mesh/http.mjs",
+   "kind": "file",
+   "bytes": 1771,
+   "sha256": "1a90e83362462a076cf943307db060d8a631b94e23ae1766ac4fc51c8589ada3",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-measure-clean-mjs",
+   "path": "migration-mesh/measure-clean.mjs",
+   "kind": "file",
+   "bytes": 3821,
+   "sha256": "69bca95c827605b53f65df2959c385bed04264ee280f5c92b7b11349c8e88f00",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-measure-mjs",
+   "path": "migration-mesh/measure.mjs",
+   "kind": "file",
+   "bytes": 7907,
+   "sha256": "023e4e892f582c2e86f6680532df1aa65714c47c558b27c24e86d98e3893d34b",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-plates",
+   "path": "migration-mesh/plates",
+   "kind": "dir",
+   "bytes": 3076599,
+   "sha256": "6caf5e907efa5b13a28e029406ca3ed4a8ebdc9e2e48391a142e7ff8d4a0af2d",
+   "files": 6,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-mesh/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-plates-mjs",
+   "path": "migration-mesh/plates.mjs",
+   "kind": "file",
+   "bytes": 3092,
+   "sha256": "2d37dde9cb9b24bc021c855baf2f73c10471ac119f0c4ecdc34ce7ab366034ad",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-progress-md",
+   "path": "migration-mesh/progress.md",
+   "kind": "file",
+   "bytes": 15030,
+   "sha256": "ff4682174579e158bece1b55e7d9a2fc8964cc748f478fc40fd3a4a9fda33822",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-mesh-x64-config-mts",
+   "path": "migration-mesh/x64.config.mts",
+   "kind": "file",
+   "bytes": 507,
+   "sha256": "c84eff21190f9c5b7d52b83fa2f2feb4f2001546b2c089725f4e457504780514",
+   "files": 1,
+   "round": "migration-mesh",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0-close-archive-e788905-manifest-json",
+   "path": "migration-p0-close/archive-e788905/manifest.json",
+   "kind": "file",
+   "bytes": 4922,
+   "sha256": "a25526df0f4474b4d144d6d7bfb25b133b2bdca472e30dcbe95f8279456f0759",
+   "files": 1,
+   "round": "migration-p0-close",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0-close-report-md",
+   "path": "migration-p0-close/report.md",
+   "kind": "file",
+   "bytes": 4869,
+   "sha256": "2e92f94dffc5d364ed9c58c40f2bcc73a6066f57f1ef8bcaae13488a77d0f75f",
+   "files": 1,
+   "round": "migration-p0-close",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0-report-md",
+   "path": "migration-p0/report.md",
+   "kind": "file",
+   "bytes": 16513,
+   "sha256": "0b23b96eb137322ca374ed206bfd786c6bac07818222e8ae7f19fe126cbeb242",
+   "files": 1,
+   "round": "migration-p0",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0b-report-md",
+   "path": "migration-p0b/report.md",
+   "kind": "file",
+   "bytes": 13958,
+   "sha256": "e2b59d5e407742cd584dd5ed963a028f39dccdc275930abe414f0320810ab7b7",
+   "files": 1,
+   "round": "migration-p0b",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0b-venv-cgal-bin-python",
+   "path": "migration-p0b/.venv-cgal/bin/python",
+   "kind": "symlink",
+   "bytes": 10,
+   "sha256": "1669199c20e74a3c0c49b5f38d259fb348fe18d1e7072ae2da73c995d0620ae2",
+   "files": 1,
+   "round": "migration-p0b",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-mesh/closure.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0c-report-md",
+   "path": "migration-p0c/report.md",
+   "kind": "file",
+   "bytes": 21301,
+   "sha256": "fb0b1bd231c1ae9cff48675811515af2f0822cee4edd7fac0ddee559adf57504",
+   "files": 1,
+   "round": "migration-p0c",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0d",
+   "path": "migration-p0d",
+   "kind": "dir",
+   "bytes": 24448519,
+   "sha256": "0654acdcb0710ab1782c6a03c398c557edce34ff68ab3843bd0228a42041cabf",
+   "files": 70,
+   "round": "migration-p0d",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0d-report-md",
+   "path": "migration-p0d/report.md",
+   "kind": "missing",
+   "bytes": 0,
+   "sha256": "",
+   "files": 0,
+   "round": "migration-p0d",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0e",
+   "path": "migration-p0e",
+   "kind": "dir",
+   "bytes": 105269293,
+   "sha256": "fe9b711412a1bfdac9751d9c48c3b3121348f0d1dafa34b5567473df1deb914c",
+   "files": 147,
+   "round": "migration-p0e",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p0e-report-md",
+   "path": "migration-p0e/report.md",
+   "kind": "file",
+   "bytes": 11968,
+   "sha256": "35fe948cbfeef48ef85e483bf9a75c6cc1801db383a815865322dc19d54731c4",
+   "files": 1,
+   "round": "migration-p0e",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r2-report-md",
+   "path": "migration-p1-r2/report.md",
+   "kind": "file",
+   "bytes": 8261,
+   "sha256": "1384045015ce37f6c22d1cfac337fdf80bb85bc8aae16be6603f61b26c2740fd",
+   "files": 1,
+   "round": "migration-p1-r2",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r3-report-md",
+   "path": "migration-p1-r3/report.md",
+   "kind": "file",
+   "bytes": 9838,
+   "sha256": "b5184d5d8f82353e4be710e4fac01adcac9aefe1bf4a41a0cde2d99603f59b4c",
+   "files": 1,
+   "round": "migration-p1-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-amendments-md",
+   "path": "migration-p1-r4/amendments.md",
+   "kind": "file",
+   "bytes": 7409,
+   "sha256": "47119ecb431d31423077a1421692ca7a62db2159e8353e4ee35ee1478672bdfb",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-logs-red-precomputed-log",
+   "path": "migration-p1-r4/logs/red-precomputed.log",
+   "kind": "file",
+   "bytes": 5530,
+   "sha256": "5b624a6da9e89d280612b931305973636e3d3e041a4e851f24c9f2dc583f941c",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-progress-md",
+   "path": "migration-p1-r4/progress.md",
+   "kind": "file",
+   "bytes": 17024,
+   "sha256": "983ae230680f38001639f0ef2a6539ac4ce9ea23f6f1606b6002ab5dcd891c1e",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-checks-json",
+   "path": "migration-p1-r4/r4c/checks.json",
+   "kind": "file",
+   "bytes": 9228,
+   "sha256": "62c7299762dcfbfb542cfd07961ed112a2d45093db037fda15b90ea5ebce22e7",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final",
+   "path": "migration-p1-r4/r4c/final",
+   "kind": "dir",
+   "bytes": 9024195,
+   "sha256": "5d2648d67018fa9d04dd2727d5f55514fb75c6ddbf9f76317d56fdbb9f69acdd",
+   "files": 347,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p1/plates.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-measurement-build-json",
+   "path": "migration-p1-r4/r4c/final/measurement-build.json",
+   "kind": "file",
+   "bytes": 9879,
+   "sha256": "0d11571d290fe7b75ec175a5573e65590b42e824b597a9d6f6285c69a1d9c0fe",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-plates",
+   "path": "migration-p1-r4/r4c/final/plates",
+   "kind": "dir",
+   "bytes": 4257594,
+   "sha256": "b6a27492239c263d865fceb5ea5ecedc2260fa2e26da2a062e52e97655347ebb",
+   "files": 10,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-current-1-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-current-1/result.json",
+   "kind": "file",
+   "bytes": 101344,
+   "sha256": "cd2249bdf110fe2bb60a43b5d21769fd3c3dcfe1fe53203ea6e4ad8943fd013a",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-current-2-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-current-2/result.json",
+   "kind": "file",
+   "bytes": 101500,
+   "sha256": "b4f09ae2d2f9eecce5708291b368750d2c0d6712b87737f6c05934c835bddb25",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-current-3-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-current-3/result.json",
+   "kind": "file",
+   "bytes": 101024,
+   "sha256": "67b069293a23c32b5a825c8a7dae2e36be67812fc386c8ad353a1489b00479c9",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-s0028-1-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-s0028-1/result.json",
+   "kind": "file",
+   "bytes": 104847,
+   "sha256": "b0a161ebd61f808723bc7d7434d30b76c1a902ed556840b538d4113472b71bd8",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-s0028-2-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-s0028-2/result.json",
+   "kind": "file",
+   "bytes": 104005,
+   "sha256": "571a654e825d716b5e08eb7e6501cb7b4faf0bea06e39dc40f0ff88b7d3b46eb",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-metal-s0028-3-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-metal-s0028-3/result.json",
+   "kind": "file",
+   "bytes": 104619,
+   "sha256": "0ff16c9d9b1b3f43794cfb0bdefe7802ab5258055c4a856a30ff7b525be1b446",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-swiftshader-current-1-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-swiftshader-current-1/result.json",
+   "kind": "file",
+   "bytes": 224556,
+   "sha256": "00d9da0bd079caca302f6f9035e023404b244598d5115010948057ac0aeb7c55",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-final-r4c-swiftshader-s0028-1-result-json",
+   "path": "migration-p1-r4/r4c/final/r4c-swiftshader-s0028-1/result.json",
+   "kind": "file",
+   "bytes": 193444,
+   "sha256": "3d352fc8ff77a60268c79c9a9bf98a998ea20a3bba6cc2da3932b42912fe0539",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-plates-early",
+   "path": "migration-p1-r4/r4c/plates-early",
+   "kind": "dir",
+   "bytes": 4270218,
+   "sha256": "087907693c11e1453258e6d916850d5376013f2626ba0815ce07582774f79218",
+   "files": 10,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-r4-r4c-r4c-swiftshader-current-1-result-json",
+   "path": "migration-p1-r4/r4c/r4c-swiftshader-current-1/result.json",
+   "kind": "file",
+   "bytes": 255376,
+   "sha256": "6ffec1df58c9e14bde947f295ede62f52201e8e8a2649adaa1ca3d53d5fbd984",
+   "files": 1,
+   "round": "migration-p1-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p1-report-md",
+   "path": "migration-p1/report.md",
+   "kind": "file",
+   "bytes": 6152,
+   "sha256": "20cc59a9e283360c81a0bbf7f5b63458f94a929df5e1ebf812db6e8a310c1f97",
+   "files": 1,
+   "round": "migration-p1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p1/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r1c-logical-surface-v2",
+   "path": "migration-p2-r1c/logical-surface-v2",
+   "kind": "dir",
+   "bytes": 303881104,
+   "sha256": "15cdbef03e6bde9d695c302ac6676aeb7235ede6813cbd298cfc70d30b11076b",
+   "files": 2500,
+   "round": "migration-p2-r1c",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p2/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r1c-logical-surface-v2-report-md",
+   "path": "migration-p2-r1c/logical-surface-v2/report.md",
+   "kind": "file",
+   "bytes": 6797,
+   "sha256": "bc20d2e3b9808be9ac14b922c1270e90041e377e446b68f8af02c6f69483729d",
+   "files": 1,
+   "round": "migration-p2-r1c",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r1c-logical-surface-v2-review-html",
+   "path": "migration-p2-r1c/logical-surface-v2/review.html",
+   "kind": "file",
+   "bytes": 8738,
+   "sha256": "10f36edc4e6cae82c117dd2c0e70a5f14c8da9dda8d7e2ce127ed5a59b19bf98",
+   "files": 1,
+   "round": "migration-p2-r1c",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r2a-report-md",
+   "path": "migration-p2-r2a/report.md",
+   "kind": "file",
+   "bytes": 6598,
+   "sha256": "c5941bf1c2032b39105ca75bfe7010ca4f44d41a19f660a607b6eafcdb1f6b95",
+   "files": 1,
+   "round": "migration-p2-r2a",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 320
+    },
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r2b-report-md",
+   "path": "migration-p2-r2b/report.md",
+   "kind": "file",
+   "bytes": 7535,
+   "sha256": "fac0ba93c5c04e31b6f5635da5dca74ad432c904d28f9f48de04765a631977c1",
+   "files": 1,
+   "round": "migration-p2-r2b",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 320
+    },
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p2/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r2b-review-html",
+   "path": "migration-p2-r2b/review.html",
+   "kind": "file",
+   "bytes": 5748,
+   "sha256": "0ca429318b0ad581db4f5a405a05056c51b12f930d1fe3c6a4bf5fc7cf2bdbb0",
+   "files": 1,
+   "round": "migration-p2-r2b",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r2b-u-round-report-md",
+   "path": "migration-p2-r2b/u-round/report.md",
+   "kind": "file",
+   "bytes": 6612,
+   "sha256": "3059fd12d934b140d777fcb336fedf5d8402b8a61333eab389161a6192eb72e7",
+   "files": 1,
+   "round": "migration-p2-r2b",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 320
+    },
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p2/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p2-r2b-u-round-review-html",
+   "path": "migration-p2-r2b/u-round/review.html",
+   "kind": "file",
+   "bytes": 7258,
+   "sha256": "e5b2ed228fce1c910e4d9dc4dc5e4ad807febcc552a7ec5a0c90f81c9e00c831",
+   "files": 1,
+   "round": "migration-p2-r2b",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p2/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-clash-coronal-json",
+   "path": "migration-p3-r1/clash-coronal.json",
+   "kind": "file",
+   "bytes": 792,
+   "sha256": "ad835a3d25f6d5d924844f7a5b1b77f0191d73cc2003f9110b5a662b073b87a8",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p3/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-p2-wall-direct-json",
+   "path": "migration-p3-r1/p2-wall-direct.json",
+   "kind": "file",
+   "bytes": 956,
+   "sha256": "824ad180330e0d7d91cd87b01f3f5e5920b7896329f0260ff011c93771dc0d9b",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-report-md",
+   "path": "migration-p3-r1/report.md",
+   "kind": "file",
+   "bytes": 4277,
+   "sha256": "1902a14f8f3176a49373c437324ba10181767b60c086f3905b1c3f76eb03b14d",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-representation-json",
+   "path": "migration-p3-r1/representation.json",
+   "kind": "file",
+   "bytes": 6056,
+   "sha256": "e789e9ff179131183ea2c48c7893de8b5e5e62e84e16c5ea0dad95eb3faa10ed",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-review-html",
+   "path": "migration-p3-r1/review.html",
+   "kind": "file",
+   "bytes": 8457,
+   "sha256": "1d67c62f7ccb680c259b584cbcc9145f534543e5f8c11c35bf851977002eba59",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p3/measurements.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r1-reviewed-images-json",
+   "path": "migration-p3-r1/reviewed-images.json",
+   "kind": "file",
+   "bytes": 6659,
+   "sha256": "5e896060f7819fc7b4c86f7258e8b13c2a0c3cdfec7e3991cd91a30e4ce8b489",
+   "files": 1,
+   "round": "migration-p3-r1",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r2-closure-json",
+   "path": "migration-p3-r2/closure.json",
+   "kind": "file",
+   "bytes": 15104,
+   "sha256": "284301e5a5d010da38bba5cb78d2c6549ec05c9530feb4334004f12ee3b13a16",
+   "files": 1,
+   "round": "migration-p3-r2",
+   "citedBy": [
+    {
+     "doc": "docs/estado/pruebas.md",
+     "decision": null
+    },
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r2-report-md",
+   "path": "migration-p3-r2/report.md",
+   "kind": "file",
+   "bytes": 10777,
+   "sha256": "89856361ccbe4453b5a5d1403295eee9757374a71ecc908181b94c56b5653ae4",
+   "files": 1,
+   "round": "migration-p3-r2",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r2-review-html",
+   "path": "migration-p3-r2/review.html",
+   "kind": "file",
+   "bytes": 20078,
+   "sha256": "155ec0bfc62f1cdf7f471971f342d6ec01280e279ddcb24599e4f424944a48ee",
+   "files": 1,
+   "round": "migration-p3-r2",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r3-closure-json",
+   "path": "migration-p3-r3/closure.json",
+   "kind": "file",
+   "bytes": 16229,
+   "sha256": "426608fb8e286213c700867c49c699e675f2c66dd95238338204d87fc79dad0b",
+   "files": 1,
+   "round": "migration-p3-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r3-report-md",
+   "path": "migration-p3-r3/report.md",
+   "kind": "file",
+   "bytes": 13670,
+   "sha256": "689462d5c75ec15a0a9b5812e5f00ad9892437f7f3918a1c62606b8261fedc49",
+   "files": 1,
+   "round": "migration-p3-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r3-review-fixes",
+   "path": "migration-p3-r3/review-fixes",
+   "kind": "dir",
+   "bytes": 172078198,
+   "sha256": "d28a3c50cc4db4ccb6324cb7cdee1f6b74decb7c1fbd8f578e851b0aa47e8a2c",
+   "files": 2382,
+   "round": "migration-p3-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/review-fixes.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r3-review-fixes-review-html",
+   "path": "migration-p3-r3/review-fixes/review.html",
+   "kind": "file",
+   "bytes": 19501,
+   "sha256": "e492025c3667c87428a5ead1c28d30f33d5d4b3908eb3b496cb88a3ef171237b",
+   "files": 1,
+   "round": "migration-p3-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/review-fixes.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r3-review-html",
+   "path": "migration-p3-r3/review.html",
+   "kind": "file",
+   "bytes": 27155,
+   "sha256": "d72d080fa8cd53f11d24e9a6f556d8a3f13b0880bbd18d67f6128d0285d74745",
+   "files": 1,
+   "round": "migration-p3-r3",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r4-measurements-json",
+   "path": "migration-p3-r4/measurements.json",
+   "kind": "file",
+   "bytes": 16043,
+   "sha256": "64b0e715a7d55123a178503314252ecee908dac9c9813e15c06970af80832cad",
+   "files": 1,
+   "round": "migration-p3-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r4-report-md",
+   "path": "migration-p3-r4/report.md",
+   "kind": "file",
+   "bytes": 13093,
+   "sha256": "49557c2fb25e9720c683e6bfeb9dc0f18c68df6baca600b43e69db4ab52ddc49",
+   "files": 1,
+   "round": "migration-p3-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-p3-r4-review-html",
+   "path": "migration-p3-r4/review.html",
+   "kind": "file",
+   "bytes": 6149,
+   "sha256": "b40a107d956d7f6c344ee4e02a919cd750a91b39b2a721b9d5b381d174b8adee",
+   "files": 1,
+   "round": "migration-p3-r4",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/s0028-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "migration-plan-md",
+   "path": "migration/plan.md",
+   "kind": "file",
+   "bytes": 21976,
+   "sha256": "2a86d4622e4ac7710a0f363f42a756dae0a3525cc047ede8c96acc88b5f57b83",
+   "files": 1,
+   "round": "migration",
+   "citedBy": [
+    {
+     "doc": "docs/anatomia/migracion-s0028.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-readme-md",
+   "path": "structure-322/README.md",
+   "kind": "file",
+   "bytes": 226,
+   "sha256": "8b80e9fd37644168df529a07ed428e4308a740d315e1454c2172f3490cad8b2d",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 322
+    }
+   ]
+  }
+ ]
+}

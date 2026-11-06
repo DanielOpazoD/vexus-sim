@@ -59,7 +59,7 @@
     "count": 16,
     "reviewedWithHashes": 16,
     "ownerReview": "pending",
-    "path": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/review.html"
+    "path": "$VEXUS_EVIDENCE_ROOT/migration-p3-r1/review.html"
   },
   "serialClosure": "pending",
   "p1FocalPairs": [
@@ -300,7 +300,7 @@
     "interpolatedPlaneSamples": 3,
     "spacingMm": 0.75,
     "scope": "liver SDF and direct P2 known band, single coronal plane, not source-mask voxel overlap or volume",
-    "evidence": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p3-r1/clash-coronal.json"
+    "evidence": "$VEXUS_EVIDENCE_ROOT/migration-p3-r1/clash-coronal.json"
   },
   "r2": {
     "package": {

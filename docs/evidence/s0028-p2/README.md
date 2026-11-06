@@ -74,7 +74,7 @@ Formato RG16F intacto; el negativo torácico+1 B sigue fallando. Ocho estimacion
 estáticas contra techos literales, sin homologar la nueva inversión en GPU/JIT/Metal.
 Ninguna evidencia offline equivale a aceptación clínica ni a instalar este paquete.
 
-[Evidencia completa](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2/report.md), [review navegable](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r1c/logical-surface-v2/review.html),
+[Evidencia completa](../INDEX.md#migration-p2-r1c-logical-surface-v2-report-md), [review navegable](../INDEX.md#migration-p2-r1c-logical-surface-v2-review-html),
 [mediciones compactas](measurements.json). Quince imágenes finales abiertas y hashes
 en `reviewed-images.json`. Negativos: diez anclas, anillo uniforme, invasión, posterior.
 Cierre serial y SHA en `checks.json`, pmset/carga antes y después de cada tiempo.
@@ -88,13 +88,13 @@ ambiental preexistente; CI no las ejecuta. No hay agentes ni operaciones remotas
 R1 y el primer candidato r1c quedan intactos. R1 c anterior tenía 76,57% de cobertura,
 salto máximo 28 mm y cinco huellas bajo 90%; no se presenta como aceptado. Sus informes
 están en la raíz externa `migration-p2-r1c`; esta revisión vive en `logical-surface-v2`.
-R2 a CPU preexistente permanece documentada en [su informe](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+R2 a CPU preexistente permanece documentada en [su informe](../INDEX.md#migration-p2-r2a-report-md).
 
 ## Ronda r2a CPU sobre el paquete v2
 
 El runtime CPU instala logical-surface-v2 conservando formato, poses y default.
 Cúpula E/P7 preservada, sin recorte hepático; U explícita, sin normal si el stencil
-cruza U. [Diez planos, fracciones U, negativos, presupuestos y códigos seriales](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2a/report.md).
+cruza U. [Diez planos, fracciones U, negativos, presupuestos y códigos seriales](../INDEX.md#migration-p2-r2a-report-md).
 Las 117 máscaras, mallas fuente y reposo compartido permanecen. La inversa tiene
 pliegues:32.108 parches comparados,4 soportes diferentes y7 ramas alternativas,
 0 cambios grasa/banda/interior donde ambas conocidas; sin promesa de paridad global.
@@ -125,8 +125,8 @@ casillas vacías. Las ecografías r2b salen negras donde la línea no acopla: el
 contacto regional de r2a no acopla sobre celdas U (líneas acopladas: main 1.558,
 r2a 1.061, r2b 1.060 de 1.920; portal 11/192). Decisión del propietario en r2c.
 
-[Informe r2b](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/report.md),
-[láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/review.html) y
+[Informe r2b](../INDEX.md#migration-p2-r2b-report-md),
+[láminas navegables](../INDEX.md#migration-p2-r2b-review-html) y
 [mediciones compactas](measurements.json). Decisión 320 aceptada por el propietario el 04-11-2026;
 sin validación clínica.
 
@@ -144,6 +144,6 @@ pico Metal 1,732 GB respirando (main 1,857); JS 1.058.034/1.070.080 B; descarga 
 dentro; lecturas 17/18. SwiftShader x64 7/7 (gpu-ready 53–61 s; peso respiratorio GPU/CPU |Δw| ≤5,1e-5). Diez láminas TAC/CPU/GPU/cara del contacto/ecografía main y r2b-U abiertas,
 casillas vacías.
 
-[Informe r2b-U](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/report.md),
-[láminas navegables](/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p2-r2b/u-round/review.html) y
+[Informe r2b-U](../INDEX.md#migration-p2-r2b-u-round-report-md),
+[láminas navegables](../INDEX.md#migration-p2-r2b-u-round-review-html) y
 [mediciones compactas](measurements.json) (bloque `r2bU`). Sin validación clínica.

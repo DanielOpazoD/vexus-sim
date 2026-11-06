@@ -1,6 +1,6 @@
 {
   "openedAt": "2026-11-03T10:33:04.697665-05:00",
-  "root": "/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/migration-p1-r4/r4c/final",
+  "root": "$VEXUS_EVIDENCE_ROOT/migration-p1-r4/r4c/final",
   "rows": [
     {
       "file": "plates/01-subxiphoid.png",

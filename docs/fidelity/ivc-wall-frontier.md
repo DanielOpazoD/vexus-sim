@@ -115,7 +115,7 @@ se conservan como arnés fallido; `before-metal-03` y `experiment-metal` usan el
 framebuffer real, y M la franja adquirida visible. Una línea elegida por mayor
 cuerda VCI puede atravesar supra en subxifoidea: no es el gate protocolar adquirido.
 
-Evidencia externa: `/Users/daniel/.t3/scratch/vexus-owner-evidence-20261031/ivc-wall/`:
+Evidencia externa: [`ivc-wall/`](../evidence/INDEX.md#ivc-wall):
 `before/`, `experiment-mean/`, `experiment-low-corrected/`, `experiment-high-corrected/`,
 `experiment-dt2/`, `mass.json`, `benchmark.json`, perfil CPU, builds, fuentes y logs.
 El prototipo reproducible queda en `experiment-source/` y `experiment-files/`;

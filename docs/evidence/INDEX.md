@@ -1,0 +1,83 @@
+# Índice de la evidencia
+
+Evidencia pesada de las rondas (informes, láminas, medidas, logs), fuera de Git en una raíz versionada por fecha:
+`$VEXUS_EVIDENCE_ROOT`, por defecto `~/.t3/scratch/vexus-owner-evidence-20261031`. Los documentos citan cada artefacto por su ancla en esta
+página (o en JSON como `$VEXUS_EVIDENCE_ROOT/<ruta>`), nunca por una ruta absoluta (decisión 322, punto 9).
+
+Generado por `tools/docs/evidence-index.ts` desde `index.json`, que guarda además el SHA-256 completo. Con la raíz
+presente, `node --import tsx tools/docs/evidence-index.ts --check` verifica tipo, bytes y hash de cada entrada; sin
+ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ruta` de sus archivos, ordenadas.
+
+69 artefactos; 1.566.995.124 bytes.
+
+| Id | Ruta en la raíz | Tipo | Archivos | Bytes | SHA-256 | Citado en (decisión) |
+| --- | --- | --- | --- | --- | --- | --- |
+| <a id="aorta-report-md"></a>`aorta-report-md` | `aorta/report.md` | archivo | 1 | 29.028 | `8e77e9f307fd` | DECISIONS.md (314) |
+| <a id="ivc-atrium"></a>`ivc-atrium` | `ivc-atrium` | carpeta | 2755 | 643.426.112 | `9013f3287ccf` | anatomia/relaciones-tac.md |
+| <a id="ivc-wall"></a>`ivc-wall` | `ivc-wall` | carpeta | 1474 | 295.397.275 | `24c336129e5f` | fidelity/ivc-wall-frontier.md |
+| <a id="migration-mesh-e2e-metal"></a>`migration-mesh-e2e-metal` | `migration-mesh/e2e-metal` | carpeta | 5 | 107.880 | `7f3a934ea02f` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-geometry-mts"></a>`migration-mesh-geometry-mts` | `migration-mesh/geometry.mts` | archivo | 1 | 2920 | `bad4f2347d2e` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-http-mjs"></a>`migration-mesh-http-mjs` | `migration-mesh/http.mjs` | archivo | 1 | 1771 | `1a90e8336246` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-measure-clean-mjs"></a>`migration-mesh-measure-clean-mjs` | `migration-mesh/measure-clean.mjs` | archivo | 1 | 3821 | `69bca95c8276` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-measure-mjs"></a>`migration-mesh-measure-mjs` | `migration-mesh/measure.mjs` | archivo | 1 | 7907 | `023e4e892f58` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-plates"></a>`migration-mesh-plates` | `migration-mesh/plates` | carpeta | 6 | 3.076.599 | `6caf5e907efa` | anatomia/migracion-s0028.md, evidence/s0028-mesh/README.md |
+| <a id="migration-mesh-plates-mjs"></a>`migration-mesh-plates-mjs` | `migration-mesh/plates.mjs` | archivo | 1 | 3092 | `2d37dde9cb9b` | evidence/s0028-mesh/closure.json |
+| <a id="migration-mesh-progress-md"></a>`migration-mesh-progress-md` | `migration-mesh/progress.md` | archivo | 1 | 15.030 | `ff4682174579` | evidence/s0028-mesh/README.md |
+| <a id="migration-mesh-x64-config-mts"></a>`migration-mesh-x64-config-mts` | `migration-mesh/x64.config.mts` | archivo | 1 | 507 | `c84eff21190f` | evidence/s0028-mesh/closure.json |
+| <a id="migration-p0-close-archive-e788905-manifest-json"></a>`migration-p0-close-archive-e788905-manifest-json` | `migration-p0-close/archive-e788905/manifest.json` | archivo | 1 | 4922 | `a25526df0f44` | anatomia/migracion-s0028.md |
+| <a id="migration-p0-close-report-md"></a>`migration-p0-close-report-md` | `migration-p0-close/report.md` | archivo | 1 | 4869 | `2e92f94dffc5` | anatomia/migracion-s0028.md |
+| <a id="migration-p0-report-md"></a>`migration-p0-report-md` | `migration-p0/report.md` | archivo | 1 | 16.513 | `0b23b96eb137` | anatomia/migracion-s0028.md |
+| <a id="migration-p0b-report-md"></a>`migration-p0b-report-md` | `migration-p0b/report.md` | archivo | 1 | 13.958 | `e2b59d5e4077` | anatomia/migracion-s0028.md |
+| <a id="migration-p0b-venv-cgal-bin-python"></a>`migration-p0b-venv-cgal-bin-python` | `migration-p0b/.venv-cgal/bin/python` | enlace | 1 | 10 | `1669199c20e7` | evidence/s0028-mesh/closure.json |
+| <a id="migration-p0c-report-md"></a>`migration-p0c-report-md` | `migration-p0c/report.md` | archivo | 1 | 21.301 | `fb0b1bd231c1` | anatomia/migracion-s0028.md |
+| <a id="migration-p0d"></a>`migration-p0d` | `migration-p0d` | carpeta | 70 | 24.448.519 | `0654acdcb071` | anatomia/migracion-s0028.md |
+| <a id="migration-p0d-report-md"></a>`migration-p0d-report-md` | `migration-p0d/report.md` | ausente | 0 | 0 | `` | anatomia/migracion-s0028.md |
+| <a id="migration-p0e"></a>`migration-p0e` | `migration-p0e` | carpeta | 147 | 105.269.293 | `fe9b711412a1` | anatomia/migracion-s0028.md |
+| <a id="migration-p0e-report-md"></a>`migration-p0e-report-md` | `migration-p0e/report.md` | archivo | 1 | 11.968 | `35fe948cbfee` | anatomia/migracion-s0028.md |
+| <a id="migration-p1-r2-report-md"></a>`migration-p1-r2-report-md` | `migration-p1-r2/report.md` | archivo | 1 | 8261 | `1384045015ce` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r3-report-md"></a>`migration-p1-r3-report-md` | `migration-p1-r3/report.md` | archivo | 1 | 9838 | `b5184d5d8f82` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-amendments-md"></a>`migration-p1-r4-amendments-md` | `migration-p1-r4/amendments.md` | archivo | 1 | 7409 | `47119ecb431d` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-logs-red-precomputed-log"></a>`migration-p1-r4-logs-red-precomputed-log` | `migration-p1-r4/logs/red-precomputed.log` | archivo | 1 | 5530 | `5b624a6da9e8` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-progress-md"></a>`migration-p1-r4-progress-md` | `migration-p1-r4/progress.md` | archivo | 1 | 17.024 | `983ae230680f` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-r4c-checks-json"></a>`migration-p1-r4-r4c-checks-json` | `migration-p1-r4/r4c/checks.json` | archivo | 1 | 9228 | `62c7299762dc` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-r4c-final"></a>`migration-p1-r4-r4c-final` | `migration-p1-r4/r4c/final` | carpeta | 347 | 9.024.195 | `5d2648d67018` | evidence/s0028-p1/README.md, evidence/s0028-p1/plates.json |
+| <a id="migration-p1-r4-r4c-final-measurement-build-json"></a>`migration-p1-r4-r4c-final-measurement-build-json` | `migration-p1-r4/r4c/final/measurement-build.json` | archivo | 1 | 9879 | `0d11571d290f` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-r4c-final-plates"></a>`migration-p1-r4-r4c-final-plates` | `migration-p1-r4/r4c/final/plates` | carpeta | 10 | 4.257.594 | `b6a27492239c` | anatomia/migracion-s0028.md |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-current-1-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-current-1-result-json` | `migration-p1-r4/r4c/final/r4c-metal-current-1/result.json` | archivo | 1 | 101.344 | `cd2249bdf110` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-current-2-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-current-2-result-json` | `migration-p1-r4/r4c/final/r4c-metal-current-2/result.json` | archivo | 1 | 101.500 | `b4f09ae2d2f9` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-current-3-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-current-3-result-json` | `migration-p1-r4/r4c/final/r4c-metal-current-3/result.json` | archivo | 1 | 101.024 | `67b069293a23` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-s0028-1-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-s0028-1-result-json` | `migration-p1-r4/r4c/final/r4c-metal-s0028-1/result.json` | archivo | 1 | 104.847 | `b0a161ebd61f` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-s0028-2-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-s0028-2-result-json` | `migration-p1-r4/r4c/final/r4c-metal-s0028-2/result.json` | archivo | 1 | 104.005 | `571a654e825d` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-metal-s0028-3-result-json"></a>`migration-p1-r4-r4c-final-r4c-metal-s0028-3-result-json` | `migration-p1-r4/r4c/final/r4c-metal-s0028-3/result.json` | archivo | 1 | 104.619 | `0ff16c9d9b1b` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-swiftshader-current-1-result-json"></a>`migration-p1-r4-r4c-final-r4c-swiftshader-current-1-result-json` | `migration-p1-r4/r4c/final/r4c-swiftshader-current-1/result.json` | archivo | 1 | 224.556 | `00d9da0bd079` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-final-r4c-swiftshader-s0028-1-result-json"></a>`migration-p1-r4-r4c-final-r4c-swiftshader-s0028-1-result-json` | `migration-p1-r4/r4c/final/r4c-swiftshader-s0028-1/result.json` | archivo | 1 | 193.444 | `3d352fc8ff77` | evidence/s0028-p1/measurements.json |
+| <a id="migration-p1-r4-r4c-plates-early"></a>`migration-p1-r4-r4c-plates-early` | `migration-p1-r4/r4c/plates-early` | carpeta | 10 | 4.270.218 | `087907693c11` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-r4-r4c-r4c-swiftshader-current-1-result-json"></a>`migration-p1-r4-r4c-r4c-swiftshader-current-1-result-json` | `migration-p1-r4/r4c/r4c-swiftshader-current-1/result.json` | archivo | 1 | 255.376 | `6ffec1df58c9` | evidence/s0028-p1/README.md |
+| <a id="migration-p1-report-md"></a>`migration-p1-report-md` | `migration-p1/report.md` | archivo | 1 | 6152 | `20cc59a9e283` | evidence/s0028-p1/README.md |
+| <a id="migration-p2-r1c-logical-surface-v2"></a>`migration-p2-r1c-logical-surface-v2` | `migration-p2-r1c/logical-surface-v2` | carpeta | 2500 | 303.881.104 | `15cdbef03e6b` | evidence/s0028-p2/measurements.json |
+| <a id="migration-p2-r1c-logical-surface-v2-report-md"></a>`migration-p2-r1c-logical-surface-v2-report-md` | `migration-p2-r1c/logical-surface-v2/report.md` | archivo | 1 | 6797 | `bc20d2e3b980` | evidence/s0028-p2/README.md |
+| <a id="migration-p2-r1c-logical-surface-v2-review-html"></a>`migration-p2-r1c-logical-surface-v2-review-html` | `migration-p2-r1c/logical-surface-v2/review.html` | archivo | 1 | 8738 | `10f36edc4e6c` | evidence/s0028-p2/README.md |
+| <a id="migration-p2-r2a-report-md"></a>`migration-p2-r2a-report-md` | `migration-p2-r2a/report.md` | archivo | 1 | 6598 | `c5941bf1c203` | DECISIONS.md (320), anatomia/migracion-s0028.md, evidence/s0028-p2/README.md |
+| <a id="migration-p2-r2b-report-md"></a>`migration-p2-r2b-report-md` | `migration-p2-r2b/report.md` | archivo | 1 | 7535 | `fac0ba93c5c0` | DECISIONS.md (320), evidence/s0028-p2/README.md, evidence/s0028-p2/measurements.json |
+| <a id="migration-p2-r2b-review-html"></a>`migration-p2-r2b-review-html` | `migration-p2-r2b/review.html` | archivo | 1 | 5748 | `0ca429318b0a` | evidence/s0028-p2/README.md |
+| <a id="migration-p2-r2b-u-round-report-md"></a>`migration-p2-r2b-u-round-report-md` | `migration-p2-r2b/u-round/report.md` | archivo | 1 | 6612 | `3059fd12d934` | DECISIONS.md (320), evidence/s0028-p2/README.md, evidence/s0028-p2/measurements.json |
+| <a id="migration-p2-r2b-u-round-review-html"></a>`migration-p2-r2b-u-round-review-html` | `migration-p2-r2b/u-round/review.html` | archivo | 1 | 7258 | `e5b2ed228fce` | evidence/s0028-p2/README.md |
+| <a id="migration-p3-r1-clash-coronal-json"></a>`migration-p3-r1-clash-coronal-json` | `migration-p3-r1/clash-coronal.json` | archivo | 1 | 792 | `ad835a3d25f6` | evidence/s0028-p3/README.md, evidence/s0028-p3/measurements.json |
+| <a id="migration-p3-r1-p2-wall-direct-json"></a>`migration-p3-r1-p2-wall-direct-json` | `migration-p3-r1/p2-wall-direct.json` | archivo | 1 | 956 | `824ad180330e` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r1-report-md"></a>`migration-p3-r1-report-md` | `migration-p3-r1/report.md` | archivo | 1 | 4277 | `1902a14f8f31` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r1-representation-json"></a>`migration-p3-r1-representation-json` | `migration-p3-r1/representation.json` | archivo | 1 | 6056 | `e789e9ff1791` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r1-review-html"></a>`migration-p3-r1-review-html` | `migration-p3-r1/review.html` | archivo | 1 | 8457 | `1d67c62f7ccb` | evidence/s0028-p3/README.md, evidence/s0028-p3/measurements.json |
+| <a id="migration-p3-r1-reviewed-images-json"></a>`migration-p3-r1-reviewed-images-json` | `migration-p3-r1/reviewed-images.json` | archivo | 1 | 6659 | `5e896060f781` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r2-closure-json"></a>`migration-p3-r2-closure-json` | `migration-p3-r2/closure.json` | archivo | 1 | 15.104 | `284301e5a5d0` | estado/pruebas.md, evidence/s0028-p3/README.md |
+| <a id="migration-p3-r2-report-md"></a>`migration-p3-r2-report-md` | `migration-p3-r2/report.md` | archivo | 1 | 10.777 | `89856361ccbe` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r2-review-html"></a>`migration-p3-r2-review-html` | `migration-p3-r2/review.html` | archivo | 1 | 20.078 | `155ec0bfc62f` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r3-closure-json"></a>`migration-p3-r3-closure-json` | `migration-p3-r3/closure.json` | archivo | 1 | 16.229 | `426608fb8e28` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r3-report-md"></a>`migration-p3-r3-report-md` | `migration-p3-r3/report.md` | archivo | 1 | 13.670 | `689462d5c75e` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r3-review-fixes"></a>`migration-p3-r3-review-fixes` | `migration-p3-r3/review-fixes` | carpeta | 2382 | 172.078.198 | `d28a3c50cc4d` | evidence/s0028-p3/review-fixes.md |
+| <a id="migration-p3-r3-review-fixes-review-html"></a>`migration-p3-r3-review-fixes-review-html` | `migration-p3-r3/review-fixes/review.html` | archivo | 1 | 19.501 | `e492025c3667` | evidence/s0028-p3/review-fixes.md |
+| <a id="migration-p3-r3-review-html"></a>`migration-p3-r3-review-html` | `migration-p3-r3/review.html` | archivo | 1 | 27.155 | `d72d080fa8cd` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r4-measurements-json"></a>`migration-p3-r4-measurements-json` | `migration-p3-r4/measurements.json` | archivo | 1 | 16.043 | `64b0e715a7d5` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r4-report-md"></a>`migration-p3-r4-report-md` | `migration-p3-r4/report.md` | archivo | 1 | 13.093 | `49557c2fb25e` | evidence/s0028-p3/README.md |
+| <a id="migration-p3-r4-review-html"></a>`migration-p3-r4-review-html` | `migration-p3-r4/review.html` | archivo | 1 | 6149 | `b40a107d956d` | evidence/s0028-p3/README.md |
+| <a id="migration-plan-md"></a>`migration-plan-md` | `migration/plan.md` | archivo | 1 | 21.976 | `2a86d4622e4a` | anatomia/migracion-s0028.md |
+| <a id="structure-322-readme-md"></a>`structure-322-readme-md` | `structure-322/README.md` | archivo | 1 | 226 | `8b80e9fd3764` | DECISIONS.md (322) |

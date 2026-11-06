@@ -1,4 +1,4 @@
-import baseline from './fixtures/person-glsl-r3.json';
+import baseline from './fixtures/person-glsl-r3.json' with { type: 'json' };
 import type { GlslMangleContext } from './glslMinify';
 
 /** ABI r3 de los programas compartidos. Este artefacto sólo se usa durante el build. */

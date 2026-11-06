@@ -1,5 +1,5 @@
-import { fixtureInstalled } from './support/legacyPerson/state';
 // @tier slow
+import { fixtureInstalled } from './support/legacyPerson/state';
 import { describe, expect, it } from 'vitest';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { Simulator } from '../app/simulator';

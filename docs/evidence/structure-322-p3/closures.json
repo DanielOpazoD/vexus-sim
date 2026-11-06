@@ -1,0 +1,157 @@
+{
+  "base": "5d79321c6448888da9fb3cc562495c9d183ed54a",
+  "rebasedMain": "12630d9",
+  "implementationSha": "c9745dcb8dd1200ee726169c2e7a57109934456f",
+  "before": {
+    "default": 1069860,
+    "s0028": 1069860,
+    "union": 1069860
+  },
+  "after": {
+    "graphSha256": "115559527c43012561e2e387959e07d7d322b07e246429d5302146438ff11627",
+    "default": {
+      "bytes": 1027918,
+      "margin": 2048,
+      "ceiling": 1029966,
+      "files": [
+        "assets/anatomy.glsl-D1YqE_Tb.js",
+        "assets/anatomyScene-COvWFvup.js",
+        "assets/bootstrap-BZYeEAsr.js",
+        "assets/cpu-KGKffuwH.js",
+        "assets/cutMapView-CUZZJvbb.js",
+        "assets/cutMapWorker-BWX9mkSZ.js",
+        "assets/deformation-sOIkDRda.js",
+        "assets/gatePlacement-BJtyhboW.js",
+        "assets/gateTransmission-DdpahJED.js",
+        "assets/index-7H5d5y02.js",
+        "assets/loadPinnedAsset-DAtuIsXb.js",
+        "assets/navigator3d-DigYpWM3.js",
+        "assets/personAssets-B8dJj1rf.js",
+        "assets/preload-helper-CZsVA0r5.js",
+        "assets/pwMeasurements-uO5N5Fws.js",
+        "assets/query-CebLK_Ts.js",
+        "assets/retroperitoneum-DQB0VOwv.js",
+        "assets/runtime-1Ye8qkPV.js",
+        "assets/series-B2KFfNUr.js",
+        "assets/sourceVolume-cBmDqeBH.js",
+        "assets/startPoints-CYbv__ed.js",
+        "assets/structureIdentity-CuJa3tLq.js",
+        "assets/surfaces-LBBX6pHY.js",
+        "assets/teacherTab-DTBXj3eM.js",
+        "assets/testHooks-B_jx7qdT.js",
+        "assets/thoracicSurfaceData-yamol18H.js",
+        "assets/three-Op4tcoii.js",
+        "assets/units-CmjDNvh2.js",
+        "assets/vesselTree-Bib2r9ZU.js",
+        "doppler-worklet.js"
+      ]
+    },
+    "s0028": {
+      "bytes": 1065618,
+      "margin": 4462,
+      "ceiling": 1070080,
+      "files": [
+        "assets/anatomy.glsl-D1YqE_Tb.js",
+        "assets/anatomyScene-COvWFvup.js",
+        "assets/bootstrap-BZYeEAsr.js",
+        "assets/cpu-BsKLM1zL.js",
+        "assets/cutMapView-CUZZJvbb.js",
+        "assets/cutMapWorker-BWX9mkSZ.js",
+        "assets/deformation-sOIkDRda.js",
+        "assets/gatePlacement-BJtyhboW.js",
+        "assets/gateTransmission-DdpahJED.js",
+        "assets/index-7H5d5y02.js",
+        "assets/loadPinnedAsset-DAtuIsXb.js",
+        "assets/navigator3d-DigYpWM3.js",
+        "assets/personAssets-B8dJj1rf.js",
+        "assets/preload-helper-CZsVA0r5.js",
+        "assets/pwMeasurements-uO5N5Fws.js",
+        "assets/query-CebLK_Ts.js",
+        "assets/retroperitoneum-DQB0VOwv.js",
+        "assets/runtime-CLFAL63x.js",
+        "assets/series-B2KFfNUr.js",
+        "assets/sourceVolume-cBmDqeBH.js",
+        "assets/startPoints-CYbv__ed.js",
+        "assets/structureIdentity-CuJa3tLq.js",
+        "assets/surfaces-eBvnpwjv.js",
+        "assets/teacherTab-DTBXj3eM.js",
+        "assets/testHooks-B_jx7qdT.js",
+        "assets/thoracicSurfaceData-yamol18H.js",
+        "assets/three-Op4tcoii.js",
+        "assets/units-CmjDNvh2.js",
+        "assets/vesselTree-Bib2r9ZU.js",
+        "doppler-worklet.js"
+      ]
+    },
+    "worker": {
+      "default": {
+        "bytes": 158066,
+        "margin": 871900,
+        "ceiling": 1029966,
+        "files": [
+          "assets/anatomyScene-COvWFvup.js",
+          "assets/cpu-KGKffuwH.js",
+          "assets/cutMapWorker-BWX9mkSZ.js",
+          "assets/deformation-sOIkDRda.js",
+          "assets/personAssets-B8dJj1rf.js",
+          "assets/preload-helper-CZsVA0r5.js",
+          "assets/query-CebLK_Ts.js",
+          "assets/retroperitoneum-DQB0VOwv.js",
+          "assets/sourceVolume-cBmDqeBH.js",
+          "assets/structureIdentity-CuJa3tLq.js",
+          "assets/vesselTree-Bib2r9ZU.js"
+        ]
+      },
+      "s0028": {
+        "bytes": 166996,
+        "margin": 903084,
+        "ceiling": 1070080,
+        "files": [
+          "assets/anatomyScene-COvWFvup.js",
+          "assets/cpu-BsKLM1zL.js",
+          "assets/cutMapWorker-BWX9mkSZ.js",
+          "assets/deformation-sOIkDRda.js",
+          "assets/personAssets-B8dJj1rf.js",
+          "assets/preload-helper-CZsVA0r5.js",
+          "assets/query-CebLK_Ts.js",
+          "assets/sourceVolume-cBmDqeBH.js",
+          "assets/structureIdentity-CuJa3tLq.js",
+          "assets/vesselTree-Bib2r9ZU.js"
+        ]
+      }
+    },
+    "totalJsBytes": 1077860,
+    "sharedBytes": 1015676
+  },
+  "defaultOnlyChunks": [
+    {
+      "file": "assets/cpu-KGKffuwH.js",
+      "bytes": 10126,
+      "sha256": "8d3c92e072a53c36f95bca0e25185e467a6c13dd5a924ded31f11d5d34e18d6b",
+      "modules": [
+        "src/anatomy/hepaticCostalWall.ts",
+        "src/anatomy/people/default/assets.ts",
+        "src/anatomy/people/default/classifier.ts",
+        "src/anatomy/people/default/cpu.ts",
+        "src/anatomy/people/default/kidneyInterior.ts"
+      ]
+    },
+    {
+      "file": "assets/runtime-1Ye8qkPV.js",
+      "bytes": 1631,
+      "sha256": "70fe866e0e8645827150756d41a6f5cca7a022924610c0d558f4152266d77b1c",
+      "modules": ["src/anatomy/people/default/runtime.ts"]
+    },
+    {
+      "file": "assets/surfaces-LBBX6pHY.js",
+      "bytes": 485,
+      "sha256": "a5c917fd316bfc78e761186f8c1be78e9cc47d74020b947bdd6ad43640f0a4c8",
+      "modules": ["src/anatomy/people/default/surfaces.ts"]
+    }
+  ],
+  "privateDefaultModules": [],
+  "downloadBytes": 20433526,
+  "metadataIncrementBytes": 3788,
+  "shaderFixtureSha256": "54f26dfd9b28f701e47fcfbff96e45ed17389818e2672e74b55fec291e21f7f9",
+  "abiFixtureSha256": "4e8192d857763666d6417863399909f44c7a9d01d1d018966c4c1e634f40987d"
+}

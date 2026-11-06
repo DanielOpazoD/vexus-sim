@@ -1,0 +1,231 @@
+{
+  "reportSha256": "970f4384ac9a926dbf9f2758bd802e8d3a0c60b2291caf2aa0fb57abd1e65a7b",
+  "head": "c9745dcb8dd1200ee726169c2e7a57109934456f",
+  "summary": {
+    "total": 29,
+    "killed": 29,
+    "survived": 0,
+    "error": 0,
+    "notRun": 0,
+    "seconds": 508.8,
+    "modules": [
+      "src/probe/contact.ts",
+      "src/anatomy/people/s0028/wall.ts",
+      "src/anatomy/gpu/s0028Wall.glsl.ts",
+      "src/anatomy/people/s0028/solids.ts",
+      "src/anatomy/scene.ts",
+      "src/anatomy/people/s0028/classifier.ts",
+      "src/ui/cutMapWorker.ts",
+      "src/anatomy/structureIdentity.ts"
+    ]
+  },
+  "baselinePassed": true,
+  "treeUnchanged": true,
+  "modulesRestored": true,
+  "exitCode": 0,
+  "mutants": [
+    {
+      "name": "U-sin-acoplar",
+      "module": "src/probe/contact.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "U-sin-E-en-contacto",
+      "module": "src/anatomy/people/s0028/wall.ts",
+      "status": "killed",
+      "failedAssertions": 4,
+      "error": null
+    },
+    {
+      "name": "E-rotulado-D",
+      "module": "src/anatomy/people/s0028/wall.ts",
+      "status": "killed",
+      "failedAssertions": 3,
+      "error": null
+    },
+    {
+      "name": "E-tratado-como-D-en-clasificacion",
+      "module": "src/anatomy/people/s0028/wall.ts",
+      "status": "killed",
+      "failedAssertions": 5,
+      "error": null
+    },
+    {
+      "name": "rampa-U-nula-CPU",
+      "module": "src/anatomy/people/s0028/wall.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "mapa-E-sin-verificar",
+      "module": "src/anatomy/people/s0028/wall.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "busqueda-GPU-en-bucle",
+      "module": "src/anatomy/gpu/s0028Wall.glsl.ts",
+      "status": "killed",
+      "failedAssertions": 3,
+      "error": null
+    },
+    {
+      "name": "rampa-U-nula-GPU",
+      "module": "src/anatomy/gpu/s0028Wall.glsl.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "conflicto-por-precedencia",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 3,
+      "error": null
+    },
+    {
+      "name": "grasa-sobre-mascara-fuente",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "hueso-contra-pared-como-choque",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "U-sin-duenos-como-conocido",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "grasa-sin-verificar",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "grasa-solo-sin-dueno",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "grasa-en-lamina-de-vasos",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "nearest-por-suelo",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "cajas-sin-OR",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "certeza-pared-invertida",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "hueso-duplicado",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "fuera-de-cajas-false",
+      "module": "src/anatomy/people/s0028/solids.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "ligamento-venoso-analitico",
+      "module": "src/anatomy/scene.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "conflicto-elige-organo",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 4,
+      "error": null
+    },
+    {
+      "name": "U-renal-como-corteza",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 3,
+      "error": null
+    },
+    {
+      "name": "rinon-analitico-de-otra-persona",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 7,
+      "error": null
+    },
+    {
+      "name": "vasos-procedurales-en-rinon-U",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "U-pared-como-musculo",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 5,
+      "error": null
+    },
+    {
+      "name": "quiste-como-dueno-cualquiera",
+      "module": "src/anatomy/people/s0028/classifier.ts",
+      "status": "killed",
+      "failedAssertions": 2,
+      "error": null
+    },
+    {
+      "name": "Worker-sin-bloque-P3",
+      "module": "src/ui/cutMapWorker.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    },
+    {
+      "name": "conflicto-sin-rotulo-17",
+      "module": "src/anatomy/structureIdentity.ts",
+      "status": "killed",
+      "failedAssertions": 1,
+      "error": null
+    }
+  ]
+}

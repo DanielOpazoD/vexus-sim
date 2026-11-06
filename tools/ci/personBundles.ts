@@ -18,8 +18,8 @@ export interface PersonBundleGraph {
 }
 
 export const PERSON_JS_CEILING = 1_070_080;
-// Medido: 1.027.987 B; reserva de 2 KiB. El techo s0028 del propietario permanece intacto.
-export const DEFAULT_JS_BUDGET = 1_030_035;
+// Medido: 1.027.918 B; reserva de 2 KiB. El techo s0028 del propietario permanece intacto.
+export const DEFAULT_JS_BUDGET = 1_029_966;
 export const S0028_JS_BUDGET = PERSON_JS_CEILING;
 
 export function measurePersonBundles(graph: PersonBundleGraph, limits = { default: DEFAULT_JS_BUDGET, s0028: S0028_JS_BUDGET }) {

@@ -1,0 +1,12 @@
+{
+  "label": "rebased",
+  "person": "current",
+  "points": 82251,
+  "pointsWithSolids": 0,
+  "hash": "3a6c5010a3904d08d7fe5002b23a4cf579300349e218a0d3bf05ceba25e003ee",
+  "semanticHash": "e223ec29216fb23c8867486e82ced1149670a54b25a29fccb3642a08ede529c2",
+  "frames": 10,
+  "framesSha256": "adf6e763fd4c5cb1b6c42d546e05c9811a3e8b32b0a4640737fe7b2b122028cb",
+  "contactCases": 30,
+  "contactSha256": "a8b1b1dd367f1f5c958bfc2e0b71fe7dad00c348db133f757228483e88f318b9"
+}

@@ -128,11 +128,11 @@ a byte. Escribe `mutants.json` (resultado, tiempo, pruebas rojas y su primer men
 
 ```bash
 npm run mutants -- --list
-npm run mutants -- --module s0028Solids
+npm run mutants -- --module src/anatomy/people/s0028/solids.ts
 npm run mutants -- --only grasa-solo-sin-dueno,cajas-sin-OR --out .cache/mutants/prueba
 ```
 
-Cubre 29 mutantes en siete módulos: pared, contacto y gemelo GLSL de P2 (los que detectan pruebas CPU o
+Cubre 29 mutantes en ocho módulos (el clasificador s0028 extraído tiene su propio manifiesto): pared, contacto y gemelo GLSL de P2 (los que detectan pruebas CPU o
 estáticas), sólidos, escena, Worker del corte y rótulos de P3, los siete de la revisión de #331 y dos de la de #334
 (`hueso-duplicado`, con su prueba focal, y `fuera-de-cajas-false`). `banda-desde-0mm` es equivalente y queda fuera,
 documentado en su manifiesto. El conjunto completo tardó 483 s aquí con carga media 11 (línea base 34 s; cada mutante

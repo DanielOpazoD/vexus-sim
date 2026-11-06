@@ -1,5 +1,5 @@
-import { fixturePerson } from './support/legacyPerson/state';
 // @tier slow
+import { fixturePerson } from './support/legacyPerson/state';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it, vi } from 'vitest';

@@ -1,0 +1,227 @@
+{
+  "scope": "local; protected CI and independent review pending",
+  "clinicalValidation": false,
+  "runs": [
+    {
+      "tests": [
+        {
+          "title": "default carga sus vistas y Worker sin solicitar ning\u00fan m\u00f3dulo privado s0028",
+          "status": "passed",
+          "durationMs": 31805,
+          "retry": 0
+        },
+        {
+          "title": "el Worker emitido comunica el fallo de su import CPU sin DOM ni publicar mapas",
+          "status": "passed",
+          "durationMs": 3352,
+          "retry": 0
+        },
+        {
+          "title": "un chunk s0028 fallido (network) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 336,
+          "retry": 0
+        },
+        {
+          "title": "un chunk s0028 fallido (evaluation) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 309,
+          "retry": 0
+        },
+        {
+          "title": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+          "status": "passed",
+          "durationMs": 5065,
+          "retry": 0
+        },
+        {
+          "title": "la GPU s0028 clasifica los s\u00f3lidos con la pol\u00edtica P3 de la CPU: due\u00f1os, conflicto, ri\u00f1\u00f3n U con contorno, grasa D",
+          "status": "passed",
+          "durationMs": 8332,
+          "retry": 0
+        }
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "solids": {
+        "rows": 57,
+        "points": 144110,
+        "interior": 66548,
+        "interiorSame": 66547,
+        "analyticGpu": 0,
+        "cyst": [40, 40],
+        "fatConflict": [29, 29]
+      },
+      "label": "metal-01",
+      "reportSha256": "15ad86d2fbe06473c0934682f417ea396bd7a614f928f83254277afe2cce53bf"
+    },
+    {
+      "tests": [
+        {
+          "title": "default carga sus vistas y Worker sin solicitar ning\u00fan m\u00f3dulo privado s0028",
+          "status": "passed",
+          "durationMs": 6015,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "el Worker emitido comunica el fallo de su import CPU sin DOM ni publicar mapas",
+          "status": "passed",
+          "durationMs": 3571,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "un chunk s0028 fallido (network) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 361,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "un chunk s0028 fallido (evaluation) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 354,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+          "status": "passed",
+          "durationMs": 6848,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "la GPU s0028 clasifica los s\u00f3lidos con la pol\u00edtica P3 de la CPU: due\u00f1os, conflicto, ri\u00f1\u00f3n U con contorno, grasa D",
+          "status": "passed",
+          "durationMs": 9827,
+          "retry": 0,
+          "errors": []
+        }
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "solids": {
+        "rows": 57,
+        "points": 144110,
+        "interior": 66552,
+        "interiorSame": 66551,
+        "analyticGpu": 0,
+        "cyst": [40, 40],
+        "fatConflict": [29, 29]
+      },
+      "execution": {
+        "state": "command-succeeded",
+        "testCheckoutSha": "c9745dcb8dd1200ee726169c2e7a57109934456f",
+        "testCheckoutStatus": "M docs/ARCHITECTURE.md\n M docs/DECISIONS.md\n M docs/TESTING.md\n M docs/engineering/gemelos.md\n M tools/ci/personBundles.ts",
+        "exitCode": 0,
+        "backend": "metal",
+        "startedAt": "2026-11-06T11:29:02.712Z",
+        "finishedAt": "2026-11-06T11:29:52.511Z",
+        "workers": 1,
+        "retries": 0
+      },
+      "label": "metal-02",
+      "reportSha256": "9573540d8de139d0691f938229860706e5d72a48168119bb1667191018a3a6b8"
+    },
+    {
+      "tests": [
+        {
+          "title": "default carga sus vistas y Worker sin solicitar ning\u00fan m\u00f3dulo privado s0028",
+          "status": "timedOut",
+          "durationMs": 212209,
+          "retry": 0,
+          "errors": ["\u001b[31mTest timeout of 200000ms exceeded.\u001b[39m", "Error: page.evaluate: Test timeout of 200000ms exceeded."]
+        },
+        {
+          "title": "el Worker emitido comunica el fallo de su import CPU sin DOM ni publicar mapas",
+          "status": "passed",
+          "durationMs": 113825,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "un chunk s0028 fallido (network) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 5707,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "un chunk s0028 fallido (evaluation) deja error visible, sin persona default, y recarga la misma selecci\u00f3n",
+          "status": "passed",
+          "durationMs": 5531,
+          "retry": 0,
+          "errors": []
+        },
+        {
+          "title": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+          "status": "failed",
+          "durationMs": 155384,
+          "retry": 0,
+          "errors": [
+            "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed"
+          ]
+        },
+        {
+          "title": "la GPU s0028 clasifica los s\u00f3lidos con la pol\u00edtica P3 de la CPU: due\u00f1os, conflicto, ri\u00f1\u00f3n U con contorno, grasa D",
+          "status": "passed",
+          "durationMs": 169801,
+          "retry": 0,
+          "errors": []
+        }
+      ],
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "solids": {
+        "rows": 57,
+        "points": 144110,
+        "interior": 66573,
+        "interiorSame": 66573,
+        "analyticGpu": 0,
+        "cyst": [40, 40],
+        "fatConflict": [29, 29]
+      },
+      "label": "swiftshader-x64-01",
+      "reportSha256": "5f6dc96b152efc66b5ca9e4f98ba3531307a933281c08431a60497584abcfa5d"
+    },
+    {
+      "tests": [
+        {
+          "title": "default carga sus vistas y Worker sin solicitar ning\u00fan m\u00f3dulo privado s0028",
+          "status": "failed",
+          "durationMs": 202593,
+          "retry": 0,
+          "errors": ["Error: arranque: cuadro GPU listo o error expl\u00edcito"]
+        },
+        {
+          "title": "s0028 carga una sola persona, dibuja y rechaza procedencia corrupta",
+          "status": "failed",
+          "durationMs": 200864,
+          "retry": 0,
+          "errors": ["Error: arranque: cuadro GPU listo o error expl\u00edcito"]
+        }
+      ],
+      "renderer": null,
+      "solids": null,
+      "execution": {
+        "state": "failed",
+        "testCheckoutSha": "c9745dcb8dd1200ee726169c2e7a57109934456f",
+        "testCheckoutStatus": "M docs/ARCHITECTURE.md\n M docs/DECISIONS.md\n M docs/TESTING.md\n M docs/engineering/gemelos.md\n M tools/ci/personBundles.ts",
+        "exitCode": 1,
+        "backend": "swiftshader",
+        "startedAt": "2026-11-06T11:30:09.624Z",
+        "finishedAt": "2026-11-06T11:38:04.393Z",
+        "workers": 1,
+        "retries": 0
+      },
+      "label": "swiftshader-x64-02",
+      "reportSha256": "aced70133b1bbde63379c5a211fd5f1064e727e2786aaa26c51ba7890392f91e"
+    }
+  ],
+  "additionalNegative": {
+    "label": "swiftshader-01",
+    "architecture": "arm64",
+    "bootCompleted": false,
+    "bootMs": 180000,
+    "exitCode": 130
+  }
+}

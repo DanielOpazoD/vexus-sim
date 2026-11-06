@@ -10655,3 +10655,49 @@ No se cambian los techos de JS (1.070.080 B) ni de shaders. Las verificaciones l
 tipos, índice documental, pruebas de importadores y `twinRegistry`, build/presupuestos y capa rápida con dos workers.
 Por instrucción del propietario no se ejecuta `npm run check` completo: la aceptación sigue pendiente de la CI protegida
 del head final y su recibo. No se atribuyen paridad GPU nueva ni validación clínica.
+
+## 323. Extraer la red vascular s0028 con identidades y soporte verificables, antes de instalarla [Estado: pendiente del propietario]
+
+**Contexto.** Seis ventanas vasculares superponen vasos procedurales de otra persona a los sólidos s0028. El TAC
+muestra la cava, el hilio y las ramas en otras posiciones. El propietario prioriza la coherencia interna de una
+persona con sus dimensiones y estructuras, sin promedios ni mezclas. P3 r3 y el margen de JS impiden ampliar
+ahora el runtime. Se sigue el patrón offline y contrato de P3 r4 (321).
+
+**Opciones.** (a) Recolocar tubos procedurales: conservaría geometría de la otra persona. (b) Un umbral hepático
+único: a 120 HU une las identidades cava/porta en 29.229 vóxeles. (c) Máscaras fuente para grandes vasos y
+candidatos tubulares del propio TAC, con conectividad, sensibilidad y U explícitos. Se elige (c); los intentos
+previos se conservan como evidencia, sin ajustar por normas externas.
+
+**Decisión.** P5 r1 es sólo offline. VCI completa hasta su límite craneal observado, aorta abdominal y máscara
+conjunta porta/esplénica proceden de TotalSegmentator v3 (datos CC BY 4.0). No se ejecuta un modelo aprendido.
+Frangi multiescala de scikit-image 0.26.0 (BSD-3-Clause), entorno fijado, y HU suavizado localizan candidatos
+intrahepáticos. Todas las conexiones 26 a cava y porta se conservan antes de atribuir familia: dos identidades
+son conflicto U, nunca precedencia. La familia D por nodo exige estabilidad ante HU ±5 y respuesta ±0,02;
+identidad nominal, geometría candidata y radio tienen certeza propia. Dos componentes conectan a cava y ocho a
+porta; las tres suprahepáticas por nombre siguen U. También quedan U la partición portal/esplénica, ramas
+individuales, tres candidatos renales y 23 componentes hepáticas sin raíz. No se separan vías biliares, venas y
+arterias renales ni interlobares. Contacto cava–heart (1.142 vóxeles) no acredita una AD segmentada.
+
+El contrato guarda línea central LAS, radio por nodo, grupos, raíces y orientación de referencia, fuente y hashes.
+Conserva ciclos completos U/flujo cero; no los convierte en árboles eliminando aristas. Diez caminos de unión U
+recorren soporte fuente conservado; se rechazan huecos, radios distintos del EDT y flujo contrario a raíz. El
+soporte se incluye en bytes/hash. Una raíz venosa puede ser salida y el futuro flujo instantáneo puede invertirse.
+La identidad U bloquea PW. El futuro adaptador conservará perfiles, paredes, leyes de calibre, `refRadius` y
+`flowFactor`, sin inferirlos del TAC ni normalizar repartos. No hay conversión HU→brillo ecográfico.
+
+**Medida offline.** 2.067 nodos/2.148 aristas, payload 75.396 B (24.295 B gzip), manifiesto 47.762 B y soporte
+116.412 B gzip: candidato 188.469 B, total con activos vigentes 20.621.995/25.000.000 B. Radio inscrito EDT menos
+medio paso; longitud con escalones/espículas de rejilla, no diámetro ecográfico ni norma anatómica. Los diez
+planos vigentes comparan TAC, grafo candidato, procedural en s0028, diferencia y modelo antiguo en su propia
+ventana. El propietario conserva cuatro preguntas sí/no sin rellenar por lámina.
+
+**Consecuencias.** Sin cambios en `src/`, activos instalados, defaults, JS ni techos. Para instalar: primero punto
+3 de la 322 (código s0028 en su propio chunk), revisión de las láminas/identidades, lectores CPU/Worker/GLSL y
+adaptador fisiológico, representación compatible con los techos de shader existentes, continuidad, colisiones,
+paridad y negativos PW (vaso equivocado, pérdida de puerta, cambio tronco–rama y arterial renal), arranque y
+coste integrado en SwiftShader/Metal. No se acredita aceptación del propietario ni validación clínica.
+
+**Verificación.** Contrato sintético, pruebas dirigidas, hashes de paquete y comparadores; seis defectos hallados
+en dos revisiones independientes se reprodujeron en rojo y corrigieron. Una tercera revisión confirmó los
+positivos y negativos de raíz/soporte sin hallazgos. El [índice de evidencia](evidence/migration-p5-r1/README.md)
+registra recibos, medidas, láminas abiertas y el alcance de las comprobaciones. [Método y reproducción](anatomia/s0028-vascular-offline.md).

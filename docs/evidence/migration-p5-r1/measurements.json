@@ -1,0 +1,1511 @@
+{
+  "baseCommit": "587b049",
+  "evidenceDirectory": "migration-p5-r1",
+  "candidateDirectory": "candidate-final/candidate",
+  "receipt": {
+    "baselineDownloadBytes": 20433526,
+    "candidateDownloadBytes": 188469,
+    "downloadLimitBytes": 25000000,
+    "files": {
+      "manifest.json": {
+        "bytes": 47762,
+        "sha256": "2b48f578f6e9e63db33f087b23a8eb27ce9e56688d31542cacb6a375f0e09998"
+      },
+      "support.gzip.bin": {
+        "bytes": 116412,
+        "sha256": "49c68e884cc277ba58ff4d68b86302eb7d10e8ab0d56da35a5baf145ce770cf2"
+      },
+      "vessels.gzip.bin": {
+        "bytes": 24295,
+        "sha256": "49611fe3c6b988fd25b2690215a2fe451f732c24f35dd87e731a8d17a4ca3f06"
+      }
+    },
+    "format": "s0028-vascular-graph-v1",
+    "runtimeInstalled": false,
+    "totalDownloadBytes": 20621995
+  },
+  "geometry": {
+    "edgeBytes": 12,
+    "edgeCount": 2148,
+    "encodedBytes": 75396,
+    "endian": "little",
+    "headerBytes": 12,
+    "nodeBytes": 24,
+    "nodeCount": 2067,
+    "sha256": "cc5117428f54d19d3e236a42bdc1e07de3868813112161a2e387453fce78b4c4"
+  },
+  "groups": [
+    {
+      "id": "source-inferior_vena_cava",
+      "system": "ivc",
+      "identityCertainty": "U",
+      "systemCertainty": "D",
+      "geometryCertainty": "D",
+      "radiusCertainty": "D",
+      "nodes": 136,
+      "segments": 135,
+      "DNodes": 136,
+      "UNodes": 0,
+      "lengthMm": 235.7467924464101,
+      "diameterMm": {
+        "max": 21.347319317591726,
+        "mean": 14.590023920843983,
+        "min": 10.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "source-aorta",
+      "system": "aorta",
+      "identityCertainty": "D",
+      "systemCertainty": "D",
+      "geometryCertainty": "D",
+      "radiusCertainty": "D",
+      "nodes": 132,
+      "segments": 131,
+      "DNodes": 132,
+      "UNodes": 0,
+      "lengthMm": 222.7830813457667,
+      "diameterMm": {
+        "max": 18.3997487421324,
+        "mean": 13.498388076058749,
+        "min": 8.4498743710662
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "source-portal_vein_and_splenic_vein",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "D",
+      "geometryCertainty": "D",
+      "radiusCertainty": "D",
+      "nodes": 149,
+      "segments": 148,
+      "DNodes": 149,
+      "UNodes": 0,
+      "lengthMm": 292.30763183516956,
+      "diameterMm": {
+        "max": 13.196938456699069,
+        "mean": 6.2264718636636385,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-01",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 7,
+      "segments": 6,
+      "DNodes": 0,
+      "UNodes": 7,
+      "lengthMm": 13.06011345338556,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-01",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 63,
+      "segments": 63,
+      "DNodes": 44,
+      "UNodes": 19,
+      "lengthMm": 121.9242199976158,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.598622276755499,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-02",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 6,
+      "segments": 5,
+      "DNodes": 0,
+      "UNodes": 6,
+      "lengthMm": 9.696152422706632,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-03",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 7,
+      "segments": 6,
+      "DNodes": 0,
+      "UNodes": 7,
+      "lengthMm": 11.48528137423857,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-02",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 35,
+      "segments": 34,
+      "DNodes": 24,
+      "UNodes": 11,
+      "lengthMm": 70.67924692336815,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-04",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 7,
+      "segments": 6,
+      "DNodes": 0,
+      "UNodes": 7,
+      "lengthMm": 13.392304845413264,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-cava-01",
+      "system": "hepaticVein",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 45,
+      "segments": 44,
+      "DNodes": 0,
+      "UNodes": 45,
+      "lengthMm": 93.27965552184983,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.6932996624407772,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-03",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 22,
+      "segments": 22,
+      "DNodes": 0,
+      "UNodes": 22,
+      "lengthMm": 46.610607963537696,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.612967335192662,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-04",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 11,
+      "segments": 10,
+      "DNodes": 1,
+      "UNodes": 10,
+      "lengthMm": 21.25626587609219,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-05",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 90,
+      "segments": 90,
+      "DNodes": 0,
+      "UNodes": 90,
+      "lengthMm": 189.79000040045716,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.748528137423857,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-cava-02",
+      "system": "hepaticVein",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 152,
+      "segments": 159,
+      "DNodes": 118,
+      "UNodes": 34,
+      "lengthMm": 331.6949825116061,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.7207322273172416,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-06",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 18,
+      "segments": 17,
+      "DNodes": 0,
+      "UNodes": 18,
+      "lengthMm": 29.892304845413264,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-05",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 61,
+      "segments": 60,
+      "DNodes": 48,
+      "UNodes": 13,
+      "lengthMm": 121.05064002370345,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.5814846352209366,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-07",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 41,
+      "segments": 50,
+      "DNodes": 0,
+      "UNodes": 41,
+      "lengthMm": 110.63057178537845,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.5303083094419339,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-08",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 21,
+      "segments": 20,
+      "DNodes": 0,
+      "UNodes": 21,
+      "lengthMm": 42.65709622795035,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-06",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 128,
+      "segments": 129,
+      "DNodes": 66,
+      "UNodes": 62,
+      "lengthMm": 268.4890656321148,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.5970813036811942,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-09",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 16,
+      "segments": 15,
+      "DNodes": 0,
+      "UNodes": 16,
+      "lengthMm": 29.81127964694974,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-10",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 27,
+      "segments": 30,
+      "DNodes": 0,
+      "UNodes": 27,
+      "lengthMm": 66.73083487030881,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-11",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 36,
+      "segments": 35,
+      "DNodes": 0,
+      "UNodes": 36,
+      "lengthMm": 68.74045381354223,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.5690355937288492,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-12",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 15,
+      "segments": 14,
+      "DNodes": 0,
+      "UNodes": 15,
+      "lengthMm": 30.218303118124435,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.748528137423857,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-13",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 6,
+      "segments": 5,
+      "DNodes": 0,
+      "UNodes": 6,
+      "lengthMm": 8.742640687119284,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-07",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 234,
+      "segments": 242,
+      "DNodes": 172,
+      "UNodes": 62,
+      "lengthMm": 496.65155256969575,
+      "diameterMm": {
+        "max": 3.696152422706632,
+        "mean": 1.6409104301246018,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-portal-08",
+      "system": "portal",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 23,
+      "segments": 22,
+      "DNodes": 21,
+      "UNodes": 2,
+      "lengthMm": 44.3713931003353,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.662083567885124,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-14",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 17,
+      "segments": 16,
+      "DNodes": 0,
+      "UNodes": 17,
+      "lengthMm": 29.302754140504845,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-15",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 11,
+      "segments": 10,
+      "DNodes": 0,
+      "UNodes": 11,
+      "lengthMm": 18.583357585591884,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-16",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 9,
+      "segments": 8,
+      "DNodes": 0,
+      "UNodes": 9,
+      "lengthMm": 17.779510008298516,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-17",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 12,
+      "segments": 11,
+      "DNodes": 0,
+      "UNodes": 12,
+      "lengthMm": 21.32599827271117,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-18",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 25,
+      "segments": 25,
+      "DNodes": 0,
+      "UNodes": 25,
+      "lengthMm": 48.10550828100969,
+      "diameterMm": {
+        "max": 2.7426406871192848,
+        "mean": 1.5497056274847714,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-19",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 11,
+      "segments": 10,
+      "DNodes": 0,
+      "UNodes": 11,
+      "lengthMm": 18.438793109825916,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-20",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 8,
+      "segments": 7,
+      "DNodes": 0,
+      "UNodes": 8,
+      "lengthMm": 12.98528137423857,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-21",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 25,
+      "segments": 24,
+      "DNodes": 0,
+      "UNodes": 25,
+      "lengthMm": 50.95475068592719,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-22",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 5,
+      "segments": 4,
+      "DNodes": 0,
+      "UNodes": 5,
+      "lengthMm": 8.817472766266274,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "hepatic-unrooted-23",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 9,
+      "segments": 8,
+      "DNodes": 0,
+      "UNodes": 9,
+      "lengthMm": 14.3407168984726,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 0,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "renal-candidate-01",
+      "system": "renalArtery",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 370,
+      "segments": 438,
+      "DNodes": 0,
+      "UNodes": 370,
+      "lengthMm": 930.7469979317455,
+      "diameterMm": {
+        "max": 6.9852813742385695,
+        "mean": 1.7935690284240484,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "renal-candidate-02",
+      "system": "renalVein",
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 43,
+      "segments": 44,
+      "DNodes": 0,
+      "UNodes": 43,
+      "lengthMm": 93.03358901081366,
+      "diameterMm": {
+        "max": 5.208203932499369,
+        "mean": 2.31595199222564,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    },
+    {
+      "id": "renal-candidate-03",
+      "system": null,
+      "identityCertainty": "U",
+      "systemCertainty": "U",
+      "geometryCertainty": "U",
+      "radiusCertainty": "U",
+      "nodes": 34,
+      "segments": 45,
+      "DNodes": 0,
+      "UNodes": 34,
+      "lengthMm": 99.87940559181428,
+      "diameterMm": {
+        "max": 1.5,
+        "mean": 1.5,
+        "min": 1.5
+      },
+      "cycleComponents": 1,
+      "unrepresentedVoxels": 0,
+      "unrepresentedComponents": 0
+    }
+  ],
+  "aggregates": [
+    {
+      "label": "VCI",
+      "nodes": 136,
+      "segments": 135,
+      "DNodes": 136,
+      "UNodes": 0,
+      "lengthMm": 235.7467924464101,
+      "diameterMm": {
+        "min": 10.5,
+        "max": 21.347319317591726,
+        "mean": 14.590023920843983
+      }
+    },
+    {
+      "label": "Aorta abdominal",
+      "nodes": 132,
+      "segments": 131,
+      "DNodes": 132,
+      "UNodes": 0,
+      "lengthMm": 222.7830813457667,
+      "diameterMm": {
+        "min": 8.4498743710662,
+        "max": 18.3997487421324,
+        "mean": 13.498388076058749
+      }
+    },
+    {
+      "label": "Porta/esplénica conjunta",
+      "nodes": 149,
+      "segments": 148,
+      "DNodes": 149,
+      "UNodes": 0,
+      "lengthMm": 292.30763183516956,
+      "diameterMm": {
+        "min": 1.5,
+        "max": 13.196938456699069,
+        "mean": 6.2264718636636385
+      }
+    },
+    {
+      "label": "Hepáticas a cava (2 componentes)",
+      "nodes": 197,
+      "segments": 203,
+      "DNodes": 118,
+      "UNodes": 79,
+      "lengthMm": 424.9746380334559,
+      "diameterMm": {
+        "min": 1.5,
+        "max": 2.7426406871192848,
+        "mean": 1.7144659053911457
+      }
+    },
+    {
+      "label": "Ramas a porta (8 componentes)",
+      "nodes": 577,
+      "segments": 582,
+      "DNodes": 376,
+      "UNodes": 201,
+      "lengthMm": 1191.032992086463,
+      "diameterMm": {
+        "min": 1.5,
+        "max": 3.696152422706632,
+        "mean": 1.6088326120277638
+      }
+    },
+    {
+      "label": "Hepáticas sin raíz (23 componentes)",
+      "nodes": 429,
+      "segments": 422,
+      "DNodes": 0,
+      "UNodes": 429,
+      "lengthMm": 865.4814806138344,
+      "diameterMm": {
+        "min": 1.5,
+        "max": 2.7426406871192848,
+        "mean": 1.5724149584568348
+      }
+    },
+    {
+      "label": "Renales candidatas (3 componentes)",
+      "nodes": 447,
+      "segments": 527,
+      "DNodes": 0,
+      "UNodes": 447,
+      "lengthMm": 1123.6599925343735,
+      "diameterMm": {
+        "min": 1.5,
+        "max": 6.9852813742385695,
+        "mean": 1.8214909981713656
+      }
+    }
+  ],
+  "accounting": {
+    "hepaticCandidateVoxels": 7802,
+    "hepaticRetainedVoxels": 4822,
+    "hepaticSmallUnrepresentedVoxels": 2980,
+    "renalCandidateVoxels": 7768,
+    "renalRetainedVoxels": 2014
+  },
+  "connections": {
+    "count": 10,
+    "status": [
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support",
+      "connected-support"
+    ],
+    "pathSamples": 60,
+    "geometryCertainty": "U",
+    "flowCertainty": "U"
+  },
+  "plates": [
+    {
+      "candidatePixels": 1945,
+      "ctUnavailablePixels": 0,
+      "file": "subxiphoid.png",
+      "id": "subxiphoid",
+      "oldFrame": {
+        "axial": [-0.07696680969208532, -0.9622258767563966, 0.2611464575792781],
+        "curvatureCenter": [0.9488086839154422, 163.41850718821996, -75.66878745475668],
+        "elevation": [-0.9965082422687541, 0.06573852270317292, -0.05147591401074962],
+        "face": [-3.669199897609677, 105.68495458283618, -60],
+        "lateral": [-0.032364074160401886, 0.26419653429442985, 0.963925701478362],
+        "skinNormal": [-0.03144385696198791, 0.9990022658476337, 0.031713667253213465],
+        "skinPoint": [-3.669199897609677, 105.68495458283618, -60]
+      },
+      "overlapPixels": 1503,
+      "ownerReview": "pending",
+      "proceduralPixels": 7318,
+      "s0028Frame": {
+        "axial": [-0.10720007348577086, -0.9917537904512129, 0.07023221034750769],
+        "curvatureCenter": [2.8837521376712587, 185.5404427614313, -64.21393262085046],
+        "elevation": [-0.9939468749867325, 0.10519326307878395, -0.0316857555842734],
+        "face": [-3.5482522714749933, 126.03521533435854, -60],
+        "lateral": [-0.024036512824323977, 0.07320380132540241, 0.9970273063074837],
+        "skinNormal": [4.051612543840882e-8, 0.9743911957250239, 0.224859506567004],
+        "skinPoint": [-3.5482522714749933, 126.03521533435854, -60]
+      },
+      "sha256": "e73c3e5ea3c501e4597b875f689f4050d8b7f8a13e18ac1ddd1b18ae00f6d57e",
+      "sizeBytes": 452704,
+      "sourceComparison": {
+        "aorta": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "ivc": {
+          "dice": 0.5852461888908358,
+          "graphPixels": 1670,
+          "intersection": 1670,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 4037
+        },
+        "portalSplenic": {
+          "dice": 0.7888888888888889,
+          "graphPixels": 213,
+          "intersection": 213,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 327
+        }
+      },
+      "unknownCandidatePixels": 275
+    },
+    {
+      "candidatePixels": 1453,
+      "ctUnavailablePixels": 0,
+      "file": "epigastric.png",
+      "id": "epigastric",
+      "oldFrame": {
+        "axial": [0.06651434312195265, -0.9887429048632604, 0.1340272742452689],
+        "curvatureCenter": [-1.3057978491428863, 165.85109827786812, -43.041636454716134],
+        "elevation": [0.008995900327360813, -0.13372503138499053, -0.9909776434200639],
+        "face": [2.6850627381742727, 106.5265239860725, -35],
+        "lateral": [-0.9977449152645957, -0.06711992300088447, 6.119791431105775e-17],
+        "skinNormal": [-0.06711178929174035, 0.9976240067984062, 0.015567555927458612],
+        "skinPoint": [2.6850627381742727, 106.5265239860725, -35]
+      },
+      "overlapPixels": 470,
+      "ownerReview": "pending",
+      "proceduralPixels": 1675,
+      "s0028Frame": {
+        "axial": [-0.0025746121511016073, -0.966671921908879, -0.25600540378137576],
+        "curvatureCenter": [2.609116009300915, 176.07796978674952, -19.639675773117453],
+        "elevation": [0.0006818365886671586, 0.25600449578890516, -0.9666753504847085],
+        "face": [2.4546392802348183, 118.07765447221678, -35],
+        "lateral": [-0.999996453229279, 0.0026633679547231493, 1.2239642224977562e-16],
+        "skinNormal": [0.002443809645449377, 0.9175604044808086, 0.3975888981390595],
+        "skinPoint": [2.4546392802348183, 118.07765447221678, -35]
+      },
+      "sha256": "d9720a238b114d76320f7f94a22a98026d884e50818363c54869ed084e47c561",
+      "sizeBytes": 525474,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.8556701030927835,
+          "graphPixels": 332,
+          "intersection": 332,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 444
+        },
+        "ivc": {
+          "dice": 0.7902439024390244,
+          "graphPixels": 405,
+          "intersection": 405,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 620
+        },
+        "portalSplenic": {
+          "dice": 0.8201725282017253,
+          "graphPixels": 618,
+          "intersection": 618,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 889
+        }
+      },
+      "unknownCandidatePixels": 681
+    },
+    {
+      "candidatePixels": 625,
+      "ctUnavailablePixels": 0,
+      "file": "intercostal.png",
+      "id": "intercostal",
+      "oldFrame": {
+        "axial": [0.6970991926154708, -0.7139192751763997, 0.06612098143904593],
+        "curvatureCenter": [-156.27829964056463, 105.76639467353755, -38.967258886342755],
+        "elevation": [-0.22134468070573865, -0.30200899118872154, -0.9272524475915096],
+        "face": [-114.45234808363638, 62.93123816295356, -35],
+        "lateral": [-0.6819525261908876, -0.631751405042185, 0.36855245793386315],
+        "skinNormal": [-0.7131548115101437, 0.6923337978204999, 0.10992782730216483],
+        "skinPoint": [-114.45234808363638, 62.93123816295356, -35]
+      },
+      "overlapPixels": 347,
+      "ownerReview": "pending",
+      "proceduralPixels": 1381,
+      "s0028Frame": {
+        "axial": [0.5642231086745557, -0.7185831754843138, 0.4065593481258308],
+        "curvatureCenter": [-143.40995760141126, 124.99447555964257, -59.393560887549846],
+        "elevation": [-0.0488611523168328, -0.5206268559943374, -0.8523850448076402],
+        "face": [-109.55657108093793, 81.87948503058374, -35],
+        "lateral": [-0.8241752674230717, -0.4610703815344587, 0.3288605051382377],
+        "skinNormal": [-0.6215295737998268, 0.7456798523369949, -0.2401302702927793],
+        "skinPoint": [-109.55657108093793, 81.87948503058374, -35]
+      },
+      "sha256": "521d79942ceddada00496239a3c640fc032452eb3404ea0c404cb6231e02126b",
+      "sizeBytes": 470317,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.0,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 739
+        },
+        "ivc": {
+          "dice": 0.8242677824267782,
+          "graphPixels": 591,
+          "intersection": 591,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 843
+        },
+        "portalSplenic": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        }
+      },
+      "unknownCandidatePixels": 34
+    },
+    {
+      "candidatePixels": 1698,
+      "ctUnavailablePixels": 0,
+      "file": "subcostal.png",
+      "id": "subcostal",
+      "oldFrame": {
+        "axial": [0.30127432534234255, -0.7721205857833316, 0.5595208502809536],
+        "curvatureCenter": [-71.71961698998328, 145.6125218826288, -113.57125101685722],
+        "elevation": [-0.8409222194542936, 0.061491293024423486, 0.5376510408343407],
+        "face": [-53.64315746944273, 99.2852867356289, -80],
+        "lateral": [0.4495370971539298, 0.6324939698461871, 0.630767608862907],
+        "skinNormal": [-0.1722168896746419, 0.9356967996785978, -0.30791694006991954],
+        "skinPoint": [-53.64315746944273, 99.2852867356289, -80]
+      },
+      "overlapPixels": 1060,
+      "ownerReview": "pending",
+      "proceduralPixels": 2362,
+      "s0028Frame": {
+        "axial": [0.405225067301985, -0.8743608210510526, 0.2669940063766057],
+        "curvatureCenter": [-76.82075892651264, 173.99686516323197, -96.01964038259635],
+        "elevation": [-0.7936094495130429, -0.19144913163135518, 0.5775216633522977],
+        "face": [-52.50725488839355, 121.53521590016882, -80],
+        "lateral": [0.4538465450719069, 0.4459152213241091, 0.7714809971203206],
+        "skinNormal": [-0.267499736190935, 0.9634328992935467, 0.015522232333365025],
+        "skinPoint": [-52.50725488839355, 121.53521590016882, -80]
+      },
+      "sha256": "342e37f41439d3898960636a4e78f724dd764bef7d73682f99472abf6636960f",
+      "sizeBytes": 484286,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.8595505617977528,
+          "graphPixels": 765,
+          "intersection": 765,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1015
+        },
+        "ivc": {
+          "dice": 0.8081159420289855,
+          "graphPixels": 697,
+          "intersection": 697,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1028
+        },
+        "portalSplenic": {
+          "dice": 0.7991452991452992,
+          "graphPixels": 187,
+          "intersection": 187,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 281
+        }
+      },
+      "unknownCandidatePixels": 236
+    },
+    {
+      "candidatePixels": 4387,
+      "ctUnavailablePixels": 0,
+      "file": "flank.png",
+      "id": "flank",
+      "oldFrame": {
+        "axial": [0.8009927573516614, 0.12090666479227954, 0.5863379410195024],
+        "curvatureCenter": [-187.80470677762142, -19.864300411600304, -110.18027646117014],
+        "elevation": [0.04198015659089139, -0.9883268237398529, 0.14645052382595852],
+        "face": [-139.74514133652173, -12.609900524063534, -75],
+        "lateral": [-0.5972003592788491, 0.09269125031577018, 0.7967183084328567],
+        "skinNormal": [-0.9821980011527521, -0.10686574139068072, -0.15448883405786426],
+        "skinPoint": [-139.74514133652173, -12.609900524063534, -75]
+      },
+      "overlapPixels": 2277,
+      "ownerReview": "pending",
+      "proceduralPixels": 4757,
+      "s0028Frame": {
+        "axial": [0.9242361545301957, -0.07564546583247911, 0.3742529814954368],
+        "curvatureCenter": [-204.2365977009776, 16.762136260535314, -97.4551788897262],
+        "elevation": [-0.14386932368479977, -0.9769292665328465, 0.15783163781090742],
+        "face": [-148.78242842916586, 12.223408310586569, -75],
+        "lateral": [-0.35367944294475867, 0.19971722932832403, 0.9137964105574627],
+        "skinNormal": [-0.9892189181709806, 0.11713297060673482, 0.08789652512742982],
+        "skinPoint": [-148.78242842916586, 12.223408310586569, -75]
+      },
+      "sha256": "b1760d44bbd779e85f8c1f3e93ffd812844161e5d6f1b6b3a425ddfb1e7869d5",
+      "sizeBytes": 535803,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.5030245144858325,
+          "graphPixels": 791,
+          "intersection": 790,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 2350
+        },
+        "ivc": {
+          "dice": 0.8057950191570882,
+          "graphPixels": 3366,
+          "intersection": 3365,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 4986
+        },
+        "portalSplenic": {
+          "dice": 0.6111111111111112,
+          "graphPixels": 35,
+          "intersection": 33,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 73
+        }
+      },
+      "unknownCandidatePixels": 805
+    },
+    {
+      "candidatePixels": 0,
+      "ctUnavailablePixels": 0,
+      "file": "portal.png",
+      "id": "portal",
+      "oldFrame": {
+        "axial": [0.9730153966900333, 0.09112240124485155, -0.21198524900452118],
+        "curvatureCenter": [-199.52730979243773, -10.051696464864131, -27.280885059728732],
+        "elevation": [-0.1741377783661604, -0.31275648173190085, -0.9337341255841414],
+        "face": [-141.14638599103574, -4.584352390173038, -40],
+        "lateral": [0.15138385630520368, -0.9454523209163195, 0.2884490196275764],
+        "skinNormal": [-0.988963579397308, -0.00259658983018126, 0.14813607375287796],
+        "skinPoint": [-141.14638599103574, -4.584352390173038, -40]
+      },
+      "overlapPixels": 0,
+      "ownerReview": "pending",
+      "proceduralPixels": 1202,
+      "s0028Frame": {
+        "axial": [0.8791524230288172, -0.04446505741687434, 0.4744616694228035],
+        "curvatureCenter": [-201.59355409003336, 21.722197225411886, -68.46770016536821],
+        "elevation": [0.42420825008257523, -0.3805927104326755, -0.8217034436628516],
+        "face": [-148.84440870830431, 19.054293780399426, -40],
+        "lateral": [-0.21711374356414898, -0.9236731280244239, 0.31573655936735817],
+        "skinNormal": [-0.8363855930492899, 0.12753493613666692, -0.5330984710203208],
+        "skinPoint": [-148.84440870830431, 19.054293780399426, -40]
+      },
+      "sha256": "aef0908d52e8cad878f267118140180c3a86e605abd838381078831009bbea23",
+      "sizeBytes": 409341,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.0,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 804
+        },
+        "ivc": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "portalSplenic": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        }
+      },
+      "unknownCandidatePixels": 0
+    },
+    {
+      "candidatePixels": 2544,
+      "ctUnavailablePixels": 0,
+      "file": "portalTrunk.png",
+      "id": "portalTrunk",
+      "oldFrame": {
+        "axial": [0.9924389087395215, 0.1227228028113304, -0.002031277932544436],
+        "curvatureCenter": [-199.13237551550395, -12.46959042384293, -79.87812332404734],
+        "elevation": [0.12020682940418516, -0.9684817313774569, 0.21815924035602233],
+        "face": [-139.58604099113265, -5.106222255163106, -80],
+        "lateral": [-0.02480585786666234, 0.21675389191028355, 0.9759110716439505],
+        "skinNormal": [-0.9876459527738038, -0.0431350741394799, -0.15064805789822472],
+        "skinPoint": [-139.58604099113265, -5.106222255163106, -80]
+      },
+      "overlapPixels": 1498,
+      "ownerReview": "pending",
+      "proceduralPixels": 5440,
+      "s0028Frame": {
+        "axial": [0.9754422433685278, -0.11824581969037234, -0.18582345378860507],
+        "curvatureCenter": [-205.9896399599597, 27.420343572099103, -68.8505927726837],
+        "elevation": [-0.0802601961863421, -0.9764899005054836, 0.20006442742007113],
+        "face": [-147.46310535784804, 20.325594390676763, -80],
+        "lateral": [0.2051115081127916, 0.18023706704377707, 0.9619999318623434],
+        "skinNormal": [-0.979206892435751, 0.1999538416610419, 0.034239202842804545],
+        "skinPoint": [-147.46310535784804, 20.325594390676763, -80]
+      },
+      "sha256": "ab6472e52e05132843ac726a99dd4b5742ce3c09899da3d54a4f0f6003812a3b",
+      "sizeBytes": 531381,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.8017057569296375,
+          "graphPixels": 377,
+          "intersection": 376,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 561
+        },
+        "ivc": {
+          "dice": 0.7175226586102719,
+          "graphPixels": 951,
+          "intersection": 950,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1697
+        },
+        "portalSplenic": {
+          "dice": 0.8483430799220273,
+          "graphPixels": 1089,
+          "intersection": 1088,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1476
+        }
+      },
+      "unknownCandidatePixels": 1216
+    },
+    {
+      "candidatePixels": 103,
+      "ctUnavailablePixels": 0,
+      "file": "renal.png",
+      "id": "renal",
+      "oldFrame": {
+        "axial": [0.5983543045704847, -0.7986331152726627, -0.0644769213893935],
+        "curvatureCenter": [-152.19897309292452, 98.08760234352218, -138.7313847166364],
+        "elevation": [-0.799462852913061, -0.6004412779967372, 0.018149889524583133],
+        "face": [-116.29771481869545, 50.16961542716243, -142.6],
+        "lateral": [0.053209707893215066, -0.04068683899650265, 0.9977541320978788],
+        "skinNormal": [-0.8351697075665404, 0.527658499333685, 0.1551388656789234],
+        "skinPoint": [-116.29771481869545, 50.16961542716243, -142.6]
+      },
+      "overlapPixels": 4,
+      "ownerReview": "pending",
+      "proceduralPixels": 604,
+      "s0028Frame": {
+        "axial": [0.5663032891481152, -0.8165346845172616, 0.11212356434007267],
+        "curvatureCenter": [-161.05709909950235, 126.15734515682985, -149.32741386040436],
+        "elevation": [-0.8175653695144691, -0.5737469854193717, -0.04900268658811305],
+        "face": [-127.07890175061544, 77.16526408579415, -142.6],
+        "lateral": [-0.1043429502683148, 0.0639179607190282, 0.9924852860505412],
+        "skinNormal": [-0.8257319483698605, 0.5630659361956899, -0.03351866550722808],
+        "skinPoint": [-127.07890175061544, 77.16526408579415, -142.6]
+      },
+      "sha256": "36fe3629ac8156c4dcf74479de6762852a9f30352be27b0bf38978ec6802c2bc",
+      "sizeBytes": 446683,
+      "sourceComparison": {
+        "aorta": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "ivc": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "portalSplenic": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        }
+      },
+      "unknownCandidatePixels": 103
+    },
+    {
+      "candidatePixels": 118,
+      "ctUnavailablePixels": 0,
+      "file": "hepatorenal.png",
+      "id": "hepatorenal",
+      "oldFrame": {
+        "axial": [0.906420491794422, -0.42236768824306703, -0.002725432693298497],
+        "curvatureCenter": [-188.6389514406864, 33.663411145457474, -115.16947403840209],
+        "elevation": [-0.4223759018021809, -0.9063896879662994, -0.0075054063946459965],
+        "face": [-134.2537219330211, 8.321349850873457, -115.333],
+        "lateral": [-0.0006997370597794095, -0.007954211246985119, 0.9999681199375735],
+        "skinNormal": [-0.9768280010675939, 0.1817671274213346, -0.11299454729890798],
+        "skinPoint": [-134.2537219330211, 8.321349850873457, -115.333]
+      },
+      "overlapPixels": 1,
+      "ownerReview": "pending",
+      "proceduralPixels": 334,
+      "s0028Frame": {
+        "axial": [0.7854060582790842, -0.5617403329166764, -0.25997138687396554],
+        "curvatureCenter": [-192.98618213949158, 68.75708105771866, -99.73471678756206],
+        "elevation": [-0.5677230523227224, -0.8210990368266492, 0.05905004304587932],
+        "face": [-145.86181864274653, 35.05266108271809, -115.333],
+        "lateral": [0.2466330462040377, -0.10121348772278474, 0.963809094387009],
+        "skinNormal": [-0.9247069895608467, 0.34764613408464345, 0.15511011866837765],
+        "skinPoint": [-145.86181864274653, 35.05266108271809, -115.333]
+      },
+      "sha256": "92f9603be42058b2fb32e9f3735e95a595b3855a9bf4bb8a127533ff16cfba11",
+      "sizeBytes": 466838,
+      "sourceComparison": {
+        "aorta": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "ivc": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        },
+        "portalSplenic": {
+          "dice": null,
+          "graphPixels": 0,
+          "intersection": 0,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 0
+        }
+      },
+      "unknownCandidatePixels": 118
+    },
+    {
+      "candidatePixels": 2250,
+      "ctUnavailablePixels": 0,
+      "file": "portalSubcostal.png",
+      "id": "portalSubcostal",
+      "oldFrame": {
+        "axial": [0.9128426737780786, -0.1965080796117872, 0.3579145534579109],
+        "curvatureCenter": [-188.86439420432495, 34.789510767393104, -116.47487320747466],
+        "elevation": [0.022533145714905306, -0.8509919565994695, -0.5246950992216309],
+        "face": [-134.09383377764024, 22.999025990685873, -95],
+        "lateral": [-0.4076892324723318, -0.4870290180782803, 0.7723938278338499],
+        "skinNormal": [-0.9373587254434262, 0.2700144811481835, -0.2201154238243033],
+        "skinPoint": [-134.09383377764024, 22.999025990685873, -95]
+      },
+      "overlapPixels": 1104,
+      "ownerReview": "pending",
+      "proceduralPixels": 3027,
+      "s0028Frame": {
+        "axial": [0.9321809229905242, -0.33337138833438035, 0.14107531411463228],
+        "curvatureCenter": [-195.22039515002737, 68.59747678735823, -103.46451884687794],
+        "elevation": [-0.19927169896282151, -0.7979336732542966, -0.5688520397074933],
+        "face": [-139.28953977059592, 48.59519348729541, -95],
+        "lateral": [-0.3022077378311234, -0.502160701894237, 0.8102500309583961],
+        "skinNormal": [-0.9179160844411534, 0.3967628835497858, 0.0030456791493031245],
+        "skinPoint": [-139.28953977059592, 48.59519348729541, -95]
+      },
+      "sha256": "2dc6ef804ab616feec02fb363f329b71d89572182df6444f4063c0704b4f6a2a",
+      "sizeBytes": 493383,
+      "sourceComparison": {
+        "aorta": {
+          "dice": 0.8142857142857143,
+          "graphPixels": 855,
+          "intersection": 855,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1245
+        },
+        "ivc": {
+          "dice": 0.8207604103802052,
+          "graphPixels": 680,
+          "intersection": 680,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 977
+        },
+        "portalSplenic": {
+          "dice": 0.7992831541218638,
+          "graphPixels": 669,
+          "intersection": 669,
+          "meaning": "circular graph vs native label in this fixed plane; not acceptance",
+          "sourcePixels": 1005
+        }
+      },
+      "unknownCandidatePixels": 715
+    }
+  ],
+  "openedByAgent": true,
+  "ownerReview": "pending",
+  "runtimeInstalled": false
+}

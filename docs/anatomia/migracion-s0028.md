@@ -10,6 +10,19 @@ contexto y sin techo de memoria. Se retira el objetivo anterior 800 MB/techo 1 G
 de toda la app es posterior. Activación sólo `?abdomen=s0028`, default conservado. Los TAC originales permanecen fuera
 de Git. Las menciones históricas «316 provisional» no sustituyen la decisión 316 vigente de la pared cava.
 
+## P5 r1 (offline), pendiente del propietario
+
+Exportador y contrato de la red vascular de s0028 (decisión 323), sin instalar ni editar runtime. VCI, aorta abdominal
+y máscara conjunta porta/esplénica desde sus máscaras; dos componentes hepáticas conectadas a cava y ocho a porta
+desde HU/Frangi y conectividad, sin precedencia entre identidades. Los nombres de las tres suprahepáticas, la
+partición porta/esplénica, las ramas portales y tres candidatos renales permanecen U; no se separan conductos
+biliares ni se inventa una AD. Grafo LAS: 2.067 nodos, 2.148 aristas; ciclos íntegros U sin flujo y diez caminos U
+sobre soporte observado entre esqueletos. Paquete con soporte verificable 188.469 B; descarga hipotética con los
+activos de main 20.621.995/25.000.000 B. Diez láminas de cinco columnas, incluida la anatomía antigua en su propia
+ventana, con lista sí/no pendiente. Falta el chunk s0028 del punto 3 de la 322, lector CPU/Worker/GLSL, paridad,
+negativos PW y techos de shader. [Método y contrato](s0028-vascular-offline.md),
+[medidas e índice de evidencia](../evidence/migration-p5-r1/README.md). Sin validación clínica.
+
 ## P3 r4: interior renal candidato desde el propio TAC, pendiente (321)
 
 Offline: no se instala ni cambia el runtime, la GPU ni el paquete. Rejilla P1 de `kidneyRight`/`kidneyLeft` (1,5 mm, mismo

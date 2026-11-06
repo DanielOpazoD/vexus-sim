@@ -1,0 +1,178 @@
+{
+  "evidenceDirectory": "migration-p5-r1",
+  "pathsRelativeTo": "evidenceDirectory",
+  "files": {
+    "candidate-final/candidate/manifest.json": {
+      "bytes": 47762,
+      "sha256": "2b48f578f6e9e63db33f087b23a8eb27ce9e56688d31542cacb6a375f0e09998"
+    },
+    "candidate-final/candidate/vessels.gzip.bin": {
+      "bytes": 24295,
+      "sha256": "49611fe3c6b988fd25b2690215a2fe451f732c24f35dd87e731a8d17a4ca3f06"
+    },
+    "candidate-final/candidate/support.gzip.bin": {
+      "bytes": 116412,
+      "sha256": "49c68e884cc277ba58ff4d68b86302eb7d10e8ab0d56da35a5baf145ce770cf2"
+    },
+    "candidate-final/candidate/receipt.json": {
+      "bytes": 528,
+      "sha256": "530e21d93e109ebc54c1ccd5251bd608b871923875cafa2a6314687f827fa387"
+    },
+    "candidate-final/measurements.json": {
+      "bytes": 39878,
+      "sha256": "121cd05e9d689d027e0502645e7eb5cf7b3e82f713cb51d8ab432a4f3eae6570"
+    },
+    "candidate-final/hepatic-sensitivity.json": {
+      "bytes": 318706,
+      "sha256": "20ea16818ad44b45a7be760b947b43692842236997b1e90eca82d59e8ecf7fad"
+    },
+    "candidate-final/renal-sensitivity.json": {
+      "bytes": 149260,
+      "sha256": "e9d2fd6b1a427378647f147a3725c0b98f0d90a77adcfa9dc5137bc59f8efcad"
+    },
+    "planes-reviewed/planes.json": {
+      "bytes": 117968,
+      "sha256": "4d0bfc6a568feb51ff211f9d6bb0e2191e548c1034344f093859b54a6758f0fe"
+    },
+    "old-model-planes-final/planes.json": {
+      "bytes": 122301,
+      "sha256": "5ae219edc93a4b773e65ef33e09ef51fb01c50d98156902e658fed28ee2288dd"
+    },
+    "plates-final/plates.json": {
+      "bytes": 18132,
+      "sha256": "eff93f3627a22ce1ae19d8dd0181a371dcf0fcd1e3a39c9c778ff904022d4e28"
+    },
+    "plates-final/OWNER-CHECKLIST.md": {
+      "bytes": 4498,
+      "sha256": "dbfd1fcc4f0c6d9415a3dfbf3afee081f555648973807a0f5de7cbbd95b33099"
+    },
+    "opened-plates.json": {
+      "bytes": 2166,
+      "sha256": "f84a7fceb0c138cc21f872a5d9dd41c982d2f3189d318487b9b528c7cb1f3e6a"
+    },
+    "plates-final/subxiphoid.png": {
+      "bytes": 452704,
+      "sha256": "e73c3e5ea3c501e4597b875f689f4050d8b7f8a13e18ac1ddd1b18ae00f6d57e"
+    },
+    "plates-final/epigastric.png": {
+      "bytes": 525474,
+      "sha256": "d9720a238b114d76320f7f94a22a98026d884e50818363c54869ed084e47c561"
+    },
+    "plates-final/intercostal.png": {
+      "bytes": 470317,
+      "sha256": "521d79942ceddada00496239a3c640fc032452eb3404ea0c404cb6231e02126b"
+    },
+    "plates-final/subcostal.png": {
+      "bytes": 484286,
+      "sha256": "342e37f41439d3898960636a4e78f724dd764bef7d73682f99472abf6636960f"
+    },
+    "plates-final/flank.png": {
+      "bytes": 535803,
+      "sha256": "b1760d44bbd779e85f8c1f3e93ffd812844161e5d6f1b6b3a425ddfb1e7869d5"
+    },
+    "plates-final/portal.png": {
+      "bytes": 409341,
+      "sha256": "aef0908d52e8cad878f267118140180c3a86e605abd838381078831009bbea23"
+    },
+    "plates-final/portalTrunk.png": {
+      "bytes": 531381,
+      "sha256": "ab6472e52e05132843ac726a99dd4b5742ce3c09899da3d54a4f0f6003812a3b"
+    },
+    "plates-final/renal.png": {
+      "bytes": 446683,
+      "sha256": "36fe3629ac8156c4dcf74479de6762852a9f30352be27b0bf38978ec6802c2bc"
+    },
+    "plates-final/hepatorenal.png": {
+      "bytes": 466838,
+      "sha256": "92f9603be42058b2fb32e9f3735e95a595b3855a9bf4bb8a127533ff16cfba11"
+    },
+    "plates-final/portalSubcostal.png": {
+      "bytes": 493383,
+      "sha256": "2dc6ef804ab616feec02fb363f329b71d89572182df6444f4063c0704b4f6a2a"
+    },
+    "orthogonal-final.png": {
+      "bytes": 801490,
+      "sha256": "c0ef16e10fd4e3e55b11943a2f2a8cbd7ee12913263183e6af450f76b114ac38"
+    },
+    "orthogonal-final.json": {
+      "bytes": 244,
+      "sha256": "c446812bd24a1bde3d666ba8a99fd74aa3ce4eac029d540eeb585d24d1c3baf8"
+    },
+    "orthogonal-review.py": {
+      "bytes": 1897,
+      "sha256": "8034e53d3ce95ca79c01aac01d613a1feec580870656ca39d90511c0ef1f19ff"
+    },
+    "review-red-contract.log": {
+      "bytes": 1459,
+      "sha256": "c0daca877117e7536db6484bcb5c0e85b8b1c3240b0e1bc3fbea106e436f81e3"
+    },
+    "review-red-plates.log": {
+      "bytes": 1416,
+      "sha256": "cbc612e04c9d2a4ab3dccca26f2e324e2fb22ea764dca67ea9d8be77efe2a7e1"
+    },
+    "review-green-contract.log": {
+      "bytes": 113,
+      "sha256": "12deaed34fca6577700306f3fe9d10b55497be8d63bd25136a20873e615e062e"
+    },
+    "review-green-plates.log": {
+      "bytes": 103,
+      "sha256": "d1aaab86fa02d87997171aeb3220b40f5e28046ec4d1674848f9ec5f589f297c"
+    },
+    "review2-red-contract.log": {
+      "bytes": 2835,
+      "sha256": "a4dc441616698b4bb114e62e0b80ed5c9b995df2b81b9d1199c0c3cef16925ef"
+    },
+    "review2-green-contract.log": {
+      "bytes": 115,
+      "sha256": "35acf4d72da607978b4fbef008f7a9333ee05046a52e0308d3bece34a73c7068"
+    },
+    "validation.json": {
+      "bytes": 3421,
+      "sha256": "6dde529d52ffddd79581d59f00919cbfc2485eae2e3a54921adb98e971242be8"
+    },
+    "full-check.log": {
+      "bytes": 109127,
+      "sha256": "db126da69a4a97eb6fe3837e701486d781ae708a03558e25d59eb1fa34ff3dc9"
+    },
+    "full-check-core.json": {
+      "bytes": 4028896,
+      "sha256": "6c1148498382ea4774e9d2b7e97fe494ed306129c5e40d445a1ff1a1043b07ce"
+    },
+    "frozen-files.json": {
+      "bytes": 125164,
+      "sha256": "3e06ba6dfbac96066968b5dc128c7bd822b220df05e978fde55400ab65f380b4"
+    },
+    "python-contract.log": {
+      "bytes": 2427,
+      "sha256": "7e57db1e97842122017329953dba6258bea9af012dd0e8c98ef010553f204c3b"
+    },
+    "python-plates.log": {
+      "bytes": 797,
+      "sha256": "21d31069cfe7c325d961fae4d22c763c4236dc607b26558bee13056f8605d818"
+    },
+    "python-reference.log": {
+      "bytes": 106,
+      "sha256": "54da43d636ddf98b52e1e8897d11ad11dc17f4a559c6cc332ffb40a9276858e8"
+    },
+    "python-renal-existing.log": {
+      "bytes": 113,
+      "sha256": "4919c5dc1581b8a4dd85a7a167f1bb8c4d7fefff6b930634f82d993e42c5b94d"
+    },
+    "package-reopen.log": {
+      "bytes": 139,
+      "sha256": "e4a97d74917c1ed9eced28e08b062a97279a808a3cf4465f2a771a9a3692a070"
+    },
+    "targeted-vitest.log": {
+      "bytes": 2491,
+      "sha256": "4ff8b0ae21024d69c410df30c48c166b00e0b609418f72fe67cf8682c2622c6d"
+    },
+    "opened-orthogonal.json": {
+      "bytes": 315,
+      "sha256": "6ab749c7269b5975f2274fa7356b9e886610aca84c615516a66466e6d10a102e"
+    },
+    "review.html": {
+      "bytes": 5564,
+      "sha256": "d20555d3caee9f2c9c7e653b32ce7be5099df1ee1f11b904d718c0fd70ce87f4"
+    }
+  }
+}

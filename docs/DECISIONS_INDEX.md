@@ -326,3 +326,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [320](DECISIONS.md#L10176) | Completar la anotación continua de pared s0028 antes del runtime | vigente |
 | [321](DECISIONS.md#L10354) | Conservar fuente y desconocidos de sólidos y posterior s0028 | pendiente de revisión del propietario |
 | [322](DECISIONS.md#L10501) | Programa estructural iterativo: la persona como estrategia, activos explícitos y dieta de tiempo | vigente |
+| [323](DECISIONS.md#L10659) | Extraer la red vascular s0028 con identidades y soporte verificables, antes de instalarla | pendiente del propietario |

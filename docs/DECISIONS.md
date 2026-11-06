@@ -10597,3 +10597,40 @@ el mismo PR. Medido sobre el código de esta PR: línea base verde (6 archivos f
 carga media 11 (cada mutante 1–61 s); con 27 mutantes, 507 s con carga 10–13 y 404 s el paso de CI (462 s el trabajo). No
 entra en el veredicto protegido: el workflow `Mutantes reproducibles` corre a mano o cuando cambian esos módulos, sus
 focales, el ejecutor, `vite.config.ts` o `package.json`. Ningún archivo de producto cambia.
+
+**Punto 10a** (05-11-2026, base `d761509`, rama `refactor/322-p10a-fidelity-20261105`). Se divide el banco de fidelidad
+por responsabilidad, con el patrón de `ui/panel.ts` y `ui/panel/`: `src/app/fidelity.ts` conserva exclusivamente el
+compositor `fidelityStats`; los consumidores importan cada medida desde su módulo concreto, sin barril. Las 154
+declaraciones originales conservan literalmente su código, comentarios, JSDoc y marcadores `@twin`; se mantienen las
+101 exportaciones originales y se exportan 33 auxiliares antes privados para compartirlos entre módulos (134 en total).
+La comprobación adicional conserva 234 enlaces de declaraciones y los 446 nombres importados por los 12 consumidores,
+incluidos sus tipos y todo su código posterior a los imports. El grafo de los 14 archivos no tiene ciclos; su base es
+`grid` → `curtain` → `clearLiver` → `pleura` en orden de dependencia. El registro de gemelos no cita el antiguo archivo
+y no necesita migración. Recuento con líneas físicas y declaraciones exportadas:
+
+| Archivo (bajo `src/app/`) | Líneas antes | Exports antes | Líneas después | Exports después |
+| ------------------------- | -----------: | ------------: | -------------: | --------------: |
+| `fidelity.ts`             |        2.952 |           101 |            763 |               1 |
+| `fidelity/statistics.ts`  |            0 |             0 |             48 |               4 |
+| `fidelity/envelope.ts`    |            0 |             0 |            234 |              11 |
+| `fidelity/display.ts`     |            0 |             0 |            226 |               8 |
+| `fidelity/faces.ts`       |            0 |             0 |            459 |              31 |
+| `fidelity/contour.ts`     |            0 |             0 |            229 |               9 |
+| `fidelity/shadow.ts`      |            0 |             0 |             46 |               4 |
+| `fidelity/grid.ts`        |            0 |             0 |            152 |              31 |
+| `fidelity/compound.ts`    |            0 |             0 |            154 |               9 |
+| `fidelity/wall.ts`        |            0 |             0 |            316 |              13 |
+| `fidelity/curtain.ts`     |            0 |             0 |             82 |               2 |
+| `fidelity/clearLiver.ts`  |            0 |             0 |             55 |               2 |
+| `fidelity/pleura.ts`      |            0 |             0 |            284 |               6 |
+| `fidelity/planeStats.ts`  |            0 |             0 |             84 |               3 |
+| **Total**                 |    **2.952** |       **101** |      **3.132** |         **134** |
+
+El archivo mayor del banco pasa de 2.952 a 763 líneas; el mayor de los 13 módulos nuevos es `faces.ts`, con 459
+(todos por debajo de 600). El compositor conserva íntegra su función para que la división no añada otra transformación
+de lógica. Los imports y las cabeceras de módulo explican el aumento de líneas totales. JS del build de producción:
+**1.061.770 → 1.061.697 B (−73 B)**; `testHooks`: **69.633 → 69.560 B**; los otros 22 archivos JS conservan su tamaño.
+No se cambian los techos de JS (1.070.080 B) ni de shaders. Las verificaciones locales de este punto son formato, lint,
+tipos, índice documental, pruebas de importadores y `twinRegistry`, build/presupuestos y capa rápida con dos workers.
+Por instrucción del propietario no se ejecuta `npm run check` completo: la aceptación sigue pendiente de la CI protegida
+del head final y su recibo. No se atribuyen paridad GPU nueva ni validación clínica.

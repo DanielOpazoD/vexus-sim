@@ -1,6 +1,6 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
-import { envelopeTexture } from '../app/fidelity';
+import { envelopeTexture } from '../app/fidelity/envelope';
 import { SLIDING_DB, SLIDING_EFOLD_MM, WALL_COPY_FACE_GAIN_RANGE, edgeWidth1090Mm } from '../ultrasound/pleura';
 import {
   LINES,

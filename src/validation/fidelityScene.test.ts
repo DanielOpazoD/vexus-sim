@@ -1,6 +1,9 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { contourStats, fidelityStats, type FidelityStats, type TransmissionFrame } from '../app/fidelity';
+import { fidelityStats } from '../app/fidelity';
+import { contourStats } from '../app/fidelity/contour';
+import type { TransmissionFrame } from '../app/fidelity/grid';
+import type { FidelityStats } from '../app/fidelity/planeStats';
 import { COMPOUND, compoundEnvelope, lookTheta } from '../ultrasound/compound';
 import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import type { Simulator } from '../app/simulator';

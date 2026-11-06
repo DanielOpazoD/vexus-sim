@@ -2,7 +2,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
-import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity';
+import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity/envelope';
 import { patchSnr, SPECKLE_PATCH } from '../app/speckle';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';

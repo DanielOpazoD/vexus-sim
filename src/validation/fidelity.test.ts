@@ -1,29 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import { lookCorrelations, seamStats } from '../app/fidelity/compound';
+import { CAPSULE_END_SPAN_MM, contourStats } from '../app/fidelity/contour';
+import { depthProfile, displayGrain, displayStats } from '../app/fidelity/display';
 import {
-  CAPSULE_END_SPAN_MM,
-  clearanceMask,
-  contourStats,
-  depthProfile,
-  displayGrain,
-  displayStats,
-  echoWidthMm,
-  envelopeLine,
+  RAYLEIGH_DARK_FRACTION,
   envelopeTexture,
   halfWidth,
   logEnvelopeGrain,
-  lookCorrelations,
-  measureFaceLine,
-  RAYLEIGH_DARK_FRACTION,
-  seamStats,
   secondaryLobe,
+  type EnvelopeGeometry,
+} from '../app/fidelity/envelope';
+import {
+  echoWidthMm,
+  envelopeLine,
+  measureFaceLine,
   summarizeFaces,
   thinGatedBins,
-  umbraEndMm,
-  type EnvelopeGeometry,
   type FaceKind,
   type FaceLine,
   type FaceSample,
-} from '../app/fidelity';
+} from '../app/fidelity/faces';
+import { clearanceMask } from '../app/fidelity/grid';
+import { umbraEndMm } from '../app/fidelity/shadow';
 import { SeededRandom } from '../core/random';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
 import { attenuationDbPerCm, Tissue } from '../anatomy/tissues';

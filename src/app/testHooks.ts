@@ -32,20 +32,13 @@ import { focalGain } from '../ultrasound/beamEcho';
 import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
-import {
-  CURTAIN_LIVER_MAX_AIR,
-  centralGradient,
-  clearLiverGrid,
-  curtainLines,
-  fidelityStats,
-  pleuraStats,
-  slidingCorrelation,
-  type CompoundStats,
-  type FidelityStats,
-  type LookFrames,
-  type PleuraStats,
-  type TransmissionFrame,
-} from './fidelity';
+import { fidelityStats } from './fidelity';
+import { clearLiverGrid } from './fidelity/clearLiver';
+import type { CompoundStats, LookFrames } from './fidelity/compound';
+import { curtainLines } from './fidelity/curtain';
+import { CURTAIN_LIVER_MAX_AIR, centralGradient, type TransmissionFrame } from './fidelity/grid';
+import type { FidelityStats } from './fidelity/planeStats';
+import { pleuraStats, slidingCorrelation, type PleuraStats } from './fidelity/pleura';
 import type { RespiratoryPattern } from '../physiology/patientState';
 import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
 import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';

@@ -78,15 +78,10 @@ import {
   type HitsLineQuery,
 } from '../ultrasound/transmission';
 import { lineHits, steeredPrefixDb } from '../ultrasound/transmissionTwin';
-import {
-  CURTAIN_FULL_AIR,
-  CURTAIN_LIVER_MAX_AIR,
-  clearLiverGrid,
-  curtainEdgeFit,
-  curtainLines,
-  slidingCorrelation,
-  type CurtainLine,
-} from '../app/fidelity';
+import { clearLiverGrid } from '../app/fidelity/clearLiver';
+import { curtainLines, type CurtainLine } from '../app/fidelity/curtain';
+import { CURTAIN_LIVER_MAX_AIR } from '../app/fidelity/grid';
+import { CURTAIN_FULL_AIR, curtainEdgeFit, slidingCorrelation } from '../app/fidelity/pleura';
 import type { Simulator } from '../app/simulator';
 import { AnatomyQuery } from '../anatomy/query';
 import { PhysiologyEngine } from '../physiology/engine';

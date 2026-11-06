@@ -50,17 +50,10 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import {
-  contourStats,
-  summarizeFaces,
-  thinGatedBins,
-  type ContourBin,
-  type ContourStats,
-  type FaceSummary,
-  type FidelityStats,
-  type PleuraStats,
-  type WallBin,
-} from '../../src/app/fidelity';
+import { contourStats, type ContourBin, type ContourStats } from '../../src/app/fidelity/contour';
+import { summarizeFaces, thinGatedBins, type FaceSummary, type WallBin } from '../../src/app/fidelity/faces';
+import type { FidelityStats } from '../../src/app/fidelity/planeStats';
+import type { PleuraStats } from '../../src/app/fidelity/pleura';
 
 // --clave valor, o --bandera sola
 const args = new Map<string, string>();

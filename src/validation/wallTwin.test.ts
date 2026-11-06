@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
-import { WALL_INTERIOR_MM, brightLines, type BrightLines } from '../app/fidelity';
+import { WALL_INTERIOR_MM, brightLines, type BrightLines } from '../app/fidelity/wall';
 import { START_POINTS } from '../app/startPoints';
 import type { Vec3 } from '../core/vec3';
 import { CONVEX_C35, probeFrame } from '../probe/probe';

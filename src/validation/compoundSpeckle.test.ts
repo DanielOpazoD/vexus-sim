@@ -1,7 +1,7 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
-import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity';
+import { envelopeTexture, type EnvelopeTexture } from '../app/fidelity/envelope';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, probeFrame } from '../probe/probe';

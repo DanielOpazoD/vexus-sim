@@ -261,6 +261,12 @@ persona, composición de GLSL, registro de gemelos, clasificación por candidato
 reproducibles, estado vigente y evidencia indexada, archivos grandes partidos. Cada punto es una PR con medida antes y
 después; el detalle y las cifras de partida están en `DECISIONS.md` (322).
 
+El banco de fidelidad (punto 10a) tiene un compositor en `src/app/fidelity.ts` (`fidelityStats`) y módulos por
+responsabilidad en `src/app/fidelity/`: envolvente, imagen mostrada, interfaces, contorno, sombra, composición, pared,
+rejilla, cortina, hígado despejado, pleura, estadísticos y tipos del plano. Cada consumidor importa el módulo concreto,
+sin barril. La dependencia de pleura hacia hígado despejado, cortina y rejilla conserva un grafo sin ciclos. El banco
+llega al bundle de producción a través de `app/testHooks.ts`; `app/speckle.ts` consume directamente `clearLiver`.
+
 ## Garantías mecánicas
 
 - `src/validation/layers.test.ts`: fronteras de capas y ciclos (Tarjan) sobre los imports reales.

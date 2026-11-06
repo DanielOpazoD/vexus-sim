@@ -1,6 +1,6 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { centralGradient } from '../app/fidelity';
+import { centralGradient } from '../app/fidelity/grid';
 import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { faceNormalStats } from '../app/testHooks';

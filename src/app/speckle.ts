@@ -1,6 +1,6 @@
 import { Tissue } from '../anatomy/tissues';
 import { pointOnLine } from '../probe/probe';
-import { clearLiverGrid } from './fidelity';
+import { clearLiverGrid } from './fidelity/clearLiver';
 import type { Simulator } from './simulator';
 
 /**

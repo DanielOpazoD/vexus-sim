@@ -15,11 +15,11 @@ for (const model of ['legacy', 'reference', 'atlas'] as const)
     });
     expect(observedModel).toBe(model);
     await page.locator('.win-card').filter({ hasText: 'Hepatorrenal' }).click();
-    // Inicio hepatorrenal basculado 6° sobre la pared corregida (223).
+    // Inicio hepatorrenal del atlas por defecto con el riñón derecho inclinado (decisión 329).
     // La llegada y la conservación posterior de los tres ejes siguen siendo exactas.
     const target =
       model === 'atlas'
-        ? { phi: 2.96, z: -115.333, yaw: -0.008, rock: -0.114, tilt: -0.253 }
+        ? { phi: 2.92, z: -120.6, yaw: -0.024, rock: -0.153, tilt: -0.446 }
         : { phi: 3.2, z: -80, yaw: model === 'reference' ? 0 : -0.1, rock: model === 'reference' ? -0.2 : 0.1, tilt: -0.4 };
     await withinFrames(
       page,

@@ -11,7 +11,7 @@ import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine } from '../probe/probe';
 import { setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
 import { setAbdominalBody } from './support/legacyPerson/referenceBody';
-import { AnatomyScene } from './support/legacyPerson/scene';
+import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 import { setThoracicAtlas } from './support/legacyPerson/thoracicAtlas';
 
 beforeAll(() => {
@@ -80,4 +80,41 @@ for (const base of [NORMAL_ADULT, SEVERE_CONGESTION])
       (_, i) => query.classifyWorld(pointOnLine(frame, CONVEX_C35, targets[0].theta, targets[0].r + 10 + i), sample).tissue,
     );
     expect(behindAorta.some((t) => t === Tissue.Bone || t === Tissue.Vertebra)).toBe(true);
+    // Decisión 331: la aorta apoya en la vértebra a través del mediastino posterior; sin pulmón entre ellas (antes, un
+    // «tubo» oscuro de pulmón bajo la aorta)
+    const toSpine = behindAorta.slice(
+      0,
+      behindAorta.findIndex((t) => t === Tissue.Bone || t === Tissue.Vertebra),
+    );
+    expect(toSpine, 'entre la aorta y la vértebra').not.toContain(Tissue.Lung);
   });
+
+// Decisión 331: el mediastino posterior (aorta, ácigos, esófago y grasa retrocrural) envuelve la aorta por detrás hasta los
+// cuerpos vertebrales del atlas (heart.ts); los pulmones quedan a los lados y detrás. Antes la columna del mediastino acababa
+// en y −34 y el pulmón tocaba la pared posterior de la aorta del hiato a la base del tórax. Más atrás y a los lados de la
+// aorta torácica sigue pudiendo haber pulmón (el receso paravertebral), y la columna elíptica, recta en z, no sigue la cifosis.
+it('sin pulmón pegado a la pared posterior de la aorta, del hiato a la base del tórax', () => {
+  const scene = new AnatomyScene(NORMAL_ADULT);
+  const aorta = scene.vesselById.get('aorta')!.tube;
+  const lung: string[] = [];
+  let samples = 0;
+  for (let z = -40; z <= 5; z += 5) {
+    const k = aorta.nodes.findIndex((n, i) => i > 0 && (aorta.nodes[i - 1].p[2] - z) * (n.p[2] - z) <= 0);
+    const a = aorta.nodes[k - 1],
+      b = aorta.nodes[k];
+    const t = (z - a.p[2]) / (b.p[2] - a.p[2]);
+    const c = a.p.map((v, i) => v + t * (b.p[i] - v)),
+      radius = a.r + t * (b.r - a.r);
+    // 12 mm detrás de la pared, en el eje y a 5 mm a cada lado
+    for (const dx of [-5, 0, 5])
+      for (let s = 0.5; s <= 12; s += 0.5) {
+        const y = c[1] - radius - s;
+        const q = scene.classify([c[0] + dx, y, z], BASELINE_CALIBER);
+        samples++;
+        if (q.tissue === Tissue.Vertebra || q.tissue === Tissue.Bone) break;
+        if (q.tissue === Tissue.Lung) lung.push(`(${(c[0] + dx).toFixed(1)}, ${y.toFixed(1)}, ${z})`);
+      }
+  }
+  expect(samples).toBeGreaterThan(300);
+  expect(lung.slice(0, 8), `${lung.length} muestras`).toEqual([]);
+});

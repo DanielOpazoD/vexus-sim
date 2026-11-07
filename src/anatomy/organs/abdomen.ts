@@ -33,7 +33,8 @@ export function digestiveGasPlane(m: Vec3, label: number, person?: AnatomyPerson
  */
 export const GASTRIC_WALL = {
   baseMm: 4,
-  foldMm: 2,
+  /** Decisión 331: un estómago distendido borra sus pliegues; con 2 mm la luz salía «en coliflor» en la transversa epigástrica */
+  foldMm: 0.5,
   folds: 10,
   twistPerMm: 0.035,
   serosaMm: 0.4,
@@ -128,8 +129,9 @@ export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
   // Source labels 5–9 are cecum/colon/rectum. Their non-gaseous contents are
   // an estimated particulate suspension; source geometry and gas placement stay fixed.
   const gas = inner < 0 && digestiveGasPlane(m, label, person) > 0;
-  // Los pliegues son demasiado irregulares para una cara especular: en el estómago solo la serosa da eco de interfaz; la mucosa contra la luz se ve por el contraste de tejidos
-  const iface = stomach || Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen;
+  // Decisión 331: con los pliegues borrados (0,5 mm) la mucosa contra la luz es lisa y da su eco de interfaz, la primera capa
+  // brillante de la firma digestiva, como en el resto del tubo (antes, con 2 mm, solo la serosa)
+  const iface = Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen;
   return {
     tissue:
       inner >= 0
@@ -184,6 +186,6 @@ bool abdomenQuery(vec3 m,inout Cls c){
   bool gas=inner<0.0&&digestiveGasPlane(m,label)>0.0; 
   c.tissue=inner>=0.0?(stomach?gastricWallTissue(-d,fold,inner):digestiveWallTissue(-d/wall)):gas?T_BOWELGAS:stomach?T_GASTRIC_CONTENTS:label>=5.0&&label<=9.0?T_COLONIC_CONTENTS:T_FLUID;
   c.bd=stomach?gastricBoundary(-d,inner,fold,rate,inner<0.0?abs(digestiveGasPlane(m,label))/2.0:1e3):min(min(-d,abs(inner)),inner<0.0?abs(digestiveGasPlane(m,label))/2.0:wall*0.03)/2.0; 
-  c.iface=stomach||abs(d)<abs(inner)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN; c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:inner); return true; 
+  c.iface=abs(d)<abs(inner)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN; c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:inner); return true; 
 }
 `;

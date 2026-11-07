@@ -84,6 +84,11 @@ export const MEDIASTINUM = {
   padMm: 15,
   padHeightMm: 20,
   column: { x: 6, y: -18, ax: 27, ay: 16, top: 130 },
+  /**
+   * Decisión 331: con el atlas, la columna llega por detrás a sus cuerpos vertebrales, más hondos que los del tronco
+   * esquemático (con la de arriba acababa en y −34 y dejaba pulmón entre la aorta y la vértebra); el borde anterior no cambia.
+   */
+  atlasColumn: { x: 6, y: -28, ax: 32, ay: 26 },
   /** Cota de ambas posiciones del saco y columna posterior fija (315):
    * unión de la esfera original y su traslación; radio 94 + |shift|/2 < 108.
    * Es sólo descarte, no una envolvente de tejido añadido.
@@ -246,8 +251,8 @@ export function thorax(m: Vec3, dDome: number, floor: number, person?: AnatomyPe
   const fe = Math.min(c[0] - W.lv - pad, c[1] - W.rv - pad, c[2] - W.ra, c[3] - W.la);
   const fat = (fe - p - MED.fatMm) / (1 + MED.padMm / MED.padHeightMm);
   // la columna del mediastino posterior: elipse en (x, y) cortada por arriba en `top`
-  const k = MED.column;
-  const column = Math.max(sdEllipsoidLocal([m[0] - k.x, m[1] - k.y, 0], [k.ax, k.ay, 1e3]), m[2] - k.top);
+  const k = person?.assets.buffers.abdominal ? MED.atlasColumn : MED.column;
+  const column = Math.max(sdEllipsoidLocal([m[0] - k.x, m[1] - k.y, 0], [k.ax, k.ay, 1e3]), m[2] - MED.column.top);
   const med = smoothMin(fat, column, MED.blendMm);
   if (med < 0) return { tissue: Tissue.Mediastinum, bd: Math.min(-med, Math.min(epiC, -dDome)), ifd: 1e3 };
   return { tissue: Tissue.Lung, bd: Math.min(med, -dDome), ifd: 1e3 };
@@ -267,7 +272,7 @@ const vec = (v: readonly number[]): string => `vec${v.length}(${v.map((x) => x.t
 const V3 = [HEART_ORIGIN, ...HEART_AXES, CAV.lv.r, CAV.rv.c, CAV.rv.r, CAV.ra.c, CAV.ra.r, CAV.la.c, CAV.la.r];
 /**
  * vec4 del shader: paredes; tabiques y pericardio; grasa, unión, grasa de la cúpula y su altura; columna (x, y, semiejes);
- * esfera envolvente; tope de la columna, suelo de la AD e inclinación de la AD.
+ * esfera envolvente; tope de la columna, suelo de la AD e inclinación de la AD; columna con el atlas (decisión 331).
  */
 const V4 = [
   WALL4,
@@ -276,6 +281,7 @@ const V4 = [
   [MED.column.x, MED.column.y, MED.column.ax, MED.column.ay],
   [...MED.bound.c, MED.bound.r],
   [MED.column.top, IVC_ORIFICE_MM, ...RA_TILT],
+  [MED.atlasColumn.x, MED.atlasColumn.y, MED.atlasColumn.ax, MED.atlasColumn.ay],
 ];
 
 /**
@@ -350,9 +356,10 @@ int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   vec4 f = e - vec4(vec2(HW[2].z * clamp(1.0 + hF / HW[2].w, 0.0, 1.0)), 0.0, 0.0);
   float fe = min(min(f.x, f.y), min(f.z, f.w));
   float fat = (fe - p - HW[2].x) / (1.0 + HW[2].z / HW[2].w);
-  // la columna del mediastino posterior: elipse en (x, y) cortada por arriba
-  vec2 q = m.xy - HW[3].xy;
-  float ell = sdEllipsoidLocal(vec3(q, 0.0), vec3(HW[3].zw, 1e3));
+  // la columna del mediastino posterior: elipse en (x, y) cortada por arriba; con el atlas, la que llega a sus vértebras
+  vec4 k = uAbdominalAtlasEnabled != 0 ? HW[6] : HW[3];
+  vec2 q = m.xy - k.xy;
+  float ell = sdEllipsoidLocal(vec3(q, 0.0), vec3(k.zw, 1e3));
   float column = max(ell, m.z - HW[5].x);
   float med = smoothMin(fat, column, HW[2].y);
   bool sac = epi < p;
@@ -362,7 +369,7 @@ int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   // alcanza desde el mediastino (su frontera, más cerca que la cúpula), la de esa frontera, la del saco o la de la columna
   // (su tapa, +z), para el espejo de la pasada A: con la de la cúpula el camino reflejado se perdía (una zona negra)
   bool mirror = !sac && med >= 0.0 && med < -dDome;
-  if (mirror && fat >= column) n = m.z - HW[5].x > ell ? vec3(0.0, 0.0, 1.0) : normalize(vec3(q / (HW[3].zw * HW[3].zw), 0.0));
+  if (mirror && fat >= column) n = m.z - HW[5].x > ell ? vec3(0.0, 0.0, 1.0) : normalize(vec3(q / (k.zw * k.zw), 0.0));
   else if (sac ? epi > hF + p : mirror) n = epiNormal(m, sac ? e : f, sac ? epi : fe);
   return sac || med < 0.0 ? T_MEDIASTINUM : T_LUNG;
 }

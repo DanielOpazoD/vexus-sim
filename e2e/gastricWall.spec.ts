@@ -21,7 +21,9 @@ function stomachWallPoints(): number[][] {
         const p = [x, y, z].map((v, i) => f.originMm[i] + (v + 0.37) * f.pitchMm) as [number, number, number];
         const q = abdominalAtlasValue(p, 1);
         if (q.d >= 0 || q.label !== 1 || -q.d > GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm + 2) continue;
-        if (abdomenQuery(p, fixturePerson().cpu)?.interface === Interface.BowelSerosa) out.push(p);
+        // la cara de la serosa y, desde la decisión 331, la de la mucosa contra la luz: toda la pared, como antes
+        const face = abdomenQuery(p, fixturePerson().cpu)?.interface;
+        if (face === Interface.BowelSerosa || face === Interface.BowelLumen) out.push(p);
       }
   setAbdominalAtlas();
   return out;

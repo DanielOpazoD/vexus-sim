@@ -11094,3 +11094,65 @@ del atlas, riñones incluidos, así que la 329 sacó la piel del flanco posterio
   - la cadena de derivación (`registeredDiaphragmRoof`);
   - la huella semántica y las fixtures de shader, regeneradas.
 - `renalSinus` (dedos ≥ 5 mm, frontera sin cruces) sigue en verde sin tocarlo.
+
+## 331. Las dos ventanas de la VCI como imagen completa: subxifoidea centrada en la unión, aorta sobre la vértebra y estómago distendido
+
+**Contexto.** El propietario pide pensar en la imagen completa de las dos ventanas de la VCI de la persona por defecto
+(sin s0028). Inventario del plano de la imagen (`classifyWorld`, 97–193 líneas a 0,5–1 mm) sobre `main` 2b716a2:
+
+- Eje largo subxifoideo: la AD quedaba en el borde del sector (centro a 25,5° del eje, 8,5° del borde) con el borde craneal
+  sin contacto, y el plano cortaba los cuerpos vertebrales (8,7 % del sector): la «gran zona negra de bordes rectos» del campo
+  profundo derecho era la sombra vertebral. La VCI cruzaba el sector de borde a borde. La suprahepática media ya tocaba la
+  VCI a 21,5 mm de la AD, pero cortada de través y lejos del centro.
+- Eje corto epigástrico: el «tubo vertical» bajo la aorta era **pulmón**: la columna del mediastino posterior (`heart.ts`) acababa
+  en y −34 mm, pensada para el tronco esquemático, y los cuerpos vertebrales del atlas empiezan en y −40…−51. Del hiato a la base
+  del tórax el pulmón tocaba la pared posterior de la aorta (391 muestras en el contrato nuevo). La masa «en coliflor» era el
+  estómago: diez pliegues de 2 mm (decisión 312) que, cortados en oblicuo, lobulaban la luz.
+
+**Opciones.**
+
+- Subxifoidea: una búsqueda aleatoria de poses (2.500 + ascenso local) da dos familias. Planos abanicados 20–25° a la derecha
+  con la VSH media en eje largo (como la ventana subcostal): VCI corta y la AD tras la sombra del xifoides; o el contrato de la
+  315 falla (6–8 rayos, 15–19 mm). Se descartan. Deslizar la sonda hacia la cabeza conserva el eje largo y centra la unión.
+- Mediastino: recortar el pulmón contra la aorta o la vértebra sería un parche por órgano. Ampliar la columna para todos
+  rompía el tronco esquemático (`pleura.test.ts`: espejos del diafragma 40 → 7; `heart.test.ts`: pulmón en la cáscara).
+- Estómago: pared más gruesa o contenido más ecogénico cambian la física del tejido; no hacen falta para el contorno.
+
+**Decisión.**
+
+- `startPoints.ts`: la persona por defecto tiene su tabla de poses (`DEFAULT_POSES`, también renal y hepatorrenal de la 330).
+  Subxifoidea: z −60 → −45 (15 mm hacia la cabeza) e inclinación −0,10 → −0,13 rad (1,7° más a la derecha); φ, giro y
+  basculación de la 315. s0028 conserva la suya.
+- `heart.ts`: con el atlas cargado, la columna del mediastino posterior es `atlasColumn` (centro y −28, semiejes 32 × 26 mm; antes
+  −18, 27 × 16): su borde anterior no cambia y llega por detrás a los cuerpos vertebrales del atlas. Sin atlas, la de siempre.
+  TS y GLSL eligen igual que `heartShift` (`uAbdominalAtlasEnabled`); un vec4 más en `HW`.
+- `abdomen.ts`: un estómago distendido borra sus pliegues: `GASTRIC_WALL.foldMm` 2 → 0,5. Con la luz lisa, la mucosa contra la
+  luz da su eco de interfaz (`BowelLumen`, el de todo el tubo), la primera capa brillante de la firma digestiva; la serosa
+  conserva la cara de fuera. No cambian capas, grosores, contenido ni gas.
+
+**Consecuencias.**
+
+- Subxifoidea: la AD queda en el sector (centro a 19,8°) como una cámara redonda en la que entra la VCI, con la suprahepática
+  que desemboca junto a la unión (24,5 mm de la AD) y el hígado delante; la columna sale del plano (0,8 %) y el campo profundo
+  muestra pulmón y retroperitoneo. Contrato de la 315 con la pose nueva: 9/25,0 mm (sano) y 7/22,1 mm (grave) en el centro,
+  vecinos ≥ 7 rayos y ≥ 21,4 mm. La VCI sigue siendo larga y de calibre casi constante: su radio no cambia.
+- Epigástrica: la aorta apoya en la cortical vertebral con su sombra ancha detrás; desaparece el tubo de pulmón. En subcostal
+  y porta subcostal, el pulmón profundo junto a la aorta torácica pasa a mediastino.
+- El estómago es redondo y liso, con la pared posterior brillante. **Sigue sin leerse como víscera hueca**: la pared de 4 mm no
+  muestra sus capas en el B (la submucosa no destaca del hígado vecino), y la luz se ve como una masa hipoecoica moteada.
+- s0028 comparte el estómago y, con su atlas, la columna nueva: diferencias de 0,6–1,3 niveles de gris (ruido 0,4–1,0).
+- JS: default 1.033.820 B, s0028 1.069.965 B (margen 115 B; antes 309 B: −194 B, la tabla de poses y la columna con el atlas en
+  TS y GLSL). Descarga y atlas sin cambios. Programas: 48 de 78 hashes cambian (fixtures regeneradas con el cálculo de sus
+  pruebas); huella semántica default regenerada. No es validación clínica.
+
+**Verificación.**
+
+- `subxiphoidWindow.test.ts` (nuevo): rojo en main (columna 8,7 %, AD a 25,5°); la desembocadura a < 30 mm de la AD ya se
+  cumplía y queda como guarda. `epigastricAtlasWindow.test.ts`: sin pulmón entre la aorta y la vértebra en el plano, y 12 mm
+  detrás de la pared aórtica de z −40 a 5; rojos en main. Por encima de z 5 la columna recta no sigue la cifosis y queda pulmón
+  detrás de la aorta torácica: no se exige.
+- `gastricWall.test.ts`: luz lisa, recorrido p10–p90 del grosor medido por la normal 2,54 mm en main, 1,40 ahora y 1,30 sin
+  pliegues (cota 1,8). Evolución del contrato de la 310 «solo la serosa da eco»: su defecto era la luz plegada; el nuevo exige la
+  serosa fuera y la mucosa dentro (rojo en main); `e2e/gastricWall.spec.ts` toma las dos caras para seguir cubriendo toda la pared.
+- Láminas antes/después de las diez ventanas, default y s0028, Metal, mismo guion de captura: informe externo
+  `default-ivc-windows-20261107/report.md`.

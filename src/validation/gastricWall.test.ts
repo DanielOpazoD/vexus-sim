@@ -153,9 +153,46 @@ describe('estómago con algo de líquido (decisión 310)', () => {
     }
   });
 
-  it('solo la serosa da eco de interfaz: la luz plegada no se dibuja con la normal del contorno', () => {
-    for (const { c } of stomachPoints(5)) expect(c.interface).toBe(Interface.BowelSerosa);
-    expect(ABDOMEN_GLSL).toContain('c.iface=stomach||abs(d)<abs(inner)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN');
+  // Decisión 331 (evolución del contrato de la 310: «solo la serosa da eco»). Su defecto: con pliegues de 2 mm la luz no era
+  // lisa y la normal del contorno no servía; con el estómago distendido (pliegues de 0,5 mm) la mucosa contra la luz es la
+  // primera capa brillante de la firma digestiva, y sin ella la pared no se veía. Se conserva el negativo: la mitad de fuera
+  // de la pared sigue siendo de la serosa, y la de la luz es de la mucosa, como en el resto del tubo.
+  it('la serosa da la cara de fuera y la mucosa lisa, la de la luz, con la normal del contorno', () => {
+    let serosa = 0,
+      lumen = 0;
+    for (const { p, d, c } of stomachPoints(5)) {
+      const { fold } = gastricFold(p);
+      const inner = d + GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm * (0.5 + 0.5 * fold);
+      expect(c.interface).toBe(Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen);
+      if (c.interface === Interface.BowelSerosa) serosa++;
+      else lumen++;
+    }
+    expect(serosa).toBeGreaterThan(100);
+    expect(lumen).toBeGreaterThan(100);
+    expect(ABDOMEN_GLSL).toContain('c.iface=abs(d)<abs(inner)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN');
+    expect(ABDOMEN_GLSL).not.toContain('stomach||abs(d)<abs(inner)');
+  });
+
+  it('estómago distendido (decisión 331): la luz es lisa, sin contorno «en coliflor»', () => {
+    // Grosor medido: desde la serosa, hacia dentro por la normal del contorno, hasta el contenido (o el gas)
+    const thickness: number[] = [];
+    for (const { p, d, c } of stomachPoints(2)) {
+      if (-d > 0.3) continue;
+      const n = c.boundaryNormal;
+      let s = 0;
+      for (; s < 12; s += 0.05) {
+        const q = abdomenQuery([p[0] - n[0] * s, p[1] - n[1] * s, p[2] - n[2] * s], fixturePerson().cpu);
+        if (q && (q.tissue === Tissue.GastricContents || q.tissue === Tissue.BowelGas)) break;
+      }
+      // fuera de los rincones donde la normal sale de la pared (curvatura alta, junto a otro órgano)
+      if (s < 12) thickness.push(s - d);
+    }
+    expect(thickness.length).toBeGreaterThan(200);
+    const sorted = [...thickness].sort((a, b) => a - b),
+      q = (f: number) => sorted[Math.floor(f * (sorted.length - 1))];
+    // Recorrido p10–p90 del grosor: 2,54 mm con los pliegues de 2 mm de la 312, 1,40 con 0,5 mm y 1,30 sin pliegues (el suelo
+    // de la medida: la normal del atlas no es la de la pared en toda la vuelta). La cota separa pliegues de más de ~1 mm
+    expect(q(0.9) - q(0.1), JSON.stringify({ p10: q(0.1), p50: q(0.5), p90: q(0.9) })).toBeLessThan(1.8);
   });
 
   it('la GLSL usa las mismas capas y el mismo pliegue', () => {

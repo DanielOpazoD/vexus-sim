@@ -297,13 +297,15 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
 // Decisiones 329 y 330: con el riñón derecho por defecto inclinado y subido bajo el hígado, su eje largo desde la axilar
 // anterior (renal, con puertas PW en vena y arteria interlobares) y desde la media, con el hígado delante (hepatorrenal), por
 // búsqueda de pose sobre la anatomía fija. s0028 conserva las suyas.
-const DEFAULT_POINTS: readonly StartPoint[] = ABDOMINAL_POINTS.map((sp) =>
-  sp.id === 'renal'
-    ? { ...sp, phi: 2.804, z: -120.3, yaw: 0.113, rock: -0.154, tilt: -0.368 }
-    : sp.id === 'hepatorenal'
-      ? { ...sp, phi: 2.9, z: -123.9, yaw: 0.08, rock: 0.037, tilt: -0.431 }
-      : sp,
-);
+// Decisión 331: la subxifoidea se desliza 15 mm hacia la cabeza y se abanica 1,7° más a la derecha, como haría un
+// ecografista: la unión cavoauricular queda en el sector con la suprahepática que desemboca junto a ella, y la columna sale
+// del plano (antes, la AD en el borde y una VCI recta de borde a borde sobre la sombra vertebral).
+const DEFAULT_POSES: Partial<Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>> = {
+  renal: { phi: 2.804, z: -120.3, yaw: 0.113, rock: -0.154, tilt: -0.368 },
+  hepatorenal: { phi: 2.9, z: -123.9, yaw: 0.08, rock: 0.037, tilt: -0.431 },
+  subxiphoid: { ...ABDOMINAL_POSES.subxiphoid, z: -45, tilt: -0.13 },
+};
+const DEFAULT_POINTS: readonly StartPoint[] = ABDOMINAL_POINTS.map((sp) => ({ ...sp, ...DEFAULT_POSES[sp.id] }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(
   torso: Pick<Torso, 'a' | 'b' | 'profile'>,

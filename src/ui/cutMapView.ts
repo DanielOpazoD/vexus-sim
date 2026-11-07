@@ -111,7 +111,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
   [Tissue.Psoas]: 'psoas',
-  [Tissue.QuadratusLumborum]: 'cuadrado lumbar',
+  [Tissue.QuadratusLumborum]: 'cuadrado lumbar · paravertebral',
   [Tissue.RetroperitonealFat]: 'retroperitoneo',
   [Tissue.Myocardium]: 'miocardio',
   [Tissue.Mediastinum]: 'mediastino',

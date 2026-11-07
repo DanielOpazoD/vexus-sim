@@ -1,0 +1,12 @@
+{
+  "decision": "329",
+  "tool": "tools/anatomy/move-right-kidney.ts",
+  "inputRawSha256": "b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8",
+  "outputRawSha256": "a6c8166310cbc6423467479f73ca78262a67169899f71e6700161c0137433875",
+  "fieldSha256": {
+    "kidneyRight": "ab924aa90d84079f955437aa465dec9c9909956c5c41ac8e700f6d25f45a76b8"
+  },
+  "labelSha256": {
+    "kidneyRight": "a1cf44078fdb7a75eb13c026469189ada898f22b63ba0669c4df54b2d4ffb842"
+  }
+}

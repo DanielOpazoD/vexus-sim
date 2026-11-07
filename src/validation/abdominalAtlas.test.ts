@@ -94,7 +94,8 @@ describe('registered abdomen: actual shipped acoustic data', () => {
             occupied++;
             expect(abdominalAtlasSdf(p, 9), `${f.name}: ${p.join(',')}`).toBeGreaterThanOrEqual(0);
           }
-      expect(occupied).toBeGreaterThan(30_000);
+      // Decisión 329: el derecho, girado, se aplana contra el colon y el psoas (31.646 → 29.956 nodos; el izquierdo, 30.7k)
+      expect(occupied).toBeGreaterThan(29_500);
     }
     // Source-grid exclusion does not establish a resolved fascial layer or clinical clearance.
   });
@@ -182,7 +183,15 @@ describe('registered abdomen: actual shipped acoustic data', () => {
             expect(abdominalAtlasSdf(p, 9)).toBeGreaterThanOrEqual(-1.5);
           }
       expect(count).toBeGreaterThan(500);
-      expect(kidney.u[2]).toBeGreaterThan(0.9);
+      // Eje largo: el izquierdo, casi vertical (< 26°); el derecho, inclinado como en s0028 / s0440 (32,5° / 33,1°), con el
+      // polo superior medial y posterior (decisión 329; antes 8,5°, que pasaba esta misma cota)
+      if (field === 6) expect(kidney.u[2]).toBeGreaterThan(0.9);
+      else {
+        expect((Math.acos(kidney.u[2]) * 180) / Math.PI).toBeGreaterThan(25);
+        expect((Math.acos(kidney.u[2]) * 180) / Math.PI).toBeLessThan(36);
+        expect(kidney.u[0]).toBeGreaterThan(0.1);
+        expect(kidney.u[1]).toBeLessThan(-0.3);
+      }
     }
   });
   it('renders bladder lumen as fluid and gives all named vessels real geometry', () => {

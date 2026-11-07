@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
-import { Interface } from '../anatomy/interfaces';
 import {
   ATLAS_KIDNEY_CLEARANCE_MM,
   RENAL_FASCIA_MM,
@@ -47,10 +46,12 @@ describe('volumetric renal bed', () => {
       expect(worst, f.name).toBeGreaterThan(1.7);
     }
   });
-  it('crosses capsule, adipose volume, fascia and muscle at both former contact sites', () => {
+  it('crosses capsule, adipose volume, fascia and muscle at both contact sites', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
     const rays: Array<{ p: Vec3; n: Vec3 }> = [
-      { p: [-54, -30, -197.25], n: [0, -0.3333016832, -0.942820231] },
+      // derecho: tras la decisión 329 el contacto con el psoas es el borde medial (el polo inferior ya no apoya en él);
+      // testigo buscado con la misma secuencia sobre el campo nuevo
+      { p: [-40, -53.25, -123.5], n: [0.9561982883, 0.0148877299, -0.292340878] },
       { p: [58.5, -36, -179.25], n: [-0.3162007423, -0.3162007423, -0.8944462986] },
     ];
     for (const { p, n } of rays) {
@@ -130,10 +131,13 @@ describe('volumetric renal bed', () => {
   // Revisión de la decisión 309: fuera de las cajas del campo original ambos valían 16, y el empate daba siempre el riñón izquierdo
   it('la cara de la fascia usa el gradiente de su propio riñón, también fuera de la caja del campo original', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
-    const p: Vec3 = [-63.55707550048828, -68.85719299316406, -135.8177947998047];
+    // Decisión 329: el bloque del riñón derecho movido cubre toda su grasa, así que ninguna cara de fascia derecha queda ya
+    // fuera de él. El testigo es un punto detrás del riñón derecho, fuera de las dos cajas (los dos campos valen 16), donde
+    // se pide la cara de la grasa perirrenal: el empate seguiría dando el riñón izquierdo
+    const p: Vec3 = [-79.3, -81.4, -160.7];
     expect(abdominalAtlasSdf(p, 5)).toBe(16);
-    expect(scene.classify(p, BASELINE_CALIBER).interface).toBe(Interface.RenalFascia);
-    const g = scene.faceGradient(p, BASELINE_CALIBER)!;
+    expect(abdominalAtlasSdf(p, 6)).toBe(16);
+    const g = scene.faceGradient(p, BASELINE_CALIBER, 'perirenalOuter')!;
     expect(g.norm).toBeGreaterThan(0.5);
     const h = 0.05;
     const face = (q: Vec3) => perirenalOuterSdf(kidneyLocal(q, scene.kidneyRight), scene.kidneyRight);

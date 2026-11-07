@@ -10923,3 +10923,91 @@ antes/después, mismo reloj, pose y mandos, campo cercano 0–5 cm e imagen comp
 default 1.030.591 B y s0028 1.068.411 B (margen 1.669 B; main tras la 324: 1.029.973 y 1.067.673); techos intactos. Tokens de
 RAWFIELD 1.262.787 → 1.265.439 (techo 1.385.000), una rama más; samplers y ranuras sin cambios. Evidencia:
 `$VEXUS_EVIDENCE_ROOT/default-wall-b2-20261107/report.md` y `$VEXUS_EVIDENCE_ROOT/default-wall-b2-20261107/figures/b2`.
+
+## 328. Masa paravertebral en la anatomía por defecto
+
+**Problema.** En la renal focalizada se ve un peine de ocho sombras equiespaciadas bajo el riñón. No es gas: son las
+transversas L1–L5 y las costillas 11–12 del atlas. Una de sus dos causas es que falta la masa paravertebral: detrás de los
+cuerpos vertebrales, hasta la pared posterior, todo era grasa retroperitoneal, así que láminas y transversas quedaban
+rodeadas de grasa brillante. `docs/anatomia/relaciones-tac.md` lo marcaba como «No» (s0028 / s0440: 824 / 699 cm³ de
+autóctonos). Medido en el modelo: el 98,8 % del tejido blando a ≤ 3 mm del arco vertebral (L1–L5) era grasa.
+
+**Decisión.** Con el atlas, un campo propio de erectores y transversoespinosos a cada lado (`PARAVERTEBRAL`, CPU en
+`people/default/paravertebral.ts`, GLSL en `RETROPERITONEUM_GLSL`):
+
+- sección de |x| 1 a 50 mm y de y −62 (delante de las transversas, detrás del psoas) a −110 (unos 10 mm tras la punta de
+  las espinosas), con las esquinas laterales redondeadas (12 mm); z de 0 a −260 [ESTIMADO];
+- se cierra contra la pared (su cara interna), la grasa perirrenal y el psoas (1 mm), y deja 1,5 mm de grasa frente al
+  cuadrado lumbar: la hoja anterior de la fascia toracolumbar se ve como una línea;
+- la columna, las costillas, el tórax y el diafragma ganan antes en la clasificación: el músculo rodea láminas,
+  transversas y cuellos costales sin sustituirlos;
+- mismo tejido y textura que el cuadrado lumbar (músculo estriado, fibras craneocaudales); el mapa de cortes lo nombra
+  «cuadrado lumbar · paravertebral». No hay tejido nuevo ni ranuras de shader nuevas.
+
+**Alternativas descartadas.** Llenar hasta la pared con |x| ≤ 58–68 mm: 1.110–1.260 cm³, el doble que los autóctonos de
+los TAC en el mismo tramo vertebral. Un tejido propio: cambiaría las tablas acústicas y del shader sin ganancia en la
+imagen. Llevar la masa por encima del diafragma, detrás del receso pulmonar: exige recortar el pulmón de la pared
+posterior; queda fuera de este bloque.
+
+**Consecuencias.** Las transversas quedan en músculo (grasa 98,8 → 8,9 %, músculo 1,2 → 90,7 % a ≤ 3 mm del arco). El
+peine renal sigue, más apagado entre sombras: su otra causa es la inclinación del riñón (decisión 329). En la renal y la
+hepatorrenal aparece músculo hipoecoico estriado en el campo profundo donde había grasa. Entre el músculo y la pared queda
+una banda fina de grasa donde la pared queda lejos de la espina (la torácica baja). El navegador 3D no dibuja todavía esta
+masa. s0028 no la usa: su clasificación GLSL sustituye `classifyInside`. No es validación clínica.
+
+**Verificación.** `retroperitoneumRelations.test.ts`, tres rojos en la base (volumen 0, grasa 98,8 %, campo vacío) y
+verdes después: 829 cm³ entre los dos lados (443 / 458 por lado; autóctonos de s0028 / s0440 entre T11 y L5: 580 / 499
+cm³), ningún punto del campo dentro del riñón, la grasa perirrenal, el psoas o la pared, < 0,5 % junto al borde hepático y
+las costillas siempre hueso. Paridad CPU/GLSL: la misma función en los dos lados y la e2e de equivalencia de la
+clasificación. JS: default 1.029.872 → 1.031.015 B, s0028 1.067.572 → 1.068.313 B (+741 B; la función CPU va solo en la
+clausura por defecto). Programas: +549 B transformados en los 24 con anatomía; la ABI fija 6 símbolos nuevos (`rA`–`rF`).
+
+## 329. Riñón derecho por defecto inclinado y más alto, con sus poses
+
+**Problema.** La segunda causa del peine de la renal focalizada: el riñón derecho del atlas estaba inclinado 9,7° (s0028 /
+s0440: 32,5° / 33,1°), así que el plano de su eje largo corría paralelo a la columna y cortaba en fila las transversas
+L1–L5 y las costillas 11–12. Además quedaba 106 mm por debajo del centro hepático (79 / 73 mm en los TAC).
+`docs/anatomia/relaciones-tac.md` lo marcaba como «No».
+
+**Decisión.**
+
+- Movimiento rígido del bloque `kidneyRight` del atlas (`tools/anatomy/move-right-kidney.ts`, entrada fijada por hash):
+  giro mínimo del eje largo a 12° coronal (polo superior medial) y −29,5° sagital (polo superior posterior) alrededor del
+  centro del marco, y traslación [−7,5, −18, +7] mm. El campo se remuestrea con la interpolación de los lectores, se
+  cuantiza a 1/64 mm y se recorta contra hígado, tubo digestivo y psoas con la holgura de 2 mm de la decisión 309
+  (impresiones de 0,65 cm³ en total). El bloque girado no cabe donde estaba: se muda a un hueco libre de la textura
+  (x 283–337, y 145–216, z 119–257, relleno de 16 mm). Ningún otro byte cambia; se regeneran las superficies 3D.
+- El marco renal de la escena (centro y ejes) gira con el campo, así que seno, pirámides, interlobares, hilio y vasos
+  renales lo siguen; la arteria renal derecha sigue pasando por detrás de la VCI. s0028 conserva su marco y sus poses.
+- Poses de inicio por defecto (`DEFAULT_POINTS`), por búsqueda sobre la anatomía fija con los contratos de 309 y 300:
+  renal desde la axilar anterior (φ 2,791, z −135,1; con puertas PW en una vena y una arteria interlobares en los dos casos) y hepatorrenal desde la media (φ 2,92, z −120,6), las dos con el
+  riñón en eje largo.
+
+**Por qué no más alto.** Subir 24 mm daba 82 mm al hígado, pero dejaba el riñón derecho 5,6 mm por encima del izquierdo
+(en los dos TAC el izquierdo está 15 / 19 mm más alto). Se sube 7 mm para conservar ≥ 10 mm: 99,5 mm del centro hepático.
+El izquierdo tiene el mismo problema y no se toca en este bloque: 86 mm bajo el centro hepático (64 / 54 en los TAC),
+inclinado 10,2° (20,3° / 10,2°). Llegar a 75–85 mm exige subir los dos riñones juntos. Los 18 mm hacia atrás no vienen de
+los TAC: girado, el polo inferior avanza hacia el colon, y sin ellos las impresiones (hasta 7 cm³) adelgazaban la corteza
+y dejaban los dedos del seno a 0,2 mm de la cápsula. El centro renal queda ahora a la altura AP del cuerpo vertebral y
+no 12 mm por delante, más atrás que en los TAC (17–20 mm por delante de L1).
+
+**Alternativas descartadas.** Remuestrear el riñón en el shader con una matriz fuente: el bloque de s0028 lee el mismo
+código y el margen de su clausura es de 1,4 kB. Agrandar la textura: 338 ya supera el mínimo WebGL2 de 256 y no se
+amplía sin medir. Coronal de 18°: girado no cabe en el hueco libre de 55 texeles con el margen de 9,75 mm del bloque fuente.
+
+**Consecuencias.** En la renal focalizada desaparece el peine: de 6 tramos de sombra detrás del riñón a 2 (una costilla
+en el borde y una bajo el polo inferior), con músculo detrás. Riñón entero en eje largo (104 mm), médula 16 %, seno 22 %, con puertas PW en vena y arteria interlobares. En la hepatorrenal
+desaparece el muro de sombras vertebrales a 13–17 cm; el riñón aparece bajo el hígado con la interfaz de Morison. El
+psoas queda junto a la columna, separado del riñón por grasa (2 mm donde se tocan). Las otras ocho ventanas cambian solo
+en el campo profundo. Volumen renal del contorno estirado 132 cm³ (antes 125). Descarga por defecto +0,34 MB (atlas
+5,81 → 6,06 MB; superficies 5,91 → 6,01 MB), dentro de 25 MB. El psoas conserva el recorte de 2 mm contra la posición
+anterior del riñón. La masa paravertebral de la 328 pasa de 829 a 818 cm³: se cierra contra la grasa del riñón movido.
+No es validación clínica.
+
+**Verificación.** `retroperitoneumRelations.test.ts`: tres rojos en la base (inclinación 9,7°, solape de 18 nodos con el
+tubo digestivo, 6 sombras en fila) y verdes después: inclinación 31,5° (coronal 10,7°, sagital −30,3°), izquierdo 13 mm
+más alto, 67 mm de la línea media, 99,5 mm bajo el hígado y sin solape con hígado, tubo digestivo, psoas ni columna.
+Contratos que fijaban la posición anterior, actualizados con su motivo: planos de la pose renal (`renalWallPoint`),
+testigos del lecho renal (`renalEnvelope`), cadena de derivación del atlas (`registeredDiaphragmRoof`, fixture
+`right-kidney-pose-fields.json`), eje casi vertical y nodos ocupados (`abdominalAtlas`). Siguen verdes sin tocarlos las
+ventanas 309/300, los dedos del seno (≥ 5 mm) y la solidez del seno. JS: default +362 B y s0028 +362 B sobre la 328.

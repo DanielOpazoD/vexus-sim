@@ -42,7 +42,7 @@ export enum Tissue {
   RenalPelvis = 26,
   /** Psoas mayor (decisión 81): músculo retroperitoneal junto a la columna, hipoecoico y estriado. */
   Psoas = 27,
-  /** Cuadrado lumbar (decisión 81): lámina muscular contra la pared posterior, lateral al psoas. */
+  /** Cuadrado lumbar (decisión 81): lámina muscular contra la pared posterior, lateral al psoas; con el atlas, también la masa paravertebral (decisión 328). */
   QuadratusLumborum = 28,
   /** Grasa retroperitoneal (decisión 81): pararrenal y perivascular, detrás del peritoneo parietal posterior. */
   RetroperitonealFat = 29,

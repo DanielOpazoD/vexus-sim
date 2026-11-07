@@ -294,11 +294,20 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
               ? 'Riñón derecho entero en eje largo, desde la línea axilar anterior. Afina el eje largo y distingue vena y arteria interlobares. Color inicial ±15 cm/s y PW ±40 cm/s; ajusta cada escala a la señal.'
               : sp.hint,
 }));
+// Decisión 329: con el riñón derecho por defecto inclinado y bajo el hígado, su eje largo desde la axilar anterior (renal) y
+// desde la media, con el hígado delante (hepatorrenal), por búsqueda de pose sobre la anatomía fija. s0028 conserva las suyas.
+const DEFAULT_POINTS: readonly StartPoint[] = ABDOMINAL_POINTS.map((sp) =>
+  sp.id === 'renal'
+    ? { ...sp, phi: 2.791, z: -135.1, yaw: -0.162, rock: -0.097, tilt: -0.538 }
+    : sp.id === 'hepatorenal'
+      ? { ...sp, phi: 2.92, z: -120.6, yaw: -0.024, rock: -0.153, tilt: -0.446 }
+      : sp,
+);
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(
   torso: Pick<Torso, 'a' | 'b' | 'profile'>,
   identity: Pick<AnatomyIdentity, 'person'>,
 ): readonly StartPoint[] {
   if (identity.person === 's0028') return ABDOMINAL_POINTS;
-  return torso.profile && torso.profile.length !== 520 ? ABDOMINAL_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;
+  return torso.profile && torso.profile.length !== 520 ? DEFAULT_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;
 }

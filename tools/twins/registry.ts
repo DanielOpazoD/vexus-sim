@@ -835,18 +835,19 @@ export const TWINS: readonly TwinPair[] = [
   },
   {
     id: 'organo-retroperitoneo',
-    what: 'Psoas, cuadrado lumbar y grasa retroperitoneal.',
+    what: 'Psoas, cuadrado lumbar, masa paravertebral y grasa retroperitoneal.',
     kind: 'cpu-glsl',
     cpu: [
       {
         file: 'src/anatomy/organs/retroperitoneum.ts',
         symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
       },
+      { file: 'src/anatomy/people/default/paravertebral.ts', symbols: ['paravertebralSdf'] },
     ],
     gpu: [
       {
         file: 'src/anatomy/organs/retroperitoneum.ts',
-        symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
+        symbols: ['psoasSdf', 'quadratusSdf', 'paravertebralSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
         templates: ['RETROPERITONEUM_GLSL'],
       },
     ],
@@ -1706,7 +1707,7 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
   'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
   'src/anatomy/organs/kidney.ts': ['sdRoundCone', 'softRamp', 'perirenalThicknessMm', 'hilumChannelSdf', 'interiorPoint', 'kidneySinusSdf'],
   'src/anatomy/organs/liver.ts': ['visceralFaceDistance', 'medialCutDistance', 'medialCutNormal'],
-  'src/anatomy/organs/retroperitoneum.ts': ['retroperitoneum'],
+  'src/anatomy/organs/retroperitoneum.ts': ['retroperitoneum', 'paravertebralSdf'],
   'src/anatomy/organs/heart.ts': ['heartShift', 'raInferiorZ'],
   'src/ultrasound/dopplerTransmission.ts': ['dopplerTransmission'],
   'src/ultrasound/pleura.ts': ['normalCdf', 'curtainSteerWeight', 'pleuraCapMm', 'seriesPow', 'pleuraSeriesDepths', 'aLineOrder'],

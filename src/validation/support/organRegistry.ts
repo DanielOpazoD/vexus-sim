@@ -11,6 +11,7 @@ import * as sternum from '../../anatomy/organs/sternum';
 import * as wall from '../../anatomy/organs/wall';
 
 import * as interior from '../../anatomy/people/default/kidneyInterior';
+import * as paravertebral from '../../anatomy/people/default/paravertebral';
 import * as atlas from './legacyPerson/abdominalAtlas';
 export { ORGAN_GLSL } from '../../anatomy/organs';
 /**
@@ -72,7 +73,7 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
   { id: 'lungCurtain', exports: lungCurtain, glsl: lungCurtain.LUNG_CURTAIN_GLSL },
   { id: 'gallbladder', exports: gallbladder, glsl: gallbladder.GALLBLADDER_GLSL },
   { id: 'liver', exports: liver, glsl: liver.LIVER_GLSL },
-  { id: 'retroperitoneum', exports: retroperitoneum, glsl: retroperitoneum.RETROPERITONEUM_GLSL },
+  { id: 'retroperitoneum', exports: { ...retroperitoneum, ...paravertebral }, glsl: retroperitoneum.RETROPERITONEUM_GLSL },
   {
     id: 'heart',
     exports: heart,

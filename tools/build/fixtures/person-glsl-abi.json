@@ -663,7 +663,13 @@
     ["wallHash", "qY"],
     ["wallNoise", "qZ"],
     ["WALL_DIFFUSE_Q", "q2"],
-    ["wallRegion", "q3"]
+    ["wallRegion", "q3"],
+    ["PV_A", "rA"],
+    ["PV_B", "rB"],
+    ["PV_Z", "rC"],
+    ["dPsoas", "rD"],
+    ["dQuadratus", "rE"],
+    ["paravertebralSdf", "rF"]
   ],
   "afterDot": [
     "COMP_NODES",

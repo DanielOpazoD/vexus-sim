@@ -19,22 +19,25 @@ referencia y `s0440`, el contraste. Los datos no entran en el repositorio.
 
 ## Lista, medida el 01-11-2026 sobre `main` 234aa1c
 
-| Relación básica                                                                             | Modelo                                   | `s0028` / `s0440`           | ¿Se cumple? |
-| ------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------- | ----------- |
-| Riñón derecho inclinado respecto del eje del cuerpo                                         | 9,7°                                     | 32,5° / 33,1°               | No          |
-| Riñón derecho alojado bajo el hígado: de centro a centro, en altura                         | 106 mm                                   | 79 mm / 73 mm               | No          |
-| Riñón con grasa alrededor: músculo profundo a su altura en el plano renal, y detrás         | 12,3 y 10,2 cm²                          | 9,7 y 28,6 / 3,5 y 32,7 cm² | No          |
-| Psoas junto a la columna, separado del riñón por grasa en el plano renal                    | se extiende bajo el riñón                | junto a la columna          | No          |
-| Masa paravertebral a cada lado de la columna                                                | ausente, hay grasa                       | 824 / 699 cm³               | No          |
-| Contorno hepático lleno frente al riñón y la pared: área / envolvente convexa, renal        | 0,90                                     | 0,98 / 1,00                 | No          |
-| Pared que sigue el cuerpo: flecha de la piel a ±70 mm en el plano renal (negativo: cóncava) | −11,7 mm                                 | +3,5 / +3,6 mm              | No          |
-| Espesor de la pared que cambia según la zona                                                | anillo casi uniforme                     | variable                    | No          |
-| Colon de tamaño razonable                                                                   | 1.084 cm³                                | 471 / 349 cm³               | No          |
-| Colon separado del riñón izquierdo                                                          | 1,5 mm                                   | 28 / 17 mm                  | No          |
-| Gas digestivo limitado (modelo: tramo z −240 a −40 mm)                                      | 479 cm³                                  | 79 / 41 cm³                 | No          |
-| Estómago sobre el páncreas, en altura                                                       | 55 mm                                    | 28 / 33 mm                  | No          |
-| Distancia del riñón derecho a la línea media                                                | 59 mm                                    | 62 / 60 mm                  | Sí          |
-| Aorta y VCI respecto de la columna, a grandes rasgos                                        | ver `s0028-metrics.json` de la auditoría |                             | Sí          |
+| Relación básica                                                                             | Modelo                                               | `s0028` / `s0440`                     | ¿Se cumple?                     |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------- | ------------------------------- |
+| Riñón derecho inclinado respecto del eje del cuerpo                                         | 31,5° (antes 9,7°), decisión 329                     | 32,5° / 33,1°                         | Sí (07-11-2026)                 |
+| Riñón derecho alojado bajo el hígado: de centro a centro, en altura                         | 99,5 mm (antes 106); el izquierdo, 86 mm             | 79 mm / 73 mm (izquierdo 64 / 54)     | No: mejora parcial (07-11-2026) |
+| Riñón con grasa alrededor: músculo profundo a su altura en el plano renal, y detrás         | 12,3 y 10,2 cm²                                      | 9,7 y 28,6 / 3,5 y 32,7 cm²           | No                              |
+| Psoas junto a la columna, separado del riñón por grasa en el plano renal                    | junto a la columna; 2 mm de grasa en el borde medial | junto a la columna                    | Sí (07-11-2026)                 |
+| Masa paravertebral a cada lado de la columna                                                | 818 cm³ de músculo estimado, decisión 328            | 824 / 699 cm³ (580 / 499 de T11 a L5) | Sí (07-11-2026)                 |
+| Contorno hepático lleno frente al riñón y la pared: área / envolvente convexa, renal        | 0,90                                                 | 0,98 / 1,00                           | No                              |
+| Pared que sigue el cuerpo: flecha de la piel a ±70 mm en el plano renal (negativo: cóncava) | −11,7 mm                                             | +3,5 / +3,6 mm                        | No                              |
+| Espesor de la pared que cambia según la zona                                                | anillo casi uniforme                                 | variable                              | No                              |
+| Colon de tamaño razonable                                                                   | 1.084 cm³                                            | 471 / 349 cm³                         | No                              |
+| Colon separado del riñón izquierdo                                                          | 1,5 mm                                               | 28 / 17 mm                            | No                              |
+| Gas digestivo limitado (modelo: tramo z −240 a −40 mm)                                      | 479 cm³                                              | 79 / 41 cm³                           | No                              |
+| Estómago sobre el páncreas, en altura                                                       | 55 mm                                                | 28 / 33 mm                            | No                              |
+| Distancia del riñón derecho a la línea media                                                | 67 mm (antes 59)                                     | 62 / 60 mm                            | Sí                              |
+| Aorta y VCI respecto de la columna, a grandes rasgos                                        | ver `s0028-metrics.json` de la auditoría             |                                       | Sí                              |
+
+Las filas marcadas con fecha se revisaron el 07-11-2026 con las decisiones 328 y 329; las
+medidas del modelo salen de `retroperitoneumRelations.test.ts`.
 
 Las medidas con HU son descriptivas y no identifican una fascia ni un músculo concreto. La fase de contraste, la fase
 respiratoria y el estado de ayuno de los dos casos no constan, y pueden explicar parte de lo que difiere en colon, gas y

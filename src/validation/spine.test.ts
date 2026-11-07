@@ -307,18 +307,30 @@ describe('columna: cuerpos elípticos con discos (PR119; recuperación provision
     expect(INTERFACES[Interface.VertebralCortex].twoSided).toBe(false);
   });
 
-  it('el eco de la cortical según la incidencia: el de la cortical costal, apagado a 35° y sin la cara de detrás', () => {
+  // Decisión 325: el contrato anterior fijaba el lóbulo de la cortical costal (s 0,15: −10 dB a 20°, −40 a 35°). Con él, el
+  // haz que da en el costado de un cuerpo vertebral a 30–60° (la intercostal, la porta, la subxifoidea) no devolvía nada y
+  // la sombra nacía de una cara negra; la cara del cuerpo es más irregular que la de una costilla (s 0,3). Se conserva el
+  // negativo: la costilla sigue apagada a 35°.
+  it('el eco de la cortical según la incidencia: la reflectividad de la costal, un lóbulo más ancho y sin la cara de detrás', () => {
     expect(interfaceReflectivity(Interface.VertebralCortex)).toBeCloseTo(interfaceReflectivity(Interface.RibCortex), 3);
     expect(interfaceReflectivity(Interface.VertebralCortex)).toBeCloseTo(0.59, 2);
-    const peak = (deg0: number) => {
+    const peakOf = (face: Interface) => (deg0: number) => {
       const c = Math.cos((deg0 * Math.PI) / 180);
-      return interfaceEchoField(Interface.VertebralCortex, c, 1, faceDelta(IFACE_SHIFT_MM, 1, c), k0);
+      return interfaceEchoField(face, c, 1, faceDelta(IFACE_SHIFT_MM, 1, c), k0);
     };
-    // de frente, el eco de un hueso (+49 dB sobre el moteado del hígado en la escala de K, sin la curvatura)
-    expect(20 * Math.log10(peak(0))).toBeGreaterThan(40);
-    // el lóbulo: −10 dB o más a 20° y más de 40 dB bajo el de frente a 35°
-    expect(20 * Math.log10(peak(20) / peak(0))).toBeLessThan(-10);
-    expect(20 * Math.log10(peak(35) / peak(0))).toBeLessThan(-40);
+    const peak = peakOf(Interface.VertebralCortex);
+    const rib = peakOf(Interface.RibCortex);
+    // de frente, el eco de un hueso (+38 dB sobre el moteado del hígado en la escala de K, sin la curvatura; 6 dB menos
+    // que con s 0,15: la misma energía en un lóbulo el doble de ancho)
+    expect(20 * Math.log10(peak(0))).toBeGreaterThan(36);
+    // el lóbulo: a lo sumo −3 dB a 20°, entre −15 y −3 a 35°, y más de 25 dB bajo el de frente a 50°
+    expect(20 * Math.log10(peak(20) / peak(0))).toBeGreaterThan(-3);
+    expect(20 * Math.log10(peak(35) / peak(0))).toBeGreaterThan(-15);
+    expect(20 * Math.log10(peak(35) / peak(0))).toBeLessThan(-3);
+    expect(20 * Math.log10(peak(50) / peak(0))).toBeLessThan(-25);
+    // el negativo: la cortical costal sigue con su lóbulo estrecho (decisión 88)
+    expect(20 * Math.log10(rib(20) / rib(0))).toBeLessThan(-10);
+    expect(20 * Math.log10(rib(35) / rib(0))).toBeLessThan(-40);
     // la difusa se apaga en el ángulo crítico (26,9°) y la cara de detrás del cuerpo no se ilumina
     expect(boneDiffuseWindow(Interface.VertebralCortex, Math.cos((28 * Math.PI) / 180))).toBe(0);
     expect(boneDiffuseWindow(Interface.VertebralCortex, 1)).toBeCloseTo(1, 9);

@@ -445,3 +445,14 @@ principales anteriores no se sustituyen por esta repetición.
 A17 evita el falso timeout del Worker durante los ticks de presentación mientras la GPU
 está pendiente; no cambia sus 3 s por cuadros activos ni el control de Worker colgado.
 El humo x64 fallido y la regresión roja se conservan; el escenario original pasa corregido.
+
+## Cortical vertebral y gas intestinal (325)
+
+Cortical vertebral con pendiente rms 0,3 [ESTIMADO] frente a 0,15 de la costal: lóbulo −1,4 dB a 20°, −7 a 35°, −31 a
+50°. No se midió la rugosidad de una vértebra; el criterio es que el techo del cuerpo se vea como un arco brillante en
+el rango de incidencias de las ventanas. La difusa sigue apagada desde el ángulo crítico (decisión 88). Gas intestinal:
+cara con la R y el perfil de la pleura en incidencia normal, ganancia 0,15–1 y posición dentro del segmento de A0 (1,125
+mm con 18 cm) dadas por ruidos de valor anclados al cuerpo (celdas de 2,5 y 3 mm); estrías de la cola sucia hasta 1,05
+en bandas de 1,5 mm [EXTRAPOLACIÓN PROPIA]. Ni la forma del gas ni su movimiento cambian; la cara no tiene normal propia,
+así que no se apaga con la incidencia. Pendiente: comparar con capturas reales de gas y de columna; reverberación
+costilla–sonda.

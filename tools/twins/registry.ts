@@ -1242,6 +1242,21 @@ export const TWINS: readonly TwinPair[] = [
     gap: 'C y D solo se ejecutan dentro de la cadena de la imagen; no hay banco WebGL de sus núcleos.',
   },
   {
+    id: 'gas-intestinal',
+    what: 'Pasada B: cara irregular del gas intestinal y estrías de su sombra sucia (decisión 325).',
+    kind: 'cpu-glsl',
+    cpu: [{ file: 'src/ultrasound/gasFace.ts', symbols: ['bowelGas', 'bowelGasTail'] }],
+    gpu: [{ file: 'src/ultrasound/gasFace.ts', symbols: ['bowelGas', 'bowelGasTail'], templates: ['BOWEL_GAS_GLSL'] }],
+    evidence: [
+      {
+        kind: 'texto',
+        file: 'src/validation/gasFace.test.ts',
+        title: 'la GLSL del gas lleva las constantes y las expresiones de su gemelo',
+      },
+    ],
+    gap: 'La cara y la cola solo se ejecutan dentro de la pasada B; ninguna e2e compara su salida con `bowelGas`.',
+  },
+  {
     id: 'composicion-k',
     what: 'Pasada K: media de las envolventes válidas de las miradas con su peso.',
     kind: 'cpu-glsl',
@@ -1672,6 +1687,7 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
   'src/ultrasound/dopplerTransmission.ts': ['dopplerTransmission'],
   'src/ultrasound/pleura.ts': ['normalCdf', 'curtainSteerWeight', 'pleuraCapMm', 'seriesPow', 'pleuraSeriesDepths', 'aLineOrder'],
   'src/ultrasound/compound.ts': ['lookWeight'],
+  'src/ultrasound/gasFace.ts': ['bowelGas'],
   'src/ultrasound/interfaceEcho.ts': ['facetTilt'],
   'src/ultrasound/receiver.ts': ['hash12b'],
   'src/ultrasound/retroTexture.ts': ['retroMuscleAxis'],

@@ -28,6 +28,7 @@ import {
   PLEURA_STEER_ITERATIONS,
 } from '../pleura';
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
+import { BOWEL_GAS_GLSL } from '../gasFace';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
 import { PORTAL_TRIADS_GLSL, TRIAD_QUERY_BEAM } from '../portalTriads';
@@ -907,6 +908,10 @@ vec2 steeredField() {
       T = tAp;
       Ts = min(tAp, curtain ? tRay : tSpec);
     }
+    // la cara del gas intestinal a lo largo del camino (decisión 325), como en la mirada 0
+    bool bowel = sGas > 0.0 && gasKind > 1.5 && s > sGas - 2.0 * uDepth / float(ts.y);
+    vec3 g = bowel ? bowelGas(p - dir * (s - sGas), uDepth / float(ts.y)) : vec3(0.0);
+    if (bowel) spec += g.y * interfaceProfileEcho(IF_PLEURA, 1.0, 1.0, s - sGas + g.x);
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     if (sGas > 0.0 && s > sGas) {
       // transmisión del camino hasta su gas: la de la mirada en el punto de la rejilla por el que pasa
@@ -923,7 +928,7 @@ vec2 steeredField() {
       }
       tissue += vec2(amp * 0.9, 0.0);
       if (gasKind > 1.5)
-        tissue += scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * 0.3 * Tg * exp(-(s - sGas) / 40.0);
+        tissue += scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * bowelGasTail(g.z, s - sGas) * Tg * exp(-(s - sGas) / 40.0);
     }
     out2 = tissue * wTissue;
   }
@@ -1087,6 +1092,7 @@ ${PORTAL_TRIADS_GLSL}
 ${RETRO_TEXTURE_GLSL}
 ${interfaceEchoGlsl(stage === 'echo')}
 ${WALL_FACE_ECHO_GLSL}
+${BOWEL_GAS_GLSL}
 
 // Campo de dispersores con la célula ELEVACIONAL igual al grosor de corte: la
 // coordenada material a lo largo del eje del ancla se comprime para que la
@@ -1216,9 +1222,13 @@ ${init ? `  ${init}\n` : ''}  float theta = lineTheta(vUv.x);
     // (bajo la cortina, el tope ya lleva el rayo central, compensado de la lámina de gas como el de la apertura)
     float T = curtain && under ? min(min(tAp, tRay) * gain, tD) : tAp;
     float Ts = curtain ? (under ? T : min(T, tRay)) : min(T, tSpec);
+    // La cara del gas intestinal (decisión 325): irregular, con la R de la pleura, en el segmento de A0 donde empieza
+    float gasHit = t0.y;
+    bool bowel = gasHit > 0.0 && t1.w > 1.5 && r > gasHit - 2.0 * uDepth / float(ts.y);
+    vec3 g = bowel ? bowelGas(p - dir * (r - gasHit), uDepth / float(ts.y)) : vec3(0.0);
+    if (bowel) spec += g.y * interfaceProfileEcho(IF_PLEURA, 1.0, 1.0, r - gasHit + g.x);
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
-    float gasHit = t0.y;
     if (gasHit > 0.0 && r > gasHit) {
       // Transmisión de ida y vuelta hasta el reflector: cada eco múltiple la paga k veces
       // y la cola sucia una vez. Sin este factor la TGC los amplificaba hasta el blanco.
@@ -1227,14 +1237,15 @@ ${init ? `  ${init}\n` : ''}  float theta = lineTheta(vUv.x);
       float Tg = (curtain && gasHit > D ? min(min(tg, texture(uTrans2, uvG).x) * gain, tD) : tg) * coupling;
       float a = 0.0;
       for (int k = 2; k <= 4; k++) {
-        float rk = float(k) * gasHit;
-        a += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * pow((r - rk) / 1.2, 2.0));
+        float z = (r - float(k) * gasHit) / 1.2;
+        a += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * z * z);
       }
       tissue += vec2(a * 0.9, 0.0);
       if (t1.w > 1.5) {
         // Sombra sucia: cola de ecos incoherentes anclada a línea y profundidad (no al tejido),
         // ~−10 dB re parénquima junto al gas y decayendo con 40 mm [EXTRAPOLACIÓN PROPIA]
-        vec2 tail = scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0) * 0.3 * Tg * exp(-(r - gasHit) / 40.0);
+        // con las estrías (colas de cometa) de las líneas que las llevan (decisión 325)
+        vec2 tail = scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0) * bowelGasTail(g.z, r - gasHit) * Tg * exp(-(r - gasHit) / 40.0);
         tissue += tail;
       }
     }

@@ -484,13 +484,16 @@ vec4 s28WallAt(vec3 p,out bool valid){`,
   // rayo, la de antes.
   // 176 integra pérdida Doppler por tejido en .w; prefijo c2c9e328bd1cb157; las tres primeras componentes se conservan.
   // 174 conserva las primeras tres componentes de o1 y añade barreras fijas en .w; nuevo prefijo 3190420bf1186449.
+  // Cambio deliberado de B (decisión 325, 509cf14b9fd7f51b → 0f025cc657d91e93): la gaussiana de las réplicas tras el gas
+  // eleva al cuadrado sin pow de base negativa, el gas intestinal (tipo 2) dibuja su cara irregular con la R de la pleura y
+  // su cola sucia lleva estrías; sin gas intestinal en la línea las cuentas son las de antes.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'c2c9e328bd1cb157',
       FRAG_TRANSMISSION: '8e60c30b337d5edd',
-      FRAG_RAWFIELD: '509cf14b9fd7f51b',
+      FRAG_RAWFIELD: '0f025cc657d91e93',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';

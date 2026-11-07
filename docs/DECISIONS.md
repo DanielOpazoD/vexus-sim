@@ -10774,3 +10774,69 @@ estría en Metal. Ocho láminas antes/después con la misma pose, ganancia, foco
 ≥ 5 cm ≤ 0,17 %. JS: default 1.028.605 → 1.029.973 B y s0028 1.066.305 → 1.067.673 B (+1.368 B en las dos clausuras,
 margen s0028 2.407 B); techos sin cambios. Tokens: RAWFIELD +1.924 (1.262.787/1.385.000), los otros cuatro con anatomía
 +481; ramas +3–12; samplers sin cambios (ECHO 16/16).
+
+## 325. Sombras con causa: el peine renal es la columna, la cortical vertebral con lóbulo ancho y el gas intestinal con cara irregular y sombra sucia
+
+**Contexto.** El propietario (07-11-2026) pide que las sombras tengan sentido en la imagen completa: un «peine» de ocho
+puntos brillantes y ocho sombras iguales bajo el riñón en la renal focalizada y la hepatorrenal, columnas negras de bordes
+duros bajo estructuras a 10–12 cm en la porta intrahepática, la intercostal y la epigástrica, y una sombra costal negra
+desde ~1 cm. Antes de tocar nada se atribuyó cada sombra con la clasificación de la CPU en el plano de cada ventana (primer
+hueso o gas por línea y lo que hay delante; scripts y salidas en `vexus-owner-evidence-20261031/default-shadows-20261107`):
+
+- **El peine no es gas.** En la renal focalizada, las líneas que dan sombra cortan hueso del atlas lumbar registrado
+  (`lumbarSacralBone`): las apófisis transversas de L1–L5 a x ≈ −38 mm de la línea media, 12–17 cm de hondo, cada
+  28–30 mm en z, y las costillas 11.ª y 12.ª. El plano renal corre casi paralelo a la columna (el riñón derecho del modelo
+  está inclinado 9,7° frente a 32,5° en s0028, `docs/anatomia/relaciones-tac.md`), así que corta la fila entera; y las
+  transversas están en grasa retroperitoneal (la masa paravertebral falta: otra fila «No» de esa lista), de modo que cada
+  sombra se recorta contra grasa brillante. Una fila regular de transversas existe en una persona (el «tridente»); lo que
+  no es real es su contexto: el plano y la grasa.
+- **Los cuerpos vertebrales no tenían techo brillante.** La cortical vertebral usaba el lóbulo de la costal
+  (s 0,15: −11 dB a 20°, −43 dB a 35°) y su difusa se apaga desde el ángulo crítico (26,9°, decisión 88). El haz da en el
+  costado del cuerpo a 29–60° en la intercostal (líneas 56–64), 8–53° en la porta y 34–74° en la subxifoidea: la sombra
+  nacía de una cara negra, una lápida de techo redondo.
+- **El gas intestinal no tenía cara.** `classify` no da interfaz al gas: el gas (A0, tipo 2) apagaba lo de detrás bajo
+  una cara lisa y oscura, con la misma cola tenue en todas las líneas; en la porta y la subcostal portal parecía la sombra
+  limpia de un hueso. Además la gaussiana de sus réplicas elevaba al cuadrado con `pow` de base negativa (indefinido en
+  GLSL ES).
+- La sombra costal negra desde ~1 cm es la de las decisiones 54, 88 y 91 (núcleo opaco medido con un banco de ondas,
+  penumbra de la apertura). No se toca aquí.
+
+**Opciones.** (1) Corregir la anatomía del peine: inclinar el riñón o poner los músculos paravertebrales; son bloques
+anatómicos propios (riñón, vasos y poses; un compartimento nuevo en TS y GLSL), fuera del alcance de este cambio y con
+riesgo para s0028. (2) Borrar o atenuar la fila de transversas: quita anatomía real; descartado. (3) Bajar el contraste de
+las sombras en pantalla: cosmético, sin causa (§23). (4) La elegida: la física que faltaba en el hueso y en el gas.
+
+**Decisión.**
+
+- **Cortical vertebral** (`anatomy/interfaces.ts`): pendiente rms 0,15 → 0,3 [ESTIMADO]: la cara de un cuerpo vertebral
+  (cortical fina sobre esponjosa, forámenes nutricios, rodetes de los platillos) es más irregular a la escala de λ que la
+  de una costilla. Lóbulo: −1,4 dB a 20°, −7 a 35°, −31 a 50°; el pico de frente baja 6 dB (la misma energía en un lóbulo
+  el doble de ancho). La reflectividad, la difusa y la regla de la cara de detrás no cambian. La costilla conserva s 0,15
+  (decisión 88). `SPECULAR_PAIR_SLOPE` (la s más lisa de la tabla, 0,14) no cambia.
+- **Gas intestinal** (`ultrasound/gasFace.ts`, pasada B en la mirada 0 y en las dirigidas): en las líneas cuyo primer gas
+  es intestinal, una cara con el perfil y la amplitud de la pleura (tejido/aire) en incidencia normal, sumada a los
+  especulares (lleva su transmisión), y una cola sucia con estrías. Tres ruidos de valor anclados al cuerpo en el punto del
+  primer gas dan por línea: dónde cae la cara dentro del segmento de A0 en que empieza el gas, su ganancia (0,15–1) y si
+  la línea lleva una estría (cola de cometa: la cola de antes, 0,3, crece hasta 1,05 en el pico de sus bandas de 1,5 mm)
+  [EXTRAPOLACIÓN PROPIA]. Gemelo TS `bowelGas`/`bowelGasTail` (par `gas-intestinal`).
+- La gaussiana de las réplicas tras el gas eleva al cuadrado con `z·z`.
+- Programas: cambian los 12 RAWFIELD (fuente y transformados, default y s0028) en `person-shaders-main.json` y los cinco
+  de `s0028-shader-default.json`, regenerados con el cálculo de sus pruebas (los demás programas, recalculados, coinciden
+  con la fixture). Sin símbolos GLSL nuevos fuera de la ABI fijada.
+
+**Consecuencias.** Intercostal: el cuerpo vertebral bajo la aorta nace de un arco brillante (p99 del recorte 168 → 242).
+Subxifoidea y subcostal portal: el gas tiene un borde brillante irregular, a tramos, y la sombra lleva estrías (subxifoidea:
+píxeles > 200 en la zona 18 → 108). Renal: los puntos de las transversas se ensanchan algo, pero **el peine sigue**: es la
+anatomía descrita arriba, y lo que lo haría creíble (riñón inclinado, músculo paravertebral) queda pendiente. Epigástrica,
+porta, hepatorrenal: cambios pequeños; subcostal, flanco y tronco portal, sin cambio. La sombra costal sigue negra desde
+la costilla: falta la reverberación costilla–sonda a 2z que `clutter.ts` ya declara no dibujada. s0028 comparte el código:
+su gas y su columna cambian igual. Nada de esto es validación clínica.
+
+**Verificación.** `gasFace.test.ts` (rojo antes del cableado: la pasada B de las dos miradas no dibujaba la cara; y la
+cara del gemelo, irregular y no periódica sobre 80 mm, con estrías en el 5–50 % de las líneas). `spine.test.ts`: el
+contrato del lóbulo de la cortical costal para la vertebral pasa a uno más ancho (≥ −3 dB a 20°, entre −15 y −3 a 35°,
+< −25 a 50°) y conserva el negativo de la costilla (< −10 dB a 20°, < −40 a 35°); con s 0,15 falla. `shaderLimits`: el
+main de B cambia (509cf14b9fd7f51b → 0f025cc657d91e93) dentro de sus techos de tokens y ramas; samplers sin cambio. Diez
+láminas antes/después (Metal, `main` 6fcdfd6, misma pose, semilla, reloj detenido a t = 0 y mandos) en
+`default-shadows-20261107/figures`. JS: default 1.029.973 → 1.030.715 B y s0028 1.067.673 → 1.068.415 B (+742 B en las
+dos; margen s0028 1.665 B); descarga y metadatos sin cambio.

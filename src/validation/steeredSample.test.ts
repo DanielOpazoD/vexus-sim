@@ -315,7 +315,7 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'float alphaG = phiK + uSteer.x - steerBeta(rhoG, a);',
       'float Tg = texture(uTrans3, vec2((alphaG + uHalfSector) / (2.0 * uHalfSector), (rhoG - uCurvR) / uDepth)).x * coupling;',
       'float z = (s - float(k) * sGas) / 1.2;',
-      'scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * 0.3 * Tg * exp(-(s - sGas) / 40.0)',
+      'scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * bowelGasTail(g.z, s - sGas) * Tg * exp(-(s - sGas) / 40.0)',
       'if (s < TRANSIENT_SKIP_MM)',
       'scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-s / TRANSIENT_DECAY_MM) * coupling',
       'float coupling = texture(uCoupling, vec2(uK, 0.5)).r;',

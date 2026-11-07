@@ -247,7 +247,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.Transversalis]: face('fascia transversalis (músculo / grasa preperitoneal)', [Tissue.Muscle, Tissue.Fat], 0, 0.09, 0.3, true),
   [Interface.Peritoneum]: face('peritoneo parietal (grasa preperitoneal / víscera)', [Tissue.Fat, Tissue.Liver], 0, 0.08, 0.4, false),
   [Interface.RibCortex]: face('cortical costal', [Tissue.Muscle, Tissue.Bone], 0, 0.045, 0.15, false),
-  [Interface.VertebralCortex]: face('cortical vertebral', [Tissue.Muscle, Tissue.Vertebra], 0, 0.045, 0.15, false),
+  [Interface.VertebralCortex]: face('cortical vertebral', [Tissue.Muscle, Tissue.Vertebra], 0, 0.045, 0.3, false),
   [Interface.Perichondrium]: face('pericondrio', [Tissue.Cartilage, Tissue.Muscle], 0.025, 0.06, 0.3, false),
   [Interface.Pericardium]: face('pericardio', [Tissue.Mediastinum, Tissue.Myocardium], 0.15, 0.06, 0.2, false),
   // Interfaces intestinales: Fresnel, rugosidad y pendiente estimadas para revisión visual.

@@ -4,10 +4,16 @@ import type { CutMapReply } from '../src/ui/cutMapProtocol';
 import type { PersonBundleGraph } from '../tools/ci/personBundles';
 import { BOOT_MS, bootWithoutErrors, budget, withinFrames } from './support';
 
-const graph = JSON.parse(readFileSync('dist/person-bundle-graph.json', 'utf8')) as PersonBundleGraph;
-const privateChunks = graph.chunks.filter((c) => c.modules.some((m) => /(?:^|\/)s0028|\/personShader\.ts$/.test(m))).map((c) => c.file);
+// El grafo lo escribe el build; se lee al ejecutar, no al listar las pruebas (la CI lista sin `dist/`).
+let cached: PersonBundleGraph | undefined;
+const bundleGraph = (): PersonBundleGraph =>
+  (cached ??= JSON.parse(readFileSync('dist/person-bundle-graph.json', 'utf8')) as PersonBundleGraph);
+const privateChunks = () =>
+  bundleGraph()
+    .chunks.filter((c) => c.modules.some((m) => /(?:^|\/)s0028|\/personShader\.ts$/.test(m)))
+    .map((c) => c.file);
 const runtime = (person: 'default' | 's0028') =>
-  graph.selections.find((s) => s.importer === 'src/anatomy/loadPerson.ts' && s.person === person)!.to;
+  bundleGraph().selections.find((s) => s.importer === 'src/anatomy/loadPerson.ts' && s.person === person)!.to;
 
 test('default carga sus vistas y Worker sin solicitar ningún módulo privado s0028', async ({ page, context }) => {
   budget(20_000);
@@ -19,10 +25,10 @@ test('default carga sus vistas y Worker sin solicitar ningún módulo privado s0
   );
   expect(await page.evaluate(() => window.__vexusTest!.sim().scene.identity.person)).toBe('current');
   await page.locator('#debug-toggle').check();
-  const teacher = graph.chunks.find((c) => c.modules.includes('src/ui/panel/teacherTab.ts'))!.file;
+  const teacher = bundleGraph().chunks.find((c) => c.modules.includes('src/ui/panel/teacherTab.ts'))!.file;
   await expect.poll(() => requests.includes(teacher)).toBe(true);
-  expect(requests).toContain(graph.worker);
-  expect(requests.filter((path) => privateChunks.includes(path))).toEqual([]);
+  expect(requests).toContain(bundleGraph().worker);
+  expect(requests.filter((path) => privateChunks().includes(path))).toEqual([]);
   expect(requests).toContain(runtime('default'));
   expect(requests.filter((path) => /direct\.gzip|skin-polar|annotation-capacity|candidate-manifest|\/surfaces\.gzip/.test(path))).toEqual(
     [],
@@ -32,7 +38,7 @@ test('default carga sus vistas y Worker sin solicitar ningún módulo privado s0
 
 test('el fallo del chunk CPU del Worker muestra un aviso al alumno y permite recargar la misma persona', async ({ page, context }) => {
   budget(20_000);
-  const cpu = graph.selections.find((s) => s.importer === 'src/ui/cutMapWorker.ts' && s.person === 's0028')!.to;
+  const cpu = bundleGraph().selections.find((s) => s.importer === 'src/ui/cutMapWorker.ts' && s.person === 's0028')!.to;
   let requests = 0;
   await context.route(`**/${cpu}`, (route) => (++requests === 1 ? route.continue() : route.abort('failed')));
   await page.goto('/?e2e=1&abdomen=s0028');
@@ -58,7 +64,7 @@ test('el fallo del chunk CPU del Worker muestra un aviso al alumno y permite rec
 test('el Worker emitido comunica el fallo de su import CPU sin DOM ni publicar mapas', async ({ page, context }) => {
   budget(20_000);
   await bootWithoutErrors(page, '?e2e=1&abdomen=s0028');
-  const cpu = graph.selections.find((s) => s.importer === 'src/ui/cutMapWorker.ts' && s.person === 's0028')!.to;
+  const cpu = bundleGraph().selections.find((s) => s.importer === 'src/ui/cutMapWorker.ts' && s.person === 's0028')!.to;
   // La página ya instaló CPU. Un Worker nuevo tiene su propio registro de módulos;
   // bloquear su import comprueba el archivo realmente emitido y la ruta de rechazo de Vite.
   await context.route(`**/${cpu}`, (route) => route.abort('failed'));
@@ -83,7 +89,7 @@ test('el Worker emitido comunica el fallo de su import CPU sin DOM ni publicar m
     } finally {
       worker.terminate();
     }
-  }, `/${graph.worker}`);
+  }, `/${bundleGraph().worker}`);
   expect(result).toMatchObject({ type: 'error', epoch: 7 });
   expect(result.message).toMatch(/import|fetch|module/i);
   expect(result.message).not.toMatch(/document|window.*defined/);

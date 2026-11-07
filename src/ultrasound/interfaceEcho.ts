@@ -1,5 +1,5 @@
 import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
-import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
+import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity, isWallLayerInterface } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
@@ -437,8 +437,32 @@ export function boneDiffuseWindow(face: Interface, cosI: number): number {
 }
 
 /**
+ * Pendiente rms del lóbulo de la difusa de las capas de la pared (decisión 327). Una fascia es una lámina de colágeno con
+ * las fibras en su plano: su rugosidad fina tiene una longitud de correlación de milímetros, muy por encima de λ, así que
+ * la energía que saca de la parte coherente vuelve cerca de la dirección especular, no repartida con la ley de Lambert
+ * (anisotropía de fascias y tendones). Con Lambert sola, el brillo de las fascias no dependía de la incidencia: −6 dB de
+ * 0–5° a 20–30° en las diez ventanas de inicio. 0,25 (tan 14°): −1,1 dB a 10°, −4,6 a 20°, −11,6 a 30° y −24 a 40°
+ * [ESTIMADO]. Más estrecho que un tendón no puede ser: las poses del banco de la 62 ven sus líneas «de frente» con 5–15° de
+ * inclinación (compresión y relieve) y deben quedar ≥ 4 dB sobre su entorno; con 0,1 la intercostal bajaba a 2,5 dB y con
+ * 0,22 la renal quedaba en 4,03.
+ */
+export const WALL_DIFFUSE_SLOPE = 0.25;
+
+/**
+ * Ventana de la difusa de una capa de la pared con la incidencia (decisión 327): exp(−tan²θ/(4·s_d²)), sobre Lambert; 1 en
+ * el resto de caras. Gemelo de la condición de `interfaceEcho` (GLSL).
+ * @twin eco-interfaz
+ */
+export function wallDiffuseLobe(face: Interface, cosI: number): number {
+  if (!isWallLayerInterface(face)) return 1;
+  const c2 = cosI * cosI;
+  return Math.exp((c2 - 1) / c2 / (4 * WALL_DIFFUSE_SLOPE * WALL_DIFFUSE_SLOPE));
+}
+
+/**
  * Amplitud de la componente difusa de la cara `id` en la muestra (gemelo de la difusa de `interfaceEcho` en la GLSL):
- * κ_d·R_ef·√(1 − χ(0)²)·cosθ·exp(−d²/2σh²), con el perfil de la cara normalizado a 1 en su centro. La pasada B la
+ * κ_d·R_ef·√(1 − χ(0)²)·cosθ·exp(−d²/2σh²) (en las capas de la pared, por su lóbulo: `wallDiffuseLobe`), con el perfil de la
+ * cara normalizado a 1 en su centro. La pasada B la
  * suma con el fasor unidad del moteado de la muestra (incoherente con la especular). La GLSL la saca del uniform A
  * (`IFACE_DIFFUSE_PER_A`), así que escala con K como la especular: con otro K, el mismo factor 10^((K − K₀)/20).
  * @twin eco-interfaz
@@ -458,6 +482,7 @@ export function diffuseEchoField(id: Interface, cosI: number, delta: number, k0:
     incoherent *
     cosI *
     boneDiffuseWindow(id, cosI) *
+    wallDiffuseLobe(id, cosI) *
     Math.exp((-0.5 * d * d) / (IFACE_SIGMA_H_MM * IFACE_SIGMA_H_MM))
   );
 }
@@ -528,6 +553,7 @@ uniform float uIfaceK0;                 // 2π/λ (1/mm)
 #define IFACE_ACROSS ${WALL_ACROSS_MM.toFixed(4)}
 #define BONE_CRITICAL_SIN2 ${(BONE_CRITICAL_SIN * BONE_CRITICAL_SIN).toFixed(8)}
 #define BONE_Z_RATIO ${BONE_IMPEDANCE_RATIO.toFixed(8)}
+#define WALL_DIFFUSE_Q ${(1 / (4 * WALL_DIFFUSE_SLOPE * WALL_DIFFUSE_SLOPE)).toFixed(6)}
 // Inclinación de la faceta en el punto material: tres ruidos de valor anclados, de desviación st por componente
 vec3 facetTilt(vec3 m, int face, float st) {
   vec3 q = m / FACET_CELL;
@@ -553,6 +579,10 @@ float faceEcho(int id, float cosL, float kf, float cosX, float curv, float g) {
 // copias de la pared de la serie, en su bucle: sin facetas ni difusa)
 float interfaceProfileEcho(int id, float cosI, float curv, float delta) {
   return faceEcho(id, cosI, 1.0, cosI, curv, faceShape(id, delta));
+}
+// Lóbulo de la difusa de una capa de la pared (wallDiffuseLobe de TS, decisión 327); s0028 conserva Lambert (personShader)
+float wallDiffuseLobe(float cosI) {
+  return exp((cosI * cosI - 1.0) / (cosI * cosI) * WALL_DIFFUSE_Q);
 }
 // Coherencia de curvatura de un haz gaussiano sobre un tubo (fase estacionaria): la curvatura del
 // tubo (c.kc, la local de su sección) va por la dirección circunferencial. Su Hessiana es de rango uno:
@@ -624,10 +654,11 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
   // su lóbulo propio (s_f² = s² − σ_t², σ_t = max(tan 5°, ρ·s): kf = (s_f/s)²) en cosF con la rugosidad fina de frente,
   // χ(0); la difusa: κ_d·R_ef = IFACE_DIFFUSE·P.x·2s por √(1 − χ(0)²), la energía que la rugosidad fina saca de la
   // coherente, con Lambert (cosI) y, en la cortical costal, la transmisión de la onda longitudinal en la cara, 0 desde el
-  // ángulo crítico (boneDiffuseWindow, decisión 88)
+  // ángulo crítico (boneDiffuseWindow, decisión 88); en las capas de la pared, su lóbulo (wallDiffuseLobe, decisión 327)
   float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));
   float zw = cosI + BONE_Z_RATIO * ctw;
-  float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
+  float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw)
+    : c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallDiffuseLobe(cosI) : 1.0;
   return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),
               IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);
 }

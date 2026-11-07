@@ -8,7 +8,9 @@ import {
   interfaceOfVessel,
   interfaceReflectivity,
 } from '../anatomy/interfaces';
+import { personShader } from '../anatomy/gpu/personShader';
 import { RETRO_FAT, quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
+import { S0028_BUNDLE } from '../anatomy/people/s0028/descriptor';
 import { sdDiaphragm } from '../anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
@@ -32,6 +34,7 @@ import {
   RETRO_PERITONEUM_GAIN,
   VALUE_NOISE_SD,
   WALL_ACROSS_MM,
+  WALL_DIFFUSE_SLOPE,
   addInterfaceEcho,
   boneDiffuseWindow,
   curvatureCoherence,
@@ -46,6 +49,7 @@ import {
   facetTiltRms,
   fatAcrossWall,
   interfaceAmplitude,
+  wallDiffuseLobe,
   interfaceEchoField,
   interfaceUniforms,
   reflectionCosine,
@@ -514,8 +518,8 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
       const want = FACET.diffuse * interfaceReflectivity(id) * Math.sqrt(1 - Math.exp(-x * x));
       const shift = p.twoSided ? 0 : IFACE_SHIFT_MM;
       expect(diffuseEchoField(id, 1, shift, K0)).toBeCloseTo(want, 9);
-      // Lambert en amplitud
-      expect(diffuseEchoField(id, 0.5, shift, K0)).toBeCloseTo(0.5 * want, 9);
+      // Lambert en amplitud (en las capas de la pared, por su lóbulo: decisión 327)
+      expect(diffuseEchoField(id, 0.5, shift, K0)).toBeCloseTo(0.5 * wallDiffuseLobe(id, 0.5) * want, 9);
       // el perfil de la cara: fuera de su alcance, nada
       expect(diffuseEchoField(id, 1, shift + IFACE_REACH_MM + 1e-6, K0)).toBe(0);
     }
@@ -571,12 +575,45 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     for (const deg of [27, 40, 60, 80]) expect(rib(deg), `${deg}°`).toBe(0);
     // con Lambert solo seguía a más de la mitad de su valor de frente a 60°: dibujaba el contorno de la costilla
     expect(cos(60) * rib(0)).toBeGreaterThan(0.45 * rib(0));
-    // el resto de caras no cambia, tampoco el pericondrio (el cartílago transmite)
-    for (const id of [Interface.DeepFascia, Interface.Perichondrium, Interface.LiverCapsule])
+    // el resto de caras no cambia, tampoco el pericondrio (el cartílago transmite); las de la pared llevan su lóbulo (327)
+    for (const id of [Interface.Perichondrium, Interface.LiverCapsule])
       expect(diffuseEchoField(id, cos(60), INTERFACES[id].twoSided ? 0 : shift, K0), Interface[id]).toBeCloseTo(
         0.5 * diffuseEchoField(id, 1, INTERFACES[id].twoSided ? 0 : shift, K0),
         9,
       );
+  });
+
+  it('decisión 327: la difusa de las capas de la pared vuelve cerca de la especular; la del resto de caras sigue a Lambert', () => {
+    const cos = (deg: number) => Math.cos((deg * Math.PI) / 180);
+    const at = (id: Interface, deg: number) => diffuseEchoField(id, cos(deg), INTERFACES[id].twoSided ? 0 : IFACE_SHIFT_MM, K0);
+    // con Lambert sola una fascia a 20° conservaba el 94 % de su eco de frente (−0,54 dB) y a 30° el 87 %: el brillo no
+    // dependía de la incidencia (en las diez ventanas de inicio, −6 dB de 0–5° a 20–30°). Una lámina de colágeno lo devuelve
+    // cerca de la dirección especular
+    for (const id of [
+      Interface.SkinFat,
+      Interface.Scarpa,
+      Interface.DeepFascia,
+      Interface.ObliquePlane,
+      Interface.Transversalis,
+      Interface.Peritoneum,
+    ]) {
+      expect(db(at(id, 5) / at(id, 0)), Interface[id]).toBeGreaterThan(-0.5);
+      expect(db(at(id, 20) / at(id, 0)), Interface[id]).toBeLessThan(-4.5);
+      expect(db(at(id, 30) / at(id, 0)), Interface[id]).toBeLessThan(-12);
+    }
+    // de frente, el de antes: la calibración de las líneas de la pared (decisión 62) no cambia
+    expect(wallDiffuseLobe(Interface.DeepFascia, 1)).toBe(1);
+    expect(WALL_DIFFUSE_SLOPE).toBeCloseTo(Math.tan((14 * Math.PI) / 180), 2);
+    // los vasos, las cápsulas y la pleura siguen a Lambert
+    for (const id of [Interface.IvcLumen, Interface.LiverCapsule, Interface.RenalCapsule, Interface.PleuraWall])
+      expect(at(id, 20) / at(id, 0), Interface[id]).toBeCloseTo(cos(20), 9);
+    // la GLSL, la misma ventana en la difusa de B
+    expect(INTERFACE_ECHO_GLSL).toContain(`#define WALL_DIFFUSE_Q ${(1 / (4 * WALL_DIFFUSE_SLOPE ** 2)).toFixed(6)}`);
+    expect(INTERFACE_ECHO_GLSL).toContain(': c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallDiffuseLobe(cosI) : 1.0;');
+    expect(INTERFACE_ECHO_GLSL).toContain('return exp((cosI * cosI - 1.0) / (cosI * cosI) * WALL_DIFFUSE_Q);');
+    // s0028 está en pausa: sus programas conservan Lambert (personShader)
+    expect(personShader(FRAG_RAWFIELD, { person: 's0028', bundle: S0028_BUNDLE })).toContain('float wallDiffuseLobe(float c){return 1.0;}');
+    expect(personShader(FRAG_RAWFIELD, { person: 'current' })).toContain('float wallDiffuseLobe(float cosI) {');
   });
 
   it('la cara interna de la pared con grasa detrás (grasa con grasa) baja a una fascia; contra un órgano o fuera, no', () => {
@@ -639,7 +676,7 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(echo).toContain(`#define BONE_Z_RATIO ${BONE_IMPEDANCE_RATIO.toFixed(8)}`);
     expect(echo).toContain('float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));');
     expect(echo).toContain(
-      'float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;',
+      'float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw)',
     );
     expect(echo).toContain(
       'return cosL < IFACE_MIN_COS ? 0.0 : P.x * inversesqrt(kf) * exp(-(1.0 - c2) / c2 * P.z / kf) / c2 * exp(-0.5 * x * x) * curv * g * (0.39894228 / IFACE_SIGMA_H);',

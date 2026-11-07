@@ -600,6 +600,7 @@ export const TWINS: readonly TwinPair[] = [
           'wallArc',
           'wallPerimeter',
           'wallWavenumber',
+          'wallRegion',
           'wallDepths',
           'wallPlaneDepth',
           'wallPlaneGap',
@@ -624,6 +625,7 @@ export const TWINS: readonly TwinPair[] = [
           'wallArc',
           'wallPerimeter',
           'wallWavenumber',
+          'wallRegion',
           'wallDepths',
           'wallPlaneDepth',
           'wallPlaneGap',
@@ -654,6 +656,17 @@ export const TWINS: readonly TwinPair[] = [
         scope: 'caras, normales y gradiente de la pared y de las costillas (`wallNormals`)',
       },
       { kind: 'gpu', file: 'e2e/atlasWallNormals.spec.ts', title: 'pared Atlas: caras y normales del modelo compartido coinciden con GPU' },
+      {
+        kind: 'gpu',
+        file: 'e2e/wallTextureParity.spec.ts',
+        title: 'línea alba, capas, septos y estrías de pared coinciden entre CPU y GLSL',
+        scope: 'wallRegion y wallDepths en torso elíptico, con puntos en la línea media; no acredita todo el perfil corporal',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/wallRegionField.test.ts',
+        title: 'la GLSL escribe los mismos números que WALL.region',
+      },
       E.equivalence,
       {
         kind: 'texto',
@@ -1299,7 +1312,7 @@ export const TWINS: readonly TwinPair[] = [
   },
   {
     id: 'eco-interfaz',
-    what: 'Eco de interfaz en B: perfil de la cara, faceta especular, difusa, lóbulo de la cápsula del atlas y condiciones de cara.',
+    what: 'Eco de interfaz en B: perfil de la cara, faceta especular, difusa (con el lóbulo de las capas de la pared), lóbulo de la cápsula del atlas y condiciones de cara.',
     kind: 'cpu-glsl',
     cpu: [
       {
@@ -1313,21 +1326,29 @@ export const TWINS: readonly TwinPair[] = [
           'faceDelta',
           'faceLitFromProbe',
           'fatAcrossWall',
+          'wallDiffuseLobe',
         ],
       },
     ],
     gpu: [
       {
         file: 'src/ultrasound/interfaceEcho.ts',
-        symbols: ['interfaceProfileEcho', 'facetTilt', 'faceEcho', 'faceShape', 'cachedFaceGradient', 'interfaceEcho'],
+        symbols: ['interfaceProfileEcho', 'facetTilt', 'faceEcho', 'faceShape', 'cachedFaceGradient', 'interfaceEcho', 'wallDiffuseLobe'],
         templates: ['INTERFACE_ECHO_GLSL'],
       },
+      // s0028 está en pausa: su especialización devuelve 1 (Lambert, decisión 327)
+      { file: 'src/anatomy/gpu/personShader.ts', symbols: ['wallDiffuseLobe'], templates: ['personShader'] },
     ],
     evidence: [
       {
         kind: 'texto',
         file: 'src/validation/interfaceEcho.test.ts',
         title: 'GLSL: las constantes interpoladas, la faceta, la difusa y su suma en los dos programas de B',
+      },
+      {
+        kind: 'texto',
+        file: 'src/validation/interfaceEcho.test.ts',
+        title: 'decisión 327: la difusa de las capas de la pared vuelve cerca de la especular; la del resto de caras sigue a Lambert',
       },
       {
         kind: 'texto',
@@ -1675,10 +1696,13 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
     'scattererField',
   ],
   'src/anatomy/compression.ts': ['warpBound', 'smoothstepSlope'],
-  'src/anatomy/gpu/personShader.ts': ['registeredDomeSample', 'hepaticDomeValue', 'digestiveWallMm'],
+  // wallDiffuseLobe: el 1 de tan²θ = (1 − cos²θ)/cos²θ y, en s0028, el lóbulo 1 (Lambert, decisión 327)
+  'src/anatomy/gpu/personShader.ts': ['registeredDomeSample', 'hepaticDomeValue', 'digestiveWallMm', 'wallDiffuseLobe'],
   'src/anatomy/gpu/s0028Wall.glsl.ts': ['visceralHeight', 'muscleStriation'],
   'src/anatomy/organs/abdomen.ts': ['digestiveWallMm', 'digestiveWallTissue', 'digestiveGasPlane'],
   'src/anatomy/organs/bowel.ts': ['bowelGasSdf'],
+  // wallRegion toma sus números de WALL.region en TS: wallRegionField y wallTextureParity comprueban sus parámetros y
+  // valores CPU/GLSL (decisión 326).
   'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
   'src/anatomy/organs/kidney.ts': ['sdRoundCone', 'softRamp', 'perirenalThicknessMm', 'hilumChannelSdf', 'interiorPoint', 'kidneySinusSdf'],
   'src/anatomy/organs/liver.ts': ['visceralFaceDistance', 'medialCutDistance', 'medialCutNormal'],
@@ -1688,10 +1712,18 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
   'src/ultrasound/pleura.ts': ['normalCdf', 'curtainSteerWeight', 'pleuraCapMm', 'seriesPow', 'pleuraSeriesDepths', 'aLineOrder'],
   'src/ultrasound/compound.ts': ['lookWeight'],
   'src/ultrasound/gasFace.ts': ['bowelGas'],
-  'src/ultrasound/interfaceEcho.ts': ['facetTilt'],
+  'src/ultrasound/interfaceEcho.ts': ['facetTilt', 'wallDiffuseLobe'],
   'src/ultrasound/receiver.ts': ['hash12b'],
   'src/ultrasound/retroTexture.ts': ['retroMuscleAxis'],
-  'src/ultrasound/wallTexture.ts': ['wallOrientation', 'wallFaceGain', 'wallTexture', 'laminaDistance', 'wallHash', 'wallNoise'],
+  'src/ultrasound/wallTexture.ts': [
+    'wallOrientation',
+    'wallFaceGain',
+    'wallTexture',
+    'laminaDistance',
+    'wallHash',
+    'wallNoise',
+    'striationFasciaSlope',
+  ],
   'src/ultrasound/steering.ts': ['alongLineMm', 'lookPhase', 'lookPhaseGrad', 'lookCoverage'],
 };
 

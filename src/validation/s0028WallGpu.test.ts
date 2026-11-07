@@ -8,7 +8,7 @@ import * as PASSES from '../ultrasound/shaders/passes.glsl';
 import baseline from './fixtures/s0028-shader-default.json';
 import { S0028_BUNDLE as bundle } from './support/legacyPerson/anatomyBundle';
 
-it('conserva byte a byte los ocho GLSL default fijados (main 8ee9fbd; los RAWFIELD, desde la decisión 324)', () => {
+it('conserva byte a byte los ocho GLSL default fijados (main 8ee9fbd; RAWFIELD desde la decisión 324, todos desde la 326)', () => {
   for (const [name, hash] of Object.entries(baseline)) {
     const source = Object.entries(PASSES).find(([key]) => key === name)?.[1];
     if (typeof source !== 'string') throw new Error('Programa ausente');

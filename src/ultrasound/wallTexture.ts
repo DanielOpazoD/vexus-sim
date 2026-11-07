@@ -7,6 +7,7 @@ import {
   wallArcGradient,
   wallDepths,
   wallPerimeter,
+  wallRegion,
   wallWavenumber,
 } from '../anatomy/organs/wall';
 import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
@@ -159,14 +160,15 @@ export function laminaDistance(s: number, u: number, v: number): number {
 }
 
 /**
- * Septo de la grasa subcutánea más cercano: [nx, ny, nz, peso] con el peso gaussiano de la distancia a él
- * (1 en su centro) y su normal. Peso 0 fuera de la grasa subcutánea.
+ * Septo de la grasa de la pared más cercano: [nx, ny, nz, peso] con el peso gaussiano de la distancia a él
+ * (1 en su centro) y su normal. Peso 0 fuera de la grasa subcutánea y de la preperitoneal.
  */
 export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   const u = wallArc(m, t);
   const w = wallDepths(t, u, m[2]);
   const d = -torsoDepth(m, t);
-  if (d < w.skin || d >= w.fascia) return [0, 1, 0, 0];
+  // el mismo campo en las dos grasas de la pared: la subcutánea y la preperitoneal (decisión 326)
+  if (d < w.skin || (d >= w.fascia && d < w.transversalis) || d >= w.peritoneum) return [0, 1, 0, 0];
   const T = WALL_TEXTURE;
   const qu = u / T.lobuleMm;
   const qv = m[2] / T.lobuleMm;
@@ -244,10 +246,15 @@ function striationNoise(u: number, z: number): Vec3 {
   return [lo + (hi - lo) * s[1], (b - a + (e - c0 - (b - a)) * s[1]) * d[0], (hi - lo) * d[1]];
 }
 
-/** Derivadas exactas de la fascia existente: sus cinco senos, sin diferencias de anatomía. */
+/** Paso (mm) de la diferencia central de la línea alba en la pendiente de la fascia: error < 1e-5 mm/mm. */
+const REGION_STEP_MM = 0.05;
+
+/** Derivadas de la fascia: sus cinco senos exactos y la línea alba por diferencia central. */
 function striationFasciaSlope(u: number, z: number, t: Torso): [number, number] {
+  // línea alba (decisión 326): diferencia central de la grasa, barata y suave; los senos, exactos
+  const h = REGION_STEP_MM;
   const ip = (2 * Math.PI) / wallPerimeter(t),
-    g = [0, 0];
+    g = [(wallRegion(t, u + h)[0] - wallRegion(t, u - h)[0]) / (2 * h), 0];
   for (const [terms, amplitude] of [
     [WALL_SWELL_TERMS[3], Math.min(WALL.fatSwell * t.fatMm, WALL.fatSwellMaxMm)],
     [WALL_WAVE_TERMS[3], WALL.fasciaWaveMm],
@@ -462,9 +469,9 @@ float laminaDistance(float s, float u, float v) {
 vec4 fatSeptum(vec3 m) {
   float skin = uWall.x;
   float u = wallArc(m);
-  float fascia = wallDepths(u, m.z).y;
+  vec4 w = wallDepths(u, m.z);
   float d = -torsoDepth(m);
-  if (d < skin || d >= fascia) return vec4(0.0, 1.0, 0.0, 0.0);
+  if (d < skin || (d >= w.y && d < w.z) || d >= w.w) return vec4(0.0, 1.0, 0.0, 0.0);
   vec2 q = vec2(u, m.z) / WT_LOBULE_MM;
   vec2 c = floor(q);
   vec2 s[9];
@@ -513,7 +520,9 @@ vec3 striationNoise(vec2 q) {
   return vec3(mix(lo, hi, s.y), mix(b - a, e - c0, s.y) * d.x, (hi - lo) * d.y);
 }
 vec2 striationFasciaSlope(float u, float z, float iP) {
-  return min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * (${fasciaSlopeGlsl(WALL_SWELL_TERMS[3])})
+  float h = ${f4(REGION_STEP_MM)};
+  return vec2((wallRegion(u + h).x - wallRegion(u - h).x) / (2.0 * h), 0.0)
+    + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * (${fasciaSlopeGlsl(WALL_SWELL_TERMS[3])})
     + WALL_FASCIA_WAVE_MM * (${fasciaSlopeGlsl(WALL_WAVE_TERMS[3])});
 }
 vec4 muscleStriation(vec3 m) {

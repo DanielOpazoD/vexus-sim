@@ -8,11 +8,15 @@ Generado por `tools/docs/evidence-index.ts` desde `index.json`, que guarda adem�
 presente, `node --import tsx tools/docs/evidence-index.ts --check` verifica tipo, bytes y hash de cada entrada; sin
 ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ruta` de sus archivos, ordenadas.
 
-104 artefactos; 1.579.710.991 bytes.
+107 artefactos; 1.588.668.877 bytes.
 
 | Id | Ruta en la raíz | Tipo | Archivos | Bytes | SHA-256 | Citado en (decisión) |
 | --- | --- | --- | --- | --- | --- | --- |
 | <a id="aorta-report-md"></a>`aorta-report-md` | `aorta/report.md` | archivo | 1 | 29.028 | `8e77e9f307fd` | DECISIONS.md (314) |
+| <a id="default-wall-b2-20261107-figures-b2"></a>`default-wall-b2-20261107-figures-b2` | `default-wall-b2-20261107/figures/b2` | carpeta | 11 | 4.008.950 | `434c432e7897` | DECISIONS.md (327) |
+| <a id="default-wall-b2-20261107-report-md"></a>`default-wall-b2-20261107-report-md` | `default-wall-b2-20261107/report.md` | archivo | 1 | 13.436 | `a872955e7a2b` | DECISIONS.md (326), DECISIONS.md (327) |
+| <a id="default-wall-figures-bfinal"></a>`default-wall-figures-bfinal` | `default-wall/figures/bfinal` | carpeta | 9 | 4.930.727 | `300a459f0dac` | DECISIONS.md (326) |
+| <a id="default-wall-report-b-md"></a>`default-wall-report-b-md` | `default-wall/report-b.md` | archivo | 1 | 4773 | `462ae4504c5e` | DECISIONS.md (326) |
 | <a id="ivc-atrium"></a>`ivc-atrium` | `ivc-atrium` | carpeta | 2755 | 643.426.112 | `9013f3287ccf` | anatomia/relaciones-tac.md |
 | <a id="ivc-wall"></a>`ivc-wall` | `ivc-wall` | carpeta | 1474 | 295.397.275 | `24c336129e5f` | fidelity/ivc-wall-frontier.md |
 | <a id="migration-mesh-e2e-metal"></a>`migration-mesh-e2e-metal` | `migration-mesh/e2e-metal` | carpeta | 5 | 107.880 | `7f3a934ea02f` | evidence/s0028-mesh/closure.json |
@@ -31,7 +35,6 @@ ella solo avisa. Una carpeta se resume por el SHA-256 de las líneas `sha256  ru
 | <a id="migration-p0b-venv-cgal-bin-python"></a>`migration-p0b-venv-cgal-bin-python` | `migration-p0b/.venv-cgal/bin/python` | enlace | 1 | 10 | `1669199c20e7` | evidence/s0028-mesh/closure.json |
 | <a id="migration-p0c-report-md"></a>`migration-p0c-report-md` | `migration-p0c/report.md` | archivo | 1 | 21.301 | `fb0b1bd231c1` | anatomia/migracion-s0028.md |
 | <a id="migration-p0d"></a>`migration-p0d` | `migration-p0d` | carpeta | 70 | 24.448.519 | `0654acdcb071` | anatomia/migracion-s0028.md |
-| <a id="migration-p0d-report-md"></a>`migration-p0d-report-md` | `migration-p0d/report.md` | ausente | 0 | 0 | `` | anatomia/migracion-s0028.md |
 | <a id="migration-p0e"></a>`migration-p0e` | `migration-p0e` | carpeta | 147 | 105.269.293 | `fe9b711412a1` | anatomia/migracion-s0028.md |
 | <a id="migration-p0e-report-md"></a>`migration-p0e-report-md` | `migration-p0e/report.md` | archivo | 1 | 11.968 | `35fe948cbfee` | anatomia/migracion-s0028.md |
 | <a id="migration-p1-r2-report-md"></a>`migration-p1-r2-report-md` | `migration-p1-r2/report.md` | archivo | 1 | 8261 | `1384045015ce` | evidence/s0028-p1/README.md |

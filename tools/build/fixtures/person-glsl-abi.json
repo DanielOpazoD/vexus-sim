@@ -661,7 +661,9 @@
     ["WT_STRIA_CELL_MM", "qW"],
     ["laminaDistance", "qX"],
     ["wallHash", "qY"],
-    ["wallNoise", "qZ"]
+    ["wallNoise", "qZ"],
+    ["WALL_DIFFUSE_Q", "q2"],
+    ["wallRegion", "q3"]
   ],
   "afterDot": [
     "COMP_NODES",
@@ -750,7 +752,8 @@
     "WT_ORIENT_FLOOR",
     "WT_FACE_VAR_MM",
     "WT_FACE_VAR_MAX",
-    "WT_STRIA_CELL_MM"
+    "WT_STRIA_CELL_MM",
+    "WALL_DIFFUSE_Q"
   ],
   "bindings": [
     ["IF_ARTERY", "_u0"],

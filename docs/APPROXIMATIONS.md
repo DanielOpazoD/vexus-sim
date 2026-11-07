@@ -456,3 +456,19 @@ mm con 18 cm) dadas por ruidos de valor anclados al cuerpo (celdas de 2,5 y 3 mm
 en bandas de 1,5 mm [EXTRAPOLACIÓN PROPIA]. Ni la forma del gas ni su movimiento cambian; la cara no tiene normal propia,
 así que no se apaga con la incidencia. Pendiente: comparar con capturas reales de gas y de columna; reverberación
 costilla–sonda.
+
+### Línea alba en la pared default (326)
+
+`wallRegion` adelgaza el músculo a una banda de 2 mm en |u| 3–28 mm y llena el resto con grasa preperitoneal; anchura,
+banda y −7 % de grasa son [EXTRAPOLACIÓN PROPIA]. Fuera de la línea media la pared es la del hábito: no hay reparto por
+flanco, tórax ni espalda (la primera versión de la 326 lo tenía y no se veía). El total radial (28 mm) no cambia; sigue
+pendiente un espesor total regional. La banda llamada línea alba conserva el material acústico `Tissue.Muscle`.
+
+### Lóbulo de la difusa de las capas de la pared (327)
+
+La difusa de las caras de la pared sigue exp(−tan²θ/(4·0,25²)) sobre la ley de Lambert: [ESTIMADO] a partir de la anisotropía
+de fascias y tendones, más ancho que el de un tendón porque las metas de la 62 (líneas ≥ 4 dB en las poses del banco, con
+5–15° de inclinación) no admiten uno más estrecho. De frente el nivel es el de antes. Los septos de la grasa, las estrías, el
+psoas y el cuadrado conservan |cosθ|⁴, y s0028 conserva Lambert. La sonda amolda la pared y la cápsula hepática a su cara (63),
+así que en las ventanas de incidencia casi normal las capas siguen paralelas de borde a borde: el amoldamiento parcial de las
+capas profundas queda pendiente. No es validación clínica.

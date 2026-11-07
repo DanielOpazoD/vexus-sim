@@ -8,7 +8,7 @@ import type { Vec3 } from '../core/vec3';
 import baseline from './fixtures/s0028-wall-default.json';
 import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
 
-it('el default conserva la clasificación semántica de main 8ee9fbd en 82.251 puntos', () => {
+it('el default conserva su clasificación semántica fijada en 82.251 puntos (main 8ee9fbd; la pared, desde la decisión 326)', () => {
   const raw = (name: string) => new Uint8Array(gunzipSync(readFileSync(`src/anatomy/${name}-atlas.gzip.bin`))).buffer;
   const person = installDefaultCpu({
     abdominal: new Uint16Array(raw('abdominal')),

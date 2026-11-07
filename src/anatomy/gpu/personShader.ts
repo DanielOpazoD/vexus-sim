@@ -11,6 +11,7 @@ import { s0028WallShader } from './s0028Wall.glsl';
  * @twin atlas-toracico
  * @twin s0028-digestivo
  * @twin s0028-lector
+ * @twin eco-interfaz
  */
 export function personShader(source: string, selection: { person: 'current' } | { person: 's0028'; bundle: PersonDescriptors }): string {
   if (selection.person === 'current' || !/vec2\s+abdominalAtlasValue\s*\(/.test(source)) return source;
@@ -110,6 +111,9 @@ vec2 thoracicValue(vec3 p){
   changed = changed.replace(/label\s*>=\s*5\.0\s*&&\s*label\s*<=\s*9\.0/g, 'label==4.0');
   // Lectores P1 de P3 (r3), antes de la pared y de la clasificación que los usan.
   changed = changed.replace('float respWeight(vec3 m)', S0028_READER_GLSL + '\nfloat respWeight(vec3 m)');
+  // s0028 está en pausa (decisión 327): su pared conserva la difusa de Lambert
+  if (/float\s+wallDiffuseLobe\s*\(/.test(changed))
+    changed = replaceFunction(changed, 'float', 'wallDiffuseLobe', 'float wallDiffuseLobe(float c){return 1.0;}');
   return s0028WallShader(changed, replaceFunction);
 }
 

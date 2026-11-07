@@ -848,10 +848,8 @@ Sólo commit local con el trailer indicado; sin revisión delegada por instrucci
 
 ## Historial P0d: división con halo, dominio cutáneo y profundidad
 
-[Evidencia P0d](../evidence/INDEX.md#migration-p0d-report-md).
-
-**No admite P1.** Base `655e936`; protocolo previo e informe completos en
-[`migration-p0d/`](../evidence/INDEX.md#migration-p0d).
+**No admite P1.** Base `655e936`; protocolo previo, enmiendas y resultados en
+[`migration-p0d/`](../evidence/INDEX.md#migration-p0d) (la ronda no dejó un `report.md`).
 El dominio fijado antes de medir es **Z [−210; +60] mm y φ completo periódico**:
 52,4 mm caudales y 80 mm craneales de margen sobre las diez huellas congeladas.
 La sonda libre puede rodear el tronco; no se reduce el dominio al sector de las tarjetas.

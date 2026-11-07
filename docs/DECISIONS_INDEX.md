@@ -329,3 +329,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [323](DECISIONS.md#L10687) | Extraer la red vascular s0028 con identidades y soporte verificables, antes de instalarla | pendiente del propietario |
 | [324](DECISIONS.md#L10733) | Textura de la pared sin peine: techos y estrías a profundidades independientes | vigente |
 | [325](DECISIONS.md#L10778) | Sombras con causa: el peine renal es la columna, la cortical vertebral con lóbulo ancho y el gas intestinal con cara irregular y sombra sucia | vigente |
+| [326](DECISIONS.md#L10844) | Línea alba en la pared default, con el espesor total constante | vigente |
+| [327](DECISIONS.md#L10877) | Las capas de la pared brillan donde el haz las corta de frente | vigente |

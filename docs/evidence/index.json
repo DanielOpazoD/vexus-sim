@@ -18,6 +18,70 @@
    ]
   },
   {
+   "id": "default-wall-b2-20261107-figures-b2",
+   "path": "default-wall-b2-20261107/figures/b2",
+   "kind": "dir",
+   "bytes": 4008950,
+   "sha256": "434c432e7897c7ec8080fff4f46a3ad903dc5862e357b9d3ea803fef780c55b6",
+   "files": 11,
+   "round": "default-wall-b2-20261107",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 327
+    }
+   ]
+  },
+  {
+   "id": "default-wall-b2-20261107-report-md",
+   "path": "default-wall-b2-20261107/report.md",
+   "kind": "file",
+   "bytes": 13436,
+   "sha256": "a872955e7a2bbf0c998a5dfe0b4e46febeb6c2504e12930ca8cd1fb6c4c678ad",
+   "files": 1,
+   "round": "default-wall-b2-20261107",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 326
+    },
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 327
+    }
+   ]
+  },
+  {
+   "id": "default-wall-figures-bfinal",
+   "path": "default-wall/figures/bfinal",
+   "kind": "dir",
+   "bytes": 4930727,
+   "sha256": "300a459f0dacc1c879a8946693712751bca2c6d20ce1103af87b641b4eb3591e",
+   "files": 9,
+   "round": "default-wall",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 326
+    }
+   ]
+  },
+  {
+   "id": "default-wall-report-b-md",
+   "path": "default-wall/report-b.md",
+   "kind": "file",
+   "bytes": 4773,
+   "sha256": "462ae4504c5eb814046d4149a9190151cbe2be7c3692c368ab812ca6ff927cc2",
+   "files": 1,
+   "round": "default-wall",
+   "citedBy": [
+    {
+     "doc": "docs/DECISIONS.md",
+     "decision": 326
+    }
+   ]
+  },
+  {
    "id": "ivc-atrium",
    "path": "ivc-atrium",
    "kind": "dir",
@@ -283,21 +347,6 @@
    "bytes": 24448519,
    "sha256": "0654acdcb0710ab1782c6a03c398c557edce34ff68ab3843bd0228a42041cabf",
    "files": 70,
-   "round": "migration-p0d",
-   "citedBy": [
-    {
-     "doc": "docs/anatomia/migracion-s0028.md",
-     "decision": null
-    }
-   ]
-  },
-  {
-   "id": "migration-p0d-report-md",
-   "path": "migration-p0d/report.md",
-   "kind": "missing",
-   "bytes": 0,
-   "sha256": "",
-   "files": 0,
    "round": "migration-p0d",
    "citedBy": [
     {

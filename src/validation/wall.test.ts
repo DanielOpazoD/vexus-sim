@@ -34,6 +34,7 @@ import {
   wallPerimeter,
   wallPlaneDepth,
   wallPlaneGap,
+  wallRegion,
   wallSwell,
   wallWave,
   wallWavenumber,
@@ -402,9 +403,19 @@ describe('relieve de las capas de la pared (decisión 88)', () => {
         let maxNorm = 0;
         for (let phiDeg = 0; phiDeg < 360; phiDeg += 2.5)
           for (let z = -150; z <= 100; z += 2.5) {
-            const [a, gn] = tilt(sc, face, (phiDeg * Math.PI) / 180, z);
-            ang.push(a);
+            const phi = (phiDeg * Math.PI) / 180;
+            const [a, gn] = tilt(sc, face, phi, z);
             maxNorm = Math.max(maxNorm, gn);
+            // un plano fundido con su vaina no dibuja cara: su inclinación es la de la vaina (en la línea alba, la de la
+            // transversalis que sube al encuentro de la fascia, decisión 326) y no cuenta como la de un plano
+            if (face === Interface.ObliquePlane || face === Interface.TransversusPlane) {
+              const tt = sc.torso;
+              const skin = torsoSkinPoint(phi, z, tt);
+              const u = wallArc(skin, tt);
+              const i = face === Interface.ObliquePlane ? 0 : 1;
+              if (wallPlaneGap(wallPlaneDepth(u, z, i, tt), i, wallDepths(tt, u, z)) < WALL.planeMinMm) continue;
+            }
+            ang.push(a);
           }
         ang.sort((x, y) => x - y);
         const msg = `${c.id} ${Interface[face]}`;
@@ -439,11 +450,12 @@ describe('relieve de las capas de la pared (decisión 88)', () => {
 
   it('el relieve lento de la grasa tiene un tope: ±11 % hasta 18 mm de grasa, ±2 mm con más (|∇| acotado)', () => {
     const u0 = wallArc(at(FLANK, 0, 0), t);
+    // alrededor de la grasa de cada punto (con la línea alba, decisión 326), con la amplitud del hábito
     for (const fat of [14, 18, 30]) {
       const th = { ...t, fatMm: fat };
       let mx = 0;
       for (let du = -300; du <= 300; du += 0.5)
-        for (const z of [-60, -20, 20]) mx = Math.max(mx, Math.abs(wallFatMm(th, u0 + du, z) - fat));
+        for (const z of [-60, -20, 20]) mx = Math.max(mx, Math.abs(wallFatMm(th, u0 + du, z) - wallRegion(th, u0 + du)[0]));
       const cap = Math.min(WALL.fatSwell * fat, WALL.fatSwellMaxMm);
       expect(mx, `${fat} mm`).toBeLessThanOrEqual(cap + 1e-9);
       expect(mx, `${fat} mm`).toBeGreaterThan(0.7 * cap);
@@ -508,7 +520,7 @@ describe('relieve de las capas de la pared (decisión 88)', () => {
         expect(WALL_GLSL).toContain(`${r.kz.toFixed(6)} * z + ${r.phase.toFixed(6)})`);
         if (r.harmonic !== 0) expect(WALL_GLSL).toContain(`${r.harmonic.toFixed(1)} * iP * u + `);
       }
-    expect(WALL_GLSL).toContain('float fat = uWall.y + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * wallSwell3(u, z, iP);');
+    expect(WALL_GLSL).toContain('float fat = r.x + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * wallSwell3(u, z, iP);');
     expect(WALL_GLSL).toContain(`#define WALL_FAT_SWELL ${WALL.fatSwell.toFixed(4)}`);
     expect(WALL_GLSL).toContain(`#define WALL_FAT_SWELL_MAX_MM ${WALL.fatSwellMaxMm.toFixed(4)}`);
     // la longitud de onda a lo largo de u de cada término, P/|n|: de 6,8 a 168 mm, ninguna de media vuelta o más

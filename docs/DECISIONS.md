@@ -10840,3 +10840,86 @@ main de B cambia (509cf14b9fd7f51b → 0f025cc657d91e93) dentro de sus techos de
 láminas antes/después (Metal, `main` 6fcdfd6, misma pose, semilla, reloj detenido a t = 0 y mandos) en
 `default-shadows-20261107/figures`. JS: default 1.029.973 → 1.030.715 B y s0028 1.067.673 → 1.068.415 B (+742 B en las
 dos; margen s0028 1.665 B); descarga y metadatos sin cambio.
+
+## 326. Línea alba en la pared default, con el espesor total constante
+
+**Contexto.** Tras la 324 la pared era la misma en todas partes: piel, grasa, músculo y grasa preperitoneal a la misma
+profundidad radial en las diez ventanas. La primera versión de esta decisión repartía las capas por región (línea media,
+recto, flanco, tórax y espalda). En sus láminas solo se veía el cambio de la línea media; en flanco y tórax el cambio no
+se distinguía y sí costaba código compartido (≈1,7 KB en las dos clausuras, margen s0028 939 B). Sirve a los objetivos 2 y
+3; no es una reconstrucción humana ni validación clínica.
+
+**Opciones.** Variar el espesor total afecta unos veinte consumidores (contacto, compresión, respiración, recorte visceral,
+clasificación) y movería las vísceras: se conserva. Conservar el reparto por flanco, tórax y espalda: sin ganancia visible
+en las láminas, se retira (la rama queda más simple y la pared fuera de la línea media vuelve a ser exactamente la de main).
+
+**Decisión.** `wallRegion(t, u)`, gemelo TS/GLSL en `organs/wall.ts`: en |u| 3–28 mm (`WALL.region.lineaMm`, transición
+suave) el músculo se vuelve la banda fibrosa de 2 mm entre los dos rectos (`lineaAlbaMm`), la grasa subcutánea baja un 7 %
+(`fatMidline`) y la grasa preperitoneal llena el resto (≈11 mm en el adulto de referencia); la transversalis sube al
+encuentro de la fascia. Fuera de la línea media, el reparto del hábito, idéntico al de main. Los septos de la grasa ocupan
+también la grasa preperitoneal: sin ellos la lente era una banda lisa y oscura, como líquido. La piel, el peritoneo, el
+total (28 mm) y la amplitud de los relieves de la 88 no cambian. Proporciones y anchura: [EXTRAPOLACIÓN PROPIA]. La banda
+llamada línea alba conserva el material acústico `Tissue.Muscle`.
+
+**Consecuencias.** En la epigástrica aparece la lente de grasa preperitoneal bajo la línea alba, que se adelgaza hacia los
+lados; en la subxifoidea el músculo adelgaza en la línea media. Menos músculo en el trayecto cambia la transmisión en
+profundidad (RMS de la envolvente ≥ 5 cm: subxifoidea 13,3 %, epigástrica 6,2 %; el resto ≤ 0,21 %); no se compensa con
+ganancia. s0028 conserva sus capas. No es validación clínica.
+
+**Verificación.** `wallRegionField.test.ts` (rojo con la pared uniforme de main): vainas casi juntas en la línea media y
+grasa preperitoneal triple que bajo el recto; fuera de |u| 28 mm el hábito exacto; total y orden de capas en todos los
+casos; continuidad a 0,5 mm; números GLSL = `WALL.region`. Paridad CPU/GLSL de capas y línea alba
+(`wallTextureParity.spec.ts`, 0,005 mm). Clasificación default (`s0028-wall-default.json`): cambian 298 de 82.251 puntos,
+todos con |x| ≤ 30 mm; con la línea alba apagada la clasificación es la de main 6fcdfd6. Láminas, presupuestos y la
+decisión 327 en la misma rama: `$VEXUS_EVIDENCE_ROOT/default-wall-b2-20261107/report.md`. La evidencia de la primera
+versión se conserva: `$VEXUS_EVIDENCE_ROOT/default-wall/report-b.md` y `$VEXUS_EVIDENCE_ROOT/default-wall/figures/bfinal`.
+
+## 327. Las capas de la pared brillan donde el haz las corta de frente
+
+**Contexto.** El propietario (07-11-2026): en las diez ventanas de inicio, fascias largas, brillantes, continuas y paralelas
+cruzan todo el sector en los primeros 3–5 cm, como un pentagrama. Medido en main 6fcdfd6 (la incidencia de cada cara en
+cada línea, con la normal en el mundo, compresión incluida, frente al pico de la envolvente sobre la mediana del hígado de
+esa línea): las fascias bajaban solo 6 dB de 0–5° a 20–30° (23,9 → 17,8 dB) y en la subxifoidea una fascia a 46° seguía a
+29 dB. La causa física: la rugosidad fina de las fascias (σz 0,09 mm) deja ~1 % de energía coherente, y el resto, la difusa
+de la 65, se reparte con la ley de Lambert (cosθ). Una fascia es una lámina de colágeno con las fibras en su plano; su
+rugosidad tiene una longitud de correlación de milímetros, muy por encima de λ, y devuelve el eco cerca de la dirección
+especular (la anisotropía de fascias y tendones). La geometría pesa tanto como la ley: la compresión de la 63 deja la cara
+interna de la pared a la misma profundidad en toda la huella, así que en la subcostal, la epigástrica, el tronco portal y el
+flanco las capas tienen 7–14° de incidencia de borde a borde; solo la subxifoidea, la intercostal, la porta, la porta
+subcostal, la renal y la hepatorrenal llegan a 20–40° en los bordes o en todo el sector.
+
+**Opciones.** Estrechar el lóbulo de Kirchhoff de las caras de la pared y bajar su σz (solo datos): la especular de una fascia
+con su Fresnel sube a +41–46 dB sobre el hígado de frente y la difusa de Lambert sigue a 17 dB a 20–30°; descartado. Un lóbulo
+de tendón (s 0,06–0,1): a 10° ya resta 7–15 dB, pero las poses del banco de la 62 ven sus líneas «de frente» con 5–15° de
+inclinación y su meta (≥ 4 dB sobre el entorno) caía a 2,5 dB en la intercostal; con 0,22 la renal quedaba en 4,03. El mismo
+lóbulo en los septos de la grasa (que forman buena parte de las rayas finas): la meta de septos de la 62 caía a 2,0 dB en la
+subxifoidea (≥ 3,52); los septos y las estrías conservan |cosθ|⁴. Aplicarlo también a s0028: borraba la línea del peritoneo en
+su intercostal y su hepatorrenal, y s0028 está en pausa.
+
+**Decisión.** `WALL_DIFFUSE_SLOPE = 0,25` (tan 14°) en `ultrasound/interfaceEcho.ts`: la difusa de las caras de la pared
+(`SkinFat`…`Peritoneum`) se multiplica por `wallDiffuseLobe` = exp(−tan²θ/(4·0,25²)) sobre Lambert (−1,1 dB a 10°, −4,6 a 20°,
+−11,6 a 30°, −24 a 40°); de frente, la de antes, así que la calibración de las líneas de la 62 no cambia. Gemelos TS/GLSL
+(`wallDiffuseLobe`). s0028 conserva Lambert: `personShader` sustituye en sus programas `wallDiffuseLobe` por 1. La ABI GLSL
+fijada suma `WALL_DIFFUSE_Q` y `wallRegion` sin tocar los existentes. [ESTIMADO: más ancho que un tendón; lo acota por debajo
+la meta de la 62.]
+
+**Consecuencias.** Las fascias se apagan donde la geometría es oblicua: en la renal quedan menos líneas y más tenues, en la
+subxifoidea y la porta subcostal se apagan hacia el borde. Medido en las diez ventanas: 0–5° 23,6 dB, 20–30° 15,7, 30–45° 8,7
+(main: 23,9, 17,8, 12,1). Lo que sigue mal, y es lo principal: la sonda amolda toda la pared y la cápsula hepática a su cara
+(63), así que en la intercostal, la subcostal, la porta, el tronco portal y el flanco las capas siguen siendo arcos paralelos
+de borde a borde; la línea continua más brillante es la cápsula hepática (eco especular liso, fuera de este bloque), y buena
+parte de las rayas finas son septos de la grasa, que la meta de la 62 obliga a mantener. Que el brillo caiga hacia los bordes
+en esas ventanas pide un amoldamiento parcial de las capas profundas (contacto, decisión 63) y revisar las metas de la 62 con
+imágenes reales: pendiente del propietario. La intercostal no muestra costillas porque su pose deja el plano entre dos
+costillas, paralelo a ellas. s0028 no cambia (RMS de la envolvente frente a main ≤ 0,13 % en sus diez ventanas). No es
+validación clínica.
+
+**Verificación.** `interfaceEcho.test.ts` (rojo con Lambert: a 20° la difusa de una fascia conservaba −0,54 dB): > −0,5 dB a
+5°, < −4,5 dB a 20° y < −12 dB a 30° en seis caras de la pared, igual de frente, Lambert intacto en vasos, cápsulas y pleura;
+la GLSL con la misma constante y la de s0028 con Lambert. `wallDisplayTwin` (metas de la 62): niveles de línea 9,7 / 4,4 /
+6,0 / 4,2 dB en subxifoidea, intercostal, flanco y renal (≥ 4). Humo de la pared de la 62, normales de septo y estría y
+paridad de textura en Metal; humo y paridad en SwiftShader; capa lenta en verde. Fixtures de programas regeneradas con la cuenta de sus pruebas. Diez láminas
+antes/después, mismo reloj, pose y mandos, campo cercano 0–5 cm e imagen completa, y la lista sí/no por ventana. JS con la 326:
+default 1.030.591 B y s0028 1.068.411 B (margen 1.669 B; main tras la 324: 1.029.973 y 1.067.673); techos intactos. Tokens de
+RAWFIELD 1.262.787 → 1.265.439 (techo 1.385.000), una rama más; samplers y ranuras sin cambios. Evidencia:
+`$VEXUS_EVIDENCE_ROOT/default-wall-b2-20261107/report.md` y `$VEXUS_EVIDENCE_ROOT/default-wall-b2-20261107/figures/b2`.

@@ -65,6 +65,18 @@ export const WALL = {
   /** Transición del recto (línea media) a la pared lateral: |u| en mm (línea semilunar a 5–8 cm). */
   rectusMm: [50, 80] as const,
   /**
+   * Línea alba de la pared default (decisión 326), en |u| material: hacia la línea media el músculo se vuelve la banda
+   * fibrosa entre los dos rectos (`lineaAlbaMm`, transición en |u| `lineaMm`), la grasa subcutánea baja un `fatMidline`
+   * y la grasa preperitoneal llena el resto (≈11 mm en el adulto de referencia): la lente preperitoneal que se ve bajo la
+   * línea alba en la epigástrica. El total no cambia. Fuera de la línea media, el reparto del hábito; la variación por
+   * flanco, tórax y espalda de la primera versión de la 326 no se veía en las láminas y se retiró [EXTRAPOLACIÓN PROPIA].
+   */
+  region: {
+    lineaMm: [3, 28],
+    lineaAlbaMm: 2,
+    fatMidline: 0.07,
+  },
+  /**
    * Fin posterior estimado del soporte de los vientres oblicuos: fracciones del
    * semiperímetro desde anterior (0) hasta la línea media posterior (1). Las
    * láminas se reúnen con sus vainas al llegar a la región toracolumbar, en vez
@@ -221,27 +233,48 @@ export function wallSwell(u: number, z: number, k: number, t: Pick<Torso, 'a' | 
   return relief(WALL_SWELL_TERMS[k], u, z, t);
 }
 
-/** Espesor local de la grasa subcutánea (mm): el del hábito con el relieve lento de la fascia profunda (decisión 88). */
-export function wallFatMm(t: Torso, u: number, z: number): number {
-  return t.fatMm + Math.min(WALL.fatSwell * t.fatMm, WALL.fatSwellMaxMm) * wallSwell(u, z, 3, t);
-}
-
-export function wallDepths(t: Torso, u: number, z: number): WallDepths {
-  const peritoneum = t.skinMm + t.fatMm + t.muscleMm;
-  const fat = wallFatMm(t, u, z);
-  return {
-    skin: t.skinMm,
-    scarpa: t.skinMm + (WALL.scarpaFraction + WALL.scarpaSwell * wallSwell(u, z, 2, t)) * fat + WALL.scarpaWaveMm * wallWave(u, z, 2, t),
-    fascia: t.skinMm + fat + WALL.fasciaWaveMm * wallWave(u, z, 3, t),
-    transversalis: peritoneum - t.preperitonealMm + WALL.transversalisWaveFraction * (t.preperitonealMm - 1) * wallWave(u, z, 4, t),
-    peritoneum,
-  };
-}
-
 const smooth = (e0: number, e1: number, x: number): number => {
   const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
   return t * t * (3 - 2 * t);
 };
+
+/**
+ * Reparto de la pared en u (decisión 326): [grasa subcutánea, músculo (mm, sin relieve), peso de la línea alba]. Suave y
+ * anclado al cuerpo: no depende de la ventana ni de la sonda. Gemelo de la GLSL.
+ * @twin organo-pared
+ */
+export function wallRegion(t: Pick<Torso, 'fatMm' | 'muscleMm' | 'preperitonealMm'>, u: number): [number, number, number] {
+  const R = WALL.region;
+  const mid = 1 - smooth(R.lineaMm[0], R.lineaMm[1], Math.abs(u));
+  const muscle = t.muscleMm - t.preperitonealMm;
+  return [t.fatMm * (1 - R.fatMidline * mid), muscle + (R.lineaAlbaMm - muscle) * mid, mid];
+}
+
+/**
+ * Espesor local de la grasa subcutánea (mm): el regional con el relieve lento de la fascia profunda (decisión 88), cuya
+ * amplitud sigue siendo la del hábito: donde la grasa adelgaza, la fascia sube y baja lo mismo.
+ */
+export function wallFatMm(t: Torso, u: number, z: number): number {
+  return wallRegion(t, u)[0] + Math.min(WALL.fatSwell * t.fatMm, WALL.fatSwellMaxMm) * wallSwell(u, z, 3, t);
+}
+
+export function wallDepths(t: Torso, u: number, z: number): WallDepths {
+  const peritoneum = t.skinMm + t.fatMm + t.muscleMm;
+  const [fatR, muscle, mid] = wallRegion(t, u);
+  const fat = fatR + Math.min(WALL.fatSwell * t.fatMm, WALL.fatSwellMaxMm) * wallSwell(u, z, 3, t);
+  const fascia = t.skinMm + fat + WALL.fasciaWaveMm * wallWave(u, z, 3, t);
+  // grasa profunda: lo que queda del total, con el relieve del hábito; en la línea alba la transversalis sigue a la fascia
+  // (la grasa absorbe el relieve)
+  const deep = Math.max(1.5, peritoneum - t.skinMm - fatR - muscle);
+  const transversalis = peritoneum - deep + WALL.transversalisWaveFraction * (t.preperitonealMm - 1) * wallWave(u, z, 4, t);
+  return {
+    skin: t.skinMm,
+    scarpa: t.skinMm + (WALL.scarpaFraction + WALL.scarpaSwell * wallSwell(u, z, 2, t)) * fat + WALL.scarpaWaveMm * wallWave(u, z, 2, t),
+    fascia,
+    transversalis: transversalis + (fascia + muscle - transversalis) * mid,
+    peritoneum,
+  };
+}
 
 /**
  * Longitud de arco de la piel (mm) desde la línea media anterior hasta el ángulo elíptico del punto, con
@@ -548,15 +581,24 @@ float wallWavenumber(float lambda, float P) {
 // relieves fino (wallWaveK) y lento (wallSwellK) de las caras: 0 y 1 los planos, 2 Scarpa, 3 la fascia, 4 la transversalis
 ${WALL_WAVE_TERMS.map((terms, k) => glslRelief(`wallWave${k}`, terms)).join('\n')}
 ${WALL_SWELL_TERMS.map((terms, k) => glslRelief(`wallSwell${k}`, terms)).join('\n')}
+// reparto de la línea alba (grasa, músculo, peso de la línea alba; decisión 326), gemelo de wallRegion: sus números son
+// los de WALL.region, escritos aquí (wallRegionField.test.ts los compara; paridad numérica en wallTextureParity.spec.ts)
+vec3 wallRegion(float u) {
+  float mid = 1.0 - smoothstep(3.0, 28.0, abs(u));
+  float muscle = uWall.z - uWall.w;
+  return vec3(uWall.y * (1.0 - 0.07 * mid), muscle + (2.0 - muscle) * mid, mid);
+}
 // (Scarpa, fascia profunda, transversalis, peritoneo) en (u, z); la piel es uWall.x
 vec4 wallDepths(float u, float z) {
   float iP = 6.2831853 / wallPerimeter();
   float peritoneum = uWall.x + uWall.y + uWall.z;
-  float fat = uWall.y + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * wallSwell3(u, z, iP);
+  vec3 r = wallRegion(u);
+  float fat = r.x + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * wallSwell3(u, z, iP);
+  float fascia = uWall.x + fat + WALL_FASCIA_WAVE_MM * wallWave3(u, z, iP);
+  float deep = max(1.5, peritoneum - uWall.x - r.x - r.y);
+  float tr = peritoneum - deep + WALL_TR_WAVE_FRACTION * (uWall.w - 1.0) * wallWave4(u, z, iP);
   return vec4(uWall.x + (WALL_SCARPA_FRACTION + WALL_SCARPA_SWELL * wallSwell2(u, z, iP)) * fat + WALL_SCARPA_WAVE_MM * wallWave2(u, z, iP),
-              uWall.x + fat + WALL_FASCIA_WAVE_MM * wallWave3(u, z, iP),
-              peritoneum - uWall.w + WALL_TR_WAVE_FRACTION * (uWall.w - 1.0) * wallWave4(u, z, iP),
-              peritoneum);
+              fascia, tr + (fascia + r.y - tr) * r.z, peritoneum);
 }
 // plano intermuscular i con las profundidades w = wallDepths(u, z) ya calculadas
 float wallPlaneDepth(float u, float z, int i, vec4 w) {

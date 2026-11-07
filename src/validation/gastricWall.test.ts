@@ -3,7 +3,7 @@ import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { Interface } from '../anatomy/interfaces';
-import { ABDOMEN_GLSL, GASTRIC_WALL, abdomenQuery, digestiveGasPlane, gastricFold } from '../anatomy/organs/abdomen';
+import { ABDOMEN_GLSL, GASTRIC_WALL, abdomenQuery, digestiveGasPlane, gastricBoundary, gastricFold } from '../anatomy/organs/abdomen';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { abdominalAtlasValue, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
@@ -137,7 +137,14 @@ describe('estómago con algo de líquido (decisión 310)', () => {
       ({ d, c }) => -d >= GASTRIC_WALL.muscularisMm && -d < GASTRIC_WALL.baseMm && c.tissue !== Tissue.GastricContents,
     );
     expect(bands.length).toBeGreaterThan(100);
-    expect(median(bands.map(({ c }) => c.boundaryDistance))).toBeGreaterThan(0.1);
+    // Decisión 332 (evolución): la cota absoluta 0,1 mm era la de las capas de la 312; con la muscular de 1,6 mm la franja tiene capas
+    // más finas y la frontera ideal baja (mediana 0,145 → 0,114 mm). Lo que se fija es lo que la cota del pliegue le quita: frente a
+    // la frontera sin pliegue (rate 0), la declarada conserva ≥ 75 % (0,836 en main, 0,855 aquí; con phaseRate ×4, 0,62)
+    const ideal = bands.map(({ p, d }) => {
+      const { fold } = gastricFold(p);
+      return gastricBoundary(-d, d + GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm * (0.5 + 0.5 * fold), fold, 0, 1e3);
+    });
+    expect(median(bands.map(({ c }) => c.boundaryDistance)) / median(ideal)).toBeGreaterThan(0.75);
     // La fase varía a lo más a su ritmo declarado: la cota de la que sale la frontera
     for (const { p } of bands) {
       const { fold, rate } = gastricFold(p);
@@ -205,5 +212,11 @@ describe('estómago con algo de líquido (decisión 310)', () => {
     );
     expect(ABDOMEN_GLSL).toContain(`depth<${w.serosaMm.toFixed(2)}?T_SOFT_CAPSULE:depth<${w.muscularisMm.toFixed(2)}?T_GUT_MUSCULARIS`);
     expect(ABDOMEN_GLSL).toContain('T_GASTRIC_CONTENTS');
+    // Decisión 332: eje, pliegue y grosor total van como literales en la GLSL (los comparten las dos personas); los ata esta prueba
+    const axis = `vec2(${w.axisMm.map((v) => v.toFixed(1)).join(',')})-vec2(${w.axisPerMm.map((v) => v.toFixed(3)).join(',')})*m.z`;
+    expect(ABDOMEN_GLSL).toContain(axis);
+    expect(ABDOMEN_GLSL).toContain(`rate=${w.phaseRate.toFixed(1)}/max(length(a),0.000001)+${w.twistPerMm.toFixed(3)};`);
+    expect(ABDOMEN_GLSL).toContain(`abs(inner)/(1.0+${(0.5 * w.foldMm).toFixed(2)}*rate),depth-${(w.baseMm + w.foldMm).toFixed(2)})`);
+    expect(ABDOMEN_GLSL).toContain(`abs(inner-${w.mucosalLineMm.toFixed(2)})/(1.0+${(0.5 * w.foldMm).toFixed(2)}*rate)`);
   });
 });

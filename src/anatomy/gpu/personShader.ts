@@ -1,5 +1,7 @@
 import { ABDOMINAL_FIELDS } from '../abdominalAtlasData';
 import type { PersonDescriptors } from '../anatomyBundle';
+import { gastricGlsl, GASTRIC_WALL } from '../organs/abdomen';
+import { GASTRIC_312 } from '../people/s0028/cpu';
 import { S0028_READER_GLSL } from './s0028Solids.glsl';
 import { s0028WallShader } from './s0028Wall.glsl';
 
@@ -111,6 +113,8 @@ vec2 thoracicValue(vec3 p){
   changed = changed.replace(/label\s*>=\s*5\.0\s*&&\s*label\s*<=\s*9\.0/g, 'label==4.0');
   // Lectores P1 de P3 (r3), antes de la pared y de la clasificación que los usan.
   changed = changed.replace('float respWeight(vec3 m)', S0028_READER_GLSL + '\nfloat respWeight(vec3 m)');
+  // s0028 está en pausa (decisión 332): su estómago conserva las capas de la 312 y su contenido, sin dispersores fuertes
+  changed = changed.replace(gastricGlsl(GASTRIC_WALL), gastricGlsl(GASTRIC_312)).replace(/\n *if \(t == T_GASTRIC_CONTENTS\)[^;]*;/, '');
   // s0028 está en pausa (decisión 327): su pared conserva la difusa de Lambert
   if (/float\s+wallDiffuseLobe\s*\(/.test(changed))
     changed = replaceFunction(changed, 'float', 'wallDiffuseLobe', 'float wallDiffuseLobe(float c){return 1.0;}');

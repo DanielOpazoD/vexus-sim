@@ -335,3 +335,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [329](DECISIONS.md#L10984) | Riñón derecho por defecto inclinado y más alto, con sus poses | vigente |
 | [330](DECISIONS.md#L11034) | Los dos riñones por defecto, subidos bajo el hígado y el bazo | vigente |
 | [331](DECISIONS.md#L11098) | Las dos ventanas de la VCI como imagen completa: subxifoidea centrada en la unión, aorta sobre la vértebra y estómago distendido | vigente |
+| [332](DECISIONS.md#L11160) | El estómago de la epigástrica como víscera hueca: muscular propia gruesa y contenido líquido con ecos puntuales | vigente |

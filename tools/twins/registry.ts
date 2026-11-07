@@ -1728,7 +1728,7 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
 };
 
 /**
- * Como `CONSTANTES_COPIADAS`, las `reordenados` (22): cada literal de la GLSL, con su signo, está en la TS pero no en
+ * Como `CONSTANTES_COPIADAS`, las `reordenados` (21): cada literal de la GLSL, con su signo, está en la TS pero no en
  * ese orden (`max(x, 0.0)` frente a `Math.max(0, x)`, la cuenta repartida en varias líneas). Un literal nuevo o con
  * otro signo en un solo lado las saca de su clase; un intercambio entre literales que ya están en los dos lados, no.
  */
@@ -1737,7 +1737,8 @@ export const CONSTANTES_REORDENADAS: Readonly<Record<string, readonly string[]>>
   'src/anatomy/abdominalAtlas.ts': ['registeredDomeSample'],
   'src/anatomy/thoracicAtlas.ts': ['thoracicGradient', 'boneSurfaceFrame'],
   'src/anatomy/gpu/referenceCartilage.glsl.ts': ['referenceCartilage'],
-  'src/anatomy/organs/abdomen.ts': ['gastricBoundary'],
+  // Decisión 332: la GLSL de gastricBoundary sale de `gastricGlsl(w)` con el pliegue y el grosor total como literales, que ata
+  // `gastricWall.test.ts`; deja de ser una copia reordenada
   'src/anatomy/organs/bowel.ts': ['bowelQuery'],
   'src/anatomy/organs/wall.ts': ['ribSearchDepth', 'ribCurvature'],
   'src/anatomy/organs/kidney.ts': ['atlasDepthScale'],

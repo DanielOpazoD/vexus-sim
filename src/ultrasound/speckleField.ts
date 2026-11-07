@@ -485,6 +485,10 @@ export interface StrongScatterers {
  */
 export const STRONG_SCATTERERS: Partial<Record<Tissue, StrongScatterers>> = {
   [Tissue.Liver]: { fraction: 0.012, gain: 4.5, level: 0.946 },
+  // Decisión 332: el contenido gástrico, líquido con ecos puntuales («cielo estrellado»): el fondo baja ×0,2 (−14 dB, −32 dB frente al
+  // hígado, como un líquido) y el 0,3 % de los nodos son burbujas o partículas ×80 sobre él. Con solo grumos, la potencia interpolada
+  // entre nodos tapizaba la luz a −17 dB y parecía una masa. Fracción y ganancias [EXTRAPOLACIÓN PROPIA]; s0028 no lo usa (`personShader`)
+  [Tissue.GastricContents]: { fraction: 0.003, gain: 80, level: 0.2 },
 };
 
 /**

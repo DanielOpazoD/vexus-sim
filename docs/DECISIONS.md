@@ -11156,3 +11156,64 @@ del atlas, riñones incluidos, así que la 329 sacó la piel del flanco posterio
   serosa fuera y la mucosa dentro (rojo en main); `e2e/gastricWall.spec.ts` toma las dos caras para seguir cubriendo toda la pared.
 - Láminas antes/después de las diez ventanas, default y s0028, Metal, mismo guion de captura: informe externo
   `default-ivc-windows-20261107/report.md`.
+
+## 332. El estómago de la epigástrica como víscera hueca: muscular propia gruesa y contenido líquido con ecos puntuales
+
+**Contexto.** Tras la 331, en la VCI eje corto el estómago es un círculo liso de unos 5 cm con la pared posterior brillante,
+pero la pared no muestra capas y la luz parece una masa hipoecoica sólida. La 331 sospechaba de la densidad de dispersores
+frente a capas finas. Medido en Metal sobre `main` 331cea2 (perfil medio de la envolvente de 18 líneas alineadas en la serosa
+con `classifyWorld`, frente al tejido de delante):
+
+- La sospecha no se confirma: la submucosa llega a su nivel (+5,5 dB, nominal +5,7). Las capas están en la envolvente,
+  pero con poco contraste: serosa +3,7, muscular −3,3, submucosa +5,5, mucosa −3,4, línea mucosa +2 dB.
+- La causa de la pared es geométrica: el plano corta la pared anterior a ~45° en elevación (|n·e| ≈ 0,70), y los planos de
+  elevación de la pasada B (σ ≈ 1,6 mm a 7 cm) caen ~1,15 mm más dentro o más fuera de la pared. Una muscular de 0,8 mm
+  queda mezclada con la serosa y la submucosa.
+- La causa de la luz: el contenido estaba a −17 dB del hígado (gris 46 frente a 101; la sangre, 24), y sus grumos (σ = 3)
+  se interpolan en potencia entre nodos de 1,2 mm: el máximo de ocho nodos tapiza toda la luz y no deja ecos sueltos.
+
+**Opciones.**
+
+- Más grosor o brillo de submucosa: llenaba aún más la muscular en el grosor de corte. Descartada.
+- Mucosa con material hipoecoico (muscular) en vez de `Bowel`: −7,3 frente a −6,5 dB con la muscular nueva. No compensa
+  otro cambio de material. Descartada.
+- Contenido con menos retrodispersión y más grumos (0,03, σ = 4,5): más oscuro, pero el mismo tapiz moteado. Descartada.
+- Gas anterior (plano del gas del estómago de 30 a 25 mm): una banda gris oblicua sin interfaz ni sombra reconocibles, que
+  además cambia otras ventanas. Descartada; queda en el informe.
+
+**Decisión.** Solo en la persona por defecto:
+
+- `GASTRIC_WALL`: muscular propia de 0,4 a 2 mm (1,6 mm, la capa más gruesa de la pared gástrica) y submucosa hasta
+  3 ± 0,3 mm (0,7–1,3 mm). La pared sigue en 4–4,5 mm y no cambian el pliegue, la mucosa, la línea mucosa ni el contorno.
+- Contenido gástrico con dispersores fuertes (`STRONG_SCATTERERS`, decisión 89): fondo ×0,2 (−32 dB frente al hígado, un
+  líquido) y 0,3 % de nodos ×80 sobre él, ecos puntuales del tamaño de la PSF («cielo estrellado»). Atenuación igual.
+- s0028 está en pausa y no cambia. Su CPU lleva `GASTRIC_312` (`gastricWall` de la persona). `personShader` sustituye el
+  texto `gastricGlsl(GASTRIC_WALL)` por el de la 312 y quita la línea del contenido en `strongScatter`.
+- Presupuesto: eje, pliegue y grosor total, comunes a las dos personas, van como literales en la GLSL; una prueba de texto
+  los ata a `GASTRIC_WALL`. Así el empaquetado comprime el tramo.
+
+**Consecuencias.** En la epigástrica la luz es líquido oscuro con ecos puntuales brillantes. Gris de la luz: mediana 45 → 20,
+p99 87 → 113; en `?e2e=app`, 48 → 24 (el contrato de `e2e/gastricWall.spec.ts` pide > 10 y < pared, 102). La pared:
+muscular −3,3 → −5,8 dB, mucosa −3,4 → −6,0, submucosa +5,5 → +4,3, serosa +3,7 → +1,7. Se ve un anillo hipoecoico alrededor de la luz,
+pero no capas nítidas delante: el corte oblicuo en elevación sigue mezclándolas. Es física real, no un defecto que se corrija
+dibujando. El mismo contenido aparece, con sus ecos, en el estómago profundo de la intercostal, la subcostal y las dos
+portales. Los ecos no se mueven. s0028: programas iguales en fuente; en producción solo cambian saltos de línea (texto sin
+espacios idéntico). Láminas 0,4–1,3 niveles de gris, ruido de captura. JS: default 1.033.836 → 1.033.465 B; s0028
+1.069.981 → 1.069.811 B (margen 99 → 269 B). Programas: 48 de 78 hashes cambian, todos de la persona por defecto.
+No es validación clínica.
+
+**Verificación.**
+
+- `defaultStomach.test.ts`, rojo en main en sus tres pruebas: muscular 0,8 < 1,4 mm; fondo de la luz −18,4 > −30 dB;
+  s0028 sin `GASTRIC_312`.
+- Evolución de contratos:
+  - `gastricWall.test.ts` fijaba la mediana de la frontera de la franja interna en > 0,1 mm, una cota de las capas de la
+    312 (ideal 0,145 → 0,114 mm). Ahora pide que la cota del pliegue conserve ≥ 75 % de la frontera sin pliegue (0,836 en
+    main, 0,855 aquí). Detecta `phaseRate` ×4 (0,62).
+  - `parenchymaTexture.test.ts`: del parénquima, solo el hígado lleva dispersores fuertes; ahora también el contenido gástrico.
+    Se conserva el negativo.
+  - Registro de gemelos: `gastricBoundary` sale de `CONSTANTES_REORDENADAS`, porque su GLSL lleva literales atados por prueba
+    de texto.
+- Fixtures de programas y huella semántica default regeneradas con el cálculo de sus pruebas, sin cambio en la fuente de
+  s0028. Pasa `shaderLimits.test.ts`.
+- Informe externo con perfiles, láminas y negativos: `default-stomach-20261107/report.md`.

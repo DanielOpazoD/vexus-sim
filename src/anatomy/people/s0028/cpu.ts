@@ -9,6 +9,10 @@ import { createSourceQueries } from './atlas';
 import { classifyInside, classifyWall } from './classifier';
 import { createSolidsQueries } from './solids';
 import { createWallQueries } from './wall';
+import { GASTRIC_WALL } from '../../organs/abdomen';
+
+/** s0028 está en pausa: su estómago conserva las capas de la decisión 312 (la 332 engrosa la muscular solo por defecto). */
+export const GASTRIC_312 = { ...GASTRIC_WALL, muscularisMm: 1.2, submucosaMm: 2.8, submucosaFoldMm: 0.4 };
 
 /** Política digestiva de esta persona. @twin s0028-digestivo */
 export function digestiveWallMm(label: number): number {
@@ -40,6 +44,7 @@ export function createS0028Cpu(assets: PersonAssets): InstalledCpuPerson {
     digestiveWallMm,
     digestiveGas: (point) => digestiveGasPlane(point, source.sourceGas),
     isColon: (label) => label === 4,
+    gastricWall: GASTRIC_312,
   };
   return Object.freeze({ identity: assets.identity, assetKey: assets.assetKey, assets, cpu: Object.freeze(cpu) });
 }

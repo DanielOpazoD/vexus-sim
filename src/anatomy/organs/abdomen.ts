@@ -38,10 +38,15 @@ export const GASTRIC_WALL = {
   folds: 10,
   twistPerMm: 0.035,
   serosaMm: 0.4,
-  muscularisMm: 1.2,
-  /** Fin de la submucosa, 2,8 ± 0,4 mm: sube y baja con el pliegue, sin romper su línea */
-  submucosaMm: 2.8,
-  submucosaFoldMm: 0.4,
+  /**
+   * Decisión 332: la muscular propia es la capa más gruesa de la pared gástrica (1,6 mm, de 0,4 a 2 mm) y la submucosa, más fina
+   * (0,7–1,3 mm). Con 0,8 mm de muscular, el corte de la epigástrica, a 45° de la pared en elevación, la mezclaba con sus vecinas
+   * en el grosor de corte y no se veía oscura (−3,3 dB frente al tejido de delante; ahora −5,6)
+   */
+  muscularisMm: 2,
+  /** Fin de la submucosa, 3 ± 0,3 mm: sube y baja con el pliegue, sin romper su línea */
+  submucosaMm: 3,
+  submucosaFoldMm: 0.3,
   /** Línea brillante de la mucosa contra la luz: la quinta capa de la firma del tubo digestivo */
   mucosalLineMm: 0.6,
   /** Eje largo del estómago, ajuste lineal a su malla: x e y en z = 0 y por mm de z */
@@ -49,7 +54,8 @@ export const GASTRIC_WALL = {
   axisPerMm: [0.272, -0.492],
   /** 2·folds·√(1 + |axisPerMm|²), que multiplica a 1/ρ: el doble de la cota puntual, porque esta debe valer en todo el camino hasta la frontera, y la fase se acelera al acercarse al eje */
   phaseRate: 23,
-} as const;
+};
+export type GastricWall = typeof GASTRIC_WALL;
 
 /**
  * Fase del pliegue en m: 1 en su cresta. Da la vuelta alrededor del eje largo del estómago, con un leve giro a lo largo de él. Sale de la posición y no del gradiente del atlas: la dirección
@@ -65,8 +71,7 @@ export function gastricFold(m: Vec3): { fold: number; rate: number } {
   };
 }
 
-export function gastricWallTissue(depthMm: number, fold: number, inner: number): Tissue {
-  const w = GASTRIC_WALL;
+export function gastricWallTissue(depthMm: number, fold: number, inner: number, w = GASTRIC_WALL): Tissue {
   return depthMm < w.serosaMm
     ? Tissue.SoftCapsule
     : depthMm < w.muscularisMm
@@ -79,8 +84,7 @@ export function gastricWallTissue(depthMm: number, fold: number, inner: number):
 }
 
 /** Distancia a la frontera dentro del estómago, `depth` bajo el contorno, `inner` sobre la luz. La distancia es 1-lipschitziana y el pliegue varía a lo más a `rate` por mm. */
-export function gastricBoundary(depth: number, inner: number, fold: number, rate: number, gasMm: number): number {
-  const w = GASTRIC_WALL;
+export function gastricBoundary(depth: number, inner: number, fold: number, rate: number, gasMm: number, w = GASTRIC_WALL): number {
   if (depth < w.muscularisMm) return Math.min(depth, Math.abs(depth - w.serosaMm), w.muscularisMm - depth) / 2;
   const toInner = Math.max(Math.abs(inner) / (1 + 0.5 * w.foldMm * rate), depth - w.baseMm - w.foldMm);
   if (inner < 0) return Math.min(toInner, gasMm) / 2;
@@ -112,7 +116,8 @@ export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
       boundaryNormal: n,
       curvature: 0,
     };
-  const stomach = field === 1 && label === 1;
+  const stomach = field === 1 && label === 1,
+    layers = person?.gastricWall;
   const { fold, rate } = stomach ? gastricFold(m) : { fold: 0, rate: 0 };
   const wall =
       field === 2 ? 2.5 : stomach ? GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm * (0.5 + 0.5 * fold) : digestiveWallMm(label, person),
@@ -136,7 +141,7 @@ export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
     tissue:
       inner >= 0
         ? stomach
-          ? gastricWallTissue(-d, fold, inner)
+          ? gastricWallTissue(-d, fold, inner, layers)
           : digestiveWallTissue(-d / wall)
         : gas
           ? Tissue.BowelGas
@@ -146,7 +151,7 @@ export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
               ? Tissue.ColonicContents
               : Tissue.Fluid,
     boundaryDistance: stomach
-      ? gastricBoundary(-d, inner, fold, rate, inner < 0 ? Math.abs(digestiveGasPlane(m, label, person)) / 2 : 1e3)
+      ? gastricBoundary(-d, inner, fold, rate, inner < 0 ? Math.abs(digestiveGasPlane(m, label, person)) / 2 : 1e3, layers)
       : Math.min(-d, Math.abs(inner), inner < 0 ? Math.abs(digestiveGasPlane(m, label, person)) / 2 : wall * 0.03) / 2,
     interface: iface,
     interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? d : inner),
@@ -154,19 +159,28 @@ export function abdomenQuery(m: Vec3, person?: AnatomyPerson) {
     curvature: 0,
   };
 }
+/**
+ * GLSL de las capas del estómago con las medidas `w` (decisión 332): la fuente lleva las de la persona por defecto y `personShader`
+ * cambia este mismo texto por el de s0028, que conserva las de la decisión 312. Pliegue y grosor total, comunes, van como literales
+ * (`gastricWall.test.ts` los ata a `GASTRIC_WALL`).
+ */
+export function gastricGlsl(w: GastricWall): string {
+  const [s, m, sub, f, line] = [w.serosaMm, w.muscularisMm, w.submucosaMm, w.submucosaFoldMm, w.mucosalLineMm].map((v) => v.toFixed(2));
+  return /* glsl */ `int gastricWallTissue(float depth,float fold,float inner){return depth<${s}?T_SOFT_CAPSULE:depth<${m}?T_GUT_MUSCULARIS:depth<${sub}+${f}*fold||inner<${line}?T_GUT_SUBMUCOSA:T_BOWEL;}
+float gastricBoundary(float depth,float inner,float fold,float rate,float gas){
+  if(depth<${m})return min(min(depth,abs(depth-${s})),${m}-depth)/2.0;
+  float toInner=max(abs(inner)/(1.0+0.25*rate),depth-4.50);
+  if(inner<0.0)return min(toInner,gas)/2.0;
+  return min(min(min(toInner,depth-${m}),abs(depth-${sub}-${f}*fold)/(1.0+${f}*rate)),abs(inner-${line})/(1.0+0.25*rate))/2.0;
+}`;
+}
 /** GLSL de las funciones del abdomen (mismos nombres, decisión 46). @twin organo-abdomen */
 export const ABDOMEN_GLSL = /* glsl */ `
 ${ABDOMINAL_ATLAS_GLSL}
 // Shared acoustic layers and static nondependent gas. No assigned flow in a hollow organ.
 float digestiveWallMm(float label){return label==1.0?3.0:label>=5.0?2.5:2.0; }
 int digestiveWallTissue(float fraction){return fraction<0.12?T_SOFT_CAPSULE:fraction<0.42?T_GUT_MUSCULARIS:fraction<0.68?T_GUT_SUBMUCOSA:fraction<0.93?T_BOWEL:T_GUT_SUBMUCOSA; }
-int gastricWallTissue(float depth,float fold,float inner){return depth<${GASTRIC_WALL.serosaMm.toFixed(2)}?T_SOFT_CAPSULE:depth<${GASTRIC_WALL.muscularisMm.toFixed(2)}?T_GUT_MUSCULARIS:depth<${GASTRIC_WALL.submucosaMm.toFixed(2)}+${GASTRIC_WALL.submucosaFoldMm.toFixed(2)}*fold||inner<${GASTRIC_WALL.mucosalLineMm.toFixed(2)}?T_GUT_SUBMUCOSA:T_BOWEL;}
-float gastricBoundary(float depth,float inner,float fold,float rate,float gas){
-  if(depth<${GASTRIC_WALL.muscularisMm.toFixed(2)})return min(min(depth,abs(depth-${GASTRIC_WALL.serosaMm.toFixed(2)})),${GASTRIC_WALL.muscularisMm.toFixed(2)}-depth)/2.0;
-  float toInner=max(abs(inner)/(1.0+${(0.5 * GASTRIC_WALL.foldMm).toFixed(2)}*rate),depth-${(GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm).toFixed(2)});
-  if(inner<0.0)return min(toInner,gas)/2.0;
-  return min(min(min(toInner,depth-${GASTRIC_WALL.muscularisMm.toFixed(2)}),abs(depth-${GASTRIC_WALL.submucosaMm.toFixed(2)}-${GASTRIC_WALL.submucosaFoldMm.toFixed(2)}*fold)/(1.0+${GASTRIC_WALL.submucosaFoldMm.toFixed(2)}*rate)),abs(inner-${GASTRIC_WALL.mucosalLineMm.toFixed(2)})/(1.0+${(0.5 * GASTRIC_WALL.foldMm).toFixed(2)}*rate))/2.0;
-}
+${gastricGlsl(GASTRIC_WALL)}
 float digestiveGasPlane(vec3 m,float label){return m.y-(label==1.0?30.0:18.0)-7.0*sin(m.z/17.0)*cos(m.x/21.0); }
 bool abdomenQuery(vec3 m,inout Cls c){
   if(uAbdominalAtlasEnabled==0)return false; 
@@ -179,9 +193,9 @@ bool abdomenQuery(vec3 m,inout Cls c){
     c.bd=min(-d,abs(d+0.35))/2.0; c.iface=field==0?IF_PANCREAS_CAPSULE:IF_SPLEEN_CAPSULE; c.ifd=-d; return true; 
   }
   bool stomach=field==1&&label==1.0;
-  vec2 a=m.xy-vec2(${GASTRIC_WALL.axisMm[0].toFixed(1)},${GASTRIC_WALL.axisMm[1].toFixed(1)})-vec2(${GASTRIC_WALL.axisPerMm[0].toFixed(3)},${GASTRIC_WALL.axisPerMm[1].toFixed(3)})*m.z;
-  float fold=stomach?cos(${GASTRIC_WALL.folds.toFixed(1)}*atan(a.y,a.x)+${GASTRIC_WALL.twistPerMm.toFixed(3)}*m.z):0.0,rate=${GASTRIC_WALL.phaseRate.toFixed(1)}/max(length(a),0.000001)+${GASTRIC_WALL.twistPerMm.toFixed(3)};
-  float wall=field==2?2.5:stomach?${GASTRIC_WALL.baseMm.toFixed(1)}+${GASTRIC_WALL.foldMm.toFixed(1)}*(0.5+0.5*fold):digestiveWallMm(label),inner=d+wall; 
+  vec2 a=m.xy-vec2(72.4,-11.6)-vec2(0.272,-0.492)*m.z;
+  float fold=stomach?cos(10.0*atan(a.y,a.x)+0.035*m.z):0.0,rate=23.0/max(length(a),0.000001)+0.035;
+  float wall=field==2?2.5:stomach?4.0+0.5*(0.5+0.5*fold):digestiveWallMm(label),inner=d+wall; 
   if(field==2){c.tissue=inner<0.0?T_FLUID:T_BLADDER_WALL; c.bd=min(-d,abs(inner))/2.0; c.iface=IF_BLADDER_LUMEN; c.ifd=abs(inner); return true; }
   bool gas=inner<0.0&&digestiveGasPlane(m,label)>0.0; 
   c.tissue=inner>=0.0?(stomach?gastricWallTissue(-d,fold,inner):digestiveWallTissue(-d/wall)):gas?T_BOWELGAS:stomach?T_GASTRIC_CONTENTS:label>=5.0&&label<=9.0?T_COLONIC_CONTENTS:T_FLUID;

@@ -51,7 +51,9 @@ describe('dispersores fuertes del parénquima (decisión 89)', () => {
   const P = STRONG_SCATTERERS[LIVER]!;
 
   it('solo el hígado los lleva: los fuertes, ×gain sobre los corrientes, y todos al nivel que conserva la mediana', () => {
-    expect(Object.keys(STRONG_SCATTERERS).map(Number)).toEqual([LIVER]);
+    // Decisión 332 (evolución): del parénquima, solo el hígado; el contenido gástrico, un líquido, lleva sus ecos puntuales
+    // (`defaultStomach.test.ts`). El negativo se conserva: ningún otro tejido los tiene
+    expect(Object.keys(STRONG_SCATTERERS).map(Number)).toEqual([LIVER, Tissue.GastricContents]);
     for (const t of [Tissue.Muscle, Tissue.RenalCortex, Tissue.Fat, Tissue.Blood]) expect(strongScatter(t)).toEqual(NO_STRONG);
     expect(s).toEqual([P.fraction, P.gain * P.level, P.level]);
     // el nivel baja la envolvente 0,48 dB: lo que la población fuerte sube su mediana (`parenchymaTextureTwin.test.ts`)

@@ -332,4 +332,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [326](DECISIONS.md#L10844) | Línea alba en la pared default, con el espesor total constante | vigente |
 | [327](DECISIONS.md#L10877) | Las capas de la pared brillan donde el haz las corta de frente | vigente |
 | [328](DECISIONS.md#L10927) | Masa paravertebral en la anatomía por defecto | vigente |
-| [329](DECISIONS.md#L10965) | Riñón derecho por defecto inclinado y más alto, con sus poses | vigente |
+| [329](DECISIONS.md#L10984) | Riñón derecho por defecto inclinado y más alto, con sus poses | vigente |

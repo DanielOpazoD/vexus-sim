@@ -17,7 +17,7 @@ import {
   type KidneyRegion,
 } from '../../organs/kidney';
 import { retroperitoneum } from '../../organs/retroperitoneum';
-import { paravertebralSdf } from './paravertebral';
+import { withParavertebral } from './paravertebral';
 import { STERNUM, sternumSd } from '../../organs/sternum';
 import { ribSearchDepth, wallArc, wallDepths, wallFace, type WallDepths } from '../../organs/wall';
 import { kidneyQuery } from '../../people/default/kidneyInterior';
@@ -178,15 +178,9 @@ export function classifyInside(
 
   const retroPoint: Vec3 = [m[0], m[1] - scene.spineReferenceOffset, m[2]];
   const insideWall = -depth - wallMm;
-  const [tissue, dRetro] = retroperitoneum(
-    retroPoint,
-    insideWall,
-    kidney.dPeriMm,
-    scene.hasAbdominalAtlas ? m : retroPoint,
-    scene.person?.cpu,
-    // la masa paravertebral (decisión 328), solo con el atlas
-    scene.hasAbdominalAtlas ? (dP, dQ) => paravertebralSdf(m, insideWall, kidney.dPeriMm, dP, dQ) : undefined,
-  );
+  const retro = retroperitoneum(retroPoint, insideWall, kidney.dPeriMm, scene.hasAbdominalAtlas ? m : retroPoint, scene.person?.cpu);
+  // la masa paravertebral (decisión 328), solo con el atlas
+  const [tissue, dRetro] = scene.hasAbdominalAtlas ? withParavertebral(retro, m, insideWall, kidney.dPeriMm, scene.person?.cpu) : retro;
   bd = Math.max(0, Math.min(bd, dRetro, spineDistance));
   if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
   if (scene.hasAbdominalAtlas) {

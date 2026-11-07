@@ -77,30 +77,6 @@ export const ATLAS_QUADRATUS = {
 } as const;
 
 /**
- * Masa paravertebral (decisión 328): erectores de la columna y transversoespinosos de cada lado, de la
- * torácica baja al sacro, junto a las espinosas, alrededor de láminas y transversas y hasta la cara interna de la pared.
- * Antes ese canal era grasa retroperitoneal y las transversas, rodeadas de grasa brillante, daban un peine de sombras en la
- * renal. Mismo tejido y textura que el cuadrado lumbar: músculo estriado de fibras craneocaudales. Solo con el atlas. La
- * columna, las costillas, el tórax y el diafragma ganan antes en la clasificación; el campo se cierra contra la pared, la
- * grasa perirrenal y el psoas (holgura de 1 mm), y deja 1,5 mm de grasa frente al cuadrado lumbar (la hoja anterior de la
- * fascia toracolumbar). Medidas [ESTIMADO]: sección de |x| 1 a 50 mm y de y −62 (delante de las transversas, detrás del
- * psoas) a −110 (unos 10 mm tras la punta de las espinosas), con las esquinas laterales redondeadas (12 mm); z de 0 (bajo el diafragma) a −260. Orden de magnitud: los
- * autóctonos de s0028 y s0440 entre T11 y L5, 580 y 499 cm³ (12,7 y 10,8 cm² por lado de media; 824 y 699 cm³ en todo el
- * TAC). Una persona no es una norma. No es validación clínica.
- */
-export const PARAVERTEBRAL = {
-  xMedial: 1,
-  xLateral: 50,
-  yFront: -62,
-  yBack: -110,
-  roundMm: 12,
-  zTop: 0,
-  zBottom: -260,
-  psoasClearanceMm: 1,
-  quadratusClearanceMm: 1.5,
-} as const;
-
-/**
  * Compartimento retroperitoneal: detrás del peritoneo parietal posterior, y < yPeri(|x|, z). Por delante de los grandes
  * vasos y del riñón (y = frontY en |x| ≤ xFront) y hacia fuera baja hasta la pared lateral detrás de la línea axilar
  * posterior (el espacio pararrenal posterior se continúa con la grasa preperitoneal del flanco); bajo los riñones
@@ -228,11 +204,9 @@ export function retroFatSdf(m: Vec3, person?: AnatomyPerson): number {
 }
 
 /**
- * Lo que no es órgano (decisión 81): psoas, cuadrado lumbar, masa paravertebral (decisión 328), grasa retroperitoneal o, delante del peritoneo parietal
+ * Lo que no es órgano (decisión 81): psoas, cuadrado lumbar, grasa retroperitoneal o, delante del peritoneo parietal
  * posterior, el «resto» (intestino). Devuelve el tejido y la distancia a la frontera más cercana entre ellos (el psoas
- * gana al cuadrado y los dos a la grasa). `insideWallMm` y `dPeriMm`, como en `quadratusSdf`. `paravertebral`, el campo de la
- * masa paravertebral dadas las distancias al psoas y al cuadrado (solo la persona por defecto con atlas; su CPU vive en
- * `people/default/paravertebral.ts` para no pesar en las demás clausuras).
+ * gana al cuadrado y los dos a la grasa). `insideWallMm` y `dPeriMm`, como en `quadratusSdf`.
  */
 export function retroperitoneum(
   m: Vec3,
@@ -240,23 +214,18 @@ export function retroperitoneum(
   dPeriMm: number,
   compartmentPoint: Vec3 = m,
   person?: AnatomyPerson,
-  paravertebral?: (dPsoasMm: number, dQuadratusMm: number) => number,
 ): [Tissue, number] {
   const dP = psoasSdf(person?.assets.buffers.abdominal ? compartmentPoint : m, person);
   if (dP < 0) return [Tissue.Psoas, -dP];
   const dQ = quadratusSdf(person?.assets.buffers.abdominal ? compartmentPoint : m, insideWallMm, dPeriMm, person);
   if (dQ < 0) return [Tissue.QuadratusLumborum, Math.min(-dQ, dP)];
-  // la masa paravertebral, del mismo tejido que el cuadrado: su distancia cuenta el psoas y la grasa de alrededor
-  const dV = paravertebral ? paravertebral(dP, dQ) : 1e3;
-  if (dV < 0) return [Tissue.QuadratusLumborum, Math.min(-dV, dP)];
   const dF = retroFatSdf(compartmentPoint, person);
-  return dF < 0 ? [Tissue.RetroperitonealFat, Math.min(-dF, dP, dQ, dV)] : [Tissue.Bowel, Math.min(dF, dP, dQ, dV)];
+  return dF < 0 ? [Tissue.RetroperitonealFat, Math.min(-dF, dP, dQ)] : [Tissue.Bowel, Math.min(dF, dP, dQ)];
 }
 
 const f4 = (v: number): string => v.toFixed(4);
 const Q = QUADRATUS;
 const R = RETRO_FAT;
-const P = PARAVERTEBRAL;
 
 /**
  * Gemelo GLSL (usa `sdRoundCone` del riñón): `retroperitoneum` devuelve el tejido (T_PSOAS, T_QUADRATUS, T_RETROFAT o
@@ -269,9 +238,6 @@ const vec4 QL_Z = vec4(${f4(Q.zTop)}, ${f4(Q.zBottom)}, ${f4(Q.zPeak)}, ${f4(Q.y
 const vec4 QL_X = vec4(${f4(Q.xMedial)}, ${f4(Q.xLateralTop)}, ${f4(Q.xLateralBottom)}, 0.0);
 const vec2 QL_T = vec2(${f4(Q.thicknessTop)}, ${f4(Q.thicknessMax)});
 const vec3 QL_L = vec3(${f4(QL_LIPSCHITZ.wall)}, ${f4(QL_LIPSCHITZ.peri)}, ${QL_LIPSCHITZ.lateral.toFixed(8)});
-const vec4 PV_A = vec4(${f4(P.xMedial)}, ${f4(P.xLateral)}, ${f4((P.yFront + P.yBack) / 2)}, ${f4((P.yFront - P.yBack) / 2)});
-const vec3 PV_B = vec3(${f4(P.roundMm)}, ${f4(P.psoasClearanceMm)}, ${f4(P.quadratusClearanceMm)});
-const vec2 PV_Z = vec2(${f4(P.zTop)}, ${f4(P.zBottom)});
 const vec4 RF_A = vec4(${f4(R.frontY)}, ${f4(R.xFront)}, ${f4(R.xLateral)}, ${f4(R.yLateral)});
 const vec4 RF_B = vec4(${f4(R.zLow)}, ${f4(R.zRamp)}, ${f4(R.yLow)}, ${f4(RETRO_FRONT_LIPSCHITZ)});
 float psoasSdf(vec3 m) {
@@ -304,11 +270,9 @@ float quadratusSdf(vec3 m, float insideWall, float dPeri) {
   return max(max(max(d, -insideWall / QL_L.x), QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y));
 }
 float paravertebralSdf(vec3 m, float insideWall, float dPeri, float dPsoas, float dQuadratus) {
-  vec2 c = vec2(abs(m.x) - PV_A.y, abs(m.y - PV_A.z) - PV_A.w) + PV_B.x;
-  float d = max(min(max(c.x, c.y), 0.0) + length(max(c, 0.0)) - PV_B.x, PV_A.x - abs(m.x));
-  d = max(d, max(-insideWall / 1.25, -dPeri / 1.25));
-  d = max(d, max(PV_B.y - dPsoas, PV_B.z - dQuadratus));
-  return max(d, max(m.z - PV_Z.x, PV_Z.y - m.z));
+  vec2 c = vec2(abs(m.x) - 38.0, abs(m.y + 86.0) - 12.0);
+  return max(max(min(max(c.x, c.y), 0.0) + length(max(c, 0.0)) - 12.0, max(1.0 - abs(m.x), max(-insideWall, -dPeri) / 1.25)),
+    max(max(1.0 - dPsoas, 1.5 - dQuadratus), max(m.z, -260.0 - m.z)));
 }
 float retroFrontY(float ax, float z) {
   float y = RF_A.x + (RF_A.w - RF_A.x) * smoothstep(0.0, 1.0, (ax - RF_A.y) / (RF_A.z - RF_A.y));

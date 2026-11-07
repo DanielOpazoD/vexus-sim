@@ -842,7 +842,7 @@ export const TWINS: readonly TwinPair[] = [
         file: 'src/anatomy/organs/retroperitoneum.ts',
         symbols: ['psoasSdf', 'quadratusSdf', 'retroFrontY', 'retroFatSdf', 'retroperitoneum'],
       },
-      { file: 'src/anatomy/people/default/paravertebral.ts', symbols: ['paravertebralSdf'] },
+      { file: 'src/anatomy/people/default/paravertebral.ts', symbols: ['paravertebralSdf', 'withParavertebral'] },
     ],
     gpu: [
       {
@@ -1707,7 +1707,6 @@ export const CONSTANTES_COPIADAS: Readonly<Record<string, readonly string[]>> = 
   'src/anatomy/organs/wall.ts': ['wallArc', 'wallPlaneGap', 'wallFace', 'wallFaceDepth', 'wallFaceGradient', 'nearestRib'],
   'src/anatomy/organs/kidney.ts': ['sdRoundCone', 'softRamp', 'perirenalThicknessMm', 'hilumChannelSdf', 'interiorPoint', 'kidneySinusSdf'],
   'src/anatomy/organs/liver.ts': ['visceralFaceDistance', 'medialCutDistance', 'medialCutNormal'],
-  'src/anatomy/organs/retroperitoneum.ts': ['retroperitoneum', 'paravertebralSdf'],
   'src/anatomy/organs/heart.ts': ['heartShift', 'raInferiorZ'],
   'src/ultrasound/dopplerTransmission.ts': ['dopplerTransmission'],
   'src/ultrasound/pleura.ts': ['normalCdf', 'curtainSteerWeight', 'pleuraCapMm', 'seriesPow', 'pleuraSeriesDepths', 'aLineOrder'],

@@ -373,14 +373,8 @@ export class AnatomyScene {
       // Internal analytic renal architecture remains estimated; it is not source segmentation.
       this.kidneyRight.center = [-58.6862655, -32.3988, -145.5475];
       this.kidneyLeft.center = [61.9266845, -40.78815, -127.1065];
-      // Decisión 329: el riñón derecho del atlas, inclinado (coronal 12°, sagital −29,5°), 7 mm más alto (por debajo del
-      // izquierdo) y 18 mm más atrás, fuera del colon; el campo se movió con él (`tools/anatomy/move-right-kidney.ts`).
-      // s0028 conserva el marco anterior.
-      if (this.identity.person !== 's0028')
-        Object.assign(this.kidneyRight, {
-          center: [-66.1862655, -50.3988, -138.5475],
-          ...orthonormalBasis([0.18191302, -0.48420729, 0.85583348], [0.96209555, 0.26747979, -0.05316694]),
-        });
+      // El marco renal derecho propio de la persona, si lo tiene (decisión 329: el riñón del atlas por defecto, movido)
+      Object.assign(this.kidneyRight, person.cpu.kidneyRightFrame?.());
     }
     this.ribs = [];
     // Pares costales 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).

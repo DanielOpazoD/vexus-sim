@@ -10962,6 +10962,25 @@ las costillas siempre hueso. Paridad CPU/GLSL: la misma función en los dos lado
 clasificación. JS: default 1.029.872 → 1.031.015 B, s0028 1.067.572 → 1.068.313 B (+741 B; la función CPU va solo en la
 clausura por defecto). Programas: +549 B transformados en los 24 con anatomía; la ABI fija 6 símbolos nuevos (`rA`–`rF`).
 
+**Presupuesto tras integrar #344 y #345** (07-11-2026, base `9e7b8d0`). Con la 325–327 la clausura s0028 quedaba en
+1.070.360 B, 280 B sobre el techo de 1.070.080 B, que no se sube. Se saca de la clausura compartida lo que solo usa la
+persona por defecto, sin cambiar la imagen:
+
+- `PARAVERTEBRAL` y su CPU viven en `people/default/paravertebral.ts`. `retroperitoneum` (CPU) vuelve a ser el de main:
+  la masa la compone `withParavertebral` en el clasificador por defecto, que solo evalúa psoas y cuadrado cuando la cota
+  de la caja no supera la distancia a la frontera; una prueba compara su tejido y su distancia con el campo entero.
+- La GLSL escribe los números con literales (sin `PV_A`/`PV_B`/`PV_Z`; la ABI pierde esos tres símbolos) y una prueba de
+  texto los ata a `PARAVERTEBRAL`.
+- El marco del riñón derecho movido (329) lo da la persona (`kidneyRightFrame`) y `scene.ts` ya no pregunta por s0028.
+
+Resultado: s0028 1.069.744 B (margen 336 B; main `9e7b8d0` 1.069.256 B), default 1.032.869 B. Lo que queda en lo
+compartido frente a main: GLSL paravertebral ≈ 270 B, poses `DEFAULT_POINTS` 166 B, `scene.ts` 59 B, rótulo del mapa de
+cortes 17 B. Llevar la GLSL a la especialización de la persona ahorraría como mucho ≈ 244 B (medido: el empaquetado
+comprime la función) y rompería que la fuente por defecto sea la que fijan las huellas y `shaderLimits`; las poses por la
+persona exigirían `torso.person` en llamadas de pruebas y e2e que no lo tienen. No se hacen. Clasificación CPU igual
+punto a punto (huella semántica de 82.251 puntos sin cambio) y las 10 ventanas de inicio, idénticas píxel a píxel en
+Metal frente a `c00be11`.
+
 ## 329. Riñón derecho por defecto inclinado y más alto, con sus poses
 
 **Problema.** La segunda causa del peine de la renal focalizada: el riñón derecho del atlas estaba inclinado 9,7° (s0028 /

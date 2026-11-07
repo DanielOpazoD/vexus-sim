@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf } from '../anatomy/organs/kidney';
-import { psoasSdf, quadratusSdf } from '../anatomy/organs/retroperitoneum';
+import { RETROPERITONEUM_GLSL, psoasSdf, quadratusSdf, retroperitoneum } from '../anatomy/organs/retroperitoneum';
 import { classifyKidneys } from '../anatomy/people/default/classifier';
-import { paravertebralSdf } from '../anatomy/people/default/paravertebral';
+import { PARAVERTEBRAL, paravertebralSdf, withParavertebral } from '../anatomy/people/default/paravertebral';
 import { uncompress } from '../anatomy/compression';
 import { spineDistances, torsoDepth } from '../anatomy/primitives';
 import { Tissue, TISSUES } from '../anatomy/tissues';
@@ -69,6 +69,42 @@ describe('masa paravertebral (decisión 328)', () => {
     expect(cm3[0] + cm3[1]).toBeGreaterThan(400);
     expect(cm3[0] + cm3[1]).toBeLessThan(930);
     for (const side of cm3) expect(side / (cm3[0] + cm3[1])).toBeGreaterThan(0.4);
+  });
+
+  it('la GLSL escribe los mismos números que la CPU (sus constantes viven solo en la clausura por defecto)', () => {
+    const P = PARAVERTEBRAL,
+      f = (v: number) => v.toFixed(1);
+    expect(P.zTop).toBe(0);
+    for (const text of [
+      `abs(m.x) - ${f(P.xLateral - P.roundMm)}`,
+      `abs(m.y + ${f(-(P.yFront + P.yBack) / 2)}) - ${f((P.yFront - P.yBack) / 2 - P.roundMm)}`,
+      `length(max(c, 0.0)) - ${f(P.roundMm)}, max(${f(P.xMedial)} - abs(m.x), max(-insideWall, -dPeri) / 1.25)`,
+      `max(${f(P.psoasClearanceMm)} - dPsoas, ${f(P.quadratusClearanceMm)} - dQuadratus)`,
+      `max(m.z, ${f(P.zBottom)} - m.z)`,
+    ])
+      expect(RETROPERITONEUM_GLSL).toContain(text);
+  });
+
+  it('withParavertebral da el mismo tejido y la misma distancia que evaluar siempre el campo entero', () => {
+    // Referencia: el campo completo en cada punto, sin la cota de la caja que ahorra el psoas y el cuadrado lejos de ella.
+    const person = scene.person.cpu;
+    let n = 0,
+      inside = 0;
+    for (const m of posteriorGrid()) {
+      if (++n % 7) continue;
+      const insideWall = -torsoDepth(m, scene.torso) - scene.wallThickness();
+      const dPeri = classifyKidneys(scene, m).dPeriMm;
+      const retro = retroperitoneum(m, insideWall, dPeri, m, person);
+      let expected = retro;
+      if (retro[0] === Tissue.RetroperitonealFat || retro[0] === Tissue.Bowel) {
+        const dP = psoasSdf(m, person);
+        const dV = paravertebralSdf(m, insideWall, dPeri, dP, quadratusSdf(m, insideWall, dPeri, person));
+        expected = dV < 0 ? [Tissue.QuadratusLumborum, Math.min(-dV, dP)] : [retro[0], Math.min(retro[1], dV)];
+        if (dV < 0) inside++;
+      }
+      expect(withParavertebral(retro, m, insideWall, dPeri, person)).toEqual(expected);
+    }
+    expect(inside).toBeGreaterThan(1000);
   });
 
   it('las transversas y las láminas están rodeadas de músculo, no de grasa', () => {

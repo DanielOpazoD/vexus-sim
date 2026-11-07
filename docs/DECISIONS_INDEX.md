@@ -333,4 +333,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [327](DECISIONS.md#L10877) | Las capas de la pared brillan donde el haz las corta de frente | vigente |
 | [328](DECISIONS.md#L10927) | Masa paravertebral en la anatomía por defecto | vigente |
 | [329](DECISIONS.md#L10984) | Riñón derecho por defecto inclinado y más alto, con sus poses | vigente |
-| [330](DECISIONS.md#L11034) | Los dos riñones por defecto, subidos bajo el hígado y el bazo [número provisional] | vigente |
+| [330](DECISIONS.md#L11034) | Los dos riñones por defecto, subidos bajo el hígado y el bazo | vigente |

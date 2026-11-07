@@ -11031,7 +11031,7 @@ testigos del lecho renal (`renalEnvelope`), cadena de derivación del atlas (`re
 `right-kidney-pose-fields.json`), eje casi vertical y nodos ocupados (`abdominalAtlas`). Siguen verdes sin tocarlos las
 ventanas 309/300, los dedos del seno (≥ 5 mm) y la solidez del seno. JS: default +362 B y s0028 +362 B sobre la 328.
 
-## 330. Los dos riñones por defecto, subidos bajo el hígado y el bazo [número provisional]
+## 330. Los dos riñones por defecto, subidos bajo el hígado y el bazo
 
 **Contexto.** Tras la decisión 329, de centro a centro y en altura, el riñón derecho quedaba a 99,5 mm del centro hepático
 y el izquierdo a 86 mm (s0028 / s0440: 79 / 73 y 64 / 54 mm). El izquierdo solo estaba 13,3 mm más alto que el derecho (15 /

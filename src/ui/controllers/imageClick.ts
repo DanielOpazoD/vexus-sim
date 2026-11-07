@@ -18,11 +18,14 @@ export function bindImageClick(opts: {
   let caliperA: { x: number; y: number } | null = null;
   let downAt: { x: number; y: number; t: number } | null = null;
   let drag: { id: number; mode: string } | null = null;
-  /** Punto del evento en píxeles del lienzo. */
+  /**
+   * Punto del evento en píxeles del lienzo, cada eje con su escala: si el contenedor cambia (aparece la franja M) antes
+   * del cuadro siguiente, el lienzo se ve estirado y el punto debe caer sobre la imagen que se ve.
+   */
   const at = (e: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
     const dpr = canvas.width / rect.width;
-    return { px: (e.clientX - rect.left) * dpr, py: (e.clientY - rect.top) * dpr, dpr };
+    return { px: (e.clientX - rect.left) * dpr, py: ((e.clientY - rect.top) * canvas.height) / rect.height, dpr };
   };
   /** El evento empezó sobre un control (el deslizador del cine): no es un clic ni un arrastre de la imagen. */
   const onControl = (e: Event) => !!(e.target as Element | null)?.closest('#cine-bar, button, input, select');

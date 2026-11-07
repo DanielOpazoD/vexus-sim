@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { Simulator } from '../app/simulator';
+import type { Store } from '../app/store';
+import type { Transducer } from '../probe/probe';
 import { ErrorBudget } from '../app/errorBudget';
 import { HeartRateDisplay, hudText, type HudInput } from '../ui/controllers/hud';
 
@@ -127,5 +130,54 @@ describe('Notas de release desde el CHANGELOG (Fase 3)', () => {
     expect(releaseNotes(md, '0.4.0')).toBe('### Añadido\n\n- a');
     expect(releaseNotes(md, '0.3.0')).toBe('- b');
     expect(() => releaseNotes(md, '9.9.9')).toThrow(/no tiene sección/);
+  });
+});
+
+describe('Línea M: arrastre sobre la imagen que se ve', () => {
+  it('con el lienzo estirado (el contenedor cambió antes del cuadro siguiente) el asa se agarra y la línea va al punto', async () => {
+    const { bindImageClick } = await import('../ui/controllers/imageClick');
+    const { sectorLayout, beamToPixel } = await import('../ultrasound/sectorGeometry');
+    const tr = { curvatureRadius: 50, halfSector: 0.6 } as Transducer;
+    // el búfer conserva el alto de antes de la franja M; en pantalla el lienzo ya mide 1000 × 528
+    const canvas = { width: 1000, height: 800, getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 528 }) };
+    const display = sectorLayout(canvas.width, canvas.height, tr, 180, 12);
+    const sim = {
+      frozen: false,
+      transducer: tr,
+      mmode: { enabled: true, theta: 0 },
+      displayed: { bmode: { depthMm: 180 } },
+      renderer: { display, displayedFrame: null, beamToPixel: (theta: number, r: number) => beamToPixel(display, tr, theta, r) },
+    };
+    const listeners: [string, (e: unknown) => void][] = [];
+    const host = { addEventListener: (type: string, fn: (e: unknown) => void) => listeners.push([type, fn]), setPointerCapture: () => {} };
+    const placed: number[] = [];
+    bindImageClick({
+      host: host as unknown as HTMLElement,
+      canvas: canvas as unknown as HTMLCanvasElement,
+      getSim: () => sim as unknown as Simulator,
+      store: { get: () => ({ tool: 'none', mode: 'M' }) } as unknown as Store,
+      setIvcCaliper: () => {},
+      dispatch: (cmd) => {
+        if (cmd.type === 'placeMLine') placed.push(cmd.theta);
+      },
+    });
+    /** Evento de puntero en la posición de pantalla del haz (θ, r). */
+    const event = (theta: number, r: number) => {
+      const p = beamToPixel(display, tr, theta, r);
+      return {
+        button: 0,
+        pointerId: 1,
+        pointerType: 'mouse',
+        clientX: p.x,
+        clientY: (p.y * 528) / 800,
+        target: null,
+        stopPropagation: () => {},
+      };
+    };
+    const fire = (type: string, e: unknown) => listeners.filter(([t]) => t === type).forEach(([, fn]) => fn(e));
+    fire('pointerdown', event(0, 100));
+    fire('pointermove', event(-0.11, 100));
+    expect(placed).toHaveLength(1);
+    expect(placed[0]).toBeCloseTo(-0.11, 6);
   });
 });

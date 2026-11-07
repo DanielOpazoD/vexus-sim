@@ -888,12 +888,14 @@ export class UltrasoundRenderer {
     bodyData.set(coefficients);
     gl.bindTexture(gl.TEXTURE_2D, this.bodyTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, bodyData);
+    this.ifaceUniforms.set(interfaceUniforms(this.ifaceK0, undefined, s.person?.cpu.bmodeAcoustics?.interfaceSlopeRms));
     for (let i = 0; i < TISSUE_COUNT; i++) {
+      const tissue: Tissue = i;
       // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
       this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
       const alphaD = attenuationDbPerCm(i, this.profile.dopplerEffectiveMHz);
       this.dopplerRatio[i] = this.alpha[i] > 0 ? alphaD / this.alpha[i] : 1;
-      this.back[i] = TISSUES[i].backscatter;
+      this.back[i] = s.person?.cpu.bmodeAcoustics?.backscatter[tissue] ?? TISSUES[i].backscatter;
       this.clump[i] = TISSUES[i].speckleClump ?? 0;
       this.flags[i] = TISSUES[i].gas ? 1 : TISSUES[i].bone ? 2 : 0;
     }

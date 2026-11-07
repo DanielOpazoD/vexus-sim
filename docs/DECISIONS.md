@@ -10729,3 +10729,37 @@ coste integrado en SwiftShader/Metal. No se acredita aceptación del propietario
 en dos revisiones independientes se reprodujeron en rojo y corrigieron. Una tercera revisión confirmó los
 positivos y negativos de raíz/soporte sin hallazgos. El [índice de evidencia](evidence/migration-p5-r1/README.md)
 registra recibos, medidas, láminas abiertas y el alcance de las comprobaciones. [Método y reproducción](anatomia/s0028-vascular-offline.md).
+
+## 324. Contraste de órganos por defecto con dispersión y lóbulo capsular propios
+
+**Contexto.** El responsable observa un gris poco diferenciado alrededor del hígado y riñón.
+La medición Metal de las diez ventanas de `d844d74`, con semilla 20260921, reloj 2 s y mandos
+idénticos, matiza la causa: en renal, hígado 99,1/255, corteza 88,6, grasa perirrenal 120,8,
+psoas 73,8 y seno 144,1. Existen contraste, estrías e interfaces; las sombras y el residuo
+no segmentado también limitan la lectura. La cápsula tenía un lóbulo estrecho, s=0,20.
+
+**Opciones.** Aumentar ganancia global alteraría el hígado de referencia y los vasos. Convertir
+el residuo no segmentado en grasa inventaría anatomía. Dibujar contornos o modificar sombras
+y gas no pertenece a este bloque. Se elige un ajuste acotado de los parámetros materiales del
+modo B y del reparto angular de la interfaz existente; los valores son estimados.
+
+**Decisión.** `people/default/acoustics.ts` instala en `current` grasa perirrenal y retroperitoneal
+con amplitud 2,6, psoas y cuadrado lumbar 0,22, y pendiente capsular 0,30. El renderer consume
+el perfil al instalar/cambiar escena; la interfaz escala A por s_anterior/s_nueva, conservando
+A²s² en la aproximación paraxial. No cambia la forma, espesor, impedancia ni transmisión.
+La textura estriada existente conserva la amplitud de sus septos. Hígado, corteza, seno y
+líquidos conservan coeficientes. `legacy` y `s0028` no instalan el perfil. No cambian fuentes
+ni transformados GLSL; sus fixtures permanecen intactas.
+
+**Consecuencias.** Mejora acotada del contraste renal; no se declara resuelta la imagen completa.
+Las sombras y la discontinuidad del borde hepático siguen limitando varias ventanas. No es
+validación clínica. Fuentes y aproximaciones en `APPROXIMATIONS.md`; originales, métricas,
+negativos y láminas en la carpeta externa `default-boundaries-20261107` de la raíz de evidencia.
+No se abre PR ni se integra esta rama: la entrega es para revisión del responsable.
+
+**Verificación.** Dos contratos nuevos fallan antes del cambio: contraste material/aislamiento
+de legacy y redistribución angular capsular sin cambiar las demás interfaces. Las 36 pruebas
+focales pasan, incluidos los 39 programas fuente y transformados en las dos personas y los
+techos de shader. Build: default 1.028.954 B, s0028 1.066.406 B, ambos bajo 1.070.080 B.
+El informe externo registra la inspección de las diez láminas, las comprobaciones adicionales
+y sus códigos de salida; el pase local no acredita CI ni aceptación clínica.

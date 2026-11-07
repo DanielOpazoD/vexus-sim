@@ -1,3 +1,4 @@
+import { DEFAULT_BMODE_ACOUSTICS } from './acoustics';
 import { hepaticCostalBody } from '../../hepaticCostalWall';
 import { digestiveGasPlane, digestiveWallMm } from '../../organs/abdomen';
 import type { AnatomyPerson, InstalledCpuPerson } from '../../person';
@@ -13,6 +14,7 @@ export function installDefaultCpu(buffers: PersonBuffers, legacy = false): Insta
 
 export function createDefaultCpu(assets: PersonAssets): InstalledCpuPerson {
   const cpu: AnatomyPerson = {
+    ...(assets.identity.person === 'current' ? { bmodeAcoustics: DEFAULT_BMODE_ACOUSTICS } : {}),
     classifyInside,
     classifyWall,
     assets,

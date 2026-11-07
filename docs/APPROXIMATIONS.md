@@ -445,3 +445,17 @@ principales anteriores no se sustituyen por esta repetición.
 A17 evita el falso timeout del Worker durante los ticks de presentación mientras la GPU
 está pendiente; no cambia sus 3 s por cuadros activos ni el control de Worker colgado.
 El humo x64 fallido y la regresión roja se conservan; el escenario original pasa corregido.
+
+## Contraste de órganos en la anatomía por defecto (decisión 324)
+
+`people/default/acoustics.ts` ajusta únicamente el modo B de `current`: amplitud relativa
+perirrenal/retroperitoneal 2,6 (antes 1,8/2,0), psoas/cuadrado lumbar 0,22 (antes 0,35)
+y pendiente rms del lóbulo capsular hepático 0,30 (antes 0,20). **NEEDS_CALIBRATION**:
+son estimaciones para revisión visual; no propiedades medidas de un paciente ni validación clínica.
+La descripción de grasa ecogénica, corteza iso/hipoecoica y seno central brillante está respaldada
+por [POCUS Journal, adquisición renal](https://pocusjournal.com/article/2022-07-kidney-p94-104/);
+no respalda estos coeficientes numéricos. La ampliación angular conserva el factor de energía
+paraxial A²s² del lóbulo existente y reduce su pico normal, sin engrosar la cápsula.
+Conserva impedancias, atenuación, textura material, física de sombras y gas, y los coeficientes
+hepáticos, corticales y del seno. `legacy` y `s0028` mantienen sus tablas anteriores.
+El residuo no segmentado sigue siendo desconocido: no se rotula ni se calibra como grasa.

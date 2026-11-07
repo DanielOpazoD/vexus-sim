@@ -1,3 +1,5 @@
+import type { Interface } from './interfaces';
+import type { Tissue } from './tissues';
 import type { Vec3 } from '../core/vec3';
 import type { createSourceQueries } from './people/s0028/atlas';
 import type { createSolidsQueries } from './people/s0028/solids';
@@ -7,7 +9,14 @@ import type { createAbdominalQueries, createThoracicQueries } from './personAtla
 import type { IndexedSourceSurface } from './s0028Surface';
 import type { AnatomyScene } from './scene';
 
+/** Ajustes estimados de modo B; no cambian atenuación, geometría ni señal Doppler. */
+export interface BmodeAcoustics {
+  readonly backscatter: Readonly<Partial<Record<Tissue, number>>>;
+  readonly interfaceSlopeRms: Readonly<Partial<Record<Interface, number>>>;
+}
+
 export interface AnatomyPerson {
+  readonly bmodeAcoustics?: BmodeAcoustics;
   readonly classifyInside: (
     scene: AnatomyScene,
     ...args: Parameters<AnatomyScene['classifyInside']>

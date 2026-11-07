@@ -11030,3 +11030,67 @@ Contratos que fijaban la posición anterior, actualizados con su motivo: planos 
 testigos del lecho renal (`renalEnvelope`), cadena de derivación del atlas (`registeredDiaphragmRoof`, fixture
 `right-kidney-pose-fields.json`), eje casi vertical y nodos ocupados (`abdominalAtlas`). Siguen verdes sin tocarlos las
 ventanas 309/300, los dedos del seno (≥ 5 mm) y la solidez del seno. JS: default +362 B y s0028 +362 B sobre la 328.
+
+## 330. Los dos riñones por defecto, subidos bajo el hígado y el bazo [número provisional]
+
+**Contexto.** Tras la decisión 329, de centro a centro y en altura, el riñón derecho quedaba a 99,5 mm del centro hepático
+y el izquierdo a 86 mm (s0028 / s0440: 79 / 73 y 64 / 54 mm). El izquierdo solo estaba 13,3 mm más alto que el derecho (15 /
+19). La inclinación coronal del derecho era de 10,7° (18° / 23°). Los 18 mm hacia atrás de la 329 lo dejaban 11,9 mm detrás
+del centroide vertebral a su altura (main 9e7b8d0: +7,2; los dos TAC: +11), con una costilla dentro de 1,6 cm³ de su corteza
+posterior. Además, el ajuste parietal de la persona por defecto (`hepaticCostalBody`, 183 y 222) apoya la piel en los órganos
+del atlas, riñones incluidos, así que la 329 sacó la piel del flanco posterior derecho hasta 9,15 mm.
+
+**Opciones.**
+
+- Subir los dos riñones hasta las cifras de los TAC. Medido con la herramienta: por encima de ~86 mm la cara visceral del
+  hígado aplana el polo superior del derecho hasta que los dedos del seno quedan a < 5 mm de la cápsula (contrato de la 305).
+- Que el hígado ceda una impresión renal. Empeoraría el «contorno hepático lleno» de `relaciones-tac.md` (TAC 0,98 / 1,00),
+  cambiaría el árbol hepático y todas las ventanas del hígado. Descartada.
+- Llevar el derecho más adelante, a +11 mm de la vértebra. Desde unos −4 mm, cada 2–4 mm más entran 1–6 cm³ en el colon y el
+  duodeno. Moverlos excede este bloque. Descartada.
+- Mover el bazo estimado, que queda bajo frente al hígado (a 35 mm de su centro; 11 / 5 en los TAC). Queda pendiente.
+
+**Decisión.**
+
+- `tools/anatomy/move-kidneys.ts` sustituye a `move-right-kidney.ts`. Parte del atlas de main 9e7b8d0, fijado por hash, y
+  mueve los dos bloques de forma rígida.
+  - Derecho: coronal 17°, sagital −24°, traslación [1,5, −12, 20] mm desde su marco fuente.
+  - Izquierdo: coronal −15°, sagital −10°, traslación [−4, −2, 19] mm.
+- Cada riñón se recorta a 2 mm contra hígado, bazo, páncreas, vesícula, hueso y tubo digestivo. Al estirado se le aplica el
+  mismo recorte escalado por 0,8, para que el campo siga siendo 1-Lipschitz.
+- El psoas cede 2 mm a los riñones nuevos, como en la reconstrucción del lecho renal. Su faceta de 2 mm contra la posición
+  fuente se conserva. El riñón no se aplana contra el psoas: junto a los dedos del seno lo impedía la 305.
+- Los bloques se mudan a huecos libres de la textura. La herramienta genera los marcos (`people/default/kidneyFrames.ts`) y
+  la huella de la cadena de derivación (`kidney-pose-fields.json`).
+- La persona da los dos marcos (`kidneyFrame(side)`). Seno, pirámides, interlobares, hilio y vasos renales los siguen. Los
+  nodos fijos de aorta, VCI, AMS y venas renales no cambian.
+- El ajuste parietal lee los campos renales en su marco fuente (`kidneyAtSource`): mover un riñón ya no mueve la piel.
+- Nuevas poses `renal` (φ 2,804, z −120,3) y `hepatorenal` (φ 2,9, z −123,9). Salen de la misma búsqueda de la 329, con los
+  contratos de 300 y 309 y, en la renal, puertas PW en vena y arteria interlobares en los dos casos.
+
+**Consecuencias.**
+
+- Derecho: 86 mm bajo el centro hepático, inclinación 28,2° (coronal 16,8°, sagital −24°), 58 mm de la línea media y
+  −3,5 mm frente a la vértebra. Sin costilla dentro y a 4,8 mm de la cara interna de la pared (main 10,7; 329, 3,4).
+  Volumen 131 cm³ (132 antes).
+- Izquierdo: 68 mm bajo el centro hepático y 18,6 mm más alto que el derecho, inclinado 18,2° (coronal −15,7°). Queda medial y
+  por debajo del bazo, con la cola del páncreas delante.
+- Impresiones en los riñones: 0,25 cm³ de hígado, 0,2 de colon, 0,45 de bazo y 0,6 de páncreas. El psoas pierde 5,8 cm³ de
+  318; la masa paravertebral, 818 → 805 cm³. La piel vuelve a la de main 9e7b8d0, salvo una muestra a 0,13 mm.
+- Descarga: atlas 6.055.924 → 6.140.705 B, a 3,4 kB de su tope; superficies 6.006.243 → 6.014.991 B; ≈ 19,95 MB de 25.
+- JS: s0028 +25 B (el gancho de la escena para el marco izquierdo; margen 311 B). Default +755 B, en su clausura.
+- Siguen sin tocar, y anotados: la vena renal derecha atraviesa la cabeza del páncreas (preexistente) y no hay
+  suprarrenales ni uréteres. No es validación clínica.
+
+**Verificación.**
+
+- `retroperitoneumRelations.test.ts`, bloque 330: rojo sobre 14554a7 en 4 de sus 7 pruebas (alturas 99,6 mm; coronal 10,7°;
+  costilla dentro, 472 puntos, y pared a < 4 mm; piel +9,15 mm). En verde en esta rama.
+- Las relaciones vasculares (V15–V18), el bazo y la cola del páncreas ya se cumplían: son guardas de regresión.
+- Contratos con testigos de la posición anterior, actualizados con su motivo:
+  - el testigo esplénico (`abdominalAtlas`), llevado con el movimiento rígido;
+  - los contactos con el psoas y la cara de la fascia (`renalEnvelope`);
+  - los planos de la pose renal (`renalWallPoint`);
+  - la cadena de derivación (`registeredDiaphragmRoof`);
+  - la huella semántica y las fixtures de shader, regeneradas.
+- `renalSinus` (dedos ≥ 5 mm, frontera sin cruces) sigue en verde sin tocarlo.

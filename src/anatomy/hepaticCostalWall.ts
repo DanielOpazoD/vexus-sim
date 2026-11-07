@@ -12,7 +12,14 @@ const flankApposition = (phi: number, z: number): number =>
 let cached:
   | { atlas: Uint16Array; bone: Uint16Array | undefined; source: Float32Array; wall: number; skin: number; profile: Float32Array }
   | undefined;
-export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: number, person?: AnatomyPerson): Float32Array {
+export function hepaticCostalBody(
+  source: Float32Array,
+  wallMm: number,
+  skinMm: number,
+  person?: AnatomyPerson,
+  /** Dónde leer el campo `f` para el punto p del ajuste: la persona puede devolver sus órganos movidos a la posición fuente. */
+  fieldPoint: (p: Vec3, f: number) => Vec3 = (p) => p,
+): Float32Array {
   if (!person?.assets.buffers.abdominal)
     return Float32Array.from(source, (r, i) => (i % BODY_STRIDE === 0 ? r : r + Math.max(0, wallMm - 10)));
   if (
@@ -67,7 +74,8 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
         for (let r = 0; r < inherited; r += 1) {
           const p = point(r);
           if ((person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, 4) < 0) hepatic = r;
-          if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(p, f) < 0)) other = r;
+          if ([0, 1, 2, 3, 5, 6, 7, 8, 9, 10].some((f) => (person?.atlas ?? EMPTY_ATLAS).abdominalAtlasSdf(fieldPoint(p, f), f) < 0))
+            other = r;
           if ((person?.atlas ?? EMPTY_ATLAS).thoracicValue(p).d < 0) bone = r;
         }
         // Continúa el compartimento parietal sobre las vísceras vecinas al

@@ -26,8 +26,8 @@ export interface AnatomyPerson {
   readonly digestiveWallMm: (label: number) => number;
   readonly digestiveGas: (point: Vec3, label: number) => number;
   readonly isColon: (label: number) => boolean;
-  /** Marco nuevo (copia propia) del riñón derecho del atlas cuando la persona lo mueve (decisión 329); sin él, el de la escena. */
-  readonly kidneyRightFrame?: () => { center: Vec3; u: Vec3; v: Vec3; w: Vec3 };
+  /** Marco nuevo (copia propia) del riñón del atlas (0 derecho, 1 izquierdo) cuando la persona lo mueve (decisiones 329 y 330); sin él, el de la escena. */
+  readonly kidneyFrame?: (side: number) => { center: Vec3; u: Vec3; v: Vec3; w: Vec3 };
 }
 
 export interface AtlasUpload {

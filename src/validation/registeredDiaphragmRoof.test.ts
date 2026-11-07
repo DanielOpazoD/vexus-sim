@@ -11,7 +11,7 @@ import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import preserved from './fixtures/registered-roof-preserved-fields.json';
 import renalBed from './fixtures/renal-bed-preserved-fields.json';
-import rightKidneyPose from './fixtures/right-kidney-pose-fields.json';
+import kidneyPose from './fixtures/kidney-pose-fields.json';
 import { registeredDomeHeight, registeredDomeSample, setAbdominalAtlas } from './support/legacyPerson/abdominalAtlas';
 import { setAbdominalBody } from './support/legacyPerson/referenceBody';
 import { AnatomyScene, BASELINE_CALIBER } from './support/legacyPerson/scene';
@@ -31,16 +31,17 @@ it('preserves unmodified organ fields and every label while pinning the reconstr
   const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
   expect(preserved.baselineAtlasSha256).toBe('fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d');
   expect(renalBed.sourceRawSha256).toBe('9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda');
-  // La decisión 329 mueve después solo el bloque del riñón derecho (`tools/anatomy/move-right-kidney.ts`): la cadena de
-  // derivación sigue fijada de punta a punta y los demás campos y rótulos conservan su huella.
-  expect(rightKidneyPose.inputRawSha256).toBe(renalBed.derivedRawSha256);
-  expect(rightKidneyPose.outputRawSha256).toBe(ABDOMINAL_ATLAS.sha256Raw);
+  // Las decisiones 329 y 330 mueven después los bloques de los dos riñones y el psoas les cede 2 mm
+  // (`tools/anatomy/move-kidneys.ts`): la cadena de derivación sigue fijada de punta a punta y los demás campos y rótulos
+  // conservan su huella (los del psoas, también sus rótulos).
+  expect(kidneyPose.inputRawSha256).toBe(renalBed.derivedRawSha256);
+  expect(kidneyPose.outputRawSha256).toBe(ABDOMINAL_ATLAS.sha256Raw);
   expect(Object.keys(renalBed.modifiedFieldSha256).sort()).toEqual(['kidneyLeft', 'kidneyRight', 'psoas']);
   const revised: Partial<Record<(typeof ABDOMINAL_FIELDS)[number]['name'], string>> = {
     ...renalBed.modifiedFieldSha256,
-    ...rightKidneyPose.fieldSha256,
+    ...kidneyPose.fieldSha256,
   };
-  const labelsNow: Partial<Record<(typeof ABDOMINAL_FIELDS)[number]['name'], string>> = rightKidneyPose.labelSha256;
+  const labelsNow: Partial<Record<(typeof ABDOMINAL_FIELDS)[number]['name'], string>> = kidneyPose.labelSha256;
   for (const f of ABDOMINAL_FIELDS) {
     const hash = createHash('sha256'),
       [x, y, z] = f.offset,

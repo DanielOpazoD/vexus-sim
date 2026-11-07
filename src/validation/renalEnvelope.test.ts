@@ -49,10 +49,10 @@ describe('volumetric renal bed', () => {
   it('crosses capsule, adipose volume, fascia and muscle at both contact sites', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
     const rays: Array<{ p: Vec3; n: Vec3 }> = [
-      // derecho: tras la decisión 329 el contacto con el psoas es el borde medial (el polo inferior ya no apoya en él);
-      // testigo buscado con la misma secuencia sobre el campo nuevo
-      { p: [-40, -53.25, -123.5], n: [0.9561982883, 0.0148877299, -0.292340878] },
-      { p: [58.5, -36, -179.25], n: [-0.3162007423, -0.3162007423, -0.8944462986] },
+      // Decisión 330: los dos riñones suben y el psoas les cede 2 mm; los contactos son los posteromediales de cada polo
+      // inferior, testigos buscados con la misma secuencia sobre los campos nuevos (n: hacia el psoas, −∇ de su campo)
+      { p: [-53.25, -41.25, -162.25], n: [0.4763695358, -0.867503625, -0.1432114731] },
+      { p: [46, -42.5, -150.75], n: [-0.5708493369, -0.8100756109, 0.1338227901] },
     ];
     for (const { p, n } of rays) {
       const sequence: Tissue[] = [];
@@ -131,10 +131,10 @@ describe('volumetric renal bed', () => {
   // Revisión de la decisión 309: fuera de las cajas del campo original ambos valían 16, y el empate daba siempre el riñón izquierdo
   it('la cara de la fascia usa el gradiente de su propio riñón, también fuera de la caja del campo original', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
-    // Decisión 329: el bloque del riñón derecho movido cubre toda su grasa, así que ninguna cara de fascia derecha queda ya
-    // fuera de él. El testigo es un punto detrás del riñón derecho, fuera de las dos cajas (los dos campos valen 16), donde
-    // se pide la cara de la grasa perirrenal: el empate seguiría dando el riñón izquierdo
-    const p: Vec3 = [-79.3, -81.4, -160.7];
+    // Decisiones 329 y 330: el bloque del riñón derecho movido cubre toda su grasa, así que ninguna cara de fascia derecha
+    // queda ya fuera de él. El testigo es un punto detrás del riñón derecho (subido en la 330), fuera de las dos cajas (los
+    // dos campos valen 16), donde se pide la cara de la grasa perirrenal: el empate seguiría dando el riñón izquierdo
+    const p: Vec3 = [-82.4, -80.1, -141.7];
     expect(abdominalAtlasSdf(p, 5)).toBe(16);
     expect(abdominalAtlasSdf(p, 6)).toBe(16);
     const g = scene.faceGradient(p, BASELINE_CALIBER, 'perirenalOuter')!;

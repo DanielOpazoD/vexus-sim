@@ -25,7 +25,7 @@ npx tsx tools/anatomy/build-abdominal-surface.ts
 npx prettier --write src/anatomy/abdominalAtlasData.ts src/anatomy/abdominalSurfaceData.ts
 ```
 
-El riñón derecho se movió después de forma rígida (decisión 329): `npx tsx tools/anatomy/move-right-kidney.ts` sobre el atlas fijado por hash y luego `build-abdominal-surface.ts`.
+Los dos riñones se movieron después de forma rígida y el psoas les cede 2 mm (decisiones 329 y 330): `INPUT=<atlas de main 9e7b8d0> npx tsx tools/anatomy/move-kidneys.ts` sobre el atlas fijado por hash y luego `build-abdominal-surface.ts`. La herramienta genera también `src/anatomy/people/default/kidneyFrames.ts` y la huella `kidney-pose-fields.json`.
 
 Las superficies 3D se extraen del mismo campo acústico; no se sustituye su forma por otra malla decorativa. El generador rechaza cambios de componentes y pérdidas de volumen >10% en la reconciliación. Los pequeños fragmentos inferiores a una celda de 3 mm quedan enumerados en el manifiesto. Esos límites son controles de derivación y no tolerancias clínicas.
 

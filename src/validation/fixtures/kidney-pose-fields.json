@@ -1,0 +1,15 @@
+{
+  "decisions": ["329", "330"],
+  "tool": "tools/anatomy/move-kidneys.ts",
+  "inputRawSha256": "b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8",
+  "outputRawSha256": "76035fc4dc973950ecd8df98e76d7e8fcbacd0f5f4dde5ba4719ded514d5b1d4",
+  "fieldSha256": {
+    "kidneyRight": "9aa1d34cee2a960314820263112d494a14ea2eaa57ae26246e914825c3418689",
+    "kidneyLeft": "431b9126e67dc54f31c72e297a1e51da1508e97c66d0808304d82959c4ab8364",
+    "psoas": "192138cdacca3f09fab64c1bfec31bd207ee9c0dec1e2cb60be20ecd70b8731f"
+  },
+  "labelSha256": {
+    "kidneyRight": "86de958ab8b82f985de58f7a4eaa5b1b079eb1231fb23f4748e4dfbeb9fbf736",
+    "kidneyLeft": "b6e626ac642a2c9123994b22edfb1f6fbdf665f7472dacee81f733ee772e7504"
+  }
+}

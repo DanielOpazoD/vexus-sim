@@ -294,13 +294,14 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
               ? 'Riñón derecho entero en eje largo, desde la línea axilar anterior. Afina el eje largo y distingue vena y arteria interlobares. Color inicial ±15 cm/s y PW ±40 cm/s; ajusta cada escala a la señal.'
               : sp.hint,
 }));
-// Decisión 329: con el riñón derecho por defecto inclinado y bajo el hígado, su eje largo desde la axilar anterior (renal) y
-// desde la media, con el hígado delante (hepatorrenal), por búsqueda de pose sobre la anatomía fija. s0028 conserva las suyas.
+// Decisiones 329 y 330: con el riñón derecho por defecto inclinado y subido bajo el hígado, su eje largo desde la axilar
+// anterior (renal, con puertas PW en vena y arteria interlobares) y desde la media, con el hígado delante (hepatorrenal), por
+// búsqueda de pose sobre la anatomía fija. s0028 conserva las suyas.
 const DEFAULT_POINTS: readonly StartPoint[] = ABDOMINAL_POINTS.map((sp) =>
   sp.id === 'renal'
-    ? { ...sp, phi: 2.791, z: -135.1, yaw: -0.162, rock: -0.097, tilt: -0.538 }
+    ? { ...sp, phi: 2.804, z: -120.3, yaw: 0.113, rock: -0.154, tilt: -0.368 }
     : sp.id === 'hepatorenal'
-      ? { ...sp, phi: 2.92, z: -120.6, yaw: -0.024, rock: -0.153, tilt: -0.446 }
+      ? { ...sp, phi: 2.9, z: -123.9, yaw: 0.08, rock: 0.037, tilt: -0.431 }
       : sp,
 );
 /** Scene-specific presets; legacy tests/torso retain their own poses. */

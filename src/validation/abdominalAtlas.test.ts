@@ -62,7 +62,9 @@ describe('registered abdomen: actual shipped acoustic data', () => {
     const vein = scene.vesselById.get('portalSplenic')!;
     // Held-out material point from the user's registered left renal cut.
     // Old splenic connector crossed cortex here, up to 4.58 mm below its surface.
-    const witness: [number, number, number] = [70.5690118992419, -41.16895683125758, -92.5184253368824];
+    // Decisión 330: el mismo punto material, llevado con el movimiento rígido del riñón izquierdo (antes
+    // [70.5690118992419, -41.16895683125758, -92.5184253368824]).
+    const witness: [number, number, number] = [60.36823221899041, -44.028341325119634, -72.558356365869];
     expect(abdominalAtlasSdf(witness, 6)).toBeLessThan(-4);
     expect(scene.classify(witness, BASELINE_CALIBER).tissue).toBe(Tissue.RenalCortex);
     const field = ABDOMINAL_FIELDS[6];
@@ -94,7 +96,8 @@ describe('registered abdomen: actual shipped acoustic data', () => {
             occupied++;
             expect(abdominalAtlasSdf(p, 9), `${f.name}: ${p.join(',')}`).toBeGreaterThanOrEqual(0);
           }
-      // Decisión 329: el derecho, girado, se aplana contra el colon y el psoas (31.646 → 29.956 nodos; el izquierdo, 30.7k)
+      // Decisiones 329 y 330: los dos se mueven y se aplanan contra sus vecinos; el psoas les cede (330), así que solo pierden
+      // impresiones de hígado, bazo, páncreas y colon (derecho 31.651 → 31.380 nodos; izquierdo 30.748 → 30.301)
       expect(occupied).toBeGreaterThan(29_500);
     }
     // Source-grid exclusion does not establish a resolved fascial layer or clinical clearance.

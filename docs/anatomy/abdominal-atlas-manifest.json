@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 6055924,
-  "sha256Gzip": "b8957a7115923c055f055f7283a2cf51f6813ffa15c0848f0360270d80bcd61b",
-  "sha256Raw": "a6c8166310cbc6423467479f73ca78262a67169899f71e6700161c0137433875",
+  "gzipBytes": 6140705,
+  "sha256Gzip": "b3c0bfed89b3eeaea628dcc10303fc59bce6c9bb6bb3de97eed2c1c00037edc7",
+  "sha256Raw": "76035fc4dc973950ecd8df98e76d7e8fcbacd0f5f4dde5ba4719ded514d5b1d4",
   "fields": [
     {
       "name": "pancreas",
@@ -148,30 +148,30 @@
     {
       "name": "kidneyRight",
       "sourceIds": ["FJ3147"],
-      "originMm": [-105, -93, -196.5],
-      "dimensions": [55, 60, 77],
+      "originMm": [-97.5, -84, -184.5],
+      "dimensions": [58, 56, 78],
       "pitchMm": 1.5,
       "sourceBoundsMm": [
         [-87.2601655, -55.97624999999999, -197.76149999999996],
         [-30.112365500000003, -8.82135000000001, -93.33349999999996]
       ],
       "components": 1,
-      "representedVolumeMl": 106.045875,
-      "offset": [283, 145, 119]
+      "representedVolumeMl": 106.26525,
+      "offset": [243, 145, 119]
     },
     {
       "name": "kidneyLeft",
       "sourceIds": ["FJ3145"],
-      "originMm": [24, -70.5, -190.5],
-      "dimensions": [52, 41, 85],
+      "originMm": [13.5, -73.5, -169.5],
+      "dimensions": [58, 42, 83],
       "pitchMm": 1.5,
       "sourceBoundsMm": [
         [33.1551345, -61.08495000000002, -180.07949999999994],
         [90.6982345, -20.49135000000001, -74.13349999999991]
       ],
       "components": 1,
-      "representedVolumeMl": 103.7745,
-      "offset": [231, 163, 119]
+      "representedVolumeMl": 102.265875,
+      "offset": [178, 162, 119]
     },
     {
       "name": "gallbladder",
@@ -212,7 +212,7 @@
         [114.07223450000001, -1.110350000000011, -65.83349999999996]
       ],
       "components": 6,
-      "representedVolumeMl": 317.968875,
+      "representedVolumeMl": 312.136875,
       "offset": [0, 138, 0]
     },
     {
@@ -4407,37 +4407,80 @@
     "reference": "https://training.seer.cancer.gov/kidney/anatomy/",
     "limitation": "Source has no segmented renal fascia or perirenal fat; 2 mm is a bounded reconstruction, not a normal-population thickness. Regularization suppresses lattice artifacts, not a patient-specific shape correction."
   },
-  "rightKidneyPose": {
+  "kidneyPoses": {
+    "decisions": ["329", "330"],
     "inputRawSha256": "b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8",
-    "pose": {
-      "coronalDeg": 12,
-      "sagittalDeg": -29.5,
-      "translationMm": [-7.5, -18, 7]
-    },
-    "sourceFrame": {
-      "center": [-58.6862655, -32.3988, -145.5475],
-      "long": [0.00120157, -0.14708338, 0.98912337],
-      "hilumHint": [1, 0.25, 0]
-    },
-    "movedCenterMm": [-66.18626549999999, -50.3988, -138.5475],
-    "movedLong": [0.18191302291802713, -0.4842072884329271, 0.8558334849263945],
-    "movedHilumHint": [0.9620955463728498, 0.2674797865344946, -0.053166939398361625],
-    "originMm": [-105, -93, -196.5],
-    "dimensions": [55, 60, 77],
-    "offset": [283, 145, 119],
     "clearanceMm": 2,
-    "occupiedNodes": {
-      "before": 31651,
-      "rigid": 31644,
-      "afterImpressions": 31421
+    "right": {
+      "pose": {
+        "coronalDeg": 17,
+        "sagittalDeg": -24,
+        "translationMm": [1.5, -12, 20]
+      },
+      "sourceFrame": {
+        "center": [-58.6862655, -32.3988, -145.5475],
+        "long": [0.00120157, -0.14708338, 0.98912337],
+        "hilumHint": [1, 0.25, 0]
+      },
+      "movedCenterMm": [-57.1862655, -44.3988, -125.54750000000001],
+      "movedLong": [0.26900368097751953, -0.3917439841279796, 0.8798713943071919],
+      "movedHilumHint": [0.9430010174422032, 0.29296120325574515, -0.15786961230685265],
+      "originMm": [-97.5, -84, -184.5],
+      "dimensions": [58, 56, 78],
+      "offset": [243, 145, 119],
+      "occupiedNodes": {
+        "before": 31651,
+        "rigid": 31658,
+        "afterImpressions": 31486
+      },
+      "removedNodesBy": {
+        "liver": 73,
+        "spleen": 0,
+        "pancreas": 0,
+        "gallbladder": 0,
+        "lumbarSacralBone": 7,
+        "digestiveTract": 63
+      }
     },
-    "removedNodesBy": {
-      "liver": 0,
-      "liverStretched": 0,
-      "digestiveTract": 94,
-      "psoas": 99
+    "left": {
+      "pose": {
+        "coronalDeg": -15,
+        "sagittalDeg": -10,
+        "translationMm": [-4, -2, 19]
+      },
+      "sourceFrame": {
+        "center": [61.9266845, -40.78815, -127.1065],
+        "long": [-0.08034499, -0.15237369, 0.98505175],
+        "hilumHint": [-1, 0.25, 0]
+      },
+      "movedCenterMm": [57.9266845, -42.78815, -108.1065],
+      "movedLong": [-0.25514481782094245, -0.1679009179374284, 0.9522134233956625],
+      "movedHilumHint": [-0.9394902653658864, 0.2758851798378381, -0.20308965711867255],
+      "originMm": [13.5, -73.5, -169.5],
+      "dimensions": [58, 42, 83],
+      "offset": [178, 162, 119],
+      "occupiedNodes": {
+        "before": 30748,
+        "rigid": 30654,
+        "afterImpressions": 30301
+      },
+      "removedNodesBy": {
+        "liver": 0,
+        "spleen": 133,
+        "pancreas": 178,
+        "gallbladder": 0,
+        "lumbarSacralBone": 0,
+        "digestiveTract": 6
+      }
+    },
+    "psoasCarve": {
+      "changedNodes": 9424,
+      "occupiedNodes": {
+        "before": 94213,
+        "after": 92485
+      }
     },
     "status": "ESTIMATED / NEEDS_CALIBRATION",
-    "limitation": "Movimiento rígido de la fuente BodyParts3D con impresiones de 2 mm contra hígado, tubo digestivo y psoas; el psoas conserva el recorte de 2 mm contra la posición anterior del riñón (reconstrucción del lecho renal)."
+    "limitation": "Movimiento rígido de la fuente BodyParts3D con impresiones de 2 mm contra hígado, bazo, páncreas, vesícula, hueso y tubo digestivo; el psoas cede 2 mm a los riñones movidos y conserva el recorte de 2 mm contra su posición fuente (reconstrucción del lecho renal)."
   }
 }

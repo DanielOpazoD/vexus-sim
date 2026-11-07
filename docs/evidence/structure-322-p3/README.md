@@ -2,7 +2,7 @@
 
 Base funcional: r3 `5d79321`. La revisión independiente de `15733a8` encontró dos fallos: el rechazo del import CPU del Worker no se mostraba y 35/39 programas transformados cambiaban frente a main. Esta corrección rebasa sólo los commits propios sobre `8ed26cf` (#338 y #340 fusionadas), regenera la ABI desde esa base limpia y muestra el error del Worker. Este recibo acredita pruebas locales; la nueva CI protegida y la revisión independiente siguen siendo la puerta de aceptación. No es validación clínica.
 
-El propietario pausa la instalación de nuevas fases s0028. Este cierre recupera **41.182 B de JS default frente a main `8ed26cf`** (41.255 B frente a r3), dejando **41.475 B de margen para mejoras del default**. Por decisión del propietario, ambas clausuras conservan el techo de main de **1.070.080 B**; se rectifica la reducción provisional del default. Las pruebas aceptan exactamente ese límite y rechazan 1.070.081 B en cualquiera de las dos personas. [Medición de los dos presupuestos](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-budget-json); [negativo del techo reducido](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-red-log).
+El propietario pausa la instalación de nuevas fases s0028. Este cierre recupera **41.283 B de JS default frente a main `8ed26cf`** (41.356 B frente a r3), dejando **41.576 B de margen para mejoras del default**. Por decisión del propietario, ambas clausuras conservan el techo de main de **1.070.080 B**; se rectifica la reducción provisional del default. Las pruebas aceptan exactamente ese límite y rechazan 1.070.081 B en cualquiera de las dos personas. [Medición vigente de los dos presupuestos](closures.json); [negativo del techo reducido](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-red-log).
 
 El gancho de esta rectificación detectó una expectativa dependiente de la carga en `personWorker`: una fila de más de 16 ms publica `progress`, que la prueba rechazaba. Se conserva el [fallo reproducido con reloj controlado](../INDEX.md#structure-322-p3-impl-default-ceiling-20261106-worker-progress-red-log). La prueba comprueba ahora las dos secuencias exactas, con y sin progreso, incluida la fila completada, el último mapa y su identidad; no cambia el Worker ni sus plazos.
 
@@ -12,10 +12,10 @@ Se incluyen imports estáticos y diferidos, hooks, preloads HTML, Worker y workl
 
 | Medida               |        r3 | Main `8ed26cf` |   Después |     Techo | Margen |
 | -------------------- | --------: | -------------: | --------: | --------: | -----: |
-| Default              | 1.069.860 |      1.069.787 | 1.028.605 | 1.070.080 | 41.475 |
-| s0028                | 1.069.860 |      1.069.787 | 1.066.305 | 1.070.080 |  3.775 |
-| Unión de ambas rutas | 1.069.860 |      1.069.787 | 1.078.547 |         — |      — |
-| Compartido           | 1.069.860 |      1.069.787 | 1.016.363 |         — |      — |
+| Default              | 1.069.860 |      1.069.787 | 1.028.504 | 1.070.080 | 41.576 |
+| s0028                | 1.069.860 |      1.069.787 | 1.066.204 | 1.070.080 |  3.876 |
+| Unión de ambas rutas | 1.069.860 |      1.069.787 | 1.078.446 |         — |      — |
+| Compartido           | 1.069.860 |      1.069.787 | 1.016.262 |         — |      — |
 
 No hay módulos privados s0028 en default. Los 12.242 B exclusivos de default se descomponen en CPU (10.126), runtime (1.631) y superficies (485). Salen de la clausura s0028 `classifyKidneys`, `kidneyQuery`, `kidneySinusSdf`, `atlasDepthScale`, la clasificación perirrenal/Gerota, el clasificador default de pared/interior y `hepaticCostalBody`. Los auxiliares geométricos aún consumidos por ambas personas y el ligamento venoso siguen compartidos. El margen s0028 no garantiza cabida para r5/P5/P8.
 
@@ -77,3 +77,13 @@ Se conservan los registros iniciales fallidos, trazas y reportes de las corridas
 Los JSON pequeños de esta carpeta permiten revisar las cifras. Los registros completos están en la carpeta externa de evidencia `structure-322/p3-impl`, con `progress.md`, comandos, hashes, negativos, trazas y recibos de GPU/Worker.
 
 La actualización de P9 conserva los párrafos de la 322 por número y la 323 después. Las cifras de las clausuras anteriores a la revisión (1.027.918 B y 1.065.618 B) quedan en `review-fixes.json`; sus techos reducidos son históricos y ambas clausuras conservan ahora el techo de main. La [captura final del aviso](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-worker-warning-main-8ed26cf-png) y la [comparación completa de hashes](../INDEX.md#structure-322-p3-impl-review-fixes-20261106-shader-parity-final-json) se registran por el índice de evidencia.
+
+## Corrección del coste CPU del corte
+
+El congelado recursivo del descriptor de persona hacía que los lectores numéricos consultaran arrays congelados por cada punto. El control del Worker real sin GPU ni transporte midió **437 ms de CPU por corte en `5ac3c96`, frente a 314 ms en main**. Omitir sólo el congelado de arrays en un arnés externo devuelve 312 ms y el mismo hash de tejido/vaso/estructura. Ese control no se instala en el producto.
+
+Los lectores preparan una copia privada del descriptor pequeño al instalarse y conservan los mismos buffers de atlas. El descriptor público sigue congelado. El control corregido consume 288 ms; la prueba de consultas pasa de 1.860 lecturas de arrays públicos a cero. No cambia el Worker, `ready`, el import CPU, los epochs, las cancelaciones ni el aviso de fallo. El testigo E2E cuenta ahora `init`, clave y bytes de buffers copiados por mensaje, incluyendo el perfil de la escena; los cambios de caso no recargan atlas. [Recibo de rendimiento y corridas alternadas](performance.json).
+
+La corrección reduce **101 B** en cada clausura respecto a `5ac3c96`. Se conservan todas las corridas, incluidas las afectadas por picos de carga ajena. Las mediciones Metal y CPU locales no acreditan el cierre del fragmento SwiftShader en CI.
+
+Cierre de rendimiento: 130/130 pruebas focales en 16 archivos. La pareja Metal consecutiva aprueba ambos casos sin reintentos: concurrencia **52,244 s corregido / 61,632 s main `8ed26cf`**; presentación portal `reference=atlas, severe=false` **6,827 s / 6,936 s**. La carga de un minuto alcanza 5,64 y 14,99 respectivamente; no se atribuye un porcentaje controlado a esa pareja. El perfil usa Metal y el sondeo separado de Chromium confirma ANGLE Metal / Apple M4. Las dos vistas conservan un único `init` por Worker y cero bytes de atlas en cambios de caso. Originales, carga y procedencia en [performance.json](performance.json).

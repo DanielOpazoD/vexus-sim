@@ -1,0 +1,455 @@
+{
+  "schema": 1,
+  "scope": "Evidencia CPU y Metal local; no acredita el fragmento SwiftShader ni CI protegida del head final.",
+  "base": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+  "regressedHead": "5ac3c96b9c8c0ddb1b290ac0596b9beae9b51998",
+  "fix": "ea6c47f6c08aaa42db742cae71454e182a60c39a",
+  "cpuMethod": "Worker real sin GPU ni transporte. Mediana de los últimos ocho mapas tras cinco de calentamiento; se conservan los trece originales. El control no-array-freeze solo cambia el arnés externo.",
+  "cpu": [
+    {
+      "run": "cpu-fixed-1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-fixed-1.json",
+      "sha256": "91cb478d969c5577080b6eb12cea32dcc8144fcb55a89164558420e532bc6f45",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 288.312,
+      "medianWallMs": 301.18447900000047,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    },
+    {
+      "run": "cpu-head-1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-head-1.json",
+      "sha256": "fa63543d82d8ee199eb6d94606009d935d1a9e6149069a2c52abc5741ee75d02",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 437.36850000000004,
+      "medianWallMs": 475.81493750000027,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    },
+    {
+      "run": "cpu-head-2",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-head-2.json",
+      "sha256": "70d586abb6979e3773764c8a667d2df18fc7b8b6aecf09164e33137470f13207",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 368.66049999999996,
+      "medianWallMs": 392.5809170000002,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    },
+    {
+      "run": "cpu-main-1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-main-1.json",
+      "sha256": "6ee07145310c361c0dc0afca3ee394125d39280ec2de99b59f02274aec35a1d2",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 314.43399999999997,
+      "medianWallMs": 332.1299375000003,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    },
+    {
+      "run": "cpu-no-freeze-1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-no-freeze-1.json",
+      "sha256": "45f510e8d0cd7b093716f07842ed18342fe34f7529d8c2a96320737f7953a718",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 312.3915,
+      "medianWallMs": 335.6458124999999,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    },
+    {
+      "run": "cpu-no-freeze-2",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/cpu-no-freeze-2.json",
+      "sha256": "37733c95f54ed6d883e6e06e0a0443b8edeaa7d85638b2777af434a26e24d4d9",
+      "maps": 13,
+      "measuredMaps": 8,
+      "medianCpuMs": 278.9755,
+      "medianWallMs": 294.98774949999984,
+      "mapHashes": [
+        "58ff7c38b5745e05565d88d113ad47fdcf76d10ce0d154c98c56d9a6214dc6c7",
+        "6b8fa33054bda728f312ea6ed6de6d99809360f4dce79f39967a847bc4020d1d"
+      ]
+    }
+  ],
+  "historicalMetal": [
+    {
+      "run": "fixed-c1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/fixed-c1/report.json",
+      "sha256": "05b403e8766b4ef5e00deba22cc0a490012a6649169291d00eb6fbe8f38a327e",
+      "sourceSha": "5ac3c96b9c8c0ddb1b290ac0596b9beae9b51998",
+      "sourceStatus": "M e2e/cutMapConcurrency.spec.ts\n M src/anatomy/personAtlas.ts\n M src/validation/personAssets.test.ts\n M src/validation/personWorker.test.ts",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 107159
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 9251
+        }
+      ]
+    },
+    {
+      "run": "head-b1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/head-b1/report.json",
+      "sha256": "d32428fbf921f9da98643abafcd5c4aa79ae54adecb943bfcb3c3c0a4bcff728",
+      "sourceSha": "5ac3c96b9c8c0ddb1b290ac0596b9beae9b51998",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 83335
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 9575
+        }
+      ]
+    },
+    {
+      "run": "head-b2",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/head-b2/report.json",
+      "sha256": "cb059100a67ac1b9a897d097bbcd41871605818357ae14e62cdceec4367ff6a5",
+      "sourceSha": "5ac3c96b9c8c0ddb1b290ac0596b9beae9b51998",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 69973
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 8618
+        }
+      ]
+    },
+    {
+      "run": "head-b3",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/head-b3/report.json",
+      "sha256": "adea04175a973bd27bbc8b6526ef1c8a32e467c0147eadf4844b6a389dd69532",
+      "sourceSha": "5ac3c96b9c8c0ddb1b290ac0596b9beae9b51998",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 121796
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 11057
+        }
+      ]
+    },
+    {
+      "run": "main-a1",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/main-a1/report.json",
+      "sha256": "c3654990659886b8a59af12379b133721f9d03816f3ea9ac8fcc73b62dd6a310",
+      "sourceSha": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 62494
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 8263
+        }
+      ]
+    },
+    {
+      "run": "main-a2",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/main-a2/report.json",
+      "sha256": "19118c503526d98e4d95231eb6bec0fb7e61bb806dc55578a0ee12d551b9acbf",
+      "sourceSha": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 66468
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 8113
+        }
+      ]
+    },
+    {
+      "run": "main-a3",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/main-a3/report.json",
+      "sha256": "fdc098371a73457ad75a9f357ddff53a275f2edb22c6ce40876a811d76a55df6",
+      "sourceSha": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 72491
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 9556
+        }
+      ]
+    },
+    {
+      "run": "main-a4",
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/cut-performance-20261106/main-a4/report.json",
+      "sha256": "de60b5869c16d1edaeb7dcc1dd9d02a88a5e026dfbaf4db55615497033253973",
+      "sourceSha": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+      "sourceStatus": "",
+      "state": "command-succeeded",
+      "tests": [
+        {
+          "title": "two live atlas views keep producing the current cut through probe and case changes",
+          "status": "passed",
+          "durationMs": 95600
+        },
+        {
+          "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+          "status": "passed",
+          "durationMs": 9279
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Las corridas históricas incluyen picos de carga ajena; no se descarta ninguna.",
+    "Los tiempos Metal no predicen el tiempo SwiftShader en CI."
+  ],
+  "finalMetal": {
+    "method": "Corridas consecutivas: corregido y main; perfil workspace:e2e Metal, un trabajador, cero reintentos, plazos y aserciones originales. nice 10, VITEST_MAX_WORKERS=3; inicio con carga de 15 min menor que 20.",
+    "runs": [
+      {
+        "run": "metal-fixed",
+        "sourceSha": "ea6c47f6c08aaa42db742cae71454e182a60c39a",
+        "sourceStatus": "M docs/ARCHITECTURE.md\n M docs/DECISIONS.md\n M docs/DECISIONS_INDEX.md\n M docs/estado/anatomia.md\n M docs/estado/imagen.md\n M docs/estado/medidas.json\n M docs/estado/presupuestos.md\n M docs/estado/pruebas.md\n M docs/evidence/INDEX.md\n M docs/evidence/index.json\n M docs/evidence/structure-322-p3/README.md\n M docs/evidence/structure-322-p3/closures.json\n?? docs/evidence/structure-322-p3/performance.json",
+        "state": "command-succeeded",
+        "report": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-fixed/report.json",
+          "sha256": "8ebe2870073ecf618a3b4887d0334d7e8adb1c9cfc1886a4bd1a53ed62b4b17d"
+        },
+        "manifest": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-fixed/run.json",
+          "sha256": "33c89fdc3f968fff2793b2362f2ccbae4e9a77d14d106a4427b8aa02e5056974"
+        },
+        "loadEvidence": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-fixed-load.jsonl",
+          "sha256": "aa48c17a18c4318aed6349439180e6c95168bfd53900831994981aa11147c78c"
+        },
+        "loadStart": [4.06640625, 5.29833984375, 19.05078125],
+        "loadMax": [5.63525390625, 5.51025390625, 19.05078125],
+        "tests": [
+          {
+            "title": "two live atlas views keep producing the current cut through probe and case changes",
+            "status": "passed",
+            "durationMs": 52244,
+            "workerViews": [
+              {
+                "name": "view-0.json",
+                "initializations": [
+                  {
+                    "type": "init",
+                    "epoch": 1,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "normal-adult",
+                    "bytes": 112228544,
+                    "copiedBytes": 112259532,
+                    "profileBytes": 27348,
+                    "postMs": 86.5
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 2,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "severe-congestion",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0.09999999403953552
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 3,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "normal-adult",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0.10000002384185791
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 4,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "severe-congestion",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 5,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "normal-adult",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0.09999999403953552
+                  }
+                ]
+              },
+              {
+                "name": "view-1.json",
+                "initializations": [
+                  {
+                    "type": "init",
+                    "epoch": 1,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "normal-adult",
+                    "bytes": 112228544,
+                    "copiedBytes": 112259532,
+                    "profileBytes": 27348,
+                    "postMs": 70.30000001192093
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 2,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "severe-congestion",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0.09999999403953552
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 3,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "normal-adult",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0
+                  },
+                  {
+                    "type": "patient",
+                    "epoch": 4,
+                    "assetKey": "current:registered-las-v1:current:1:47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323:b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8:61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6:0:0:body",
+                    "patient": "severe-congestion",
+                    "bytes": 0,
+                    "copiedBytes": 27348,
+                    "profileBytes": 27348,
+                    "postMs": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+            "status": "passed",
+            "durationMs": 6827,
+            "workerViews": []
+          }
+        ]
+      },
+      {
+        "run": "metal-main",
+        "sourceSha": "8ed26cf7fd4ed339873418cb5b5f6faf168ff46f",
+        "sourceStatus": "",
+        "state": "command-succeeded",
+        "report": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-main/report.json",
+          "sha256": "fc912544153e88f6a04242279e1f78b7413d1db4af663af564a1d661bcb2a446"
+        },
+        "manifest": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-main/run.json",
+          "sha256": "d034a89dc3f363e25c0747e26104ac78d7bd5c98cc363e15af71e9df60ac8afa"
+        },
+        "loadEvidence": {
+          "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/metal-main-load.jsonl",
+          "sha256": "47a2b2c8197796209c33f44aac6ab1a8b02b91984d4828ed00463fd8153f6e05"
+        },
+        "loadStart": [4.56103515625, 5.248046875, 17.80224609375],
+        "loadMax": [14.98974609375, 7.89013671875, 17.80224609375],
+        "tests": [
+          {
+            "title": "two live atlas views keep producing the current cut through probe and case changes",
+            "status": "passed",
+            "durationMs": 61632
+          },
+          {
+            "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=false",
+            "status": "passed",
+            "durationMs": 6936
+          }
+        ]
+      }
+    ],
+    "comparisonLimit": "La carga de un minuto subió hasta 14,99 durante main frente a 5,64 durante el corregido. Una pareja no acredita un porcentaje controlado ni predice SwiftShader."
+  },
+  "rendererProbe": {
+    "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/renderer-probe.json",
+    "sha256": "994ae141803e508f757db2f9909d5ccc3bcff5290a1f39c7a7b8a90035589d2f",
+    "scope": "Sondeo separado de Chromium con los argumentos del perfil Metal; no añade cuadros a las E2E medidas.",
+    "args": ["--use-gl=angle", "--use-angle=metal", "--ignore-gpu-blocklist"],
+    "gpu": {
+      "vendor": "Google Inc. (Apple)",
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)"
+    }
+  },
+  "focalValidation": {
+    "files": 16,
+    "tests": 130,
+    "status": "passed",
+    "log": {
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/focal.log",
+      "sha256": "993a11c259ae3c3f25a48afd1e9026a06c6ce7c1fee8dca030c42cd343143f42"
+    }
+  },
+  "closures": {
+    "default": 1028504,
+    "s0028": 1066204,
+    "ceilingEach": 1070080,
+    "report": {
+      "evidence": "$VEXUS_EVIDENCE_ROOT/structure-322/p3-impl/performance-close-20261107/measured-person-bundle-report.json",
+      "sha256": "5d4fcd014be0ed5e0136fdbd546162d668befd4ef6066abcb38ed86f5b20a7fc"
+    }
+  }
+}

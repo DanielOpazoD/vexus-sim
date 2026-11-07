@@ -1146,16 +1146,211 @@
    ]
   },
   {
-   "id": "structure-322-p3-impl-default-ceiling-20261106-budget-json",
-   "path": "structure-322/p3-impl/default-ceiling-20261106/budget.json",
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-fixed-1-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-fixed-1.json",
    "kind": "file",
-   "bytes": 572,
-   "sha256": "f3176b21cb284650324fef81e344c20f1607c854cb99bfaa0507dc47e97dbf9c",
+   "bytes": 3388,
+   "sha256": "91cb478d969c5577080b6eb12cea32dcc8144fcb55a89164558420e532bc6f45",
    "files": 1,
    "round": "structure-322",
    "citedBy": [
     {
-     "doc": "docs/evidence/structure-322-p3/README.md",
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-head-1-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-head-1.json",
+   "kind": "file",
+   "bytes": 3392,
+   "sha256": "fa63543d82d8ee199eb6d94606009d935d1a9e6149069a2c52abc5741ee75d02",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-head-2-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-head-2.json",
+   "kind": "file",
+   "bytes": 3390,
+   "sha256": "70d586abb6979e3773764c8a667d2df18fc7b8b6aecf09164e33137470f13207",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-main-1-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-main-1.json",
+   "kind": "file",
+   "bytes": 3394,
+   "sha256": "6ee07145310c361c0dc0afca3ee394125d39280ec2de99b59f02274aec35a1d2",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-no-freeze-1-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-no-freeze-1.json",
+   "kind": "file",
+   "bytes": 3407,
+   "sha256": "45f510e8d0cd7b093716f07842ed18342fe34f7529d8c2a96320737f7953a718",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-cpu-no-freeze-2-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/cpu-no-freeze-2.json",
+   "kind": "file",
+   "bytes": 3408,
+   "sha256": "37733c95f54ed6d883e6e06e0a0443b8edeaa7d85638b2777af434a26e24d4d9",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-fixed-c1-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/fixed-c1/report.json",
+   "kind": "file",
+   "bytes": 751255,
+   "sha256": "05b403e8766b4ef5e00deba22cc0a490012a6649169291d00eb6fbe8f38a327e",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-head-b1-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/head-b1/report.json",
+   "kind": "file",
+   "bytes": 528460,
+   "sha256": "d32428fbf921f9da98643abafcd5c4aa79ae54adecb943bfcb3c3c0a4bcff728",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-head-b2-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/head-b2/report.json",
+   "kind": "file",
+   "bytes": 497897,
+   "sha256": "cb059100a67ac1b9a897d097bbcd41871605818357ae14e62cdceec4367ff6a5",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-head-b3-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/head-b3/report.json",
+   "kind": "file",
+   "bytes": 654273,
+   "sha256": "adea04175a973bd27bbc8b6526ef1c8a32e467c0147eadf4844b6a389dd69532",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-main-a1-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/main-a1/report.json",
+   "kind": "file",
+   "bytes": 452037,
+   "sha256": "c3654990659886b8a59af12379b133721f9d03816f3ea9ac8fcc73b62dd6a310",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-main-a2-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/main-a2/report.json",
+   "kind": "file",
+   "bytes": 469252,
+   "sha256": "19118c503526d98e4d95231eb6bec0fb7e61bb806dc55578a0ee12d551b9acbf",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-main-a3-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/main-a3/report.json",
+   "kind": "file",
+   "bytes": 529340,
+   "sha256": "fdc098371a73457ad75a9f357ddff53a275f2edb22c6ce40876a811d76a55df6",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-cut-performance-20261106-main-a4-report-json",
+   "path": "structure-322/p3-impl/cut-performance-20261106/main-a4/report.json",
+   "kind": "file",
+   "bytes": 552327,
+   "sha256": "de60b5869c16d1edaeb7dcc1dd9d02a88a5e026dfbaf4db55615497033253973",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
      "decision": null
     }
    ]
@@ -1186,6 +1381,141 @@
    "citedBy": [
     {
      "doc": "docs/evidence/structure-322-p3/README.md",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-focal-log",
+   "path": "structure-322/p3-impl/performance-close-20261107/focal.log",
+   "kind": "file",
+   "bytes": 3715,
+   "sha256": "993a11c259ae3c3f25a48afd1e9026a06c6ce7c1fee8dca030c42cd343143f42",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-measured-person-bundle-report-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/measured-person-bundle-report.json",
+   "kind": "file",
+   "bytes": 3846,
+   "sha256": "5d4fcd014be0ed5e0136fdbd546162d668befd4ef6066abcb38ed86f5b20a7fc",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-fixed-load-jsonl",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-fixed-load.jsonl",
+   "kind": "file",
+   "bytes": 1978,
+   "sha256": "aa48c17a18c4318aed6349439180e6c95168bfd53900831994981aa11147c78c",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-fixed-report-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-fixed/report.json",
+   "kind": "file",
+   "bytes": 410039,
+   "sha256": "8ebe2870073ecf618a3b4887d0334d7e8adb1c9cfc1886a4bd1a53ed62b4b17d",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-fixed-run-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-fixed/run.json",
+   "kind": "file",
+   "bytes": 1455,
+   "sha256": "33c89fdc3f968fff2793b2362f2ccbae4e9a77d14d106a4427b8aa02e5056974",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-main-load-jsonl",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-main-load.jsonl",
+   "kind": "file",
+   "bytes": 2248,
+   "sha256": "47a2b2c8197796209c33f44aac6ab1a8b02b91984d4828ed00463fd8153f6e05",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-main-report-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-main/report.json",
+   "kind": "file",
+   "bytes": 470263,
+   "sha256": "fc912544153e88f6a04242279e1f78b7413d1db4af663af564a1d661bcb2a446",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-metal-main-run-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/metal-main/run.json",
+   "kind": "file",
+   "bytes": 1039,
+   "sha256": "d034a89dc3f363e25c0747e26104ac78d7bd5c98cc363e15af71e9df60ac8afa",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
+     "decision": null
+    }
+   ]
+  },
+  {
+   "id": "structure-322-p3-impl-performance-close-20261107-renderer-probe-json",
+   "path": "structure-322/p3-impl/performance-close-20261107/renderer-probe.json",
+   "kind": "file",
+   "bytes": 350,
+   "sha256": "994ae141803e508f757db2f9909d5ccc3bcff5290a1f39c7a7b8a90035589d2f",
+   "files": 1,
+   "round": "structure-322",
+   "citedBy": [
+    {
+     "doc": "docs/evidence/structure-322-p3/performance.json",
      "decision": null
     }
    ]

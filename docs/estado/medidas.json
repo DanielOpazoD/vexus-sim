@@ -1,6 +1,6 @@
 {
  "schema": 1,
- "date": "2026-11-06",
+ "date": "2026-11-07",
  "main": "8ed26cf",
  "rows": [
   {
@@ -177,7 +177,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 4393
+   "actual": 4292
   },
   {
    "what": "`preload-helper.js`",
@@ -225,7 +225,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 20075
+   "actual": 1631
   },
   {
    "what": "`runtime.js`",
@@ -233,7 +233,7 @@
    "unit": "B",
    "decision": null,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 1631
+   "actual": 20075
   },
   {
    "what": "`series.js`",
@@ -289,7 +289,7 @@
    "unit": "B",
    "decision": 318,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 5730
+   "actual": 485
   },
   {
    "what": "`surfaces.js`",
@@ -297,7 +297,7 @@
    "unit": "B",
    "decision": 318,
    "source": "tools/ci/bundleBudgets.ts",
-   "actual": 485
+   "actual": 5730
   },
   {
    "what": "`teacherTab.js`",
@@ -377,7 +377,7 @@
    "unit": "B",
    "decision": 322,
    "source": "tools/ci/personBundles.ts",
-   "actual": 1028605
+   "actual": 1028504
   },
   {
    "what": "JS clausura s0028 (Workers y ganchos incluidos)",
@@ -385,7 +385,7 @@
    "unit": "B",
    "decision": 322,
    "source": "tools/ci/personBundles.ts",
-   "actual": 1066305
+   "actual": 1066204
   },
   {
    "what": "Descarga del paquete s0028 (gzip)",

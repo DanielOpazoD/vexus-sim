@@ -15,9 +15,10 @@ function stomachWallPoints(): number[][] {
   setAbdominalAtlas(new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2));
   const f = ABDOMINAL_FIELDS[1];
   const out: number[][] = [];
-  for (let z = 0; z < f.dimensions[2]; z += 4)
-    for (let y = 0; y < f.dimensions[1]; y += 4)
-      for (let x = 0; x < f.dimensions[0]; x += 4) {
+  // paso 3: con las capas internas más finas de la decisión 332, cada capa conserva > 100 muestras lejos de sus fronteras
+  for (let z = 0; z < f.dimensions[2]; z += 3)
+    for (let y = 0; y < f.dimensions[1]; y += 3)
+      for (let x = 0; x < f.dimensions[0]; x += 3) {
         const p = [x, y, z].map((v, i) => f.originMm[i] + (v + 0.37) * f.pitchMm) as [number, number, number];
         const q = abdominalAtlasValue(p, 1);
         if (q.d >= 0 || q.label !== 1 || -q.d > GASTRIC_WALL.baseMm + GASTRIC_WALL.foldMm + 2) continue;
